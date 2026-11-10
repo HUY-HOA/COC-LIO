@@ -478,13 +478,13 @@ private class UpgradeWidgetListFactory(
         } else {
             views.setViewVisibility(R.id.row_icon, View.GONE)
         }
-        views.setTextViewText(
-            R.id.row_title,
-            entry.name + (entry.level?.let { " • cấp " + it } ?: "")
-        )
-        val baseName = if (entry.base == "builder") "Căn cứ thợ xây" else "Nhà chính"
-        val special = if (entry.gearUp) " • Nâng cấp đặc biệt" else ""
-        views.setTextViewText(R.id.row_subtitle, baseName + " • " + entry.section + special)
+        val levelText = when {
+            entry.gearUp -> entry.level?.let { "CẤP $it • GEAR-UP" } ?: "GEAR-UP"
+            entry.level != null -> "CẤP ${entry.level} → ${entry.level + 1}"
+            else -> "ĐANG NÂNG"
+        }
+        views.setTextViewText(R.id.row_title, levelText)
+        views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, remainingPercent, false)
 
         if (remaining > 0L) {
@@ -547,12 +547,17 @@ object AppWidgetUpdater {
         val count = snapshot?.let { it.upgrades.size + it.gearUps.size } ?: 0
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade)
 
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        val builderTotal = snapshot?.homeBuilderTotal
+        val buildersFree = if (snapshot == null || builderTotal == null) null else
+            (builderTotal - snapshot.homeBuildersBusyAt(nowSeconds)).coerceAtLeast(0)
         views.setTextViewText(
             R.id.widget_village,
             if (snapshot == null) "COC-LIO • Chưa có dữ liệu"
-            else "LÀNG " + (snapshot.villageName ?: snapshot.tag) +
+            else (snapshot.villageName ?: snapshot.tag) +
                 (if (snapshot.villageName.isNullOrBlank()) "" else " • " + snapshot.tag) +
-                " • NHÀ CHÍNH " + (snapshot.townHallLevel ?: "—")
+                " • TH" + (snapshot.townHallLevel ?: "—") +
+                (if (builderTotal == null) "" else " • Thợ rảnh $buildersFree/$builderTotal")
         )
         views.setTextViewText(
             R.id.widget_status,
@@ -628,7 +633,7 @@ class UpgradeWidgetConfigActivity : Activity() {
         }
 
         val profile = AccountProfileStore.active(this)
-        val villages = VillageStore.loadAll(this, profile).distinctBy { it.tag }.sortedBy { it.tag }
+        val villages = VillageStore.loadAll(this, profile).distinctBy { it.tag }
         if (villages.isEmpty()) {
             AlertDialog.Builder(this)
                 .setTitle("Chưa có làng để theo dõi")
