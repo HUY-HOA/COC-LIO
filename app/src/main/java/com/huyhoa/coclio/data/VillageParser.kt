@@ -125,7 +125,7 @@ object VillageParser {
                 val level = if (obj.has("lvl") && !obj.isNull("lvl")) obj.optInt("lvl") else null
                 val rawTimer = if (obj.has("timer") && !obj.isNull("timer")) obj.optLong("timer") else null
                 val timer = rawTimer?.let { value ->
-                    if (value > 31_536_000L && value % 1000L == 0L) value / 1000L else value
+                    if (value > 2_592_000L && value % 1000L == 0L) value / 1000L else value
                 }
                 val helperCooldown = if (obj.has("helper_cooldown") && !obj.isNull("helper_cooldown")) obj.optLong("helper_cooldown") else null
                 val count = if (obj.has("cnt") && !obj.isNull("cnt")) {
