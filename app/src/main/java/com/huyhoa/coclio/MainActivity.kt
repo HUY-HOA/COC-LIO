@@ -984,7 +984,7 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 98.dp),
+        columns = GridCells.Adaptive(minSize = 82.dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(7.dp),
