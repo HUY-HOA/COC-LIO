@@ -12,6 +12,13 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -165,9 +172,23 @@ private fun NeonBackdrop() {
 private fun NeonPanel(
     modifier: Modifier = Modifier,
     glow: Color = CocCyan,
+    animatedLed: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(18.dp)
+    val ledRotation = if (animatedLed) {
+        val transition = rememberInfiniteTransition(label = "led-running-border")
+        val angle by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2600, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "led-angle"
+        )
+        angle
+    } else 0f
     Column(
         modifier = modifier
             .shadow(15.dp, shape)
@@ -177,6 +198,23 @@ private fun NeonPanel(
                     listOf(Color(0xF2192945), Color(0xF20B142A), Color(0xF21A1230))
                 )
             )
+            .drawBehind {
+                if (animatedLed) {
+                    val stroke = 2.5.dp.toPx()
+                    rotate(ledRotation, pivot = center) {
+                        drawRoundRect(
+                            brush = Brush.sweepGradient(
+                                listOf(CocCyan, Color.White, CocMagenta, CocViolet, CocCyan),
+                                center = center
+                            ),
+                            topLeft = Offset(stroke / 2f, stroke / 2f),
+                            size = Size(size.width - stroke, size.height - stroke),
+                            cornerRadius = CornerRadius(18.dp.toPx()),
+                            style = Stroke(width = stroke)
+                        )
+                    }
+                }
+            }
             .border(
                 BorderStroke(
                     1.dp,
@@ -522,8 +560,8 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
             Text("CÁCH LẤY JSON LẦN ĐẦU", color = CocCyan, fontSize = 12.sp, fontWeight = FontWeight.Black)
             Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = Color.White, fontSize = 11.sp)
-            Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác (More Settings).", color = Color.White, fontSize = 11.sp)
-            Text("3. Kéo xuống Data Export → Export village data in JSON format → Copy.", color = Color.White, fontSize = 11.sp)
+            Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác.", color = Color.White, fontSize = 11.sp)
+            Text("3. Kéo xuống Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.", color = Color.White, fontSize = 11.sp)
             Text("4. Quay lại COC-LIO, dán JSON hoặc chọn tệp .json rồi nhấn Phân tích & lưu.", color = Color.White, fontSize = 11.sp)
         }
         Spacer(Modifier.height(14.dp))
@@ -531,7 +569,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        Text("Nút mở game đưa bạn vào game; COC-LIO không thể tự bấm nút Copy hoặc ép game mở thẳng màn hình xuất JSON.", color = CocMuted, fontSize = 9.sp, lineHeight = 14.sp)
+        Text("Nút mở game chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong game.", color = CocMuted, fontSize = 9.sp, lineHeight = 14.sp)
     }
 }
 
@@ -672,7 +710,7 @@ private fun InfoCard(title: String, detail: String) {
 private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Long) {
     val endAt = snapshotTimestamp + (item.timerSeconds ?: 0L)
     val remaining = (endAt - nowEpoch).coerceAtLeast(0L)
-    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (item.gearUp) CocMagenta else CocCyan) {
+    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (item.gearUp) CocMagenta else CocCyan, animatedLed = true) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -691,7 +729,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
                 )
                 Spacer(Modifier.height(5.dp))
                 if (item.gearUp) {
-                    Text("Gear-up • Master Builder", color = CocGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Nâng cấp đặc biệt • Thợ xây cả", color = CocGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 if (remaining > 0L) {
                     val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
@@ -762,7 +800,7 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String, nowEpoch: Lon
                 FilterChip(
                     selected = selectedBase == "builder",
                     onClick = { selectedBase = "builder" },
-                    label = { Text("Builder Base") }
+                    label = { Text("Căn cứ thợ xây") }
                 )
             }
         }
@@ -796,7 +834,7 @@ private fun VillageItemCard(item: VillageItem) {
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = when (item.tab) {
         "army" -> CocMagenta
         else -> CocCyan
-    }) {
+    }, animatedLed = item.tab == "buildings") {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -858,18 +896,11 @@ private fun CategoryEmoji(item: VillageItem, size: Int) {
         else -> CocCyan
     }
     val url = CocAssets.imageUrl(item)
-    val transition = rememberInfiniteTransition(label = "asset-frame")
-    val pulse by transition.animateFloat(
-        initialValue = 0.48f,
-        targetValue = 0.96f,
-        animationSpec = infiniteRepeatable(tween(1900), RepeatMode.Reverse),
-        label = "asset-glow"
-    )
     val imageRequest = remember(url) {
         url?.let {
             ImageRequest.Builder(context)
                 .data(it)
-                .crossfade(420)
+                .crossfade(false)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .build()
@@ -881,22 +912,8 @@ private fun CategoryEmoji(item: VillageItem, size: Int) {
             .size(size.dp)
             .shadow(12.dp, shape)
             .clip(shape)
-            .background(
-                Brush.radialGradient(
-                    listOf(glow.copy(alpha = 0.24f), Color(0xFF142440), Color(0xFF091326))
-                )
-            )
-            .border(
-                1.dp,
-                Brush.linearGradient(
-                    listOf(
-                        glow.copy(alpha = pulse),
-                        CocMagenta.copy(alpha = pulse * 0.62f),
-                        CocViolet.copy(alpha = 0.72f)
-                    )
-                ),
-                shape
-            ),
+            .background(Color(0xFF0B142A))
+            .border(1.dp, glow.copy(alpha = 0.62f), shape),
         contentAlignment = Alignment.Center
     ) {
         Text(emoji, fontSize = (size * 0.52f).sp)
@@ -1004,7 +1021,7 @@ private fun ImportDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
                         border = BorderStroke(1.dp, CocCyan.copy(alpha = 0.65f))
                     ) {
-                        Text("Dán clipboard", color = CocCyan, fontSize = 11.sp)
+                        Text("Dán nội dung đã sao chép", color = CocCyan, fontSize = 10.sp)
                     }
                     OutlinedButton(
                         onClick = onChooseFile,
