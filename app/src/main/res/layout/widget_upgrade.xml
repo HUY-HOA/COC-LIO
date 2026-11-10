@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="5dp"
+    android:padding="4dp"
     android:background="@drawable/widget_upgrade_background">
 
     <TextView
@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="Làng • Nhà chính"
         android:textColor="#36F4FF"
-        android:textSize="9sp"
+        android:textSize="7sp"
         android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end" />
