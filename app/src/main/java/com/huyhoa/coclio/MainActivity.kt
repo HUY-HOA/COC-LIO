@@ -516,11 +516,13 @@ private fun CocLioApp() {
                             }
                         },
                         onRestore = { recordId ->
+                            val restoredTag = deletedVillages.firstOrNull { it.id == recordId }?.tag
                             if (VillageStore.restoreDeleted(context, recordId, activeProfile)) {
                                 history = VillageStore.loadAll(context, activeProfile)
                                 deletedVillages = VillageStore.loadDeleted(context, activeProfile)
                                 pinnedTags = VillageStore.pinnedTags(context, activeProfile)
-                                current = history.firstOrNull()
+                                current = history.firstOrNull { it.tag == restoredTag } ?: history.firstOrNull()
+                                events = emptyList()
                                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
                                 AppWidgetUpdater.updateAll(context)
                                 scope.launch { snackbar.showSnackbar("Đã khôi phục dữ liệu làng.") }
@@ -1203,11 +1205,44 @@ private fun HistoryScreen(
         verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         item {
-            Text("KHO DỮ LIỆU JSON", color = CocCyan, fontSize = 13.sp, fontWeight = FontWeight.Black)
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                FilterChip(selectedSection == "villages", { selectedSection = "villages" }, label = { Text("ĐANG LƯU") })
-                FilterChip(selectedSection == "history", { selectedSection = "history" }, label = { Text("LỊCH SỬ") })
-                FilterChip(selectedSection == "deleted", { selectedSection = "deleted" }, label = { Text("ĐÃ XÓA") })
+            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Text("KHO DỮ LIỆU JSON", color = CocCyan, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterChip(
+                        selected = selectedSection == "villages",
+                        onClick = { selectedSection = "villages" },
+                        modifier = Modifier.weight(1f),
+                        label = {
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Text("ĐANG LƯU", fontSize = 10.sp, maxLines = 1)
+                            }
+                        }
+                    )
+                    FilterChip(
+                        selected = selectedSection == "history",
+                        onClick = { selectedSection = "history" },
+                        modifier = Modifier.weight(1f),
+                        label = {
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Text("LỊCH SỬ", fontSize = 10.sp, maxLines = 1)
+                            }
+                        }
+                    )
+                    FilterChip(
+                        selected = selectedSection == "deleted",
+                        onClick = { selectedSection = "deleted" },
+                        modifier = Modifier.weight(1f),
+                        label = {
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Text("ĐÃ XÓA", fontSize = 10.sp, maxLines = 1)
+                            }
+                        }
+                    )
+                }
             }
         }
 
