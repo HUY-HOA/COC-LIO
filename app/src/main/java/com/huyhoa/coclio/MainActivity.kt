@@ -3,6 +3,8 @@ package com.huyhoa.coclio
 import android.app.Activity
 import android.os.Bundle
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
 import android.graphics.Typeface
 import android.graphics.Color
 import android.view.inputmethod.InputMethodManager
@@ -17,16 +19,40 @@ import java.net.URL
 import java.net.URLEncoder
 import kotlin.concurrent.thread
 
+private class PlayerHistory(context: Context) : SQLiteOpenHelper(context, "coc_lio.db", null, 1) {
+    override fun onCreate(db: SQLiteDatabase) {
+        db.execSQL("CREATE TABLE player_history (tag TEXT PRIMARY KEY, name TEXT NOT NULL, town_hall INTEGER NOT NULL, trophies INTEGER NOT NULL, clan TEXT NOT NULL, checked_at INTEGER NOT NULL)")
+    }
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+    fun save(tag: String, name: String, townHall: Int, trophies: Int, clan: String) {
+        writableDatabase.execSQL(
+            "INSERT OR REPLACE INTO player_history(tag,name,town_hall,trophies,clan,checked_at) VALUES(?,?,?,?,?,strftime('%s','now'))",
+            arrayOf(tag, name, townHall, trophies, clan)
+        )
+    }
+    fun latest(): List<String> {
+        val items = mutableListOf<String>()
+        readableDatabase.rawQuery("SELECT tag,name,town_hall,trophies,clan FROM player_history ORDER BY checked_at DESC LIMIT 20", null).use { c ->
+            while (c.moveToNext()) {
+                items.add("${c.getString(1)}  •  TH${c.getInt(2)}  •  ${c.getInt(3)} cúp\n${c.getString(0)}  •  ${c.getString(4)}")
+            }
+        }
+        return items
+    }
+}
+
 class MainActivity : Activity() {
     private lateinit var apiKeyInput: EditText
     private lateinit var tagInput: EditText
     private lateinit var resultView: TextView
+    private lateinit var historyView: TextView
     private lateinit var searchButton: Button
-    private val prefs by lazy { getSharedPreferences("coc_lio", MODE_PRIVATE) }
+    private val history by lazy { PlayerHistory(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         buildScreen()
+        refreshHistory()
     }
 
     private fun buildScreen() {
@@ -51,14 +77,14 @@ class MainActivity : Activity() {
         })
         content.addView(label("Supercell Developer API Key"))
         apiKeyInput = EditText(this).apply {
-            hint = "Dán API key của bạn"
+            hint = "Dán Developer API Key"
             textSize = 14f
             setSingleLine(true)
             setTextColor(Color.WHITE)
             setHintTextColor(Color.rgb(148, 163, 184))
             setBackgroundColor(Color.rgb(30, 41, 59))
             setPadding(dp(12), 0, dp(12), 0)
-            setText(prefs.getString("api_key", ""))
+            inputType = 129
         }
         content.addView(apiKeyInput, fieldParams())
         content.addView(label("ID làng / Player Tag"))
@@ -91,8 +117,16 @@ class MainActivity : Activity() {
         content.addView(resultView, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(20) })
+        content.addView(label("LỊCH SỬ TRA CỨU (20 TÀI KHOẢN GẦN NHẤT)"))
+        historyView = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Color.rgb(203, 213, 225))
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            setBackgroundColor(Color.rgb(30, 41, 59))
+        }
+        content.addView(historyView)
         content.addView(TextView(this).apply {
-            text = "Dữ liệu lấy trực tiếp từ API Supercell. API key được lưu trên thiết bị, không gửi đến máy chủ riêng."
+            text = "API key chỉ dùng trong phiên nhập hiện tại, không lưu vào lịch sử. Dữ liệu hồ sơ được lưu cục bộ trên thiết bị. Supercell yêu cầu Developer API Key và IP thiết bị nằm trong danh sách cho phép."
             textSize = 12f
             setTextColor(Color.rgb(148, 163, 184))
             setPadding(0, dp(16), 0, 0)
@@ -106,7 +140,8 @@ class MainActivity : Activity() {
         text = value
         textSize = 13f
         setTextColor(Color.rgb(203, 213, 225))
-        setPadding(0, dp(12), 0, dp(7))
+        setPadding(0, dp(16), 0, dp(7))
+        typeface = Typeface.DEFAULT_BOLD
     }
 
     private fun fieldParams() = LinearLayout.LayoutParams(
@@ -120,11 +155,10 @@ class MainActivity : Activity() {
             resultView.text = "Vui lòng nhập Supercell Developer API Key."
             return
         }
-        if (tag.isBlank()) {
-            resultView.text = "Vui lòng nhập ID làng (Player Tag)."
+        if (!tag.matches(Regex("[0289PYLQGRJCUV]{3,15}"))) {
+            resultView.text = "Player Tag không hợp lệ. Hãy kiểm tra lại ID làng."
             return
         }
-        prefs.edit().putString("api_key", key).apply()
         (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
             .hideSoftInputFromWindow(tagInput.windowToken, 0)
         searchButton.isEnabled = false
@@ -142,16 +176,34 @@ class MainActivity : Activity() {
                 }
                 val status = connection.responseCode
                 val stream = if (status in 200..299) connection.inputStream else connection.errorStream
-                val body = stream.bufferedReader().use { it.readText() }
+                val body = stream?.bufferedReader()?.use { it.readText() } ?: ""
                 connection.disconnect()
                 if (status !in 200..299) {
                     val message = try {
                         JSONObject(body).optString("message", "Lỗi API ($status)")
                     } catch (_: Exception) { "Lỗi API ($status)" }
-                    throw Exception(message)
+                    throw Exception(when (status) {
+                        401 -> "API Key không hợp lệ hoặc hết hiệu lực."
+                        403 -> "IP hiện tại chưa được cho phép trong Supercell Developer Portal."
+                        404 -> "Không tìm thấy người chơi với ID này."
+                        429 -> "Gọi API quá nhanh. Vui lòng thử lại sau."
+                        else -> message
+                    })
                 }
-                val display = formatPlayer(JSONObject(body))
-                runOnUiThread { resultView.text = display }
+                val player = JSONObject(body)
+                val clanName = player.optJSONObject("clan")?.optString("name") ?: "Không tham gia"
+                history.save(
+                    player.optString("tag", "#$tag"),
+                    player.optString("name", "Unknown"),
+                    player.optInt("townHallLevel", 0),
+                    player.optInt("trophies", 0),
+                    clanName
+                )
+                val display = formatPlayer(player)
+                runOnUiThread {
+                    resultView.text = display
+                    refreshHistory()
+                }
             } catch (e: Exception) {
                 runOnUiThread {
                     resultView.text = "Không thể tra cứu: ${e.message ?: "Lỗi kết nối"}"
@@ -160,6 +212,11 @@ class MainActivity : Activity() {
                 runOnUiThread { searchButton.isEnabled = true }
             }
         }
+    }
+
+    private fun refreshHistory() {
+        val items = history.latest()
+        historyView.text = if (items.isEmpty()) "Chưa có tài khoản nào được tra cứu." else items.joinToString("\n\n")
     }
 
     private fun formatPlayer(p: JSONObject): String {
