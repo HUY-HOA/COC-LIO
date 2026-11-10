@@ -602,6 +602,12 @@ private fun CocLioApp(
                                 AppWidgetUpdater.updateAll(context)
                                 scope.launch { snackbar.showSnackbar("Đã khôi phục dữ liệu làng.") }
                             }
+                        },
+                        onDeletePermanently = { recordId ->
+                            if (VillageStore.permanentlyDelete(context, recordId, activeProfile)) {
+                                deletedVillages = VillageStore.loadDeleted(context, activeProfile)
+                                scope.launch { snackbar.showSnackbar("Đã xóa vĩnh viễn dữ liệu JSON.") }
+                            }
                         }
                     )
                     4 -> SettingsScreen(
@@ -1053,9 +1059,12 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
     val remainingRatio = if (remaining > 0L) {
         (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
     } else 0f
-    val remainingPercent = if (remaining > 0L) {
-        (remainingRatio * 100f).toInt().coerceIn(1, 100)
-    } else 0
+    val remainingPercent = (remainingRatio * 100f).toInt().coerceIn(0, 100)
+    val progressColor by androidx.compose.animation.animateColorAsState(
+        targetValue = androidx.compose.ui.graphics.lerp(CocOrange, CocGreen, remainingRatio),
+        animationSpec = tween(900),
+        label = "upgrade-progress-color"
+    )
     NeonPanel(
         modifier = Modifier.fillMaxWidth(),
         glow = if (remaining == 0L) CocGreen else if (item.gearUp) CocMagenta else CocCyan
@@ -1105,14 +1114,14 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                                 .background(
                                     Brush.horizontalGradient(
                                         if (item.gearUp) listOf(CocMagenta, CocViolet)
-                                        else listOf(CocCyan, Color(0xFF168BFF))
+                                        else listOf(progressColor.copy(alpha = 0.88f), progressColor)
                                     )
                                 )
                         )
                         Text(
                             "${formatCountdown(remaining)}  •  CÒN ${remainingPercent}%",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 11.sp,
+                            color = if (remainingRatio <= 0.15f) CocOrange else if (remainingRatio >= 0.85f) CocGreen else MaterialTheme.colorScheme.onSurface,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             maxLines = 1
                         )
@@ -1397,10 +1406,12 @@ private fun HistoryScreen(
     onSelect: (VillageSnapshot) -> Unit,
     onTogglePin: (String) -> Unit,
     onDelete: (String) -> Unit,
-    onRestore: (String) -> Unit
+    onRestore: (String) -> Unit,
+    onDeletePermanently: (String) -> Unit
 ) {
     var selectedSection by remember { mutableStateOf("villages") }
     var pendingDelete by remember { mutableStateOf<VillageSnapshot?>(null) }
+    var pendingPermanentDelete by remember { mutableStateOf<DeletedVillageRecord?>(null) }
     val nowSeconds = System.currentTimeMillis() / 1000L
     val villages = history.distinctBy { it.tag }.sortedWith(
         compareBy<VillageSnapshot> { pinnedTags.indexOf(it.tag).let { index -> if (index < 0) Int.MAX_VALUE else index } }
@@ -1504,14 +1515,24 @@ private fun HistoryScreen(
             if (history.isEmpty()) {
                 item { InfoCard("Chưa có lịch sử nhập", "Các lần dán JSON sẽ được ghi nhận tại đây.") }
             } else {
-                val chronologicalHistory = history.sortedByDescending { it.timestamp }
+                val deletedTags = deletedVillages.map { it.tag }.toSet()
+                val chronologicalHistory = (history + deletedVillages.flatMap { it.snapshots })
+                    .distinctBy { it.tag to it.timestamp }
+                    .sortedByDescending { it.timestamp }
                 items(chronologicalHistory, key = { it.tag + "_" + it.timestamp }) { snapshot ->
                     NeonPanel(
                         modifier = Modifier.fillMaxWidth().clickable { onSelect(snapshot) },
                         glow = if (snapshot.tag == activeTag) CocCyan else CocViolet
                     ) {
                         Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(snapshot.villageName ?: snapshot.tag, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(snapshot.villageName ?: snapshot.tag, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                if (snapshot.tag in deletedTags && snapshot.tag !in history.map { it.tag }) {
+                                    Text("ĐÃ XÓA", color = CocRed, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                                } else if (snapshot.tag == activeTag) {
+                                    Text("ĐANG XEM", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                                }
+                            }
                             Text("${snapshot.tag}  •  ${formatTimestamp(snapshot.timestamp)}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
@@ -1526,14 +1547,39 @@ private fun HistoryScreen(
                         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(deleted.villageName ?: deleted.tag, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             Text("${deleted.tag} • ${deleted.snapshots.size} mốc • ${formatTimestamp(deleted.deletedAt)}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                            TextButton(onClick = { onRestore(deleted.id) }) {
-                                Text("KHÔI PHỤC JSON", color = CocGreen, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { onRestore(deleted.id) }) {
+                                    Text("KHÔI PHỤC JSON", color = CocGreen, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                }
+                                TextButton(onClick = { pendingPermanentDelete = deleted }) {
+                                    Text("XÓA VĨNH VIỄN", color = CocRed, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    pendingPermanentDelete?.let { record ->
+        AlertDialog(
+            onDismissRequest = { pendingPermanentDelete = null },
+            title = { Text("Xóa vĩnh viễn JSON?") },
+            text = { Text("Toàn bộ ${record.snapshots.size} mốc JSON của ${record.villageName ?: record.tag} sẽ bị xóa khỏi thiết bị và không thể khôi phục.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeletePermanently(record.id)
+                    pendingPermanentDelete = null
+                }) { Text("XÓA VĨNH VIỄN", color = CocRed) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingPermanentDelete = null }) { Text("HỦY") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 
     pendingDelete?.let { snapshot ->
