@@ -13,11 +13,8 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.draw.drawBehind
@@ -45,9 +42,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -128,13 +122,6 @@ private val CocViolet = Color(0xFF9470FF)
 
 @Composable
 private fun NeonBackdrop() {
-    val transition = rememberInfiniteTransition(label = "background-glow")
-    val pulse by transition.animateFloat(
-        initialValue = 0.20f,
-        targetValue = 0.42f,
-        animationSpec = infiniteRepeatable(tween(3600), RepeatMode.Reverse),
-        label = "glow-pulse"
-    )
     Box(
         Modifier
             .fillMaxSize()
@@ -143,58 +130,65 @@ private fun NeonBackdrop() {
                     listOf(Color(0xFF050817), Color(0xFF09132B), Color(0xFF070A1A))
                 )
             )
-    ) {
-        Box(
-            Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = 80.dp, y = (-70).dp)
-                .size(250.dp)
-                .blur(75.dp)
-                .background(CocCyan.copy(alpha = pulse), CircleShape)
-        )
-        Box(
-            Modifier
-                .align(Alignment.CenterStart)
-                .offset(x = (-145).dp, y = 60.dp)
-                .size(230.dp)
-                .blur(85.dp)
-                .background(CocMagenta.copy(alpha = pulse * 0.58f), CircleShape)
-        )
-        Box(
-            Modifier
-                .align(Alignment.BottomEnd)
-                .offset(x = 100.dp, y = 110.dp)
-                .size(260.dp)
-                .blur(90.dp)
-                .background(CocViolet.copy(alpha = pulse * 0.38f), CircleShape)
-        )
-    }
+    )
 }
 
 @Composable
 private fun NeonPanel(
     modifier: Modifier = Modifier,
     glow: Color = CocCyan,
-    animatedLed: Boolean = false,
+    animatedLed: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(18.dp)
+    val palette = remember {
+        listOf(
+            Color(0xFF00E5FF),
+            Color(0xFF168BFF),
+            Color(0xFF6548FF),
+            Color(0xFFB33CFF),
+            Color(0xFFFF35B8),
+            Color(0xFFFF4A72),
+            Color(0xFFFFA43A),
+            Color(0xFFB7F34A),
+            Color(0xFF35E6A2),
+            Color(0xFF00E5FF)
+        )
+    }
     val ledProgress = if (animatedLed) {
-        val transition = rememberInfiniteTransition(label = "led-running-border")
+        val transition = rememberInfiniteTransition(label = "led-rgb-border")
         val progress by transition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
-                animation = tween(2600, easing = LinearEasing),
+                animation = tween(3600, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
             ),
-            label = "led-progress"
+            label = "led-rgb-progress"
         )
         progress
     } else 0f
+    val ledColors = remember(ledProgress) {
+        val intervals = palette.size - 1
+        List(64) { index ->
+            val position = ((index / 64f + ledProgress) % 1f) * intervals
+            val startIndex = position.toInt().coerceIn(0, intervals - 1)
+            val fraction = position - startIndex
+            val start = palette[startIndex]
+            val end = palette[startIndex + 1]
+            Color(
+                red = start.red + (end.red - start.red) * fraction,
+                green = start.green + (end.green - start.green) * fraction,
+                blue = start.blue + (end.blue - start.blue) * fraction,
+                alpha = 1f
+            )
+        }
+    }
+    val ledBrush = remember(ledColors) { Brush.sweepGradient(ledColors) }
+
     Column(
         modifier = modifier
-            .shadow(15.dp, shape)
+            .shadow(5.dp, shape)
             .clip(shape)
             .background(
                 Brush.linearGradient(
@@ -203,7 +197,7 @@ private fun NeonPanel(
             )
             .drawBehind {
                 if (animatedLed) {
-                    val stroke = 2.6.dp.toPx()
+                    val stroke = 2.8.dp.toPx()
                     val inset = stroke / 2f
                     val borderPath = Path().apply {
                         addRoundRect(
@@ -216,64 +210,13 @@ private fun NeonPanel(
                             )
                         )
                     }
-                    val measure = PathMeasure()
-                    measure.setPath(borderPath, false)
-                    val perimeter = measure.length
-
-                    if (perimeter > 0f) {
-                        drawPath(
-                            path = borderPath,
-                            color = glow.copy(alpha = 0.20f),
-                            style = Stroke(width = stroke)
-                        )
-                        val colors = listOf(
-                            Color(0xFF00E5FF),
-                            Color(0xFF168BFF),
-                            Color(0xFF6548FF),
-                            Color(0xFFB33CFF),
-                            Color(0xFFFF35B8),
-                            Color(0xFFFF4A72),
-                            Color(0xFFFFA43A),
-                            Color(0xFFB7F34A),
-                            Color(0xFF35E6A2),
-                            Color(0xFF00E5FF)
-                        )
-                        val spacing = perimeter / colors.size
-                        val segmentLength = spacing * 0.58f
-                        val movement = ledProgress * perimeter
-
-                        colors.forEachIndexed { index, color ->
-                            val start = (movement + index * spacing) % perimeter
-                            val end = start + segmentLength
-                            val segment = Path()
-                            if (end <= perimeter) {
-                                measure.getSegment(start, end, segment, true)
-                            } else {
-                                measure.getSegment(start, perimeter, segment, true)
-                                measure.getSegment(0f, end - perimeter, segment, true)
-                            }
-                            drawPath(
-                                path = segment,
-                                color = color,
-                                style = Stroke(width = stroke, cap = StrokeCap.Round)
-                            )
-                        }
-                    }
+                    drawPath(
+                        path = borderPath,
+                        brush = ledBrush,
+                        style = Stroke(width = stroke)
+                    )
                 }
             }
-            .border(
-                BorderStroke(
-                    1.dp,
-                    Brush.linearGradient(
-                        listOf(
-                            glow.copy(alpha = 0.82f),
-                            CocMagenta.copy(alpha = 0.48f),
-                            CocViolet.copy(alpha = 0.30f)
-                        )
-                    )
-                ),
-                shape
-            )
             .padding(14.dp),
         content = content
     )
@@ -285,30 +228,31 @@ private fun NeonButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val transition = rememberInfiniteTransition(label = "button-glow")
-    val pulse by transition.animateFloat(
-        initialValue = 0.72f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1500), RepeatMode.Reverse),
-        label = "button-pulse"
-    )
     val shape = RoundedCornerShape(14.dp)
+    val ledColors = remember {
+        listOf(
+            Color(0xFF00E5FF),
+            Color(0xFF168BFF),
+            Color(0xFF6548FF),
+            Color(0xFFB33CFF),
+            Color(0xFFFF35B8),
+            Color(0xFFFF4A72),
+            Color(0xFFFFA43A),
+            Color(0xFFB7F34A),
+            Color(0xFF35E6A2),
+            Color(0xFF00E5FF)
+        )
+    }
     Box(
         modifier = modifier
-            .shadow(13.dp, shape)
+            .shadow(5.dp, shape)
             .clip(shape)
             .background(
                 Brush.linearGradient(
                     listOf(CocCyan.copy(alpha = 0.95f), CocViolet.copy(alpha = 0.94f), CocMagenta.copy(alpha = 0.90f))
                 )
             )
-            .border(
-                1.dp,
-                Brush.linearGradient(
-                    listOf(Color.White.copy(alpha = pulse), CocCyan.copy(alpha = pulse * 0.8f))
-                ),
-                shape
-            )
+            .border(2.dp, Brush.sweepGradient(ledColors), shape)
             .clickable(onClick = onClick)
             .padding(horizontal = 17.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center
@@ -909,7 +853,7 @@ private fun VillageItemCard(item: VillageItem) {
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = when (item.tab) {
         "army" -> CocMagenta
         else -> CocCyan
-    }, animatedLed = item.tab == "buildings") {
+    }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
