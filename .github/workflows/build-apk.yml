@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: coc-lio-apk-${{ github.ref }}
+  group: coc-lio-apk-v2-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
