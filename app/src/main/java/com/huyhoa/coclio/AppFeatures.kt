@@ -432,7 +432,7 @@ private class UpgradeWidgetListFactory(
             views.setChronometer(
                 R.id.row_timer,
                 SystemClock.elapsedRealtime() + remaining * 1000L,
-                "%s • " + remainingPercent + "%%",
+                "Còn %s • " + remainingPercent + "%%",
                 true
             )
             views.setChronometerCountDown(R.id.row_timer, true)
@@ -499,8 +499,8 @@ object AppWidgetUpdater {
             R.id.widget_status,
             when {
                 snapshot == null -> "Mở ứng dụng và nhập dữ liệu JSON"
-                count == 0 -> "Không có công trình đang nâng cấp"
-                else -> "$count công trình đang nâng cấp"
+                count == 0 -> "Không có mục nào đang nâng cấp"
+                else -> "$count mục đang nâng cấp"
             }
         )
 
@@ -685,7 +685,7 @@ fun SettingsScreen(
                 )
             }
             Text(
-                "Thời điểm nhắc lấy từ timer của JSON đã nhập. Android vẫn có thể trì hoãn nếu tắt quyền thông báo, hạn chế pin hoặc đặt chế độ Không làm phiền.",
+                "Thời điểm nhắc lấy từ bộ đếm thời gian trong JSON đã nhập. Android vẫn có thể trì hoãn nếu tắt quyền thông báo, hạn chế pin hoặc đặt chế độ Không làm phiền.",
                 color = FeatureMuted,
                 fontSize = 10.sp,
                 lineHeight = 15.sp
@@ -701,7 +701,7 @@ fun SettingsScreen(
                 lineHeight = 17.sp
             )
             Text(
-                "Tiện ích dạng dọc 2 × 5 ô gọn hơn, hiển thị danh sách công trình đang nâng cấp. Vuốt lên hoặc xuống để xem các mục còn lại. Mỗi mục có biểu tượng, đồng hồ đếm ngược ở giữa thanh và phần trăm thời gian còn lại.",
+                "Tiện ích dạng dọc 2 × 4 ô gọn hơn, có viền RGB chuyển sắc liền mạch và danh sách nâng cấp có thể cuộn. Mỗi mục hiển thị ảnh công trình, đồng hồ đếm ngược ở giữa thanh và phần trăm thời gian còn lại.",
                 color = FeatureMuted,
                 fontSize = 10.sp,
                 lineHeight = 15.sp
