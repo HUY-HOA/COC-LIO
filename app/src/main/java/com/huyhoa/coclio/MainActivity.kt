@@ -12,11 +12,14 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -176,18 +179,18 @@ private fun NeonPanel(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(18.dp)
-    val ledRotation = if (animatedLed) {
+    val ledProgress = if (animatedLed) {
         val transition = rememberInfiniteTransition(label = "led-running-border")
-        val angle by transition.animateFloat(
+        val progress by transition.animateFloat(
             initialValue = 0f,
-            targetValue = 360f,
+            targetValue = 1f,
             animationSpec = infiniteRepeatable(
                 animation = tween(2600, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
             ),
-            label = "led-angle"
+            label = "led-progress"
         )
-        angle
+        progress
     } else 0f
     Column(
         modifier = modifier
@@ -200,18 +203,61 @@ private fun NeonPanel(
             )
             .drawBehind {
                 if (animatedLed) {
-                    val stroke = 2.5.dp.toPx()
-                    rotate(ledRotation, pivot = center) {
-                        drawRoundRect(
-                            brush = Brush.sweepGradient(
-                                listOf(CocCyan, Color.White, CocMagenta, CocViolet, CocCyan),
-                                center = center
-                            ),
-                            topLeft = Offset(stroke / 2f, stroke / 2f),
-                            size = Size(size.width - stroke, size.height - stroke),
-                            cornerRadius = CornerRadius(18.dp.toPx()),
+                    val stroke = 2.6.dp.toPx()
+                    val inset = stroke / 2f
+                    val borderPath = Path().apply {
+                        addRoundRect(
+                            RoundRect(
+                                left = inset,
+                                top = inset,
+                                right = size.width - inset,
+                                bottom = size.height - inset,
+                                cornerRadius = CornerRadius(18.dp.toPx())
+                            )
+                        )
+                    }
+                    val measure = PathMeasure()
+                    measure.setPath(borderPath, false)
+                    val perimeter = measure.length
+
+                    if (perimeter > 0f) {
+                        drawPath(
+                            path = borderPath,
+                            color = glow.copy(alpha = 0.20f),
                             style = Stroke(width = stroke)
                         )
+                        val colors = listOf(
+                            Color(0xFF00E5FF),
+                            Color(0xFF168BFF),
+                            Color(0xFF6548FF),
+                            Color(0xFFB33CFF),
+                            Color(0xFFFF35B8),
+                            Color(0xFFFF4A72),
+                            Color(0xFFFFA43A),
+                            Color(0xFFB7F34A),
+                            Color(0xFF35E6A2),
+                            Color(0xFF00E5FF)
+                        )
+                        val spacing = perimeter / colors.size
+                        val segmentLength = spacing * 0.58f
+                        val movement = ledProgress * perimeter
+
+                        colors.forEachIndexed { index, color ->
+                            val start = (movement + index * spacing) % perimeter
+                            val end = start + segmentLength
+                            val segment = Path()
+                            if (end <= perimeter) {
+                                measure.getSegment(start, end, segment, true)
+                            } else {
+                                measure.getSegment(start, perimeter, segment, true)
+                                measure.getSegment(0f, end - perimeter, segment, true)
+                            }
+                            drawPath(
+                                path = segment,
+                                color = color,
+                                style = Stroke(width = stroke, cap = StrokeCap.Round)
+                            )
+                        }
                     }
                 }
             }
@@ -594,7 +640,7 @@ private fun OverviewScreen(
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             snapshot.items.firstOrNull { it.sectionKey == "buildings" && it.dataId == 1000001 }?.let {
-                                CategoryEmoji(it, 88)
+                                CategoryImage(it, 88)
                                 Spacer(Modifier.width(8.dp))
                             }
                             Column(horizontalAlignment = Alignment.End) {
@@ -877,24 +923,8 @@ private fun VillageItemCard(item: VillageItem) {
 }
 
 @Composable
-private fun CategoryEmoji(item: VillageItem, size: Int) {
+private fun CategoryImage(item: VillageItem, size: Int) {
     val context = LocalContext.current
-    val emoji = when (item.sectionKey) {
-        "buildings", "buildings2" -> "🏰"
-        "traps", "traps2" -> "💣"
-        "units", "units2" -> "⚔️"
-        "siege_machines" -> "🛠️"
-        "heroes", "heroes2" -> "🦸"
-        "spells" -> "✨"
-        "pets" -> "🐾"
-        "equipment" -> "🛡️"
-        "helpers" -> "🧑‍🔧"
-        else -> "🏷️"
-    }
-    val glow = when (item.tab) {
-        "army" -> CocMagenta
-        else -> CocCyan
-    }
     val url = CocAssets.imageUrl(item)
     val imageRequest = remember(url) {
         url?.let {
@@ -906,29 +936,18 @@ private fun CategoryEmoji(item: VillageItem, size: Int) {
                 .build()
         }
     }
-    val shape = RoundedCornerShape(15.dp)
-    Box(
-        modifier = Modifier
-            .size(size.dp)
-            .shadow(12.dp, shape)
-            .clip(shape)
-            .background(Color(0xFF0B142A))
-            .border(1.dp, glow.copy(alpha = 0.62f), shape),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(emoji, fontSize = (size * 0.52f).sp)
-        if (imageRequest != null) {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = item.name,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize().padding(3.dp)
-            )
-        }
+    if (imageRequest == null) {
+        Spacer(Modifier.size(size.dp))
+    } else {
+        AsyncImage(
+            model = imageRequest,
+            contentDescription = item.name,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(size.dp)
+        )
     }
 }
 
-@Composable
 private fun HistoryScreen(
     history: List<VillageSnapshot>,
     activeTag: String,
