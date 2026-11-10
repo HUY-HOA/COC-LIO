@@ -688,8 +688,12 @@ private fun OverviewScreen(
             nowEpoch = System.currentTimeMillis() / 1000L
         }
     }
-    val homeRunning = (snapshot.upgrades + snapshot.gearUps).filter { it.base == "home" }
-    val builderRunning = (snapshot.upgrades + snapshot.gearUps).filter { it.base == "builder" }
+    val activeUpgrades = snapshot.activeUpgradesAt(nowEpoch)
+    val expiredUpgrades = snapshot.expiredUpgradesAt(nowEpoch)
+    val homeRunning = activeUpgrades.filter { it.base == "home" }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+    val builderRunning = activeUpgrades.filter { it.base == "builder" }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+    val homeCompleted = expiredUpgrades.filter { it.base == "home" }.sortedByDescending { it.timerSeconds ?: 0L }
+    val builderCompleted = expiredUpgrades.filter { it.base == "builder" }.sortedByDescending { it.timerSeconds ?: 0L }
     val homeHall = snapshot.items.firstOrNull { it.sectionKey == "buildings" && it.dataId == 1000001 }
     val builderHall = snapshot.items.firstOrNull { it.sectionKey == "buildings2" && it.dataId == 1000034 }
     val builderTotal = snapshot.homeBuilderTotal
@@ -759,11 +763,25 @@ private fun OverviewScreen(
             items(homeRunning, key = { "home_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
         }
 
+        if (homeCompleted.isNotEmpty()) {
+            item { SectionTitle("NHÀ CHÍNH • HẾT GIỜ, CHỜ JSON MỚI", homeCompleted.size.toString()) }
+            items(homeCompleted, key = { "home_done_" + it.identity + "_" + it.timerSeconds }) {
+                UpgradeCard(it, snapshot.timestamp)
+            }
+        }
+
         item { SectionTitle("LÀNG ĐÊM • ĐANG NÂNG", builderRunning.size.toString()) }
         if (builderRunning.isEmpty()) {
             item { InfoCard("Không có tiến trình", "Các mục đang nâng của Làng đêm sẽ xuất hiện ở đây.") }
         } else {
             items(builderRunning, key = { "builder_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
+        }
+
+        if (builderCompleted.isNotEmpty()) {
+            item { SectionTitle("LÀNG ĐÊM • HẾT GIỜ, CHỜ JSON MỚI", builderCompleted.size.toString()) }
+            items(builderCompleted, key = { "builder_done_" + it.identity + "_" + it.timerSeconds }) {
+                UpgradeCard(it, snapshot.timestamp)
+            }
         }
 
         if (events.isNotEmpty()) {
@@ -1202,6 +1220,7 @@ private fun HistoryScreen(
 ) {
     var selectedSection by remember { mutableStateOf("villages") }
     var pendingDelete by remember { mutableStateOf<VillageSnapshot?>(null) }
+    val nowSeconds = System.currentTimeMillis() / 1000L
     val villages = history.distinctBy { it.tag }.sortedWith(
         compareBy<VillageSnapshot> { pinnedTags.indexOf(it.tag).let { index -> if (index < 0) Int.MAX_VALUE else index } }
             .thenByDescending { it.timestamp }
@@ -1289,7 +1308,7 @@ private fun HistoryScreen(
                                 )
                             }
                             Text(
-                                "${snapshot.tag}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.upgrades.size + snapshot.gearUps.size} nâng",
+                                "${snapshot.tag}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
                                 color = if (snapshot.tag == activeTag) CocGreen else CocMuted,
                                 fontSize = 10.sp,
                                 maxLines = 1,

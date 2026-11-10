@@ -98,6 +98,21 @@ class VillageParserTest {
         assertEquals(0, snapshot.homeBuildersBusyAt(1794328000L))
     }
 
+
+    @Test
+    fun separatesActiveAndExpiredUpgradeTimersAtCurrentTime() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#ACTIVE","timestamp":1794320000,"buildings":[
+                {"data":1000008,"lvl":5,"timer":3600}
+            ]}"""
+        )
+
+        assertEquals(1, snapshot.activeUpgradesAt(1794323599L).size)
+        assertEquals(0, snapshot.expiredUpgradesAt(1794323599L).size)
+        assertEquals(0, snapshot.activeUpgradesAt(1794323600L).size)
+        assertEquals(1, snapshot.expiredUpgradesAt(1794323600L).size)
+    }
+
     @Test
     fun petUpgradeCountsAsBusyHomeBuilder() {
         val snapshot = VillageParser.parse(

@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="4dp"
+    android:padding="5dp"
     android:background="@drawable/widget_upgrade_background">
 
     <TextView
@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="COC-LIO"
         android:textColor="#36F4FF"
-        android:textSize="9sp"
+        android:textSize="10sp"
         android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end" />
@@ -22,11 +22,11 @@
         android:id="@+id/widget_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="1dp"
-        android:layout_marginBottom="3dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="4dp"
         android:text="Danh sách mục đang nâng cấp"
-        android:textColor="#9EAFCE"
-        android:textSize="8sp"
+        android:textColor="#B6C5DF"
+        android:textSize="9sp"
         android:maxLines="1"
         android:ellipsize="end" />
 
@@ -36,7 +36,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:divider="@android:color/transparent"
-        android:dividerHeight="2dp"
+        android:dividerHeight="3dp"
         android:scrollbars="vertical"
         android:overScrollMode="ifContentScrolls"
         android:clipToPadding="false"
@@ -49,7 +49,7 @@
         android:gravity="center"
         android:padding="10dp"
         android:text="Chưa có mục nào đang nâng cấp"
-        android:textColor="#9EAFCE"
+        android:textColor="#B6C5DF"
         android:textSize="9sp"
         android:visibility="gone" />
 </LinearLayout>

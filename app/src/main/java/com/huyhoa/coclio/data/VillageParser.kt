@@ -31,6 +31,11 @@ data class VillageItem(
     val isExpired: Boolean get() = timerSeconds != null && timerSeconds <= 0L
     val identity: String get() = "$sectionKey:$dataId:${level ?: 0}"
     val idleCount: Int get() = if (timerSeconds != null && timerSeconds > 0L) 0 else count
+
+    fun isTimerActive(snapshotTimestamp: Long, nowSeconds: Long): Boolean {
+        val seconds = timerSeconds ?: return false
+        return seconds > 0L && snapshotTimestamp + seconds > nowSeconds
+    }
 }
 
 data class VillageSnapshot(
@@ -45,6 +50,13 @@ data class VillageSnapshot(
     val builderItems: List<VillageItem> get() = items.filter { it.base == "builder" }
     val upgrades: List<VillageItem> get() = items.filter { it.isUpgradeRunning }
     val gearUps: List<VillageItem> get() = items.filter { it.isGearUpRunning }
+
+    fun activeUpgradesAt(nowSeconds: Long): List<VillageItem> =
+        (upgrades + gearUps).filter { it.isTimerActive(timestamp, nowSeconds) }
+
+    fun expiredUpgradesAt(nowSeconds: Long): List<VillageItem> =
+        (upgrades + gearUps).filterNot { it.isTimerActive(timestamp, nowSeconds) }
+
     val townHallLevel: Int? get() = items.firstOrNull {
         it.sectionKey == "buildings" && it.dataId == 1000001 && it.level != null
     }?.level
@@ -66,9 +78,7 @@ data class VillageSnapshot(
         item.base == "home" &&
             item.sectionKey in setOf("buildings", "traps", "heroes", "pets") &&
             !item.gearUp &&
-            item.timerSeconds != null &&
-            item.timerSeconds > 0L &&
-            timestamp + item.timerSeconds > nowSeconds
+            item.isTimerActive(timestamp, nowSeconds)
     }
 }
 

@@ -197,12 +197,13 @@ object UpgradeReminderScheduler {
         manager.cancelAllWorkByTag(tag)
         if (!enabled) return
 
+        val nowSeconds = System.currentTimeMillis() / 1000L
         snapshots.distinctBy { it.tag }.forEach { snapshot ->
             (snapshot.upgrades + snapshot.gearUps).forEach { item ->
                 val timer = item.timerSeconds
-                if (timer != null && timer > 0L) {
+                if (timer != null && item.isTimerActive(snapshot.timestamp, nowSeconds)) {
                     val endAt = snapshot.timestamp + timer
-                    val delay = (endAt - System.currentTimeMillis() / 1000L).coerceAtLeast(1L)
+                    val delay = endAt - nowSeconds
                     val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag + "_" + item.identity
                     val data = Data.Builder()
                         .putString("profile", profile)
@@ -457,6 +458,7 @@ private class UpgradeWidgetListFactory(
             tag == null || it.tag == tag
         }
 
+        val nowSeconds = System.currentTimeMillis() / 1000L
         entries = if (snapshot == null) {
             emptyList()
         } else {
@@ -475,7 +477,10 @@ private class UpgradeWidgetListFactory(
                         totalSeconds = seconds
                     )
                 }
-                .sortedBy { it.endAt }
+                .sortedWith(
+                    compareBy<WidgetUpgradeEntry> { if (it.endAt > nowSeconds) 0 else 1 }
+                        .thenBy { it.endAt }
+                )
         }
     }
 
@@ -505,7 +510,7 @@ private class UpgradeWidgetListFactory(
             entry.level != null -> "CẤP ${entry.level} → ${entry.level + 1}"
             else -> "ĐANG NÂNG"
         }
-        views.setTextViewText(R.id.row_title, "$levelText • $remainingPercent%")
+        views.setTextViewText(R.id.row_title, "$levelText • CÒN $remainingPercent%")
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, remainingPercent, false)
 
@@ -566,10 +571,11 @@ object AppWidgetUpdater {
         val profile = prefs.getString("profile_" + appWidgetId, AccountProfileStore.active(context)) ?: "local"
         val tag = prefs.getString("tag_" + appWidgetId, null)
         val snapshot = VillageStore.loadAll(context, profile).firstOrNull { tag == null || it.tag == tag }
-        val count = snapshot?.let { it.upgrades.size + it.gearUps.size } ?: 0
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        val activeCount = snapshot?.activeUpgradesAt(nowSeconds)?.size ?: 0
+        val expiredCount = snapshot?.expiredUpgradesAt(nowSeconds)?.size ?: 0
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade)
 
-        val nowSeconds = System.currentTimeMillis() / 1000L
         val builderTotal = snapshot?.homeBuilderTotal
         val buildersFree = if (snapshot == null || builderTotal == null) null else
             (builderTotal - snapshot.homeBuildersBusyAt(nowSeconds)).coerceAtLeast(0)
@@ -585,8 +591,10 @@ object AppWidgetUpdater {
             R.id.widget_status,
             when {
                 snapshot == null -> "Mở ứng dụng và nhập dữ liệu JSON"
-                count == 0 -> "Không có mục nào đang nâng cấp"
-                else -> "$count mục đang nâng cấp"
+                activeCount == 0 && expiredCount == 0 -> "Không có mục nào đang nâng cấp"
+                activeCount > 0 && expiredCount > 0 -> "$activeCount đang nâng • $expiredCount đã hết giờ"
+                activeCount > 0 -> "$activeCount mục đang nâng cấp"
+                else -> "$expiredCount mục đã hết giờ • chờ JSON mới"
             }
         )
 
