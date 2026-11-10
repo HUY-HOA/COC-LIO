@@ -851,7 +851,7 @@ private fun VillageItemCard(item: VillageItem) {
                     }
                     if (item.gearUp) {
                         if (isNotEmpty()) append(" • ")
-                        append("Gear-up")
+                        append("Nâng cấp đặc biệt")
                     }
                     item.weaponLevel?.let {
                         if (isNotEmpty()) append(" • ")
