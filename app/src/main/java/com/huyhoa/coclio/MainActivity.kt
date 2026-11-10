@@ -539,13 +539,20 @@ private fun OverviewScreen(
         }
 
         item {
-            Text(
-                "COC-LIO chỉ đọc dữ liệu được game đưa vào JSON. Bộ đếm hết giờ cần nhập JSON mới để xác nhận hoàn thành.",
-                color = CocMuted,
-                fontSize = 10.sp,
-                lineHeight = 15.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
+                Text(
+                    "COC-LIO là nội dung cộng đồng không chính thức, không được Supercell chứng thực.",
+                    color = CocMuted,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+                Text(
+                    "This material is unofficial and is not endorsed by Supercell. For more information see www.supercell.com/fan-content-policy.",
+                    color = CocCyan,
+                    fontSize = 9.sp,
+                    lineHeight = 13.sp
+                )
+            }
         }
     }
 }
