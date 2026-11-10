@@ -768,11 +768,6 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                     Text("Đã hết giờ • chờ JSON mới xác nhận", color = CocGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            if (remaining > 0L) {
-                Text("⏳", fontSize = 21.sp)
-            } else {
-                Text("✓", color = CocGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            }
         }
     }
 }
