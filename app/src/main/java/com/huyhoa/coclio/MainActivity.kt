@@ -1057,13 +1057,10 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
         item.level != null -> "CẤP ${item.level} → ${item.level + 1}"
         else -> "ĐANG NÂNG"
     }
-    val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
-    val remainingRatio = if (remaining > 0L) {
-        (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
-    } else 0f
-    val remainingPercent = (remainingRatio * 100f).toInt().coerceIn(0, 100)
+    val elapsedRatio = item.progressRatioAt(snapshotTimestamp, nowEpoch)
+    val progressPercent = item.progressPercentAt(snapshotTimestamp, nowEpoch)
     val progressColor by androidx.compose.animation.animateColorAsState(
-        targetValue = androidx.compose.ui.graphics.lerp(CocOrange, CocGreen, remainingRatio),
+        targetValue = androidx.compose.ui.graphics.lerp(CocOrange, CocGreen, elapsedRatio),
         animationSpec = tween(900),
         label = "upgrade-progress-color"
     )
@@ -1099,38 +1096,37 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                         )
                     }
                 }
-                if (remaining > 0L) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(23.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(23.dp)
-                            .clip(RoundedCornerShape(7.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(remainingRatio)
-                                .align(Alignment.CenterStart)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        if (item.gearUp) listOf(CocMagenta, CocViolet)
-                                        else listOf(progressColor.copy(alpha = 0.88f), progressColor)
-                                    )
+                            .fillMaxHeight()
+                            .fillMaxWidth(elapsedRatio)
+                            .align(Alignment.CenterStart)
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(progressColor.copy(alpha = 0.88f), progressColor)
                                 )
-                        )
-                        Text(
-                            formatCountdown(remaining),
-                            color = if (remainingRatio <= 0.15f) CocOrange else if (remainingRatio >= 0.85f) CocGreen else MaterialTheme.colorScheme.onSurface,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            maxLines = 1
-                        )
-                    }
-                } else {
+                            )
+                    )
                     Text(
-                        "HOÀN THÀNH • CHỜ JSON XÁC NHẬN",
+                        if (remaining > 0L) "${formatCountdown(remaining)} • $progressPercent%"
+                        else "HOÀN THÀNH • 100%",
+                        color = if (remaining == 0L) CocGreen else MaterialTheme.colorScheme.onSurface,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1
+                    )
+                }
+                if (remaining == 0L) {
+                    Text(
+                        "CHỜ JSON XÁC NHẬN CẤP ĐỘ",
                         color = CocGreen,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Black
