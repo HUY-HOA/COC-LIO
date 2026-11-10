@@ -2,9 +2,6 @@ package com.huyhoa.coclio
 
 import android.app.Activity
 import com.huyhoa.coclio.data.CocAssets
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.async
 import java.net.URL
 import java.net.HttpURLConnection
 import java.io.FileOutputStream
@@ -59,6 +56,8 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.work.CoroutineWorker
+import androidx.work.Constraints
+import androidx.work.NetworkType
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -282,39 +281,60 @@ private fun downloadWidgetIcon(context: Context, url: String) {
     var connection: HttpURLConnection? = null
     try {
         connection = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 3000
-            readTimeout = 3000
+            connectTimeout = 4000
+            readTimeout = 5000
             instanceFollowRedirects = true
             setRequestProperty("User-Agent", "COC-LIO")
         }
         if (connection.responseCode !in 200..299) return
 
-        val bitmap = connection.inputStream.use { BitmapFactory.decodeStream(it) } ?: return
-        val largestSide = maxOf(bitmap.width, bitmap.height).coerceAtLeast(1)
-        val scale = minOf(1f, 144f / largestSide.toFloat())
-        val outputBitmap = if (scale < 1f) {
-            Bitmap.createScaledBitmap(
-                bitmap,
-                (bitmap.width * scale).toInt().coerceAtLeast(1),
-                (bitmap.height * scale).toInt().coerceAtLeast(1),
-                true
-            )
-        } else {
-            bitmap
+        val bytes = connection.inputStream.use { it.readBytes() }
+        if (bytes.isEmpty()) return
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        var sampleSize = 1
+        val largestSide = maxOf(bounds.outWidth, bounds.outHeight)
+        while (largestSide / sampleSize > 128) sampleSize *= 2
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = sampleSize
+            inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options) ?: return
         target.parentFile?.mkdirs()
         FileOutputStream(target).use {
-            outputBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
-        if (outputBitmap !== bitmap) {
-            outputBitmap.recycle()
-            bitmap.recycle()
-        }
+        bitmap.recycle()
     } catch (_: Exception) {
         target.delete()
     } finally {
         connection?.disconnect()
+    }
+}
+
+class WidgetIconPreloadWorker(
+    context: Context,
+    parameters: WorkerParameters
+) : CoroutineWorker(context, parameters) {
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val widgetId = inputData.getInt("widget_id", AppWidgetManager.INVALID_APPWIDGET_ID)
+        if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            return@withContext Result.success()
+        }
+        val preferences = applicationContext.getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
+        val profile = preferences.getString("profile_$widgetId", AccountProfileStore.active(applicationContext)) ?: "local"
+        val tag = preferences.getString("tag_$widgetId", null)
+        val snapshot = VillageStore.loadAll(applicationContext, profile).firstOrNull {
+            tag == null || it.tag == tag
+        }
+        val urls = snapshot?.let { village ->
+            (village.upgrades + village.gearUps).mapNotNull { CocAssets.imageUrl(it) }.distinct()
+        }.orEmpty()
+
+        urls.forEach { url -> downloadWidgetIcon(applicationContext, url) }
+        AppWidgetManager.getInstance(applicationContext)
+            .notifyAppWidgetViewDataChanged(widgetId, R.id.widget_list)
+        Result.success()
     }
 }
 
@@ -344,6 +364,7 @@ private class UpgradeWidgetListFactory(
         AppWidgetManager.INVALID_APPWIDGET_ID
     )
     private var entries: List<WidgetUpgradeEntry> = emptyList()
+    private val decodedIcons = mutableMapOf<String, Bitmap>()
 
     override fun onCreate() = Unit
 
@@ -375,17 +396,6 @@ private class UpgradeWidgetListFactory(
                 }
                 .sortedBy { it.endAt }
         }
-
-        runBlocking {
-            entries.mapNotNull { it.imageUrl }
-                .distinct()
-                .map { url ->
-                    async(Dispatchers.IO) {
-                        downloadWidgetIcon(context, url)
-                    }
-                }
-                .awaitAll()
-        }
     }
 
     override fun getViewAt(position: Int): RemoteViews? {
@@ -397,9 +407,11 @@ private class UpgradeWidgetListFactory(
             remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
         ).toInt().coerceIn(0, 100)
 
-        val iconFile = entry.imageUrl?.let { widgetIconFile(context, it) }
-        val iconBitmap = iconFile?.takeIf { it.exists() }?.let {
-            BitmapFactory.decodeFile(it.absolutePath)
+        val iconBitmap = entry.imageUrl?.let { url ->
+            decodedIcons[url] ?: widgetIconFile(context, url)
+                .takeIf { it.exists() }
+                ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+                ?.also { decodedIcons[url] = it }
         }
         if (iconBitmap != null) {
             views.setImageViewBitmap(R.id.row_icon, iconBitmap)
@@ -409,7 +421,7 @@ private class UpgradeWidgetListFactory(
         }
         views.setTextViewText(
             R.id.row_title,
-            entry.name + (entry.level?.let { " • cấp $it" } ?: "")
+            entry.name + (entry.level?.let { " • cấp " + it } ?: "")
         )
         val baseName = if (entry.base == "builder") "Căn cứ thợ xây" else "Nhà chính"
         val special = if (entry.gearUp) " • Nâng cấp đặc biệt" else ""
@@ -420,7 +432,7 @@ private class UpgradeWidgetListFactory(
             views.setChronometer(
                 R.id.row_timer,
                 SystemClock.elapsedRealtime() + remaining * 1000L,
-                "%s • $remainingPercent%%",
+                "%s • " + remainingPercent + "%%",
                 true
             )
             views.setChronometerCountDown(R.id.row_timer, true)
@@ -445,8 +457,10 @@ private class UpgradeWidgetListFactory(
             setProgressBar(R.id.row_progress, 100, 0, false)
         }
     }
+
     override fun onDestroy() {
         entries = emptyList()
+        decodedIcons.clear()
     }
 }
 
@@ -508,6 +522,20 @@ object AppWidgetUpdater {
         val manager = AppWidgetManager.getInstance(context)
         manager.updateAppWidget(appWidgetId, views)
         manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
+
+        val preload = OneTimeWorkRequestBuilder<WidgetIconPreloadWorker>()
+            .setInputData(Data.Builder().putInt("widget_id", appWidgetId).build())
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "coc_lio_widget_icons_" + appWidgetId,
+            ExistingWorkPolicy.KEEP,
+            preload
+        )
     }
 }
 
