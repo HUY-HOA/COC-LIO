@@ -12,6 +12,16 @@ Không sao chép Client Secret vào ứng dụng Android. Ứng dụng chỉ c�
 
 Tài liệu chính thức: https://developer.android.com/identity/sign-in/credential-manager-siwg-implementation
 
+## OAuth Android và chữ ký APK
+
+Google khuyến nghị có OAuth Client riêng cho Android và Web. Android Client được ràng buộc với:
+- Package name: `com.huyhoa.coclio`
+- SHA-1 của chứng thư ký APK.
+
+Không tạo Android Client theo SHA-1 của APK debug tạm thời từ GitHub Actions: chứng thư debug trên runner có thể thay đổi giữa các lần build. Trước khi bật đăng nhập dùng thật, cần chốt khóa ký APK ổn định. Việc đổi từ chữ ký debug hiện tại sang khóa ký ổn định có thể khiến Android không cho cài đè bản cũ; cần chuẩn bị cách giữ hoặc xuất dữ liệu cục bộ trước khi đổi.
+
+Web Client ID ở phần trên là thông tin cần thêm vào Secret ngay bây giờ. Tôi sẽ hướng dẫn phần Android Client và chữ ký ổn định riêng sau khi chốt cách ký APK.
+
 ## Thêm Secret vào GitHub
 
 Mở repository [Huy-hoa/COC-LIO](https://github.com/Huy-hoa/COC-LIO):
