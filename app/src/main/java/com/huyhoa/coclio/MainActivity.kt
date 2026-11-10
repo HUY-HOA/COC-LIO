@@ -1514,7 +1514,7 @@ private fun HistoryScreen(
             }
         } else if (selectedSection == "history") {
             item { Text("Tối đa 60 mốc nhập gần nhất trên thiết bị", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp) }
-            if (history.isEmpty()) {
+            if (history.isEmpty() && deletedVillages.none { it.snapshots.isNotEmpty() }) {
                 item { InfoCard("Chưa có lịch sử nhập", "Các lần dán JSON sẽ được ghi nhận tại đây.") }
             } else {
                 val deletedSnapshotKeys = deletedVillages.flatMap { record ->
