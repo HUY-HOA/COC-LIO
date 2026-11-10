@@ -69,10 +69,10 @@ object VillageParser {
         SectionSpec("pets", "Thú cưng", "army", "home"),
         SectionSpec("equipment", "Trang bị anh hùng", "army", "home"),
         SectionSpec("helpers", "Trợ thủ", "other", "home"),
-        SectionSpec("buildings2", "Công trình Builder Base", "buildings", "builder"),
-        SectionSpec("traps2", "Bẫy Builder Base", "buildings", "builder"),
-        SectionSpec("units2", "Quân đội Builder Base", "army", "builder"),
-        SectionSpec("heroes2", "Anh hùng Builder Base", "army", "builder")
+        SectionSpec("buildings2", "Công trình căn cứ thợ xây", "buildings", "builder"),
+        SectionSpec("traps2", "Bẫy căn cứ thợ xây", "buildings", "builder"),
+        SectionSpec("units2", "Quân đội căn cứ thợ xây", "army", "builder"),
+        SectionSpec("heroes2", "Anh hùng căn cứ thợ xây", "army", "builder")
     )
 
     fun parse(raw: String): VillageSnapshot {
@@ -151,13 +151,13 @@ object VillageParser {
         listOf(
             "decos" to "Trang trí Nhà chính",
             "obstacles" to "Chướng ngại Nhà chính",
-            "decos2" to "Trang trí Builder Base",
-            "obstacles2" to "Chướng ngại Builder Base",
+            "decos2" to "Trang trí căn cứ thợ xây",
+            "obstacles2" to "Chướng ngại căn cứ thợ xây",
             "house_parts" to "Bộ phận nhà",
             "skins" to "Trang phục",
             "sceneries" to "Cảnh quan",
-            "skins2" to "Trang phục Builder Base",
-            "sceneries2" to "Cảnh quan Builder Base"
+            "skins2" to "Trang phục căn cứ thợ xây",
+            "sceneries2" to "Cảnh quan căn cứ thợ xây"
         ).forEach { (key, label) ->
             val array = root.optJSONArray(key)
             if (array != null) {
@@ -304,7 +304,7 @@ object CocNames {
         1000084 to "Tháp cung đa mục tiêu", 1000085 to "Đại bác dội", 1000086 to "Tháp phản công",
         1000089 to "Firespitter", 1000093 to "Nhà trợ thủ", 1000097 to "Trạm chế tạo",
         1000102 to "Tháp pháp sư siêu cấp",
-        1000033 to "Tường Builder Base", 1000034 to "Nhà chính Builder Base",
+        1000033 to "Tường căn cứ thợ xây", 1000034 to "Nhà chính căn cứ thợ xây",
         1000035 to "Mỏ Elixir Builder", 1000036 to "Kho Elixir Builder",
         1000037 to "Mỏ vàng Builder", 1000038 to "Kho vàng Builder",
         1000039 to "Tháp đồng hồ", 1000040 to "Nhà lính Builder",
@@ -403,7 +403,7 @@ object CocNames {
     fun name(id: Int, section: String): String {
         if (id < 0) return "Không xác định"
         return names[id] ?: when {
-            section.endsWith("2") -> "Mục Builder Base #$id"
+            section.endsWith("2") -> "Mục căn cứ thợ xây #$id"
             else -> "Mục #$id"
         }
     }
