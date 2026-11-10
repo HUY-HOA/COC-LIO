@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="145dp"
+    android:minWidth="120dp"
     android:minHeight="265dp"
-    android:minResizeWidth="140dp"
+    android:minResizeWidth="110dp"
     android:minResizeHeight="220dp"
     android:targetCellWidth="2"
     android:targetCellHeight="4"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/widget_upgrade"
+    android:previewLayout="@layout/widget_upgrade_preview"
+    android:previewImage="@drawable/widget_preview_image"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:configure="com.huyhoa.coclio.UpgradeWidgetConfigActivity" />

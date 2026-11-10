@@ -13,11 +13,13 @@ import android.graphics.Bitmap
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Build
 import android.os.SystemClock
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -31,7 +33,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Slider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.shape.CircleShape
+import coil.compose.AsyncImage
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -103,19 +108,108 @@ private val FeatureCyan = Color(0xFF36F4FF)
 private val FeatureMuted = Color(0xFF9EAFCE)
 private const val ZALO_CONTACT_URL = "https://zaloapp.com/qr/p/1gl8y41uqztdt?src=qr"
 
+data class GoogleAccountData(
+    val email: String,
+    val displayName: String?,
+    val givenName: String?,
+    val familyName: String?,
+    val profilePictureUri: String?
+)
+
+data class LocalProfileSummary(
+    val email: String,
+    val displayName: String?,
+    val preferredName: String?,
+    val lastUsedAt: Long,
+    val isCurrent: Boolean
+)
+
 object AccountProfileStore {
     private const val PREFS = "coc_lio_profiles"
     private const val ACTIVE = "active_profile"
+    private const val KNOWN = "known_profiles"
+
+    private fun key(email: String, field: String) =
+        field + "_" + email.trim().lowercase().hashCode().toUInt().toString(16)
 
     fun active(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(ACTIVE, "local") ?: "local"
 
+    private fun addKnown(context: Context, email: String) {
+        if (email == "local") return
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val emails = prefs.getStringSet(KNOWN, emptySet())?.toMutableSet() ?: mutableSetOf()
+        emails.add(email.trim().lowercase())
+        prefs.edit().putStringSet(KNOWN, emails).apply()
+    }
+
     fun setActive(context: Context, email: String?) {
+        val normalized = email?.trim()?.lowercase()?.takeIf { it.isNotBlank() } ?: "local"
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(ACTIVE, email?.trim()?.lowercase()?.takeIf { it.isNotBlank() } ?: "local")
+            .edit().putString(ACTIVE, normalized).apply()
+        addKnown(context, normalized)
+    }
+
+    fun saveGoogleData(context: Context, data: GoogleAccountData) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(key(data.email, "google_email"), data.email)
+            .putString(key(data.email, "google_display_name"), data.displayName)
+            .putString(key(data.email, "google_given_name"), data.givenName)
+            .putString(key(data.email, "google_family_name"), data.familyName)
+            .putString(key(data.email, "google_picture_uri"), data.profilePictureUri)
             .apply()
+        addKnown(context, data.email)
+    }
+
+    fun googleData(context: Context, email: String): GoogleAccountData? {
+        if (email == "local") return null
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        return GoogleAccountData(
+            email = prefs.getString(key(email, "google_email"), null) ?: email,
+            displayName = prefs.getString(key(email, "google_display_name"), null),
+            givenName = prefs.getString(key(email, "google_given_name"), null),
+            familyName = prefs.getString(key(email, "google_family_name"), null),
+            profilePictureUri = prefs.getString(key(email, "google_picture_uri"), null)
+        )
+    }
+
+    fun preferredName(context: Context, email: String): String? =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(key(email, "preferred_name"), null)
+
+    fun setPreferredName(context: Context, email: String, name: String) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putString(key(email, "preferred_name"), name.trim()).apply()
+    }
+
+    fun markLastUsed(context: Context, email: String, timestamp: Long = System.currentTimeMillis()) {
+        if (email == "local") return
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putLong(key(email, "last_used"), timestamp).apply()
+        addKnown(context, email)
+    }
+
+    fun lastUsedAt(context: Context, email: String): Long? {
+        if (email == "local") return null
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val field = key(email, "last_used")
+        return if (prefs.contains(field)) prefs.getLong(field, 0L).takeIf { it > 0L } else null
+    }
+
+    fun knownProfiles(context: Context, currentEmail: String): List<LocalProfileSummary> {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val emails = prefs.getStringSet(KNOWN, emptySet()).orEmpty()
+        return emails.map { email ->
+            val data = googleData(context, email)
+            LocalProfileSummary(
+                email = email,
+                displayName = data?.displayName,
+                preferredName = preferredName(context, email),
+                lastUsedAt = lastUsedAt(context, email) ?: 0L,
+                isCurrent = email.equals(currentEmail, ignoreCase = true)
+            )
+        }.sortedWith(compareByDescending<LocalProfileSummary> { it.isCurrent }.thenByDescending { it.lastUsedAt })
     }
 }
 
@@ -127,7 +221,7 @@ object AppPreferences {
 
     fun notificationsEnabled(context: Context, profile: String): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(key(profile, "notifications"), false)
+            .getBoolean(key(profile, "notifications"), true)
 
     fun setNotificationsEnabled(context: Context, profile: String, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -147,6 +241,15 @@ object AppPreferences {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getFloat("text_scale", 1f).coerceIn(0.85f, 1.30f)
 
+    fun themeMode(context: Context): String =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString("theme_mode", "system") ?: "system"
+
+    fun setThemeMode(context: Context, mode: String) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putString("theme_mode", mode).apply()
+    }
+
     fun setTextScale(context: Context, scale: Float) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putFloat("text_scale", scale.coerceIn(0.85f, 1.30f)).apply()
@@ -154,7 +257,7 @@ object AppPreferences {
 }
 
 object GoogleAccountAuth {
-    suspend fun signIn(context: Context): String {
+    suspend fun signIn(context: Context): GoogleAccountData {
         val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
         require(clientId.isNotBlank() && clientId.contains(".apps.googleusercontent.com")) {
             "Chưa cấu hình mã ứng dụng đăng nhập Google. Cần thêm mã GOOGLE_WEB_CLIENT_ID trong phần bí mật của GitHub để bật tính năng này."
@@ -180,10 +283,16 @@ object GoogleAccountAuth {
                 credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) { "Không nhận được thông tin đăng nhập Google hợp lệ." }
         val google = GoogleIdTokenCredential.createFrom(credential.data)
-        require(google.id.isNotBlank() && google.id.contains("@")) {
-            "Google không trả về địa chỉ email hợp lệ."
-        }
-        return google.id.lowercase()
+        val email = google.email?.trim()?.takeIf { it.contains("@") }
+            ?: google.id.trim().takeIf { it.contains("@") }
+            ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ.")
+        return GoogleAccountData(
+            email = email.lowercase(),
+            displayName = google.displayName?.trim()?.takeIf { it.isNotBlank() },
+            givenName = google.givenName?.trim()?.takeIf { it.isNotBlank() },
+            familyName = google.familyName?.trim()?.takeIf { it.isNotBlank() },
+            profilePictureUri = google.profilePictureUri?.toString()
+        )
     }
 
     suspend fun signOut(context: Context) {
@@ -578,6 +687,19 @@ private class UpgradeWidgetListFactory(
 
 object AppWidgetUpdater {
     fun ensureRefresh(context: Context) {
+        if (Build.VERSION.SDK_INT >= 35) {
+            val previewPrefs = context.getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
+            if (!previewPrefs.getBoolean("generated_preview_set", false)) {
+                runCatching {
+                    AppWidgetManager.getInstance(context).setWidgetPreview(
+                        ComponentName(context, UpgradeWidgetProvider::class.java),
+                        AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
+                        RemoteViews(context.packageName, R.layout.widget_upgrade_preview)
+                    )
+                    previewPrefs.edit().putBoolean("generated_preview_set", true).apply()
+                }
+            }
+        }
         val request = PeriodicWorkRequestBuilder<WidgetRefreshWorker>(15, TimeUnit.MINUTES).build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "coc_lio_widget_refresh",
@@ -729,8 +851,31 @@ class UpgradeWidgetConfigActivity : Activity() {
 }
 
 @Composable
+private fun ProfileDataRow(label: String, value: String?) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, modifier = Modifier.weight(0.9f))
+        Text(
+            value?.takeIf { it.isNotBlank() } ?: "Google không cung cấp",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 10.sp,
+            modifier = Modifier.weight(1.1f)
+        )
+    }
+}
+
+@Composable
 fun SettingsScreen(
     accountEmail: String?,
+    accountData: GoogleAccountData?,
+    preferredName: String?,
+    lastUsedLabel: String?,
+    knownProfiles: List<LocalProfileSummary>,
+    themeMode: String,
+    onThemeModeChanged: (String) -> Unit,
     textScale: Float,
     notificationsEnabled: Boolean,
     ledEnabled: Boolean,
@@ -759,11 +904,24 @@ fun SettingsScreen(
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        Text("CÀI ĐẶT", color = FeatureCyan, fontSize = 15.sp, fontWeight = FontWeight.Black)
+        Text("CÀI ĐẶT", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
+
+        FeaturePanel {
+            Text("GIAO DIỆN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("system" to "Theo thiết bị", "light" to "Sáng", "dark" to "Tối").forEach { (mode, label) ->
+                    FilterChip(
+                        selected = themeMode == mode,
+                        onClick = { onThemeModeChanged(mode) },
+                        label = { Text(label, fontSize = 10.sp) }
+                    )
+                }
+            }
+        }
 
         FeaturePanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Text("${(textScale * 100).roundToInt()}%", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
             }
             Slider(
@@ -774,61 +932,122 @@ fun SettingsScreen(
                 onValueChangeFinished = onTextScaleChangeFinished
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Nhỏ", color = FeatureMuted, fontSize = 9.sp)
+                Text("Nhỏ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 Spacer(Modifier.weight(1f))
                 TextButton(onClick = {
                     onTextScaleChanged(1f)
                     onTextScaleChangeFinished()
                 }) {
-                    Text("Mặc định", color = FeatureCyan, fontSize = 10.sp)
+                    Text("Mặc định", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
                 }
                 Spacer(Modifier.weight(1f))
-                Text("Lớn", color = FeatureMuted, fontSize = 9.sp)
+                Text("Lớn", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Áp dụng cho chữ trong ứng dụng và tiện ích màn hình chính.", color = FeatureMuted, fontSize = 10.sp)
+            Text("Áp dụng cho chữ trong ứng dụng và tiện ích màn hình chính.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         FeaturePanel {
-            Text("TÀI KHOẢN GOOGLE", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("TÀI KHOẢN GOOGLE", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             if (accountEmail.isNullOrBlank()) {
-                Text("Chưa đăng nhập", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Chưa đăng nhập", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                 Text(
-                    "Đăng nhập hiện tại chỉ xác định hồ sơ trên điện thoại; chưa xác minh giấy phép sử dụng. Chức năng cấp phép của chủ ứng dụng sẽ được bật sau khi cấu hình máy chủ.",
-                    color = FeatureMuted,
+                    "Google cung cấp hồ sơ cơ bản như email, tên và ảnh đại diện nếu có. Lần đầu đăng nhập, bạn cần đặt tên hiển thị riêng.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     lineHeight = 16.sp
                 )
                 Button(
                     onClick = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = FeatureCyan, contentColor = Color(0xFF04101D))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF04101D))
                 ) { Text("ĐĂNG NHẬP GOOGLE", fontWeight = FontWeight.Black) }
-                Text(
-                    "Tài khoản Google không dùng để sao lưu. Hiện đăng nhập chỉ đổi hồ sơ cục bộ; hệ thống cấp phép máy chủ chưa được kích hoạt.",
-                    color = FeatureMuted,
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp
-                )
             } else {
-                Text(accountEmail, color = Color.White, fontWeight = FontWeight.Bold)
-                Text("Hồ sơ cục bộ: dữ liệu làng lưu trên điện thoại. Trạng thái giấy phép chưa được xác minh qua máy chủ.", color = FeatureMuted, fontSize = 11.sp)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (!accountData?.profilePictureUri.isNullOrBlank()) {
+                        AsyncImage(
+                            model = accountData?.profilePictureUri,
+                            contentDescription = "Ảnh hồ sơ Google",
+                            modifier = Modifier.size(52.dp).clip(CircleShape)
+                        )
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            preferredName?.takeIf { it.isNotBlank() } ?: accountData?.displayName ?: accountEmail,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(accountEmail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                        Text("Đang dùng trên thiết bị này", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Text("THÔNG TIN GOOGLE TRẢ VỀ", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                ProfileDataRow("Tên Google", accountData?.displayName)
+                ProfileDataRow("Tên", accountData?.givenName)
+                ProfileDataRow("Họ", accountData?.familyName)
+                ProfileDataRow("Email", accountData?.email ?: accountEmail)
+                ProfileDataRow("Ảnh đại diện", accountData?.profilePictureUri)
+                ProfileDataRow("Tên bạn đặt", preferredName)
+                if (lastUsedLabel != null) ProfileDataRow("Mở app lần gần nhất", lastUsedLabel)
+                Text(
+                    "Thông tin hồ sơ chỉ lưu trên điện thoại này, không đồng bộ hoặc sao lưu lên đám mây. Ứng dụng không nhận mật khẩu Google và không lưu ID token.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+                Text("CÁC TÀI KHOẢN TỪNG DÙNG TRÊN MÁY NÀY", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                if (knownProfiles.isEmpty()) {
+                    Text("Chưa có hồ sơ nào khác.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                } else {
+                    knownProfiles.forEach { profile ->
+                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    profile.preferredName?.takeIf { it.isNotBlank() } ?: profile.displayName ?: profile.email,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    if (profile.isCurrent) "ĐANG DÙNG" else "KHÔNG ĐANG DÙNG",
+                                    color = if (profile.isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Text(profile.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                            Text(
+                                if (profile.lastUsedAt > 0L) "Mở lần cuối: " + java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.ofEpochMilli(profile.lastUsedAt))
+                                else "Chưa ghi nhận lần mở gần nhất",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+                }
+                Text(
+                    "Trạng thái trên đây chỉ tính các hồ sơ đã đăng nhập trên điện thoại này. Không thể biết người dùng ở điện thoại khác đang online nếu chưa có máy chủ.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(
                         onClick = onGoogleSignIn,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = FeatureCyan, contentColor = Color(0xFF04101D))
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF04101D))
                     ) { Text("ĐỔI TÀI KHOẢN", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
                     Button(
                         onClick = onGoogleSignOut,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF263653), contentColor = Color.White)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
                     ) { Text("ĐĂNG XUẤT", fontSize = 10.sp) }
                 }
             }
         }
 
         FeaturePanel {
-            Text("LED RGB TÙY CHỈNH", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Bật hiệu ứng chuyển động", color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
                 Switch(checked = ledEnabled, onCheckedChange = onLedEnabledChanged)
@@ -853,7 +1072,7 @@ fun SettingsScreen(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Tốc độ chuyển màu", color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
-                Text("$ledSpeed/100", color = FeatureCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("$ledSpeed/100", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
             Slider(
                 value = ledSpeed.toFloat(),
@@ -862,9 +1081,9 @@ fun SettingsScreen(
                 steps = 98
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Chậm", color = FeatureMuted, fontSize = 9.sp)
+                Text("Chậm", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 Spacer(Modifier.weight(1f))
-                Text("Nhanh", color = FeatureMuted, fontSize = 9.sp)
+                Text("Nhanh", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
             Text("Độ sáng: ${(ledBrightness * 100).toInt()}%", color = Color.White, fontSize = 10.sp)
             Slider(
@@ -874,17 +1093,17 @@ fun SettingsScreen(
                 steps = 98
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Mờ", color = FeatureMuted, fontSize = 9.sp)
+                Text("Mờ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 Spacer(Modifier.weight(1f))
-                Text("Sáng", color = FeatureMuted, fontSize = 9.sp)
+                Text("Sáng", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
         }
 
         FeaturePanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("THÔNG BÁO NÂNG CẤP", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Nhắc khi bộ đếm trong JSON đã đếm hết.", color = FeatureMuted, fontSize = 10.sp)
+                    Text("THÔNG BÁO NÂNG CẤP", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Nhắc khi bộ đếm trong JSON đã đếm hết.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                 }
                 Switch(checked = notificationsEnabled, onCheckedChange = onNotificationsChanged)
             }
@@ -913,39 +1132,39 @@ fun SettingsScreen(
             }
             Text(
                 "Gửi một thông báo mẫu theo kiểu đang chọn. Thử nghiệm không tự bật lịch nhắc nâng cấp.",
-                color = FeatureMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 lineHeight = 14.sp
             )
             Text(
                 "Thời điểm nhắc lấy từ bộ đếm thời gian trong JSON đã nhập. Android vẫn có thể trì hoãn nếu tắt quyền thông báo, hạn chế pin hoặc đặt chế độ Không làm phiền.",
-                color = FeatureMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp,
                 lineHeight = 16.sp
             )
         }
 
         FeaturePanel {
-            Text("TIỆN ÍCH MÀN HÌNH CHÍNH", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("TIỆN ÍCH MÀN HÌNH CHÍNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Text(
                 "Nhấn giữ màn hình chính → chọn Tiện ích → COC-LIO → Theo dõi nâng cấp. Mỗi tiện ích gắn với tài khoản đang đăng nhập và một làng đã chọn. Muốn thêm tiện ích cho tài khoản khác, hãy đổi tài khoản trong COC-LIO rồi thêm một tiện ích mới.",
-                color = FeatureMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 lineHeight = 18.sp
             )
             Text(
                 "Tiện ích dạng dọc 2 × 4 ô gọn hơn, có viền RGB chuyển sắc liền mạch và danh sách nâng cấp có thể cuộn. Mỗi mục hiển thị ảnh công trình, đồng hồ đếm ngược ở giữa thanh và phần trăm thời gian còn lại.",
-                color = FeatureMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 lineHeight = 15.sp
             )
         }
 
         FeaturePanel {
-            Text("CÁCH LẤY JSON", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("CÁCH LẤY JSON", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Text(
                 "Mở Clash of Clans → Cài đặt (bánh răng) → Cài đặt khác → kéo xuống mục Xuất dữ liệu → chọn Xuất dữ liệu làng dưới dạng JSON → Sao chép. Trở lại COC-LIO và dán nội dung JSON.",
-                color = FeatureMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp,
                 lineHeight = 17.sp
             )
@@ -957,8 +1176,8 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text("LIÊN HỆ NHÀ PHÁT TRIỂN", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Text("Quét mã QR để mở liên hệ Zalo của nhà phát triển COC-LIO.", color = FeatureMuted, fontSize = 10.sp)
+            Text("LIÊN HỆ NHÀ PHÁT TRIỂN", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("Quét mã QR để mở liên hệ Zalo của nhà phát triển COC-LIO.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -1009,16 +1228,16 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text("THÔNG TIN ỨNG DỤNG", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("THÔNG TIN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Text(
                 "COC-LIO là ứng dụng cộng đồng không chính thức, không được Supercell chứng thực. Hình ảnh game thuộc quyền sở hữu của Supercell.",
-                color = FeatureMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 lineHeight = 15.sp
             )
             Text(
                 "Đây là nội dung không chính thức và không được Supercell bảo trợ. Xem chính sách nội dung người hâm mộ tại www.supercell.com/fan-content-policy.",
-                color = FeatureCyan,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 9.sp,
                 lineHeight = 14.sp
             )
@@ -1046,7 +1265,7 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Color(0xF20D182F))
+            .background(MaterialTheme.colorScheme.surface)
             .drawWithCache {
                 val stroke = 2.6.dp.toPx()
                 val inset = stroke / 2f

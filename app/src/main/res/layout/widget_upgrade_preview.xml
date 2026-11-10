@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="7dp"
+    android:background="@drawable/widget_upgrade_background">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="COC-LIO • TH 17"
+        android:textColor="#36F4FF"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="6dp"
+        android:text="2 mục đang nâng • Thợ rảnh 4/6"
+        android:textColor="#B6C5DF"
+        android:textSize="9sp"
+        android:maxLines="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="5dp"
+        android:background="@drawable/widget_upgrade_row_background">
+        <TextView android:layout_width="32dp" android:layout_height="36dp" android:gravity="center" android:text="🏰" android:textSize="22sp" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CẤP 14 → 15 • CÒN 56%" android:textColor="#FFFFD166" android:textSize="11sp" android:textStyle="bold" />
+            <FrameLayout android:layout_width="match_parent" android:layout_height="28dp" android:layout_marginTop="3dp">
+                <ProgressBar style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="18dp" android:layout_gravity="center" android:max="100" android:progress="56" android:progressDrawable="@drawable/widget_progress_horizontal" />
+                <TextView android:layout_width="wrap_content" android:layout_height="24dp" android:layout_gravity="center" android:gravity="center" android:minWidth="82dp" android:paddingStart="7dp" android:paddingEnd="7dp" android:background="@drawable/widget_timer_badge_background" android:text="7:49:18" android:textColor="#FFFFFFFF" android:textSize="11sp" android:textStyle="bold" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="5dp" android:background="@drawable/widget_upgrade_row_background">
+        <TextView android:layout_width="32dp" android:layout_height="36dp" android:gravity="center" android:text="⚒" android:textSize="22sp" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CẤP 8 → 9 • CÒN 32%" android:textColor="#FFFFD166" android:textSize="11sp" android:textStyle="bold" />
+            <FrameLayout android:layout_width="match_parent" android:layout_height="28dp" android:layout_marginTop="3dp">
+                <ProgressBar style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="18dp" android:layout_gravity="center" android:max="100" android:progress="32" android:progressDrawable="@drawable/widget_progress_horizontal" />
+                <TextView android:layout_width="wrap_content" android:layout_height="24dp" android:layout_gravity="center" android:gravity="center" android:minWidth="82dp" android:paddingStart="7dp" android:paddingEnd="7dp" android:background="@drawable/widget_timer_badge_background" android:text="22:13:12" android:textColor="#FFFFFFFF" android:textSize="11sp" android:textStyle="bold" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
