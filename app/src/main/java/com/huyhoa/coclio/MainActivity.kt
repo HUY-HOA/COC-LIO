@@ -883,7 +883,7 @@ private fun ImportDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
                         border = BorderStroke(1.dp, CocCyan.copy(alpha = 0.65f))
                     ) {
-                        Text(color = CocCyan, "Dán clipboard", fontSize = 11.sp)
+                        Text("Dán clipboard", color = CocCyan, fontSize = 11.sp)
                     }
                     OutlinedButton(
                         onClick = onChooseFile,
@@ -891,7 +891,7 @@ private fun ImportDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
                         border = BorderStroke(1.dp, CocMagenta.copy(alpha = 0.65f))
                     ) {
-                        Text(color = CocCyan, "Chọn tệp", fontSize = 11.sp)
+                        Text("Chọn tệp", color = CocCyan, fontSize = 11.sp)
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -901,7 +901,7 @@ private fun ImportDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = CocMuted),
                         border = BorderStroke(1.dp, CocViolet.copy(alpha = 0.65f))
                     ) {
-                        Text(color = CocCyan, "Đóng")
+                        Text("Đóng", color = CocCyan)
                     }
                     Button(
                         onClick = { onImport(rawText) },
