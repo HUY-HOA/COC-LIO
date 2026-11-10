@@ -51,6 +51,25 @@ data class VillageSnapshot(
     val builderHallLevel: Int? get() = items.firstOrNull {
         it.sectionKey == "buildings2" && it.dataId == 1000034 && it.level != null
     }?.level
+    val homeBuilderHutCount: Int get() = items
+        .filter { it.sectionKey == "buildings" && it.dataId == 1000015 }
+        .sumOf { it.count }
+
+    val hasBobBuilder: Boolean get() = items.any {
+        it.sectionKey == "buildings" && it.dataId == 1000064 && (it.level ?: 0) > 0
+    }
+
+    val homeBuilderTotal: Int? get() =
+        (homeBuilderHutCount + if (hasBobBuilder) 1 else 0).takeIf { homeBuilderHutCount > 0 }
+
+    fun homeBuildersBusyAt(nowSeconds: Long): Int = items.count { item ->
+        item.base == "home" &&
+            item.sectionKey in setOf("buildings", "traps", "heroes") &&
+            !item.gearUp &&
+            item.timerSeconds != null &&
+            item.timerSeconds > 0L &&
+            timestamp + item.timerSeconds > nowSeconds
+    }
 }
 
 data class ChangeEvent(

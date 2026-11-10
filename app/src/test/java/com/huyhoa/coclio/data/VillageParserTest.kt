@@ -80,6 +80,25 @@ class VillageParserTest {
     }
 
     @Test
+    fun calculatesHomeBuilderCountAndFreeBuildersFromHutsAndActiveWork() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#BUILDERS","timestamp":1794320000,"buildings":[
+                {"data":1000015,"lvl":5,"cnt":5},
+                {"data":1000064,"lvl":1},
+                {"data":1000008,"lvl":5,"timer":3600},
+                {"data":1000009,"lvl":5,"timer":7200},
+                {"data":1000001,"lvl":17}
+            ]}"""
+        )
+
+        assertEquals(6, snapshot.homeBuilderTotal)
+        assertEquals(2, snapshot.homeBuildersBusyAt(1794320100L))
+        assertEquals(4, snapshot.homeBuilderTotal!! - snapshot.homeBuildersBusyAt(1794320100L))
+        assertEquals(1, snapshot.homeBuildersBusyAt(1794325000L))
+        assertEquals(0, snapshot.homeBuildersBusyAt(1794328000L))
+    }
+
+    @Test
     fun readsVillageNameWhenJsonProvidesIt() {
         val direct = VillageParser.parse(
             """{"tag":"#TEST123","timestamp":1794320000,"playerName":"Làng Chính"}"""
