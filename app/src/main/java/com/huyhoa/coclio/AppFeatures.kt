@@ -961,6 +961,23 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF04101D))
                 ) { Text("ĐĂNG NHẬP GOOGLE", fontWeight = FontWeight.Black) }
+                if (knownProfiles.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("CÁC HỒ SƠ ĐÃ ĐĂNG NHẬP TRÊN MÁY NÀY", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    knownProfiles.forEach { profile ->
+                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(profile.preferredName?.takeIf { it.isNotBlank() } ?: profile.displayName ?: profile.email,
+                                color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(profile.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                            Text(
+                                if (profile.lastUsedAt > 0L) "Mở lần cuối: " + java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.ofEpochMilli(profile.lastUsedAt))
+                                else "Chưa ghi nhận lần mở gần nhất",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+                }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (!accountData?.profilePictureUri.isNullOrBlank()) {
