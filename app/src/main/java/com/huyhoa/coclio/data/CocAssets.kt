@@ -283,10 +283,10 @@ object CocAssets {
         } ?: return null
 
         val useLevelImage = item.sectionKey in setOf("buildings", "buildings2", "traps", "traps2")
-        val relativePath = if (useLevelImage) {
-            "$folder/normal/level-$level.png"
-        } else {
-            "$folder/icon.png"
+        val relativePath = when {
+            useLevelImage -> "$folder/normal/level-$level.png"
+            item.sectionKey == "helpers" -> "$folder/normal.png"
+            else -> "$folder/icon.png"
         }
         return ROOT + relativePath.split("/").joinToString("/") { segment ->
             URLEncoder.encode(segment, Charsets.UTF_8.name()).replace("+", "%20")
