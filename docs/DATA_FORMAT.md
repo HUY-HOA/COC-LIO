@@ -14,7 +14,7 @@ This document records the rules used by COC-LIO. The in-game JSON is treated as 
 - `data`: game data identifier.
 - `lvl`: current level in the exported snapshot.
 - `cnt`: number of idle copies at that level.
-- `timer`: seconds remaining for one instance currently upgrading. Its expected finish moment is `timestamp + timer`. Values that clearly exceed one year and are divisible by 1,000 are treated as milliseconds and normalized to seconds.
+- `timer`: seconds remaining for one instance currently upgrading. Its expected finish moment is `timestamp + timer`. Values above 30 days and divisible by 1,000 are treated as milliseconds and normalized to seconds. Normal game timers measured in seconds remain unchanged.
 - `helper_cooldown`: helper cooldown information; it is not a building upgrade timer.
 - `gear_up`: flag used for a defence gear-up. A row with both `gear_up` and `timer` is a Master Builder gear-up and must not be reported as a normal level upgrade.
 - `types` and nested `modules`: crafted-defence/module details; each module carries its own ID and level.
