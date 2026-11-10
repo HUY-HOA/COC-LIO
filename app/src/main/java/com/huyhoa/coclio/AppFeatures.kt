@@ -484,7 +484,7 @@ private class UpgradeWidgetListFactory(
             entry.level != null -> "CẤP ${entry.level} → ${entry.level + 1}"
             else -> "ĐANG NÂNG"
         }
-        views.setTextViewText(R.id.row_title, levelText)
+        views.setTextViewText(R.id.row_title, "$levelText • $remainingPercent%")
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, remainingPercent, false)
 
