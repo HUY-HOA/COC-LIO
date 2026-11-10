@@ -94,6 +94,7 @@ import com.huyhoa.coclio.data.VillageStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 private val FeatureCyan = Color(0xFF36F4FF)
 private val FeatureMuted = Color(0xFF9EAFCE)
@@ -727,7 +728,7 @@ fun SettingsScreen(
             Text("Tốc độ: $ledSpeed/5  •  1 chậm nhất, 5 nhanh nhất", color = Color.White, fontSize = 11.sp)
             Slider(
                 value = ledSpeed.toFloat(),
-                onValueChange = { onLedSpeedChanged(it.toInt().coerceIn(1, 4)) },
+                onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(1, 5)) },
                 valueRange = 1f..5f,
                 steps = 3
             )
