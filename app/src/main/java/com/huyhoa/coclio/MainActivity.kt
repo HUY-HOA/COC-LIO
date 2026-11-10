@@ -636,7 +636,17 @@ private fun OverviewScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("LÀNG CỦA BẠN", color = CocMuted, fontSize = 10.sp, letterSpacing = 1.2.sp)
-                            Text(snapshot.tag, color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                snapshot.villageName ?: snapshot.tag,
+                                color = Color.White,
+                                fontSize = 23.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (!snapshot.villageName.isNullOrBlank()) {
+                                Text(snapshot.tag, color = CocMuted, fontSize = 10.sp)
+                            }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             snapshot.items.firstOrNull { it.sectionKey == "buildings" && it.dataId == 1000001 }?.let {
