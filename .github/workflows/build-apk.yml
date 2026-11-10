@@ -74,19 +74,17 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
             echo "Release signing key is configured."
           else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Release signing secrets are incomplete; only a debug APK will be built."
+            echo "::error::Release signing secrets are incomplete. Add all Android signing secrets before building."
+            exit 1
           fi
 
       - name: Run unit tests
         run: gradle --no-daemon --build-cache --parallel testDebugUnitTest
 
       - name: Build signed release APK
-        if: steps.signing.outputs.enabled == 'true'
         run: gradle --no-daemon --build-cache assembleRelease
 
       - name: Upload signed release APK
-        if: steps.signing.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: COC-LIO-${{ env.VERSION_NAME }}-Signed-Release-APK
