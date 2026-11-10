@@ -392,7 +392,7 @@ private fun CocLioApp() {
                         selected = selectedTab == item.third,
                         onClick = { selectedTab = item.third },
                         icon = { Icon(imageVector = when (item.first) { "home" -> Icons.Filled.Home; "building" -> Icons.Filled.Business; "army" -> Icons.Filled.Groups; "history" -> Icons.Filled.History; else -> Icons.Filled.Settings }, contentDescription = item.second, tint = if (selectedTab == item.third) CocCyan else CocMuted) },
-                        label = { Text(item.second, fontSize = 10.sp, color = if (selectedTab == item.third) CocCyan else CocMuted) }
+                        label = { Text(item.second, fontSize = 9.sp, maxLines = 1, color = if (selectedTab == item.third) CocCyan else CocMuted) }
                     )
                 }
             }
@@ -633,22 +633,7 @@ private fun OverviewScreen(
             }
         }
 
-        item {
-            NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
-                Text(
-                    "COC-LIO là ứng dụng cộng đồng không chính thức, không được Supercell chứng thực. Hình ảnh game thuộc quyền sở hữu của Supercell.",
-                    color = CocMuted,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
-                Text(
-                    "This material is unofficial and is not endorsed by Supercell. For more information see www.supercell.com/fan-content-policy.",
-                    color = CocCyan,
-                    fontSize = 9.sp,
-                    lineHeight = 13.sp
-                )
-            }
-        }
+
     }
 }
 
