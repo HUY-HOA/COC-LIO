@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="10dp"
+    android:padding="8dp"
     android:background="@drawable/widget_upgrade_background">
 
     <TextView
@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="COC-LIO • Làng"
         android:textColor="#36F4FF"
-        android:textSize="11sp"
+        android:textSize="10sp"
         android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end" />
@@ -22,11 +22,11 @@
         android:id="@+id/widget_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:layout_marginBottom="7dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="5dp"
         android:text="Danh sách công trình đang nâng cấp"
         android:textColor="#9EAFCE"
-        android:textSize="10sp"
+        android:textSize="9sp"
         android:maxLines="1"
         android:ellipsize="end" />
 
@@ -36,20 +36,20 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:divider="@android:color/transparent"
-        android:dividerHeight="5dp"
+        android:dividerHeight="3dp"
         android:scrollbars="vertical"
         android:overScrollMode="ifContentScrolls"
         android:clipToPadding="false"
-        android:paddingBottom="2dp" />
+        android:paddingBottom="1dp" />
 
     <TextView
         android:id="@+id/widget_empty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:padding="18dp"
+        android:padding="12dp"
         android:text="Chưa có công trình nào đang nâng cấp"
         android:textColor="#9EAFCE"
-        android:textSize="11sp"
+        android:textSize="10sp"
         android:visibility="gone" />
 </LinearLayout>
