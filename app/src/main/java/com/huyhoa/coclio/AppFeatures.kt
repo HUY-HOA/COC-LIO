@@ -111,7 +111,7 @@ object GoogleAccountAuth {
     suspend fun signIn(context: Context): String {
         val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
         require(clientId.isNotBlank() && clientId.contains(".apps.googleusercontent.com")) {
-            "Chưa cấu hình Google OAuth Web Client ID. Cần thêm Secret GOOGLE_WEB_CLIENT_ID trong GitHub để bật đăng nhập Google."
+            "Chưa cấu hình mã ứng dụng đăng nhập Google. Cần thêm mã GOOGLE_WEB_CLIENT_ID trong phần bí mật của GitHub để bật tính năng này."
         }
 
         val option = GetGoogleIdOption.Builder()
@@ -582,13 +582,13 @@ fun SettingsScreen(
         FeaturePanel {
             Text("TIỆN ÍCH MÀN HÌNH CHÍNH", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Text(
-                "Nhấn giữ màn hình chính → Tiện ích (Widgets) → COC-LIO → Theo dõi nâng cấp. Mỗi tiện ích được gắn với tài khoản đang đăng nhập và một làng đã chọn. Muốn thêm tiện ích cho tài khoản khác, đổi sang tài khoản đó rồi thêm một tiện ích mới.",
+                "Nhấn giữ màn hình chính → chọn Tiện ích → COC-LIO → Theo dõi nâng cấp. Mỗi tiện ích gắn với tài khoản đang đăng nhập và một làng đã chọn. Muốn thêm tiện ích cho tài khoản khác, hãy đổi tài khoản trong COC-LIO rồi thêm một tiện ích mới.",
                 color = FeatureMuted,
                 fontSize = 11.sp,
                 lineHeight = 17.sp
             )
             Text(
-                "Tiện ích hiển thị công trình đang nâng, đồng hồ còn lại và thanh tiến trình thời gian. Đồng hồ chạy liên tục; thanh tiến trình được làm mới định kỳ bởi Android.",
+                "Tiện ích dạng dọc 2 × 6 ô hiển thị danh sách tất cả công trình đang nâng cấp. Vuốt lên hoặc xuống trong tiện ích để xem các mục còn lại. Mỗi mục có đồng hồ đếm ngược và thanh tiến trình.",
                 color = FeatureMuted,
                 fontSize = 10.sp,
                 lineHeight = 15.sp
@@ -598,7 +598,7 @@ fun SettingsScreen(
         FeaturePanel {
             Text("CÁCH LẤY JSON", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Text(
-                "Mở Clash of Clans → Cài đặt (bánh răng) → Cài đặt khác (More Settings) → kéo xuống Data Export → Export village data in JSON format → Copy. Trở lại COC-LIO và dán JSON.",
+                "Mở Clash of Clans → Cài đặt (bánh răng) → Cài đặt khác → kéo xuống mục Xuất dữ liệu → chọn Xuất dữ liệu làng dưới dạng JSON → Sao chép. Trở lại COC-LIO và dán nội dung JSON.",
                 color = FeatureMuted,
                 fontSize = 11.sp,
                 lineHeight = 17.sp
@@ -619,7 +619,7 @@ fun SettingsScreen(
                 lineHeight = 15.sp
             )
             Text(
-                "This material is unofficial and is not endorsed by Supercell. For more information see www.supercell.com/fan-content-policy.",
+                "Đây là nội dung không chính thức và không được Supercell bảo trợ. Xem chính sách nội dung người hâm mộ tại www.supercell.com/fan-content-policy.",
                 color = FeatureCyan,
                 fontSize = 9.sp,
                 lineHeight = 14.sp
