@@ -617,11 +617,10 @@ private class UpgradeWidgetListFactory(
         views.setTextViewTextSize(R.id.row_timer, TypedValue.COMPLEX_UNIT_SP, 12f * textScale)
         val now = System.currentTimeMillis() / 1000L
         val remaining = (entry.endAt - now).coerceAtLeast(0L)
-        val remainingPercent = if (remaining > 0L) {
-            (
-                remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
-            ).toInt().coerceIn(1, 100)
-        } else 0
+        val totalSeconds = entry.totalSeconds.coerceAtLeast(1L)
+        val startAt = entry.endAt - totalSeconds
+        val elapsedSeconds = (now - startAt).coerceIn(0L, totalSeconds)
+        val progressPercent = (elapsedSeconds.toDouble() * 100.0 / totalSeconds).toInt().coerceIn(0, 100)
 
         val iconBitmap = entry.imageUrl?.let { url ->
             decodedIcons[url] ?: widgetIconFile(context, url)
@@ -642,15 +641,16 @@ private class UpgradeWidgetListFactory(
         }
         views.setTextViewText(
             R.id.row_title,
-            if (remaining > 0L) levelText
-            else "$levelText • ĐÃ HẾT GIỜ"
+            if (remaining > 0L) "$levelText • $progressPercent%"
+            else "$levelText • 100% • HOÀN THÀNH"
         )
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
-        views.setProgressBar(R.id.row_progress, 100, remainingPercent, false)
+        views.setProgressBar(R.id.row_progress, 100, progressPercent, false)
+        val progressFraction = progressPercent / 100f
         val progressColor = android.graphics.Color.rgb(
-            (255 - (remainingPercent * 1.13f)).toInt().coerceIn(142, 255),
-            (110 + remainingPercent * 1.25f).toInt().coerceIn(110, 235),
-            72
+            (255f + (66f - 255f) * progressFraction).toInt(),
+            (164f + (245f - 164f) * progressFraction).toInt(),
+            (58f + (200f - 58f) * progressFraction).toInt()
         )
         views.setTextColor(
             R.id.row_timer,
