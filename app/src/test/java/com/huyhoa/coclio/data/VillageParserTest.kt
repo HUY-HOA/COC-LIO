@@ -68,4 +68,22 @@ class VillageParserTest {
         assertEquals(0, snapshot.upgrades.size)
         assertEquals(1, snapshot.gearUps.size)
     }
+
+    @Test
+    fun readsVillageNameWhenJsonProvidesIt() {
+        val direct = VillageParser.parse(
+            """{"tag":"#TEST123","timestamp":1794320000,"playerName":"Làng Chính"}"""
+        )
+        val nested = VillageParser.parse(
+            """{"tag":"#TEST123","timestamp":1794320000,"player":{"name":"Làng Phụ"}}"""
+        )
+        val exportOnly = VillageParser.parse(
+            """{"tag":"#TEST123","timestamp":1794320000}"""
+        )
+
+        assertEquals("Làng Chính", direct.villageName)
+        assertEquals("Làng Phụ", nested.villageName)
+        assertEquals(null, exportOnly.villageName)
+    }
+
 }
