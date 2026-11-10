@@ -816,8 +816,8 @@ fun SettingsScreen(
                         com.google.zxing.qrcode.QRCodeWriter().encode(
                             ZALO_CONTACT_URL,
                             com.google.zxing.BarcodeFormat.QR_CODE,
-                            512,
-                            512
+                            1,
+                            1
                         )
                     }
                     Canvas(Modifier.fillMaxSize()) {
