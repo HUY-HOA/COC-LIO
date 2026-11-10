@@ -32,6 +32,7 @@ object CocAssets {
         1000027 to "home/defenses/inferno-tower",
         1000028 to "home/defenses/air-sweeper",
         1000029 to "home/army-buildings/dark-spell-factory",
+        1000031 to "home/defenses/eagle-artillery",
         1000032 to "home/defenses/bomb-tower",
         1000059 to "home/army-buildings/workshop",
         1000064 to "home/other/bobs-hut",
@@ -41,11 +42,13 @@ object CocAssets {
         1000071 to "home/army-buildings/hero-hall",
         1000072 to "home/defenses/spell-tower",
         1000077 to "home/defenses/monolith",
+        1000079 to "home/defenses/multi-gear-tower",
         1000084 to "home/defenses/multi-archer-tower",
         1000085 to "home/defenses/ricochet-cannon",
         1000086 to "home/defenses/revenge-tower",
         1000089 to "home/defenses/firespitter",
         1000093 to "home/other/helper-hut",
+        1000102 to "home/defenses/super-wizard-tower",
         1000097 to "home/defenses/crafting-station",
         1000102 to "home/defenses/super-wizard-tower"
     )
