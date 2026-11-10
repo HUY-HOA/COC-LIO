@@ -447,7 +447,7 @@ private class UpgradeWidgetListFactory(
             views.setChronometer(
                 R.id.row_timer,
                 SystemClock.elapsedRealtime() + remaining * 1000L,
-                "%s • " + remainingPercent + "%%",
+                "%s",
                 true
             )
             views.setChronometerCountDown(R.id.row_timer, true)
@@ -644,7 +644,7 @@ fun SettingsScreen(
             if (accountEmail.isNullOrBlank()) {
                 Text("Chưa đăng nhập", color = Color.White, fontWeight = FontWeight.Bold)
                 Text(
-                    "Đăng nhập để tách dữ liệu làng theo từng tài khoản Google trên thiết bị này.",
+                    "Đăng nhập hiện tại chỉ xác định hồ sơ trên điện thoại; chưa xác minh giấy phép sử dụng. Chức năng cấp phép của chủ ứng dụng sẽ được bật sau khi cấu hình máy chủ.",
                     color = FeatureMuted,
                     fontSize = 11.sp,
                     lineHeight = 16.sp
@@ -655,14 +655,14 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = FeatureCyan, contentColor = Color(0xFF04101D))
                 ) { Text("ĐĂNG NHẬP GOOGLE", fontWeight = FontWeight.Black) }
                 Text(
-                    "Dữ liệu hiện lưu cục bộ trên điện thoại; đăng nhập chưa tự đồng bộ hay sao lưu lên đám mây.",
+                    "Tài khoản Google không dùng để sao lưu. Hiện đăng nhập chỉ đổi hồ sơ cục bộ; hệ thống cấp phép máy chủ chưa được kích hoạt.",
                     color = FeatureMuted,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
                 )
             } else {
                 Text(accountEmail, color = Color.White, fontWeight = FontWeight.Bold)
-                Text("Dữ liệu nhập mới được lưu riêng trong hồ sơ này.", color = FeatureMuted, fontSize = 11.sp)
+                Text("Hồ sơ cục bộ: dữ liệu làng lưu trên điện thoại. Trạng thái giấy phép chưa được xác minh qua máy chủ.", color = FeatureMuted, fontSize = 11.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(
                         onClick = onGoogleSignIn,
