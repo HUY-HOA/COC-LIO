@@ -5,6 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +27,25 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+androidx.compose.material3.Icon
+coil.compose.AsyncImage
+com.huyhoa.coclio.data.CocAssets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -68,13 +93,16 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private val CocBackground = Color(0xFF101722)
-private val CocSurface = Color(0xFF1B2735)
-private val CocSurfaceAlt = Color(0xFF253447)
-private val CocGold = Color(0xFFFFC857)
-private val CocGreen = Color(0xFF78D69B)
-private val CocRed = Color(0xFFFF8585)
-private val CocMuted = Color(0xFFAAB7C7)
+private val CocBackground = Color(0xFF050817)
+private val CocSurface = Color(0xFF0D152B)
+private val CocSurfaceAlt = Color(0xFF14203B)
+private val CocGold = Color(0xFFFFD166)
+private val CocGreen = Color(0xFF42F5C8)
+private val CocRed = Color(0xFFFF5D91)
+private val CocMuted = Color(0xFF9EAFCE)
+private val CocCyan = Color(0xFF36F4FF)
+private val CocMagenta = Color(0xFFFF4DDA)
+private val CocViolet = Color(0xFF9470FF)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,9 +110,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
-                    primary = CocGold,
-                    onPrimary = Color(0xFF201A0A),
-                    secondary = CocGreen,
+                    primary = CocCyan,
+                    onPrimary = Color(0xFF04101D),
+                    secondary = CocMagenta,
                     background = CocBackground,
                     surface = CocSurface,
                     onBackground = Color.White,
@@ -160,19 +188,20 @@ private fun CocLioApp() {
         }
     }
 
-    Scaffold(
-        containerColor = CocBackground,
+    Box(Modifier.fillMaxSize()) {
+        NeonBackdrop()
+        Scaffold(
+        containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(CocBackground)
                     .padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("COC-LIO", color = CocGold, fontSize = 23.sp, fontWeight = FontWeight.Black)
+                    Text("COC-LIO", color = CocCyan, fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                     Text("THEO DÕI TIẾN TRÌNH NGÔI LÀNG", color = CocMuted, fontSize = 9.sp, letterSpacing = 1.sp)
                 }
                 Button(
@@ -188,19 +217,19 @@ private fun CocLioApp() {
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = CocSurface, contentColor = Color.White) {
+            NavigationBar(containerColor = Color(0xEE091226), contentColor = Color.White) {
                 val navItems = listOf(
-                    Triple("🏰", "Tổng quan", 0),
-                    Triple("🛡️", "Công trình", 1),
-                    Triple("⚔️", "Quân đội", 2),
-                    Triple("🕘", "Lịch sử", 3)
+                    Triple("home", "Tổng quan", 0),
+                    Triple("building", "Công trình", 1),
+                    Triple("army", "Quân đội", 2),
+                    Triple("history", "Lịch sử", 3)
                 )
                 navItems.forEach { item ->
                     NavigationBarItem(
                         selected = selectedTab == item.third,
                         onClick = { selectedTab = item.third },
-                        icon = { Text(item.first, fontSize = 19.sp) },
-                        label = { Text(item.second, fontSize = 10.sp) }
+                        icon = { Icon(imageVector = when (item.first) { "home" -> Icons.Filled.Home; "building" -> Icons.Filled.Business; "army" -> Icons.Filled.Groups; else -> Icons.Filled.History }, contentDescription = item.second, tint = if (selectedTab == item.third) CocCyan else CocMuted) },
+                        label = { Text(item.second, fontSize = 10.sp, color = if (selectedTab == item.third) CocCyan else CocMuted) }
                     )
                 }
             }
@@ -219,7 +248,8 @@ private fun CocLioApp() {
                     }
                 )
             } else {
-                when (selectedTab) {
+                Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
+                when (page) {
                     0 -> OverviewScreen(
                         snapshot = current!!,
                         events = events,
@@ -245,8 +275,10 @@ private fun CocLioApp() {
                         }
                     )
                 }
+                }
             }
         }
+    }
     }
 
     if (showImportDialog) {
