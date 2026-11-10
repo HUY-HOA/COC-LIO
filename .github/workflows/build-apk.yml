@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     env:
       VERSION_CODE: ${{ github.run_number }}
@@ -22,6 +22,14 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
+      - name: Verify GitHub runner
+        shell: bash
+        run: |
+          echo "Runner is online."
+          uname -a
+          df -h .
+          java -version || true
+
       - name: Checkout source
         uses: actions/checkout@v4
 
