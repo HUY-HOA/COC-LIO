@@ -1280,7 +1280,7 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
             .clip(shape)
             .background(MaterialTheme.colorScheme.surface)
             .drawWithCache {
-                val progress = led.progress.value
+                val progress = if (led.speedMillis <= 0) 0f else (led.progress.value * (20000f / led.speedMillis)).rem(1f)
                 val stroke = 2.6.dp.toPx()
                 val inset = stroke / 2f
                 val path = Path().apply {
