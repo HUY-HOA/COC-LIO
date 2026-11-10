@@ -70,6 +70,16 @@ class VillageParserTest {
     }
 
     @Test
+    fun normalizesMillisecondTimestampAndTimerToSeconds() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#MILLISECONDS","timestamp":1794320000000,"buildings":[{"data":1000008,"lvl":5,"timer":3600000}]}"""
+        )
+
+        assertEquals(1794320000L, snapshot.timestamp)
+        assertEquals(3600L, snapshot.upgrades.single().timerSeconds)
+    }
+
+    @Test
     fun readsVillageNameWhenJsonProvidesIt() {
         val direct = VillageParser.parse(
             """{"tag":"#TEST123","timestamp":1794320000,"playerName":"Làng Chính"}"""
