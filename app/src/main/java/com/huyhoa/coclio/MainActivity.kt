@@ -85,7 +85,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -166,7 +168,7 @@ private fun NeonBackdrop() {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF050817), Color(0xFF09132B), Color(0xFF070A1A))
+                    listOf(MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.background)
                 )
             )
     )
@@ -196,7 +198,11 @@ private fun NeonPanel(
         modifier = modifier
             .shadow(5.dp, shape)
             .clip(shape)
-            .background(Brush.linearGradient(listOf(Color(0xF2192945), Color(0xF20B142A), Color(0xF21A1230))))
+            .background(Brush.linearGradient(listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surfaceVariant,
+                MaterialTheme.colorScheme.surface
+            )))
             .drawWithCache {
                 val stroke = 2.8.dp.toPx()
                 val inset = stroke / 2f
@@ -266,25 +272,57 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(
-                colorScheme = darkColorScheme(
+            var themeMode by remember { mutableStateOf(AppPreferences.themeMode(this@MainActivity)) }
+            val dark = when (themeMode) {
+                "light" -> false
+                "dark" -> true
+                else -> isSystemInDarkTheme()
+            }
+            val colors = if (dark) {
+                darkColorScheme(
                     primary = CocCyan,
                     onPrimary = Color(0xFF04101D),
                     secondary = CocMagenta,
+                    tertiary = CocGold,
                     background = CocBackground,
                     surface = CocSurface,
+                    surfaceVariant = CocSurfaceAlt,
                     onBackground = Color.White,
-                    onSurface = Color.White
+                    onSurface = Color.White,
+                    onSurfaceVariant = CocMuted
                 )
-            ) {
-                CocLioApp()
+            } else {
+                lightColorScheme(
+                    primary = Color(0xFF006A78),
+                    onPrimary = Color.White,
+                    secondary = Color(0xFF8B3B85),
+                    tertiary = Color(0xFF8A5A00),
+                    background = Color(0xFFF3F6FB),
+                    surface = Color.White,
+                    surfaceVariant = Color(0xFFE8EEF6),
+                    onBackground = Color(0xFF172235),
+                    onSurface = Color(0xFF172235),
+                    onSurfaceVariant = Color(0xFF526176)
+                )
+            }
+            MaterialTheme(colorScheme = colors) {
+                CocLioApp(
+                    themeMode = themeMode,
+                    onThemeModeChanged = {
+                        themeMode = it
+                        AppPreferences.setThemeMode(this@MainActivity, it)
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CocLioApp() {
+private fun CocLioApp(
+    themeMode: String,
+    onThemeModeChanged: (String) -> Unit
+) {
     val context = LocalContext.current
     val baseDensity = LocalDensity.current
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
@@ -300,6 +338,11 @@ private fun CocLioApp() {
     var selectedTab by remember { mutableStateOf(0) }
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
+    var pendingGoogleAccount by remember { mutableStateOf<GoogleAccountData?>(null) }
+    var pendingPreferredName by remember { mutableStateOf("") }
+    var lastUsedAt by remember(activeProfile) {
+        mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
+    }
     var notificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationsEnabled(context, activeProfile))
     }
@@ -348,7 +391,9 @@ private fun CocLioApp() {
             notificationsEnabled = true
             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, true)
         } else {
+            AppPreferences.setNotificationsEnabled(context, activeProfile, false)
             notificationsEnabled = false
+            UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, false)
             scope.launch { snackbar.showSnackbar("Bạn chưa cấp quyền thông báo cho COC-LIO.") }
         }
     }
@@ -377,11 +422,26 @@ private fun CocLioApp() {
         events = emptyList()
         notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
         notificationStyle = AppPreferences.notificationStyle(context, activeProfile)
+        AccountProfileStore.markLastUsed(context, activeProfile)
+        lastUsedAt = AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L
+        if (activeProfile != "local" &&
+            AccountProfileStore.preferredName(context, activeProfile).isNullOrBlank() &&
+            pendingGoogleAccount == null
+        ) {
+            pendingGoogleAccount = AccountProfileStore.googleData(context, activeProfile)
+                ?: GoogleAccountData(activeProfile, null, null, null, null)
+            pendingPreferredName = ""
+        }
         UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
     }
 
     LaunchedEffect(Unit) {
         AppWidgetUpdater.ensureRefresh(context)
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     fun importJson(raw: String, nameOverride: String? = null) {
@@ -432,7 +492,7 @@ private fun CocLioApp() {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("COC-LIO", color = CocCyan, fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-                    Text("THEO DÕI TIẾN TRÌNH", color = CocMuted, fontSize = 9.sp, letterSpacing = 1.sp)
+                    Text("THEO DÕI TIẾN TRÌNH", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, letterSpacing = 1.sp)
                 }
                 NeonButton(
                     text = "＋ NHẬP JSON",
@@ -444,7 +504,10 @@ private fun CocLioApp() {
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = Color(0xEE091226), contentColor = Color.White) {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ) {
                 val navItems = listOf(
                     Triple("home", "Tổng quan", 0),
                     Triple("buildings", "Công trình", 1),
@@ -466,11 +529,11 @@ private fun CocLioApp() {
                                     else -> Icons.Filled.Settings
                                 },
                                 contentDescription = item.second,
-                                tint = if (selectedTab == item.third) CocCyan else CocMuted
+                                tint = if (selectedTab == item.third) CocCyan else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         label = {
-                            Text(item.second, fontSize = 9.sp, maxLines = 1, color = if (selectedTab == item.third) CocCyan else CocMuted)
+                            Text(item.second, fontSize = 9.sp, maxLines = 1, color = if (selectedTab == item.third) CocCyan else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     )
                 }
@@ -546,6 +609,12 @@ private fun CocLioApp() {
                     )
                     4 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
+                        accountData = AccountProfileStore.googleData(context, activeProfile),
+                        preferredName = AccountProfileStore.preferredName(context, activeProfile),
+                        lastUsedLabel = lastUsedAt.takeIf { it > 0L }?.let { formatTimestamp(it / 1000L) },
+                        knownProfiles = AccountProfileStore.knownProfiles(context, activeProfile),
+                        themeMode = themeMode,
+                        onThemeModeChanged = onThemeModeChanged,
                         textScale = appFontScale,
                         notificationsEnabled = notificationsEnabled,
                         ledEnabled = ledEnabled,
@@ -572,11 +641,18 @@ private fun CocLioApp() {
                         onGoogleSignIn = {
                             scope.launch {
                                 try {
-                                    val email = GoogleAccountAuth.signIn(context)
-                                    AccountProfileStore.setActive(context, email)
-                                    activeProfile = email
-                                    selectedTab = 0
-                                    snackbar.showSnackbar("Đã chuyển sang hồ sơ " + email)
+                                    val googleAccount = GoogleAccountAuth.signIn(context)
+                                    AccountProfileStore.saveGoogleData(context, googleAccount)
+                                    val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
+                                    if (savedName.isNullOrBlank()) {
+                                        pendingPreferredName = googleAccount.displayName.orEmpty()
+                                        pendingGoogleAccount = googleAccount
+                                    } else {
+                                        AccountProfileStore.setActive(context, googleAccount.email)
+                                        activeProfile = googleAccount.email
+                                        selectedTab = 0
+                                        snackbar.showSnackbar("Đã chuyển sang hồ sơ " + savedName)
+                                    }
                                 } catch (error: Exception) {
                                     snackbar.showSnackbar(error.message ?: "Không thể đăng nhập Google.")
                                 }
@@ -588,7 +664,7 @@ private fun CocLioApp() {
                                 AccountProfileStore.setActive(context, null)
                                 activeProfile = "local"
                                 selectedTab = 0
-                                snackbar.showSnackbar("Đã chuyển về dữ liệu trên thiết bị.")
+                                snackbar.showSnackbar("Đã đăng xuất Google. Dữ liệu cục bộ vẫn được giữ trên thiết bị.")
                             }
                         },
                         onOpenGame = { openClashOfClans(context) },
@@ -638,6 +714,46 @@ private fun CocLioApp() {
     }
     }
 
+    pendingGoogleAccount?.let { googleAccount ->
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Đặt tên hiển thị") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Bạn muốn COC-LIO gọi bạn là gì? Tên này chỉ lưu trên điện thoại và dùng để nhận biết hồ sơ.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = pendingPreferredName,
+                        onValueChange = { pendingPreferredName = it },
+                        singleLine = true,
+                        label = { Text("Tên của bạn") },
+                        placeholder = { Text("Nhập tên muốn hiển thị") }
+                    )
+                    Text(googleAccount.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = pendingPreferredName.trim().isNotEmpty(),
+                    onClick = {
+                        val name = pendingPreferredName.trim()
+                        AccountProfileStore.setPreferredName(context, googleAccount.email, name)
+                        AccountProfileStore.setActive(context, googleAccount.email)
+                        activeProfile = googleAccount.email
+                        selectedTab = 0
+                        pendingGoogleAccount = null
+                        scope.launch { snackbar.showSnackbar("Đã đăng nhập với tên " + name) }
+                    }
+                ) { Text("XÁC NHẬN") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
     if (showImportDialog) {
         CompositionLocalProvider(
             LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * appFontScale)
@@ -670,26 +786,26 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
     ) {
         Text("🏰", fontSize = 62.sp)
         Spacer(Modifier.height(14.dp))
-        Text("Bắt đầu theo dõi", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Text("Bắt đầu theo dõi", color = MaterialTheme.colorScheme.onSurface, fontSize = 21.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
             "Lấy JSON trực tiếp từ game để COC-LIO đọc cấp độ, công trình đang nâng và thời gian còn lại.",
-            color = CocMuted, fontSize = 12.sp, lineHeight = 18.sp
+            color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, lineHeight = 18.sp
         )
         Spacer(Modifier.height(18.dp))
         NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
             Text("CÁCH LẤY JSON LẦN ĐẦU", color = CocCyan, fontSize = 12.sp, fontWeight = FontWeight.Black)
-            Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = Color.White, fontSize = 12.sp)
-            Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác.", color = Color.White, fontSize = 12.sp)
-            Text("3. Kéo xuống Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.", color = Color.White, fontSize = 12.sp)
-            Text("4. Quay lại COC-LIO, dán JSON rồi nhấn Phân tích.", color = Color.White, fontSize = 11.sp)
+            Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+            Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+            Text("3. Kéo xuống Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+            Text("4. Quay lại COC-LIO, dán JSON rồi nhấn Phân tích.", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
         }
         Spacer(Modifier.height(14.dp))
         NeonButton(text = "MỞ CLASH OF CLANS", onClick = onOpenGame, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(10.dp))
         NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        Text("Nút mở game chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong game.", color = CocMuted, fontSize = 10.sp, lineHeight = 15.sp)
+        Text("Nút mở game chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong game.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
@@ -729,17 +845,17 @@ private fun OverviewScreen(
         item {
             NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
                 Column(Modifier.padding(horizontal = 9.dp, vertical = 7.dp)) {
-                    Text("ĐANG THEO DÕI", color = CocMuted, fontSize = 8.sp, letterSpacing = 1.sp)
+                    Text("ĐANG THEO DÕI", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp, letterSpacing = 1.sp)
                     Text(
                         snapshot.villageName ?: snapshot.tag,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (!snapshot.villageName.isNullOrBlank()) Text(snapshot.tag, color = CocMuted, fontSize = 8.sp)
-                    Text("Cập nhật " + formatTimestamp(snapshot.timestamp), color = CocMuted, fontSize = 8.sp)
+                    if (!snapshot.villageName.isNullOrBlank()) Text(snapshot.tag, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                    Text("Cập nhật " + formatTimestamp(snapshot.timestamp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
             }
         }
@@ -798,7 +914,7 @@ private fun OverviewScreen(
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 StatTile("Công trình", snapshot.items.count { it.tab == "buildings" }.toString(), Modifier.weight(1f))
-                StatTile("Đang nâng", (homeRunning.size + builderRunning.size).toString(), Modifier.weight(1f), CocGold)
+                StatTile("Đang nâng", (homeRunning.size + builderRunning.size).toString(), Modifier.weight(1f), MaterialTheme.colorScheme.tertiary)
                 StatTile("Thợ rảnh", if (builderTotal == null) "—" else "$builderFree/$builderTotal", Modifier.weight(1f), CocGreen)
             }
         }
@@ -853,8 +969,8 @@ private fun OverviewScreen(
                     Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         snapshot.extras.forEach { (name, count) ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(name, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
-                                Text(count.toString(), color = CocGold, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Text(name, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                                Text(count.toString(), color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             }
                         }
                     }
@@ -879,8 +995,8 @@ private fun BaseSummaryCard(
         Row(Modifier.padding(7.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, color = glow, fontSize = 8.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                Text("$levelLabel ${level ?: "—"}", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                Text("$itemCount mục • $upgradeCount nâng", color = CocMuted, fontSize = 7.sp, maxLines = 1)
+                Text("$levelLabel ${level ?: "—"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 19.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                Text("$itemCount mục • $upgradeCount nâng", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 1)
             }
             hallItem?.let { CategoryImage(it, 32) }
         }
@@ -892,7 +1008,7 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
     NeonPanel(modifier = modifier, glow = valueColor.takeIf { it != Color.White } ?: CocMagenta) {
         Text(value, color = valueColor, fontSize = 24.sp, fontWeight = FontWeight.Black)
         Spacer(Modifier.height(3.dp))
-        Text(label, color = CocMuted, fontSize = 10.sp, letterSpacing = 0.4.sp)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 0.4.sp)
     }
 }
 
@@ -905,16 +1021,16 @@ private fun SectionTitle(title: String, trailing: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(title, color = CocCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
-        Text(trailing, color = CocMuted, fontSize = 11.sp)
+        Text(trailing, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
     }
 }
 
 @Composable
 private fun InfoCard(title: String, detail: String) {
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
-        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         Spacer(Modifier.height(6.dp))
-        Text(detail, color = CocMuted, fontSize = 11.sp, lineHeight = 17.sp)
+        Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, lineHeight = 17.sp)
     }
 }
 
@@ -957,7 +1073,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         levelText,
-                        color = if (remaining == 0L) CocGreen else Color.White,
+                        color = if (remaining == 0L) CocGreen else MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Black,
                         fontSize = 15.sp,
                         maxLines = 1,
@@ -966,11 +1082,11 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                     if (item.count > 1) {
                         Text(
                             "×${item.count}",
-                            color = CocGold,
+                            color = MaterialTheme.colorScheme.tertiary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
                             modifier = Modifier
-                                .background(CocGold.copy(alpha = 0.13f), RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.13f), RoundedCornerShape(8.dp))
                                 .padding(horizontal = 7.dp, vertical = 2.dp)
                         )
                     }
@@ -981,7 +1097,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                             .fillMaxWidth()
                             .height(23.dp)
                             .clip(RoundedCornerShape(7.dp))
-                            .background(CocSurfaceAlt),
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -998,7 +1114,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                         )
                         Text(
                             "${formatCountdown(remaining)}  •  CÒN ${remainingPercent}%",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
                             maxLines = 1
@@ -1025,7 +1141,7 @@ private fun ChangeCard(event: ChangeEvent) {
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(event.title, color = if (event.completed) CocGreen else CocCyan, fontWeight = FontWeight.Black, fontSize = 12.sp)
-                Text(event.detail, color = CocMuted, fontSize = 11.sp)
+                Text(event.detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
             }
         }
     }
@@ -1196,7 +1312,7 @@ private fun VillageGridItemCard(item: VillageItem) {
             CategoryImage(item, 48)
             Text(
                 item.level?.let { "CẤP $it" } ?: "—",
-                color = CocGold,
+                color = MaterialTheme.colorScheme.tertiary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1
@@ -1209,11 +1325,11 @@ private fun VillageGridItemCard(item: VillageItem) {
                 if (item.count > 1) {
                     Text(
                         "×${item.count}",
-                        color = CocGold,
+                        color = MaterialTheme.colorScheme.tertiary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Black,
                         modifier = Modifier
-                            .background(CocGold.copy(alpha = 0.16f), RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f), RoundedCornerShape(8.dp))
                             .padding(horizontal = 8.dp, vertical = 1.dp)
                     )
                 }
@@ -1240,8 +1356,8 @@ private fun VillageItemCard(item: VillageItem) {
             CategoryImage(item, 44)
             Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.level?.let { "CẤP $it" } ?: "—", color = CocGold, fontSize = 16.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                if (item.count > 1) Text("×${item.count}", color = CocMuted, fontSize = 9.sp)
+                Text(item.level?.let { "CẤP $it" } ?: "—", color = MaterialTheme.colorScheme.tertiary, fontSize = 16.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                if (item.count > 1) Text("×${item.count}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
             if (item.gearUp) Text("⚙", color = CocGreen, fontSize = 18.sp)
             item.weaponLevel?.let { Text("V$it", color = CocCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
@@ -1349,13 +1465,13 @@ private fun HistoryScreen(
                     val pinned = snapshot.tag in pinnedTags
                     NeonPanel(
                         modifier = Modifier.fillMaxWidth().clickable { onSelect(snapshot) },
-                        glow = if (pinned) CocGold else if (snapshot.tag == activeTag) CocCyan else CocViolet
+                        glow = if (pinned) MaterialTheme.colorScheme.tertiary else if (snapshot.tag == activeTag) CocCyan else CocViolet
                     ) {
                         Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     snapshot.villageName ?: snapshot.tag,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
@@ -1363,7 +1479,7 @@ private fun HistoryScreen(
                                 )
                                 Text(
                                     if (pinned) "★" else "☆",
-                                    color = if (pinned) CocGold else CocMuted,
+                                    color = if (pinned) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 19.sp,
                                     modifier = Modifier.clickable { onTogglePin(snapshot.tag) }.padding(horizontal = 5.dp, vertical = 1.dp)
                                 )
@@ -1377,7 +1493,7 @@ private fun HistoryScreen(
                             }
                             Text(
                                 "${snapshot.tag}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
-                                color = if (snapshot.tag == activeTag) CocGreen else CocMuted,
+                                color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 10.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -1387,7 +1503,7 @@ private fun HistoryScreen(
                 }
             }
         } else if (selectedSection == "history") {
-            item { Text("Tối đa 60 mốc nhập gần nhất trên thiết bị", color = CocMuted, fontSize = 9.sp) }
+            item { Text("Tối đa 60 mốc nhập gần nhất trên thiết bị", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp) }
             if (history.isEmpty()) {
                 item { InfoCard("Chưa có lịch sử nhập", "Các lần dán JSON sẽ được ghi nhận tại đây.") }
             } else {
@@ -1398,8 +1514,8 @@ private fun HistoryScreen(
                         glow = if (snapshot.tag == activeTag) CocCyan else CocViolet
                     ) {
                         Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(snapshot.villageName ?: snapshot.tag, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            Text("${snapshot.tag}  •  ${formatTimestamp(snapshot.timestamp)}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục", color = CocMuted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(snapshot.villageName ?: snapshot.tag, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("${snapshot.tag}  •  ${formatTimestamp(snapshot.timestamp)}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -1411,8 +1527,8 @@ private fun HistoryScreen(
                 items(deletedVillages, key = { it.id }) { deleted ->
                     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocRed) {
                         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(deleted.villageName ?: deleted.tag, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("${deleted.tag} • ${deleted.snapshots.size} mốc • ${formatTimestamp(deleted.deletedAt)}", color = CocMuted, fontSize = 9.sp)
+                            Text(deleted.villageName ?: deleted.tag, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("${deleted.tag} • ${deleted.snapshots.size} mốc • ${formatTimestamp(deleted.deletedAt)}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                             TextButton(onClick = { onRestore(deleted.id) }) {
                                 Text("KHÔI PHỤC JSON", color = CocGreen, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             }
@@ -1439,9 +1555,9 @@ private fun HistoryScreen(
             dismissButton = {
                 TextButton(onClick = { pendingDelete = null }) { Text("HỦY") }
             },
-            containerColor = CocSurface,
+            containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = Color.White,
-            textContentColor = CocMuted
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -1464,7 +1580,7 @@ private fun ImportDialog(
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
                 Text("NHẬP DỮ LIỆU LÀNG", color = CocCyan, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Text("Sao chép JSON trong Clash of Clans rồi dán vào ô bên dưới. Có thể đặt tên riêng cho làng. JSON là ảnh chụp tại thời điểm xuất; nếu dùng sách, potion, trợ thủ hoặc tăng tốc sau đó, hãy nhập JSON mới.", color = CocMuted, fontSize = 10.sp, lineHeight = 14.sp)
+                Text("Sao chép JSON trong Clash of Clans rồi dán vào ô bên dưới. Có thể đặt tên riêng cho làng. JSON là ảnh chụp tại thời điểm xuất; nếu dùng sách, potion, trợ thủ hoặc tăng tốc sau đó, hãy nhập JSON mới.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 14.sp)
                 OutlinedTextField(
                     value = villageName,
                     onValueChange = { villageName = it },
@@ -1474,8 +1590,8 @@ private fun ImportDialog(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = CocCyan,
                         unfocusedBorderColor = CocViolet,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         cursorColor = CocCyan
                     )
                 )
@@ -1491,8 +1607,8 @@ private fun ImportDialog(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = CocCyan,
                         unfocusedBorderColor = CocViolet,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         cursorColor = CocCyan
                     )
                 )
@@ -1513,7 +1629,7 @@ private fun ImportDialog(
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CocMuted),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                         border = BorderStroke(1.dp, CocViolet.copy(alpha = 0.65f))
                     ) {
                         Text("Đóng", color = CocCyan)
