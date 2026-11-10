@@ -36,6 +36,17 @@
             android:maxLines="1"
             android:ellipsize="end" />
 
+        <TextView
+            android:id="@+id/row_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:text=""
+            android:textColor="#9EAFCE"
+            android:textSize="7sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="30dp"
