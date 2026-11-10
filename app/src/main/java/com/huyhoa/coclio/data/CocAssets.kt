@@ -283,8 +283,17 @@ object CocAssets {
         } ?: return null
 
         val useLevelImage = item.sectionKey in setOf("buildings", "buildings2", "traps", "traps2")
+        val imageLevel = if (item.sectionKey == "buildings" && item.dataId == 1000070) {
+            ((level + 1) / 2) * 2 - 1
+        } else {
+            level
+        }
+        val gearUpVariant = item.gearUp &&
+            item.sectionKey == "buildings" &&
+            item.dataId in setOf(1000008, 1000009, 1000013)
         val relativePath = when {
-            useLevelImage -> "$folder/normal/level-$level.png"
+            useLevelImage && gearUpVariant -> "$folder/geared-up-normal/level-$imageLevel.png"
+            useLevelImage -> "$folder/normal/level-$imageLevel.png"
             item.sectionKey == "helpers" -> "$folder/normal.png"
             else -> "$folder/icon.png"
         }
