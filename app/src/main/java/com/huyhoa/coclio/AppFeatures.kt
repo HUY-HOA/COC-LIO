@@ -165,22 +165,23 @@ object UpgradeReminderScheduler {
 
         snapshots.distinctBy { it.tag }.forEach { snapshot ->
             (snapshot.upgrades + snapshot.gearUps).forEach { item ->
-                val timer = item.timerSeconds ?: return@forEach
-                if (timer <= 0L) return@forEach
-                val endAt = snapshot.timestamp + timer
-                val delay = (endAt - System.currentTimeMillis() / 1000L).coerceAtLeast(1L)
-                val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag + "_" + item.identity
-                val data = Data.Builder()
-                    .putString("profile", profile)
-                    .putString("tag", snapshot.tag)
-                    .putString("item", item.name)
-                    .build()
-                val request = OneTimeWorkRequestBuilder<UpgradeReminderWorker>()
-                    .setInitialDelay(delay, TimeUnit.SECONDS)
-                    .setInputData(data)
-                    .addTag(tag)
-                    .build()
-                manager.enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, request)
+                val timer = item.timerSeconds
+                if (timer != null && timer > 0L) {
+                    val endAt = snapshot.timestamp + timer
+                    val delay = (endAt - System.currentTimeMillis() / 1000L).coerceAtLeast(1L)
+                    val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag + "_" + item.identity
+                    val data = Data.Builder()
+                        .putString("profile", profile)
+                        .putString("tag", snapshot.tag)
+                        .putString("item", item.name)
+                        .build()
+                    val request = OneTimeWorkRequestBuilder<UpgradeReminderWorker>()
+                        .setInitialDelay(delay, TimeUnit.SECONDS)
+                        .setInputData(data)
+                        .addTag(tag)
+                        .build()
+                    manager.enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, request)
+                }
             }
         }
     }
@@ -402,6 +403,7 @@ fun SettingsScreen(
     notificationStyle: String,
     onGoogleSignIn: () -> Unit,
     onGoogleSignOut: () -> Unit,
+    onOpenGame: () -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
     onNotificationStyleChanged: (String) -> Unit
 ) {
@@ -507,7 +509,7 @@ fun SettingsScreen(
                 lineHeight = 17.sp
             )
             Button(
-                onClick = { openClashOfClansFromSettings },
+                onClick = onOpenGame,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = FeatureCyan, contentColor = Color(0xFF04101D))
             ) { Text("MỞ CLASH OF CLANS", fontWeight = FontWeight.Black) }
