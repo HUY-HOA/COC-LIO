@@ -43,3 +43,14 @@ Mỗi lần push lên nhánh main hoặc chạy workflow thủ công, GitHub Act
 - Việc sử dụng hình ảnh Supercell phải tuân thủ Fan Content Policy, bao gồm giới hạn phi thương mại và thông báo rõ đây là nội dung không chính thức.
 
 COC-LIO là dự án cộng đồng không chính thức, không liên kết hoặc được Supercell chứng thực. Clash of Clans và tài sản trong game thuộc về chủ sở hữu tương ứng.
+
+
+## Cài đặt, nhắc nâng cấp và tiện ích
+
+- Có tab **Cài đặt** thứ năm để chọn hồ sơ Google, quyền thông báo và kiểu nhắc tin nhắn hoặc báo thức.
+- Hồ sơ Google tách lịch sử JSON trên cùng thiết bị; dữ liệu chưa tự đồng bộ lên đám mây.
+- Nhắc nâng cấp được lập lịch từ timer trong JSON. Android có thể trì hoãn tác vụ do chế độ tiết kiệm pin hoặc chính sách hệ thống.
+- Có tiện ích màn hình chính theo từng hồ sơ và từng làng; tiện ích hiển thị mục đang nâng, đồng hồ đếm ngược và thanh thời gian.
+- Trong app, các thẻ đang nâng cũng có thanh tiến trình thời gian cập nhật theo đồng hồ.
+
+Để bật đăng nhập Google, xem [docs/GOOGLE_SIGN_IN_SETUP.md](docs/GOOGLE_SIGN_IN_SETUP.md) và cấu hình secret `GOOGLE_WEB_CLIENT_ID`.
