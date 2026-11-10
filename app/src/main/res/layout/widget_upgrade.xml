@@ -37,7 +37,7 @@
         android:progress="0"
         android:progressTint="#36F4FF"
         android:progressBackgroundTint="#34435F" />
-    <TextView
+    <Chronometer
         android:id="@+id/widget_timer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
