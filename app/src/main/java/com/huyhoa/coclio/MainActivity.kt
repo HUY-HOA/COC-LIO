@@ -107,6 +107,123 @@ private val CocCyan = Color(0xFF36F4FF)
 private val CocMagenta = Color(0xFFFF4DDA)
 private val CocViolet = Color(0xFF9470FF)
 
+@Composable
+private fun NeonBackdrop() {
+    val transition = rememberInfiniteTransition(label = "background-glow")
+    val pulse by transition.animateFloat(
+        initialValue = 0.20f,
+        targetValue = 0.42f,
+        animationSpec = infiniteRepeatable(tween(3600), RepeatMode.Reverse),
+        label = "glow-pulse"
+    )
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF050817), Color(0xFF09132B), Color(0xFF070A1A))
+                )
+            )
+    ) {
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 80.dp, y = (-70).dp)
+                .size(250.dp)
+                .blur(75.dp)
+                .background(CocCyan.copy(alpha = pulse), CircleShape)
+        )
+        Box(
+            Modifier
+                .align(Alignment.CenterStart)
+                .offset(x = (-145).dp, y = 60.dp)
+                .size(230.dp)
+                .blur(85.dp)
+                .background(CocMagenta.copy(alpha = pulse * 0.58f), CircleShape)
+        )
+        Box(
+            Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 100.dp, y = 110.dp)
+                .size(260.dp)
+                .blur(90.dp)
+                .background(CocViolet.copy(alpha = pulse * 0.38f), CircleShape)
+        )
+    }
+}
+
+@Composable
+private fun NeonPanel(
+    modifier: Modifier = Modifier,
+    glow: Color = CocCyan,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val shape = RoundedCornerShape(18.dp)
+    Column(
+        modifier = modifier
+            .shadow(15.dp, shape)
+            .clip(shape)
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xF2192945), Color(0xF20B142A), Color(0xF21A1230))
+                )
+            )
+            .border(
+                BorderStroke(
+                    1.dp,
+                    Brush.linearGradient(
+                        listOf(
+                            glow.copy(alpha = 0.82f),
+                            CocMagenta.copy(alpha = 0.48f),
+                            CocViolet.copy(alpha = 0.30f)
+                        )
+                    )
+                ),
+                shape
+            )
+            .padding(14.dp),
+        content = content
+    )
+}
+
+@Composable
+private fun NeonButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val transition = rememberInfiniteTransition(label = "button-glow")
+    val pulse by transition.animateFloat(
+        initialValue = 0.72f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1500), RepeatMode.Reverse),
+        label = "button-pulse"
+    )
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier = modifier
+            .shadow(13.dp, shape)
+            .clip(shape)
+            .background(
+                Brush.linearGradient(
+                    listOf(CocCyan.copy(alpha = 0.95f), CocViolet.copy(alpha = 0.94f), CocMagenta.copy(alpha = 0.90f))
+                )
+            )
+            .border(
+                1.dp,
+                Brush.linearGradient(
+                    listOf(Color.White.copy(alpha = pulse), CocCyan.copy(alpha = pulse * 0.8f))
+                ),
+                shape
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 17.dp, vertical = 11.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, color = Color(0xFF06101F), fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 0.35.sp)
+    }
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
