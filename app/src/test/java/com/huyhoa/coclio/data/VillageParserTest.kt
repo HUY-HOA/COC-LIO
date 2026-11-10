@@ -129,6 +129,25 @@ class VillageParserTest {
     }
 
     @Test
+    fun upgradeProgressMovesFromZeroToOneHundredAsCountdownExpires() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#PROGRESS","timestamp":1794320000,"buildings":[
+                {"data":1000008,"lvl":5,"timer":7200}
+            ]}"""
+        )
+        val item = snapshot.upgrades.single()
+
+        assertEquals(0, item.progressPercentAt(snapshot.timestamp, snapshot.timestamp))
+        assertEquals(0.25f, item.progressRatioAt(snapshot.timestamp, snapshot.timestamp + 1800L), 0.0001f)
+        assertEquals(25, item.progressPercentAt(snapshot.timestamp, snapshot.timestamp + 1800L))
+        assertEquals(50, item.progressPercentAt(snapshot.timestamp, snapshot.timestamp + 3600L))
+        assertEquals(75, item.progressPercentAt(snapshot.timestamp, snapshot.timestamp + 5400L))
+        assertEquals(100, item.progressPercentAt(snapshot.timestamp, snapshot.timestamp + 7200L))
+        assertEquals(100, item.progressPercentAt(snapshot.timestamp, snapshot.timestamp + 9000L))
+        assertEquals(0L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp + 7200L))
+    }
+
+    @Test
     fun petUpgradeCountsAsBusyHomeBuilder() {
         val snapshot = VillageParser.parse(
             """{"tag":"#PETS","timestamp":1794320000,"buildings":[
