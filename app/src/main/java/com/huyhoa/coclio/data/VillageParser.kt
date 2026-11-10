@@ -19,12 +19,15 @@ data class VillageItem(
     val level: Int?,
     val count: Int,
     val timerSeconds: Long?,
+    val helperCooldownSeconds: Long?,
     val gearUp: Boolean,
     val weaponLevel: Int?,
     val details: List<String>
 ) {
     val name: String get() = CocNames.name(dataId, sectionKey)
     val isRunning: Boolean get() = timerSeconds != null && timerSeconds > 0L
+    val isUpgradeRunning: Boolean get() = isRunning && !gearUp
+    val isGearUpRunning: Boolean get() = isRunning && gearUp
     val isExpired: Boolean get() = timerSeconds != null && timerSeconds <= 0L
     val identity: String get() = "$sectionKey:$dataId:${level ?: 0}"
     val idleCount: Int get() = if (timerSeconds != null && timerSeconds > 0L) 0 else count
@@ -39,7 +42,8 @@ data class VillageSnapshot(
 ) {
     val homeItems: List<VillageItem> get() = items.filter { it.base == "home" }
     val builderItems: List<VillageItem> get() = items.filter { it.base == "builder" }
-    val upgrades: List<VillageItem> get() = items.filter { it.isRunning }
+    val upgrades: List<VillageItem> get() = items.filter { it.isUpgradeRunning }
+    val gearUps: List<VillageItem> get() = items.filter { it.isGearUpRunning }
     val townHallLevel: Int? get() = items.firstOrNull {
         it.sectionKey == "buildings" && it.dataId == 1000001 && it.level != null
     }?.level
@@ -98,6 +102,7 @@ object VillageParser {
                 if (dataId < 0) continue
                 val level = if (obj.has("lvl") && !obj.isNull("lvl")) obj.optInt("lvl") else null
                 val timer = if (obj.has("timer") && !obj.isNull("timer")) obj.optLong("timer") else null
+                val helperCooldown = if (obj.has("helper_cooldown") && !obj.isNull("helper_cooldown")) obj.optLong("helper_cooldown") else null
                 val count = if (obj.has("cnt") && !obj.isNull("cnt")) {
                     obj.optInt("cnt", 1).coerceAtLeast(1)
                 } else {
@@ -134,6 +139,7 @@ object VillageParser {
                     level = level,
                     count = count,
                     timerSeconds = timer,
+                    helperCooldownSeconds = helperCooldown,
                     gearUp = gearUp,
                     weaponLevel = weapon,
                     details = details
@@ -180,12 +186,12 @@ object VillageParser {
         if (previous == null || previous.tag != current.tag) return emptyList()
 
         val result = mutableListOf<ChangeEvent>()
-        val previousRunning = previous.items.filter { it.isRunning }
+        val previousRunning = previous.items.filter { it.isUpgradeRunning }
             .groupingBy { it.identity }.eachCount()
-        val currentRunning = current.items.filter { it.isRunning }
+        val currentRunning = current.items.filter { it.isUpgradeRunning }
             .groupingBy { it.identity }.eachCount()
 
-        current.items.filter { it.isRunning }.forEach { item ->
+        current.items.filter { it.isUpgradeRunning }.forEach { item ->
             val oldCount = previousRunning[item.identity] ?: 0
             val nowCount = currentRunning[item.identity] ?: 0
             if (nowCount > oldCount) {
@@ -196,7 +202,7 @@ object VillageParser {
             }
         }
 
-        previous.items.filter { it.isRunning }.forEach { oldItem ->
+        previous.items.filter { it.isUpgradeRunning }.forEach { oldItem ->
             val oldCount = previousRunning[oldItem.identity] ?: 0
             val nowCount = currentRunning[oldItem.identity] ?: 0
             if (oldCount <= nowCount) return@forEach
@@ -283,9 +289,9 @@ object VillageParser {
 
 object CocNames {
     private val names = mapOf(
-        1000000 to "Trại lính", 1000001 to "Nhà chính", 1000002 to "Mỏ Elixir",
+        1000000 to "Trại quân", 1000001 to "Nhà chính", 1000002 to "Mỏ Elixir",
         1000003 to "Kho Elixir", 1000004 to "Mỏ vàng", 1000005 to "Kho vàng",
-        1000006 to "Nhà lính", 1000007 to "Phòng thí nghiệm", 1000008 to "Đại bác",
+        1000006 to "Doanh trại", 1000007 to "Phòng thí nghiệm", 1000008 to "Đại bác",
         1000009 to "Tháp cung", 1000010 to "Tường", 1000011 to "Tháp pháp sư",
         1000012 to "Phòng không", 1000013 to "Cối", 1000014 to "Thành Clan",
         1000015 to "Nhà thợ xây", 1000019 to "Tesla ẩn", 1000020 to "Nhà phép",
@@ -368,7 +374,7 @@ object CocNames {
         90000014 to "Cầu lửa", 90000015 to "Gương phép",
         90000016 to "Bóng gai", 90000017 to "Giáo tên lửa",
         93000000 to "Thợ xây tập sự", 93000001 to "Trợ lý phòng thí nghiệm",
-        93000002 to "Nhà giả kim",
+        93000002 to "Trợ thủ #93000002",
         103000008 to "Lò nướng Builder", 103000009 to "Bom bay Builder",
         103000010 to "Máy phóng dung nham", 103000011 to "Nến nóng",
         103000012 to "Thợ săn anh hùng", 103000013 to "Máy bắn bánh",
