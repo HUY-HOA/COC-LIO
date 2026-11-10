@@ -1,0 +1,749 @@
+package com.huyhoa.coclio
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import com.huyhoa.coclio.data.ChangeEvent
+import com.huyhoa.coclio.data.VillageItem
+import com.huyhoa.coclio.data.VillageParser
+import com.huyhoa.coclio.data.VillageSnapshot
+import com.huyhoa.coclio.data.VillageStore
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+private val CocBackground = Color(0xFF101722)
+private val CocSurface = Color(0xFF1B2735)
+private val CocSurfaceAlt = Color(0xFF253447)
+private val CocGold = Color(0xFFFFC857)
+private val CocGreen = Color(0xFF78D69B)
+private val CocRed = Color(0xFFFF8585)
+private val CocMuted = Color(0xFFAAB7C7)
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MaterialTheme(
+                colorScheme = darkColorScheme(
+                    primary = CocGold,
+                    onPrimary = Color(0xFF201A0A),
+                    secondary = CocGreen,
+                    background = CocBackground,
+                    surface = CocSurface,
+                    onBackground = Color.White,
+                    onSurface = Color.White
+                )
+            ) {
+                CocLioApp()
+            }
+        }
+    }
+}
+
+@Composable
+private fun CocLioApp() {
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+    val initialHistory = remember { VillageStore.loadAll(context) }
+
+    var history by remember { mutableStateOf(initialHistory) }
+    var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
+    var events by remember { mutableStateOf(emptyList<ChangeEvent>()) }
+    var selectedTab by remember { mutableStateOf(0) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importError by remember { mutableStateOf<String?>(null) }
+    var nowEpoch by remember { mutableLongStateOf(System.currentTimeMillis() / 1000L) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000)
+            nowEpoch = System.currentTimeMillis() / 1000L
+        }
+    }
+
+    fun importJson(raw: String) {
+        try {
+            val parsed = VillageParser.parse(raw)
+            val previous = history.firstOrNull {
+                it.tag == parsed.tag && it.timestamp < parsed.timestamp
+            }
+            VillageStore.save(context, parsed)
+            history = VillageStore.loadAll(context)
+            current = parsed
+            events = VillageParser.compare(previous, parsed)
+            importError = null
+            showImportDialog = false
+            scope.launch {
+                snackbar.showSnackbar(
+                    if (previous == null) "Đã lưu mốc dữ liệu đầu tiên cho " + parsed.tag
+                    else "Đã nhập JSON và so sánh với lần trước"
+                )
+            }
+        } catch (error: Exception) {
+            importError = error.message ?: "Không thể đọc JSON này."
+        }
+    }
+
+    val filePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val raw = context.contentResolver.openInputStream(uri)
+                    ?.bufferedReader()
+                    ?.use { it.readText() }
+                    ?: throw IllegalArgumentException("Không mở được tệp đã chọn.")
+                importJson(raw)
+            } catch (error: Exception) {
+                importError = error.message ?: "Không thể đọc tệp JSON."
+                showImportDialog = true
+            }
+        }
+    }
+
+    Scaffold(
+        containerColor = CocBackground,
+        snackbarHost = { SnackbarHost(snackbar) },
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(CocBackground)
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("COC-LIO", color = CocGold, fontSize = 23.sp, fontWeight = FontWeight.Black)
+                    Text("THEO DÕI TIẾN TRÌNH NGÔI LÀNG", color = CocMuted, fontSize = 9.sp, letterSpacing = 1.sp)
+                }
+                Button(
+                    onClick = {
+                        importError = null
+                        showImportDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = CocGold, contentColor = Color(0xFF201A0A)),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
+                ) {
+                    Text("Nhập JSON", fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        bottomBar = {
+            NavigationBar(containerColor = CocSurface, contentColor = Color.White) {
+                val navItems = listOf(
+                    Triple("🏰", "Tổng quan", 0),
+                    Triple("🛡️", "Công trình", 1),
+                    Triple("⚔️", "Quân đội", 2),
+                    Triple("🕘", "Lịch sử", 3)
+                )
+                navItems.forEach { item ->
+                    NavigationBarItem(
+                        selected = selectedTab == item.third,
+                        onClick = { selectedTab = item.third },
+                        icon = { Text(item.first, fontSize = 19.sp) },
+                        label = { Text(item.second, fontSize = 10.sp) }
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            if (current == null) {
+                EmptyWelcome(
+                    onImport = {
+                        importError = null
+                        showImportDialog = true
+                    }
+                )
+            } else {
+                when (selectedTab) {
+                    0 -> OverviewScreen(
+                        snapshot = current!!,
+                        events = events,
+                        nowEpoch = nowEpoch
+                    )
+                    1 -> CategoryScreen(
+                        snapshot = current!!,
+                        tab = "buildings",
+                        nowEpoch = nowEpoch
+                    )
+                    2 -> CategoryScreen(
+                        snapshot = current!!,
+                        tab = "army",
+                        nowEpoch = nowEpoch
+                    )
+                    else -> HistoryScreen(
+                        history = history,
+                        activeTag = current!!.tag,
+                        onSelect = {
+                            current = it
+                            events = emptyList()
+                            selectedTab = 0
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    if (showImportDialog) {
+        ImportDialog(
+            error = importError,
+            onDismiss = {
+                showImportDialog = false
+                importError = null
+            },
+            onPaste = {
+                clipboard.getText()?.text?.let { it }
+            },
+            onChooseFile = {
+                filePicker.launch(arrayOf("application/json", "text/plain", "*/*"))
+            },
+            onImport = { importJson(it) }
+        )
+    }
+}
+
+@Composable
+private fun EmptyWelcome(onImport: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("🏰", fontSize = 64.sp)
+        Spacer(Modifier.height(18.dp))
+        Text("Bắt đầu theo dõi ngôi làng", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(9.dp))
+        Text(
+            "Nhập JSON được xuất trực tiếp trong Clash of Clans. Dữ liệu sẽ được lưu trên thiết bị này.",
+            color = CocMuted,
+            fontSize = 14.sp,
+            lineHeight = 21.sp
+        )
+        Spacer(Modifier.height(24.dp))
+        Button(
+            onClick = onImport,
+            colors = ButtonDefaults.buttonColors(containerColor = CocGold, contentColor = Color(0xFF201A0A))
+        ) {
+            Text("Nhập JSON đầu tiên", fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("Trong game: Cài đặt → Cài đặt khác → Xuất dữ liệu làng → Sao chép", color = CocMuted, fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun OverviewScreen(
+    snapshot: VillageSnapshot,
+    events: List<ChangeEvent>,
+    nowEpoch: Long
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = CocSurface),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Column(Modifier.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("LÀNG CỦA BẠN", color = CocMuted, fontSize = 10.sp, letterSpacing = 1.2.sp)
+                            Text(snapshot.tag, color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("NHÀ CHÍNH", color = CocMuted, fontSize = 9.sp)
+                            Text(snapshot.townHallLevel?.toString() ?: "—", color = CocGold, fontSize = 34.sp, fontWeight = FontWeight.Black)
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Divider(color = CocSurfaceAlt)
+                    Spacer(Modifier.height(12.dp))
+                    Text("Lần xuất dữ liệu: " + formatTimestamp(snapshot.timestamp), color = CocMuted, fontSize = 11.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 12.dp)) {
+                        StatTile("Công trình", snapshot.items.count { it.tab == "buildings" }.toString(), Modifier.weight(1f))
+                        StatTile("Quân đội", snapshot.items.count { it.tab == "army" }.toString(), Modifier.weight(1f))
+                        StatTile("Đang nâng", snapshot.upgrades.size.toString(), Modifier.weight(1f), CocGold)
+                    }
+                    if (snapshot.builderHallLevel != null) {
+                        Text("Nhà Builder cấp " + snapshot.builderHallLevel, color = CocMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 10.dp))
+                    }
+                }
+            }
+        }
+
+        item {
+            SectionTitle("ĐANG NÂNG CẤP", snapshot.upgrades.size.toString())
+        }
+
+        if (snapshot.upgrades.isEmpty()) {
+            item {
+                InfoCard("Không có bộ đếm nâng cấp trong JSON này", "Khi một công trình, anh hùng hoặc đơn vị đang nâng cấp, game sẽ xuất trường timer.")
+            }
+        } else {
+            items(snapshot.upgrades, key = { it.identity + "_" + it.timerSeconds }) { upgrade ->
+                UpgradeCard(upgrade, snapshot.timestamp, nowEpoch)
+            }
+        }
+
+        if (events.isNotEmpty()) {
+            item { SectionTitle("THAY ĐỔI SO VỚI LẦN TRƯỚC", events.size.toString()) }
+            items(events, key = { it.title + it.detail }) { event ->
+                ChangeCard(event)
+            }
+        }
+
+        val helpers = snapshot.items.filter { it.sectionKey == "helpers" }
+        if (helpers.isNotEmpty()) {
+            item { SectionTitle("TRỢ THỦ", helpers.size.toString()) }
+            items(helpers, key = { it.identity }) { item ->
+                VillageItemCard(item)
+            }
+        }
+
+        if (snapshot.extras.isNotEmpty()) {
+            item { SectionTitle("DỮ LIỆU KHÁC", snapshot.extras.values.sum().toString()) }
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = CocSurface)) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        snapshot.extras.forEach { (name, count) ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(name, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                Text(count.toString(), color = CocGold, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(
+                "COC-LIO chỉ đọc dữ liệu được game đưa vào JSON. Bộ đếm hết giờ cần nhập JSON mới để xác nhận hoàn thành.",
+                color = CocMuted,
+                fontSize = 10.sp,
+                lineHeight = 15.sp,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatTile(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Color.White) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = CocSurfaceAlt),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(Modifier.padding(10.dp)) {
+            Text(value, color = valueColor, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+            Text(label, color = CocMuted, fontSize = 10.sp)
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String, trailing: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 5.dp, bottom = 1.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title, color = CocGold, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+        Text(trailing, color = CocMuted, fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun InfoCard(title: String, detail: String) {
+    Card(colors = CardDefaults.cardColors(containerColor = CocSurface), shape = RoundedCornerShape(14.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Text(title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Spacer(Modifier.height(5.dp))
+            Text(detail, color = CocMuted, fontSize = 11.sp, lineHeight = 16.sp)
+        }
+    }
+}
+
+@Composable
+private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Long) {
+    val endAt = snapshotTimestamp + (item.timerSeconds ?: 0L)
+    val remaining = (endAt - nowEpoch).coerceAtLeast(0L)
+    Card(
+        colors = CardDefaults.cardColors(containerColor = CocSurface),
+        shape = RoundedCornerShape(15.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CategoryEmoji(item, 30)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(
+                    (item.sectionLabel) + (item.level?.let { " • cấp $it" } ?: "") +
+                        if (item.count > 1) " • x" + item.count else "",
+                    color = CocMuted,
+                    fontSize = 10.sp
+                )
+                Spacer(Modifier.height(5.dp))
+                if (remaining > 0L) {
+                    Text("Còn lại " + formatDuration(remaining), color = CocGold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("Dự kiến xong: " + formatTimestamp(endAt), color = CocMuted, fontSize = 10.sp)
+                } else {
+                    Text("Đã hết giờ • chờ JSON mới xác nhận", color = CocGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            if (remaining > 0L) {
+                Text("⏳", fontSize = 21.sp)
+            } else {
+                Text("✓", color = CocGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChangeCard(event: ChangeEvent) {
+    Card(colors = CardDefaults.cardColors(containerColor = CocSurface), shape = RoundedCornerShape(13.dp)) {
+        Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(if (event.completed) "✅" else "🔄", fontSize = 18.sp)
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text(event.title, color = if (event.completed) CocGreen else CocGold, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text(event.detail, color = CocMuted, fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryScreen(snapshot: VillageSnapshot, tab: String, nowEpoch: Long) {
+    var selectedBase by remember(snapshot.tag, tab) { mutableStateOf("home") }
+    val filtered = snapshot.items.filter {
+        it.tab == tab && it.base == selectedBase && it.sectionKey != "helpers"
+    }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
+        item {
+            Text(
+                if (tab == "buildings") "CÔNG TRÌNH VÀ BẪY" else "QUÂN ĐỘI VÀ NGHIÊN CỨU",
+                color = CocGold,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Text(snapshot.tag + " • " + filtered.size + " nhóm dữ liệu", color = CocMuted, fontSize = 11.sp)
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = selectedBase == "home",
+                    onClick = { selectedBase = "home" },
+                    label = { Text("Nhà chính") }
+                )
+                FilterChip(
+                    selected = selectedBase == "builder",
+                    onClick = { selectedBase = "builder" },
+                    label = { Text("Builder Base") }
+                )
+            }
+        }
+        if (filtered.isEmpty()) {
+            item {
+                InfoCard(
+                    "Chưa có dữ liệu trong mục này",
+                    "JSON không chứa mục tương ứng hoặc làng này chưa mở khóa dữ liệu đó."
+                )
+            }
+        } else {
+            val grouped = filtered.groupBy { it.sectionKey }
+            grouped.forEach { (sectionKey, rows) ->
+                item(key = "section_$sectionKey") {
+                    SectionTitle(rows.first().sectionLabel.uppercase(), rows.sumOf { it.count }.toString())
+                }
+                items(rows, key = { it.identity + "_" + (it.timerSeconds ?: -1L) + "_" + it.count }) { item ->
+                    if (item.isRunning) {
+                        UpgradeCard(item, snapshot.timestamp, nowEpoch)
+                    } else {
+                        VillageItemCard(item)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VillageItemCard(item: VillageItem) {
+    Card(colors = CardDefaults.cardColors(containerColor = CocSurface), shape = RoundedCornerShape(13.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(13.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CategoryEmoji(item, 26)
+            Spacer(Modifier.width(11.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(item.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                val subtitle = buildString {
+                    item.level?.let { append("Cấp $it") }
+                    if (item.count > 1) {
+                        if (isNotEmpty()) append(" • ")
+                        append("Số lượng: " + item.count)
+                    }
+                    if (item.gearUp) {
+                        if (isNotEmpty()) append(" • ")
+                        append("Đã gear-up")
+                    }
+                    item.weaponLevel?.let {
+                        if (isNotEmpty()) append(" • ")
+                        append("Vũ khí cấp $it")
+                    }
+                }
+                if (subtitle.isNotBlank()) {
+                    Text(subtitle, color = CocMuted, fontSize = 10.sp)
+                }
+                item.details.forEach { detail ->
+                    Text(detail, color = CocGold, fontSize = 9.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            item.level?.let {
+                Text("Lv.$it", color = CocGold, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryEmoji(item: VillageItem, size: Int) {
+    val emoji = when (item.sectionKey) {
+        "buildings", "buildings2" -> "🏰"
+        "traps", "traps2" -> "💣"
+        "units", "units2" -> "⚔️"
+        "siege_machines" -> "🛠️"
+        "heroes", "heroes2" -> "🦸"
+        "spells" -> "✨"
+        "pets" -> "🐾"
+        "equipment" -> "🛡️"
+        "helpers" -> "🧑‍🔧"
+        else -> "🏷️"
+    }
+    Text(emoji, fontSize = size.sp)
+}
+
+@Composable
+private fun HistoryScreen(
+    history: List<VillageSnapshot>,
+    activeTag: String,
+    onSelect: (VillageSnapshot) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Text("LỊCH SỬ NHẬP JSON", color = CocGold, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("Lưu trên thiết bị • tối đa 60 lần nhập gần nhất", color = CocMuted, fontSize = 10.sp)
+        }
+        if (history.isEmpty()) {
+            item { InfoCard("Chưa có lịch sử", "Nhập JSON làng để tạo mốc dữ liệu đầu tiên.") }
+        } else {
+            items(history, key = { it.tag + "_" + it.timestamp }) { snapshot ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = CocSurface),
+                    shape = RoundedCornerShape(14.dp),
+                    onClick = { onSelect(snapshot) }
+                ) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(snapshot.tag, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text(formatTimestamp(snapshot.timestamp), color = CocMuted, fontSize = 10.sp)
+                            Text(
+                                "Nhà chính " + (snapshot.townHallLevel?.toString() ?: "—") +
+                                    " • " + snapshot.items.size + " dòng dữ liệu" +
+                                    " • " + snapshot.upgrades.size + " bộ đếm",
+                                color = CocMuted,
+                                fontSize = 10.sp
+                            )
+                        }
+                        if (snapshot.tag == activeTag) {
+                            Text("ĐANG XEM", color = CocGold, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Text("MỞ", color = CocGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImportDialog(
+    error: String?,
+    onDismiss: () -> Unit,
+    onPaste: () -> String?,
+    onChooseFile: () -> Unit,
+    onImport: (String) -> Unit
+) {
+    var rawText by remember { mutableStateOf("") }
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = CocSurface),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(11.dp)
+            ) {
+                Text("NHẬP DỮ LIỆU LÀNG", color = CocGold, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Dán JSON vừa sao chép trong game hoặc chọn tệp .json.", color = CocMuted, fontSize = 11.sp)
+                OutlinedTextField(
+                    value = rawText,
+                    onValueChange = { rawText = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(190.dp),
+                    placeholder = { Text("{ \"tag\": \"#...\", ... }", fontSize = 11.sp) },
+                    minLines = 6,
+                    maxLines = 10
+                )
+                if (!error.isNullOrBlank()) {
+                    Text(error, color = CocRed, fontSize = 11.sp)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { rawText = onPaste().orEmpty() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Dán clipboard", fontSize = 11.sp)
+                    }
+                    OutlinedButton(
+                        onClick = onChooseFile,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Chọn tệp", fontSize = 11.sp)
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                        Text("Đóng")
+                    }
+                    Button(
+                        onClick = { onImport(rawText) },
+                        enabled = rawText.isNotBlank(),
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = CocGold, contentColor = Color(0xFF201A0A))
+                    ) {
+                        Text("Phân tích & lưu", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatTimestamp(timestamp: Long): String {
+    return try {
+        DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            .withZone(ZoneId.systemDefault())
+            .format(Instant.ofEpochSecond(timestamp))
+    } catch (_: Exception) {
+        timestamp.toString()
+    }
+}
+
+private fun formatDuration(seconds: Long): String {
+    val days = seconds / 86400L
+    val hours = (seconds % 86400L) / 3600L
+    val minutes = (seconds % 3600L) / 60L
+    val secs = seconds % 60L
+    return buildString {
+        if (days > 0) append(days).append(" ngày ")
+        if (hours > 0 || days > 0) append(hours).append(" giờ ")
+        if (minutes > 0 || hours > 0 || days > 0) append(minutes).append(" phút")
+        else append(secs).append(" giây")
+    }.trim()
+}
