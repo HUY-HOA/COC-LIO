@@ -610,7 +610,7 @@ private fun OverviewScreen(
         }
 
         item {
-            SectionTitle("ĐANG NÂNG CẤP", snapshot.upgrades.size.toString())
+            SectionTitle("ĐANG NÂNG CẤP", (snapshot.upgrades.size + snapshot.gearUps.size).toString())
         }
 
         if (snapshot.upgrades.isEmpty() && snapshot.gearUps.isEmpty()) {
@@ -754,7 +754,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                                 )
                         )
                         Text(
-                            "Còn " + formatDuration(remaining) + " • " + (progress * 100).toInt() + "%",
+                            "Còn " + formatCountdown(remaining) + " • " + (progress * 100).toInt() + "%",
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
@@ -1076,6 +1076,16 @@ private fun formatTimestamp(timestamp: Long): String {
     } catch (_: Exception) {
         timestamp.toString()
     }
+}
+
+private fun formatCountdown(seconds: Long): String {
+    val safe = seconds.coerceAtLeast(0L)
+    val days = safe / 86400L
+    val hours = (safe % 86400L) / 3600L
+    val minutes = (safe % 3600L) / 60L
+    val secs = safe % 60L
+    val clock = "%02d:%02d:%02d".format(hours, minutes, secs)
+    return if (days > 0L) "$days ngày $clock" else clock
 }
 
 private fun formatDuration(seconds: Long): String {
