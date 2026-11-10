@@ -681,14 +681,15 @@ fun SettingsScreen(
     onNotificationsChanged: (Boolean) -> Unit,
     onNotificationStyleChanged: (String) -> Unit
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(13.dp)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
-        Text("CÀI ĐẶT", color = FeatureCyan, fontSize = 16.sp, fontWeight = FontWeight.Black)
+        Text("CÀI ĐẶT", color = FeatureCyan, fontSize = 15.sp, fontWeight = FontWeight.Black)
         FeaturePanel {
             Text("TÀI KHOẢN GOOGLE", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
@@ -727,6 +728,45 @@ fun SettingsScreen(
                     ) { Text("ĐĂNG XUẤT", fontSize = 10.sp) }
                 }
             }
+        }
+
+        FeaturePanel {
+            Text("LED RGB TÙY CHỈNH", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Bật hiệu ứng chuyển động", color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                Switch(checked = ledEnabled, onCheckedChange = onLedEnabledChanged)
+            }
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf(
+                    "rainbow" to "RGB",
+                    "ice" to "Băng",
+                    "violet" to "Tím",
+                    "fire" to "Lửa",
+                    "mint" to "Ngọc"
+                ).forEach { (key, label) ->
+                    FilterChip(
+                        selected = ledPreset == key,
+                        onClick = { onLedPresetChanged(key) },
+                        label = { Text(label, fontSize = 10.sp) }
+                    )
+                }
+            }
+            Text("Tốc độ: $ledSpeed/4", color = Color.White, fontSize = 10.sp)
+            Slider(
+                value = ledSpeed.toFloat(),
+                onValueChange = { onLedSpeedChanged(it.toInt().coerceIn(1, 4)) },
+                valueRange = 1f..4f,
+                steps = 2
+            )
+            Text("Độ sáng: ${(ledBrightness * 100).toInt()}%", color = Color.White, fontSize = 10.sp)
+            Slider(
+                value = ledBrightness,
+                onValueChange = onLedBrightnessChanged,
+                valueRange = 0.25f..1f
+            )
         }
 
         FeaturePanel {
@@ -787,6 +827,48 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = FeatureCyan, contentColor = Color(0xFF04101D))
             ) { Text("MỞ CLASH OF CLANS", fontWeight = FontWeight.Black) }
+        }
+
+        FeaturePanel {
+            Text("LIÊN HỆ NHÀ PHÁT TRIỂN", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("Quét mã QR để mở liên hệ Zalo của nhà phát triển COC-LIO.", color = FeatureMuted, fontSize = 10.sp)
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(232.dp)
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        val rows = ZALO_QR_ROWS
+                        val modules = rows.first().length
+                        val cell = size.width / modules
+                        rows.forEachIndexed { y, row ->
+                            row.forEachIndexed { x, value ->
+                                if (value == '1') {
+                                    drawRect(
+                                        color = Color.Black,
+                                        topLeft = Offset(x * cell, y * cell),
+                                        size = Size(cell, cell)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Button(
+                onClick = {
+                    runCatching {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ZALO_CONTACT_URL)))
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = FeatureCyan, contentColor = Color(0xFF04101D))
+            ) { Text("MỞ ZALO LIÊN HỆ", fontWeight = FontWeight.Black) }
         }
 
         FeaturePanel {
