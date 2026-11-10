@@ -109,6 +109,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.huyhoa.coclio.data.DeletedVillageRecord
@@ -284,6 +285,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun CocLioApp() {
     val context = LocalContext.current
+    val baseDensity = LocalDensity.current
+    var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -409,7 +412,10 @@ private fun CocLioApp() {
         }
     }
 
-    CompositionLocalProvider(LocalLedTheme provides ledTheme) {
+    CompositionLocalProvider(
+        LocalLedTheme provides ledTheme,
+        LocalDensity provides baseDensity.copy(fontScale = baseDensity.fontScale * appFontScale)
+    ) {
     Box(Modifier.fillMaxSize()) {
         NeonBackdrop()
         Scaffold(
@@ -539,6 +545,7 @@ private fun CocLioApp() {
                     )
                     4 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
+                        textScale = appFontScale,
                         notificationsEnabled = notificationsEnabled,
                         ledEnabled = ledEnabled,
                         ledPreset = ledPreset,
@@ -614,6 +621,13 @@ private fun CocLioApp() {
                                     )
                                 }
                             }
+                        },
+                        onTextScaleChanged = { value ->
+                            appFontScale = value.coerceIn(0.85f, 1.30f)
+                            AppPreferences.setTextScale(context, appFontScale)
+                        },
+                        onTextScaleChangeFinished = {
+                            AppWidgetUpdater.updateAll(context)
                         }
                     )
                 }
@@ -624,6 +638,9 @@ private fun CocLioApp() {
     }
 
     if (showImportDialog) {
+        CompositionLocalProvider(
+            LocalDensity provides baseDensity.copy(fontScale = baseDensity.fontScale * appFontScale)
+        ) {
         ImportDialog(
             error = importError,
             onDismiss = {
@@ -635,6 +652,7 @@ private fun CocLioApp() {
             },
             onImport = { raw, name -> importJson(raw, name) }
         )
+        }
     }
     }
 }
@@ -911,7 +929,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
         }
     }
     val endAt = snapshotTimestamp + (item.timerSeconds ?: 0L)
-    val remaining = (endAt - nowEpoch).coerceAtLeast(0L)
+    val remaining = item.remainingSecondsAt(snapshotTimestamp, nowEpoch)
     val levelText = when {
         item.gearUp -> item.level?.let { "CẤP $it • GEAR-UP" } ?: "GEAR-UP"
         item.level != null -> "CẤP ${item.level} → ${item.level + 1}"
@@ -1138,8 +1156,12 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
                 item(key = "section_$sectionKey", span = { GridItemSpan(maxLineSpan) }) {
                     SectionTitle(rows.first().sectionLabel.uppercase(), rows.sumOf { it.count }.toString())
                 }
+                val orderedRows = rows.sortedWith(
+                    compareBy<VillageItem> { it.count > 1 }
+                        .thenBy { it.level ?: Int.MIN_VALUE }
+                )
                 gridItems(
-                    items = rows,
+                    items = orderedRows,
                     key = { it.identity + "_" + (it.timerSeconds ?: -1L) + "_" + it.count },
                     span = { item ->
                         if (item.isRunning) GridItemSpan(maxLineSpan) else GridItemSpan(1)
@@ -1164,25 +1186,43 @@ private fun VillageGridItemCard(item: VillageItem) {
         innerPadding = 3.dp
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(104.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(1.dp)
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            CategoryImage(item, 44)
+            CategoryImage(item, 48)
             Text(
                 item.level?.let { "CẤP $it" } ?: "—",
                 color = CocGold,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1
             )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().height(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
                 if (item.count > 1) {
-                    Text("×${item.count}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "×${item.count}",
+                        color = CocGold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier
+                            .background(CocGold.copy(alpha = 0.16f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 1.dp)
+                    )
                 }
-                if (item.gearUp) Text("GEAR-UP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                if (item.gearUp) {
+                    Spacer(Modifier.width(4.dp))
+                    Text("GEAR-UP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                }
                 item.weaponLevel?.let {
-                    Text("V$it", color = CocCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(4.dp))
+                    Text("V$it", color = CocCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
         }

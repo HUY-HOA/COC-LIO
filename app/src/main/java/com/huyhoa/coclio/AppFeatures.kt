@@ -7,6 +7,7 @@ import java.net.HttpURLConnection
 import java.io.FileOutputStream
 import java.io.File
 import android.view.View
+import android.util.TypedValue
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.app.PendingIntent
@@ -87,8 +88,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import androidx.credentials.exceptions.NoCredentialException
 import com.huyhoa.coclio.data.VillageSnapshot
 import com.huyhoa.coclio.data.VillageStore
 import kotlinx.coroutines.Dispatchers
@@ -139,6 +141,15 @@ object AppPreferences {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString(key(profile, "notification_style"), style).apply()
     }
+
+    fun textScale(context: Context): Float =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getFloat("text_scale", 1f).coerceIn(0.85f, 1.30f)
+
+    fun setTextScale(context: Context, scale: Float) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putFloat("text_scale", scale.coerceIn(0.85f, 1.30f)).apply()
+    }
 }
 
 object GoogleAccountAuth {
@@ -148,23 +159,31 @@ object GoogleAccountAuth {
             "Chưa cấu hình mã ứng dụng đăng nhập Google. Cần thêm mã GOOGLE_WEB_CLIENT_ID trong phần bí mật của GitHub để bật tính năng này."
         }
 
-        val option = GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(false)
-            .setServerClientId(clientId)
-            .setAutoSelectEnabled(false)
+        val option = GetSignInWithGoogleOption.Builder(serverClientId = clientId)
             .build()
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(option)
             .build()
-        val result = CredentialManager.create(context).getCredential(context, request)
+        val credentialManager = CredentialManager.create(context)
+        val result = try {
+            credentialManager.getCredential(context, request)
+        } catch (error: NoCredentialException) {
+            throw IllegalStateException(
+                "Không tìm thấy tài khoản Google có thể đăng nhập. Hãy kiểm tra tài khoản Google trên điện thoại rồi thử lại.",
+                error
+            )
+        }
         val credential = result.credential
         require(
             credential is CustomCredential &&
                 credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) { "Không nhận được thông tin đăng nhập Google hợp lệ." }
         val google = GoogleIdTokenCredential.createFrom(credential.data)
-        require(google.id.isNotBlank()) { "Google không trả về địa chỉ email." }
-        return google.id.lowercase()
+        val email = google.email.trim()
+        require(email.isNotBlank() && email.contains("@")) {
+            "Google không trả về địa chỉ email hợp lệ."
+        }
+        return email.lowercase()
     }
 
     suspend fun signOut(context: Context) {
@@ -200,10 +219,8 @@ object UpgradeReminderScheduler {
         val nowSeconds = System.currentTimeMillis() / 1000L
         snapshots.distinctBy { it.tag }.forEach { snapshot ->
             (snapshot.upgrades + snapshot.gearUps).forEach { item ->
-                val timer = item.timerSeconds
-                if (timer != null && item.isTimerActive(snapshot.timestamp, nowSeconds)) {
-                    val endAt = snapshot.timestamp + timer
-                    val delay = endAt - nowSeconds
+                val delay = item.remainingSecondsAt(snapshot.timestamp, nowSeconds)
+                if (delay > 0L) {
                     val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag + "_" + item.identity
                     val data = Data.Builder()
                         .putString("profile", profile)
@@ -487,6 +504,9 @@ private class UpgradeWidgetListFactory(
     override fun getViewAt(position: Int): RemoteViews? {
         val entry = entries.getOrNull(position) ?: return null
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade_row)
+        val textScale = AppPreferences.textScale(context)
+        views.setTextViewTextSize(R.id.row_title, TypedValue.COMPLEX_UNIT_SP, 12f * textScale)
+        views.setTextViewTextSize(R.id.row_timer, TypedValue.COMPLEX_UNIT_SP, 12f * textScale)
         val now = System.currentTimeMillis() / 1000L
         val remaining = (entry.endAt - now).coerceAtLeast(0L)
         val remainingPercent = if (remaining > 0L) {
@@ -581,6 +601,10 @@ object AppWidgetUpdater {
         val activeCount = snapshot?.activeUpgradesAt(nowSeconds)?.size ?: 0
         val expiredCount = snapshot?.expiredUpgradesAt(nowSeconds)?.size ?: 0
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade)
+        val textScale = AppPreferences.textScale(context)
+        views.setTextViewTextSize(R.id.widget_village, TypedValue.COMPLEX_UNIT_SP, 10f * textScale)
+        views.setTextViewTextSize(R.id.widget_status, TypedValue.COMPLEX_UNIT_SP, 9f * textScale)
+        views.setTextViewTextSize(R.id.widget_empty, TypedValue.COMPLEX_UNIT_SP, 9f * textScale)
 
         val builderTotal = snapshot?.homeBuilderTotal
         val buildersFree = if (snapshot == null || builderTotal == null) null else
@@ -707,6 +731,7 @@ class UpgradeWidgetConfigActivity : Activity() {
 @Composable
 fun SettingsScreen(
     accountEmail: String?,
+    textScale: Float,
     notificationsEnabled: Boolean,
     ledEnabled: Boolean,
     ledPreset: String,
@@ -722,7 +747,9 @@ fun SettingsScreen(
     onOpenGame: () -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
     onNotificationStyleChanged: (String) -> Unit,
-    onTestNotification: () -> Unit
+    onTestNotification: () -> Unit,
+    onTextScaleChanged: (Float) -> Unit,
+    onTextScaleChangeFinished: () -> Unit
 ) {
     val context = LocalContext.current
     Column(
@@ -733,6 +760,33 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         Text("CÀI ĐẶT", color = FeatureCyan, fontSize = 15.sp, fontWeight = FontWeight.Black)
+
+        FeaturePanel {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("${(textScale * 100).roundToInt()}%", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+            }
+            Slider(
+                value = textScale,
+                onValueChange = onTextScaleChanged,
+                valueRange = 0.85f..1.30f,
+                steps = 8,
+                onValueChangeFinished = onTextScaleChangeFinished
+            )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Nhỏ", color = FeatureMuted, fontSize = 9.sp)
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = {
+                    onTextScaleChanged(1f)
+                    onTextScaleChangeFinished()
+                }) {
+                    Text("Mặc định", color = FeatureCyan, fontSize = 10.sp)
+                }
+                Spacer(Modifier.weight(1f))
+                Text("Lớn", color = FeatureMuted, fontSize = 9.sp)
+            }
+            Text("Áp dụng cho chữ trong ứng dụng và tiện ích màn hình chính.", color = FeatureMuted, fontSize = 10.sp)
+        }
         FeaturePanel {
             Text("TÀI KHOẢN GOOGLE", color = FeatureCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))

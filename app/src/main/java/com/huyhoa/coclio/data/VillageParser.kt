@@ -32,10 +32,13 @@ data class VillageItem(
     val identity: String get() = "$sectionKey:$dataId:${level ?: 0}"
     val idleCount: Int get() = if (timerSeconds != null && timerSeconds > 0L) 0 else count
 
-    fun isTimerActive(snapshotTimestamp: Long, nowSeconds: Long): Boolean {
-        val seconds = timerSeconds ?: return false
-        return seconds > 0L && snapshotTimestamp + seconds > nowSeconds
+    fun remainingSecondsAt(snapshotTimestamp: Long, nowSeconds: Long): Long {
+        val seconds = timerSeconds ?: return 0L
+        return (snapshotTimestamp + seconds - nowSeconds).coerceAtLeast(0L)
     }
+
+    fun isTimerActive(snapshotTimestamp: Long, nowSeconds: Long): Boolean =
+        remainingSecondsAt(snapshotTimestamp, nowSeconds) > 0L
 }
 
 data class VillageSnapshot(

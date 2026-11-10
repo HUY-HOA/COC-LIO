@@ -100,6 +100,21 @@ class VillageParserTest {
 
 
     @Test
+    fun subtractsElapsedTimeSinceJsonWasExported() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#TIME_OFFSET","timestamp":1794320000,"buildings":[
+                {"data":1000008,"lvl":5,"timer":7200}
+            ]}"""
+        )
+        val item = snapshot.upgrades.single()
+
+        assertEquals(7200L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp))
+        assertEquals(5400L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp + 1800L))
+        assertEquals(0L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp + 7200L))
+        assertEquals(0L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp + 9000L))
+    }
+
+    @Test
     fun separatesActiveAndExpiredUpgradeTimersAtCurrentTime() {
         val snapshot = VillageParser.parse(
             """{"tag":"#ACTIVE","timestamp":1794320000,"buildings":[
