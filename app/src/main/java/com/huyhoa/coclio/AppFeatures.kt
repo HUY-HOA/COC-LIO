@@ -479,7 +479,7 @@ private class UpgradeWidgetListFactory(
                 }
                 .sortedWith(
                     compareBy<WidgetUpgradeEntry> { if (it.endAt > nowSeconds) 0 else 1 }
-                        .thenBy { it.endAt }
+                        .thenBy { if (it.endAt > nowSeconds) it.endAt else -it.endAt }
                 )
         }
     }
@@ -512,7 +512,11 @@ private class UpgradeWidgetListFactory(
             entry.level != null -> "CẤP ${entry.level} → ${entry.level + 1}"
             else -> "ĐANG NÂNG"
         }
-        views.setTextViewText(R.id.row_title, "$levelText • CÒN $remainingPercent%")
+        views.setTextViewText(
+            R.id.row_title,
+            if (remaining > 0L) "$levelText • CÒN $remainingPercent%"
+            else "$levelText • ĐÃ HẾT GIỜ"
+        )
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, remainingPercent, false)
 
