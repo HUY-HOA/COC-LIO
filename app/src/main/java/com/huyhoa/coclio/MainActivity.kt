@@ -705,7 +705,7 @@ private fun CocLioApp(
                             }
                         },
                         onTextScaleChanged = { value ->
-                            appFontScale = value.coerceIn(0.85f, 1.30f)
+                            appFontScale = value.coerceIn(0.8f, 1.25f)
                             AppPreferences.setTextScale(context, appFontScale)
                         },
                         onTextScaleChangeFinished = {
