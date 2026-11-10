@@ -25,6 +25,8 @@ import android.provider.Settings
 import android.app.AlertDialog
 import android.widget.RemoteViews
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Slider
@@ -53,7 +55,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -892,13 +893,14 @@ fun SettingsScreen(
 @Composable
 private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     val shape = RoundedCornerShape(18.dp)
-    val palette = rememberFeatureLedPalette()
+    val led = LocalLedTheme.current
+    val palette = led.palette.map { it.copy(alpha = led.brightness) }
     val transition = rememberInfiniteTransition(label = "settings-led-border")
     val progress by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3600, easing = LinearEasing),
+            animation = tween(if (led.enabled) led.speedMillis else 60000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "settings-led-progress"
@@ -935,30 +937,15 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                             red = first.red + (second.red - first.red) * fraction,
                             green = first.green + (second.green - first.green) * fraction,
                             blue = first.blue + (second.blue - first.blue) * fraction,
-                            alpha = 1f
+                            alpha = led.brightness
                         )
                     }
-                    drawPath(path, Brush.sweepGradient(colors), style = Stroke(width = stroke))
+                    val brush = if (led.enabled) Brush.sweepGradient(colors) else Brush.solidColor(palette.first())
+                    drawPath(path, brush, style = Stroke(width = stroke))
                 }
             }
-            .padding(15.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp),
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp),
         content = content
-    )
-}
-
-@Composable
-private fun rememberFeatureLedPalette(): List<Color> = androidx.compose.runtime.remember {
-    listOf(
-        Color(0xFF00E5FF),
-        Color(0xFF168BFF),
-        Color(0xFF6548FF),
-        Color(0xFFB33CFF),
-        Color(0xFFFF35B8),
-        Color(0xFFFF4A72),
-        Color(0xFFFFA43A),
-        Color(0xFFB7F34A),
-        Color(0xFF35E6A2),
-        Color(0xFF00E5FF)
     )
 }
