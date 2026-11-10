@@ -283,8 +283,7 @@ object GoogleAccountAuth {
                 credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) { "Không nhận được thông tin đăng nhập Google hợp lệ." }
         val google = GoogleIdTokenCredential.createFrom(credential.data)
-        val email = google.email?.trim()?.takeIf { it.contains("@") }
-            ?: google.id.trim().takeIf { it.contains("@") }
+        val email = google.id.trim().takeIf { it.contains("@") }
             ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ.")
         return GoogleAccountData(
             email = email.lowercase(),
