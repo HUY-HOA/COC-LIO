@@ -109,6 +109,7 @@ class VillageParserTest {
         val item = snapshot.upgrades.single()
 
         assertEquals(7200L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp))
+        assertEquals(7200L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp - 600L))
         assertEquals(5400L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp + 1800L))
         assertEquals(0L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp + 7200L))
         assertEquals(0L, item.remainingSecondsAt(snapshot.timestamp, snapshot.timestamp + 9000L))
