@@ -616,7 +616,7 @@ private class UpgradeWidgetListFactory(
         views.setTextViewTextSize(R.id.row_title, TypedValue.COMPLEX_UNIT_SP, 12f * textScale)
         views.setTextViewTextSize(R.id.row_timer, TypedValue.COMPLEX_UNIT_SP, 12f * textScale)
         val now = System.currentTimeMillis() / 1000L
-        val remaining = (entry.endAt - now).coerceAtLeast(0L)
+        val remaining = (entry.endAt - now).coerceIn(0L, entry.totalSeconds.coerceAtLeast(1L))
         val totalSeconds = entry.totalSeconds.coerceAtLeast(1L)
         val startAt = entry.endAt - totalSeconds
         val elapsedSeconds = (now - startAt).coerceIn(0L, totalSeconds)
