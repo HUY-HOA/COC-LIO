@@ -24,6 +24,20 @@ import android.media.AudioAttributes
 import android.provider.Settings
 import android.app.AlertDialog
 import android.widget.RemoteViews
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -743,15 +757,74 @@ fun SettingsScreen(
 
 @Composable
 private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xF20D182F))
-    ) {
-        Column(
-            modifier = Modifier.padding(15.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp),
-            content = content
-        )
-    }
+    val shape = RoundedCornerShape(18.dp)
+    val palette = rememberFeatureLedPalette()
+    val transition = rememberInfiniteTransition(label = "settings-led-border")
+    val progress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3600, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "settings-led-progress"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Color(0xF20D182F))
+            .drawWithCache {
+                val stroke = 2.6.dp.toPx()
+                val inset = stroke / 2f
+                val path = Path().apply {
+                    addRoundRect(
+                        RoundRect(
+                            left = inset,
+                            top = inset,
+                            right = size.width - inset,
+                            bottom = size.height - inset,
+                            cornerRadius = CornerRadius(18.dp.toPx())
+                        )
+                    )
+                }
+                onDrawBehind {
+                    val intervals = palette.size - 1
+                    val colors = List(32) { index ->
+                        val position = ((index / 32f + progress) % 1f) * intervals
+                        val startIndex = position.toInt().coerceIn(0, intervals - 1)
+                        val fraction = position - startIndex
+                        val first = palette[startIndex]
+                        val second = palette[startIndex + 1]
+                        Color(
+                            red = first.red + (second.red - first.red) * fraction,
+                            green = first.green + (second.green - first.green) * fraction,
+                            blue = first.blue + (second.blue - first.blue) * fraction,
+                            alpha = 1f
+                        )
+                    }
+                    drawPath(path, Brush.sweepGradient(colors), style = Stroke(width = stroke))
+                }
+            }
+            .padding(15.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+        content = content
+    )
+}
+
+@Composable
+private fun rememberFeatureLedPalette(): List<Color> = androidx.compose.runtime.remember {
+    listOf(
+        Color(0xFF00E5FF),
+        Color(0xFF168BFF),
+        Color(0xFF6548FF),
+        Color(0xFFB33CFF),
+        Color(0xFFFF35B8),
+        Color(0xFFFF4A72),
+        Color(0xFFFFA43A),
+        Color(0xFFB7F34A),
+        Color(0xFF35E6A2),
+        Color(0xFF00E5FF)
+    )
 }
