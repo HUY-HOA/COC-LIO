@@ -9,9 +9,13 @@ object VillageStore {
     private const val KEY_HISTORY = "village_snapshots"
     private const val MAX_SNAPSHOTS = 60
 
-    fun loadAll(context: Context): List<VillageSnapshot> {
+    private fun historyKey(profile: String): String =
+        if (profile == "local") KEY_HISTORY
+        else KEY_HISTORY + "_" + profile.hashCode().toUInt().toString(16)
+
+    fun loadAll(context: Context, profile: String = "local"): List<VillageSnapshot> {
         val rawHistory = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(KEY_HISTORY, "[]") ?: "[]"
+            .getString(historyKey(profile), "[]") ?: "[]"
         val array = try {
             JSONArray(rawHistory)
         } catch (_: Exception) {
@@ -31,8 +35,9 @@ object VillageStore {
         return snapshots.sortedByDescending { it.timestamp }
     }
 
-    fun save(context: Context, snapshot: VillageSnapshot) {
-        val existing = loadAll(context)
+    fun save(context: Context, snapshot: VillageSnapshot, profile: String = "local") {
+        val key = historyKey(profile)
+        val existing = loadAll(context, profile)
             .filterNot { it.tag == snapshot.tag && it.timestamp == snapshot.timestamp }
         val all = (listOf(snapshot) + existing)
             .sortedByDescending { it.timestamp }
@@ -50,7 +55,7 @@ object VillageStore {
 
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putString(KEY_HISTORY, array.toString())
+            .putString(key, array.toString())
             .apply()
     }
 }
