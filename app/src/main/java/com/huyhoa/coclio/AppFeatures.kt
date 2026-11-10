@@ -726,6 +726,19 @@ fun SettingsScreen(
                 }
             }
             Text("Tốc độ: $ledSpeed/5  •  1 chậm nhất, 5 nhanh nhất", color = Color.White, fontSize = 11.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                (1..5).forEach { level ->
+                    FilterChip(
+                        selected = ledSpeed == level,
+                        onClick = { onLedSpeedChanged(level) },
+                        modifier = Modifier.weight(1f),
+                        label = { Text(level.toString(), fontSize = 11.sp) }
+                    )
+                }
+            }
             Slider(
                 value = ledSpeed.toFloat(),
                 onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(1, 5)) },
