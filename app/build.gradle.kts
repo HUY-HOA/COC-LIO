@@ -9,8 +9,8 @@ android {
         applicationId = "com.huyhoa.coclio"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = providers.gradleProperty("VERSION_CODE").orElse("1").get().toInt()
+        versionName = providers.gradleProperty("VERSION_NAME").orElse("1.0.0").get()
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
