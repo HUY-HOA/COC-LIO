@@ -8,7 +8,7 @@ object CocAssets {
 
     private val homeBuildings = mapOf(
         1000000 to "home/army-buildings/army-camp",
-        1000001 to "home/town-hall/town-hall",
+        1000001 to "home/town-hall",
         1000002 to "home/resource-buildings/elixir-collector",
         1000003 to "home/resource-buildings/elixir-storage",
         1000004 to "home/resource-buildings/gold-mine",
@@ -17,7 +17,7 @@ object CocAssets {
         1000007 to "home/army-buildings/laboratory",
         1000008 to "home/defenses/cannon",
         1000009 to "home/defenses/archer-tower",
-        1000010 to "home/walls/wall",
+        1000010 to "home/defenses/wall",
         1000011 to "home/defenses/wizard-tower",
         1000012 to "home/defenses/air-defense",
         1000013 to "home/defenses/mortar",
@@ -52,7 +52,7 @@ object CocAssets {
 
     private val builderBuildings = mapOf(
         1000033 to "builder/walls/wall",
-        1000034 to "builder/builder-hall/builder-hall",
+        1000034 to "builder/builder-hall",
         1000035 to "builder/resource-buildings/elixir-collector",
         1000036 to "builder/resource-buildings/elixir-storage",
         1000037 to "builder/resource-buildings/gold-mine",
