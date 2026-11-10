@@ -70,9 +70,9 @@ class VillageParserTest {
     }
 
     @Test
-    fun normalizesMillisecondTimestampAndTimerToSeconds() {
+    fun normalizesMillisecondTimestampButKeepsGameTimerInSeconds() {
         val snapshot = VillageParser.parse(
-            """{"tag":"#MILLISECONDS","timestamp":1794320000000,"buildings":[{"data":1000008,"lvl":5,"timer":3600000}]}"""
+            """{"tag":"#MILLISECONDS","timestamp":1794320000000,"buildings":[{"data":1000008,"lvl":5,"timer":3600}]}"""
         )
 
         assertEquals(1794320000L, snapshot.timestamp)
