@@ -1,6 +1,17 @@
 package com.huyhoa.coclio
 
 import android.app.Activity
+import com.huyhoa.coclio.data.CocAssets
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
+import java.net.URL
+import java.net.HttpURLConnection
+import java.io.FileOutputStream
+import java.io.File
+import android.view.View
+import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -259,6 +270,54 @@ class WidgetRefreshWorker(
     }
 }
 
+private fun widgetIconFile(context: Context, url: String): File {
+    val directory = File(context.cacheDir, "coc-widget-icons")
+    return File(directory, url.hashCode().toUInt().toString(16) + ".png")
+}
+
+private fun downloadWidgetIcon(context: Context, url: String) {
+    val target = widgetIconFile(context, url)
+    if (target.exists() && target.length() > 0L) return
+
+    var connection: HttpURLConnection? = null
+    try {
+        connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 3000
+            readTimeout = 3000
+            instanceFollowRedirects = true
+            setRequestProperty("User-Agent", "COC-LIO")
+        }
+        if (connection.responseCode !in 200..299) return
+
+        val bitmap = connection.inputStream.use { BitmapFactory.decodeStream(it) } ?: return
+        val largestSide = maxOf(bitmap.width, bitmap.height).coerceAtLeast(1)
+        val scale = minOf(1f, 144f / largestSide.toFloat())
+        val outputBitmap = if (scale < 1f) {
+            Bitmap.createScaledBitmap(
+                bitmap,
+                (bitmap.width * scale).toInt().coerceAtLeast(1),
+                (bitmap.height * scale).toInt().coerceAtLeast(1),
+                true
+            )
+        } else {
+            bitmap
+        }
+
+        target.parentFile?.mkdirs()
+        FileOutputStream(target).use {
+            outputBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        if (outputBitmap !== bitmap) {
+            outputBitmap.recycle()
+            bitmap.recycle()
+        }
+    } catch (_: Exception) {
+        target.delete()
+    } finally {
+        connection?.disconnect()
+    }
+}
+
 class UpgradeWidgetListService : android.widget.RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
         return UpgradeWidgetListFactory(applicationContext, intent)
@@ -269,7 +328,7 @@ private data class WidgetUpgradeEntry(
     val name: String,
     val level: Int?,
     val section: String,
-    val icon: String,
+    val imageUrl: String?,
     val base: String,
     val gearUp: Boolean,
     val endAt: Long,
@@ -307,18 +366,7 @@ private class UpgradeWidgetListFactory(
                         name = item.name,
                         level = item.level,
                         section = item.sectionLabel,
-                        icon = when (item.sectionKey) {
-                            "buildings", "buildings2" -> "🏗️"
-                            "traps", "traps2" -> "💣"
-                            "heroes", "heroes2" -> "👑"
-                            "pets" -> "🐾"
-                            "units", "units2" -> "⚔️"
-                            "siege_machines" -> "🚀"
-                            "spells" -> "✨"
-                            "equipment" -> "🛡️"
-                            "helpers" -> "🤝"
-                            else -> "🏰"
-                        },
+                        imageUrl = CocAssets.imageUrl(item),
                         base = item.base,
                         gearUp = item.gearUp,
                         endAt = snapshot.timestamp + seconds,
@@ -326,6 +374,17 @@ private class UpgradeWidgetListFactory(
                     )
                 }
                 .sortedBy { it.endAt }
+        }
+
+        runBlocking {
+            entries.mapNotNull { it.imageUrl }
+                .distinct()
+                .map { url ->
+                    async(Dispatchers.IO) {
+                        downloadWidgetIcon(context, url)
+                    }
+                }
+                .awaitAll()
         }
     }
 
@@ -338,7 +397,16 @@ private class UpgradeWidgetListFactory(
             remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
         ).toInt().coerceIn(0, 100)
 
-        views.setTextViewText(R.id.row_icon, entry.icon)
+        val iconFile = entry.imageUrl?.let { widgetIconFile(context, it) }
+        val iconBitmap = iconFile?.takeIf { it.exists() }?.let {
+            BitmapFactory.decodeFile(it.absolutePath)
+        }
+        if (iconBitmap != null) {
+            views.setImageViewBitmap(R.id.row_icon, iconBitmap)
+            views.setViewVisibility(R.id.row_icon, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.row_icon, View.GONE)
+        }
         views.setTextViewText(
             R.id.row_title,
             entry.name + (entry.level?.let { " • cấp $it" } ?: "")
@@ -370,7 +438,7 @@ private class UpgradeWidgetListFactory(
     override fun hasStableIds(): Boolean = true
     override fun getLoadingView(): RemoteViews? {
         return RemoteViews(context.packageName, R.layout.widget_upgrade_row).apply {
-            setTextViewText(R.id.row_icon, "🏰")
+            setViewVisibility(R.id.row_icon, View.GONE)
             setTextViewText(R.id.row_title, "Đang tải danh sách nâng cấp…")
             setTextViewText(R.id.row_subtitle, "COC-LIO")
             setTextViewText(R.id.row_timer, "ĐANG CẬP NHẬT")
@@ -409,7 +477,9 @@ object AppWidgetUpdater {
         views.setTextViewText(
             R.id.widget_village,
             if (snapshot == null) "COC-LIO • Chưa có dữ liệu"
-            else "LÀNG " + snapshot.tag + " • NHÀ CHÍNH " + (snapshot.townHallLevel ?: "—")
+            else "LÀNG " + (snapshot.villageName ?: snapshot.tag) +
+                (if (snapshot.villageName.isNullOrBlank()) "" else " • " + snapshot.tag) +
+                " • NHÀ CHÍNH " + (snapshot.townHallLevel ?: "—")
         )
         views.setTextViewText(
             R.id.widget_status,
@@ -482,7 +552,9 @@ class UpgradeWidgetConfigActivity : Activity() {
         }
 
         val labels = villages.map {
-            it.tag + " • Nhà chính " + (it.townHallLevel ?: "—")
+            (it.villageName?.takeIf { name -> name.isNotBlank() } ?: it.tag) +
+                (if (it.villageName.isNullOrBlank()) "" else " • " + it.tag) +
+                " • Nhà chính " + (it.townHallLevel ?: "—")
         }.toTypedArray()
         AlertDialog.Builder(this)
             .setTitle("Chọn làng cho tiện ích")
