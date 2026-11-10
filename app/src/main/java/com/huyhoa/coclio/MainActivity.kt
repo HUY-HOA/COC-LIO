@@ -559,15 +559,10 @@ private fun OverviewScreen(
 
 @Composable
 private fun StatTile(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Color.White) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = CocSurfaceAlt),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(Modifier.padding(10.dp)) {
-            Text(value, color = valueColor, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-            Text(label, color = CocMuted, fontSize = 10.sp)
-        }
+    NeonPanel(modifier = modifier, glow = valueColor.takeIf { it != Color.White } ?: CocMagenta) {
+        Text(value, color = valueColor, fontSize = 24.sp, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(3.dp))
+        Text(label, color = CocMuted, fontSize = 10.sp, letterSpacing = 0.4.sp)
     }
 }
 
@@ -579,19 +574,17 @@ private fun SectionTitle(title: String, trailing: String) {
             .padding(top = 5.dp, bottom = 1.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = CocGold, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+        Text(title, color = CocCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
         Text(trailing, color = CocMuted, fontSize = 11.sp)
     }
 }
 
 @Composable
 private fun InfoCard(title: String, detail: String) {
-    Card(colors = CardDefaults.cardColors(containerColor = CocSurface), shape = RoundedCornerShape(14.dp)) {
-        Column(Modifier.padding(16.dp)) {
-            Text(title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            Spacer(Modifier.height(5.dp))
-            Text(detail, color = CocMuted, fontSize = 11.sp, lineHeight = 16.sp)
-        }
+    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
+        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Spacer(Modifier.height(6.dp))
+        Text(detail, color = CocMuted, fontSize = 11.sp, lineHeight = 17.sp)
     }
 }
 
@@ -599,17 +592,14 @@ private fun InfoCard(title: String, detail: String) {
 private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Long) {
     val endAt = snapshotTimestamp + (item.timerSeconds ?: 0L)
     val remaining = (endAt - nowEpoch).coerceAtLeast(0L)
-    Card(
-        colors = CardDefaults.cardColors(containerColor = CocSurface),
-        shape = RoundedCornerShape(15.dp)
-    ) {
+    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (item.gearUp) CocMagenta else CocCyan) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CategoryEmoji(item, 30)
+            CategoryEmoji(item, 52)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -641,12 +631,12 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
 
 @Composable
 private fun ChangeCard(event: ChangeEvent) {
-    Card(colors = CardDefaults.cardColors(containerColor = CocSurface), shape = RoundedCornerShape(13.dp)) {
-        Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(if (event.completed) "✅" else "🔄", fontSize = 18.sp)
-            Spacer(Modifier.width(10.dp))
+    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (event.completed) CocGreen else CocMagenta) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(if (event.completed) "✦" else "↗", color = if (event.completed) CocGreen else CocMagenta, fontSize = 22.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.width(12.dp))
             Column {
-                Text(event.title, color = if (event.completed) CocGreen else CocGold, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text(event.title, color = if (event.completed) CocGreen else CocCyan, fontWeight = FontWeight.Black, fontSize = 12.sp)
                 Text(event.detail, color = CocMuted, fontSize = 11.sp)
             }
         }
@@ -715,17 +705,18 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String, nowEpoch: Lon
 
 @Composable
 private fun VillageItemCard(item: VillageItem) {
-    Card(colors = CardDefaults.cardColors(containerColor = CocSurface), shape = RoundedCornerShape(13.dp)) {
+    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = when (item.tab) {
+        "army" -> CocMagenta
+        else -> CocCyan
+    }) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(13.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CategoryEmoji(item, 26)
-            Spacer(Modifier.width(11.dp))
+            CategoryEmoji(item, 48)
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(item.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 val subtitle = buildString {
                     item.level?.let { append("Cấp $it") }
                     if (item.count > 1) {
@@ -734,7 +725,7 @@ private fun VillageItemCard(item: VillageItem) {
                     }
                     if (item.gearUp) {
                         if (isNotEmpty()) append(" • ")
-                        append("Đã gear-up")
+                        append("Gear-up")
                     }
                     item.weaponLevel?.let {
                         if (isNotEmpty()) append(" • ")
@@ -749,11 +740,11 @@ private fun VillageItemCard(item: VillageItem) {
                     Text(subtitle, color = CocMuted, fontSize = 10.sp)
                 }
                 item.details.forEach { detail ->
-                    Text(detail, color = CocGold, fontSize = 9.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(detail, color = CocCyan, fontSize = 9.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
             item.level?.let {
-                Text("Lv.$it", color = CocGold, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("LV.$it", color = CocCyan, fontWeight = FontWeight.Black, fontSize = 13.sp)
             }
         }
     }
@@ -773,7 +764,30 @@ private fun CategoryEmoji(item: VillageItem, size: Int) {
         "helpers" -> "🧑‍🔧"
         else -> "🏷️"
     }
-    Text(emoji, fontSize = size.sp)
+    val glow = when (item.tab) {
+        "army" -> CocMagenta
+        else -> CocCyan
+    }
+    val url = CocAssets.imageUrl(item)
+    Box(
+        modifier = Modifier
+            .size(size.dp)
+            .shadow(8.dp, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF101D36))
+            .border(1.dp, glow.copy(alpha = 0.75f), RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(emoji, fontSize = (size * 0.52f).sp)
+        if (url != null) {
+            AsyncImage(
+                model = url,
+                contentDescription = item.name,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize().padding(3.dp)
+            )
+        }
+    }
 }
 
 @Composable
