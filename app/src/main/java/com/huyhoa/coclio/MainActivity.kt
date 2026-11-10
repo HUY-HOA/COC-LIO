@@ -625,7 +625,7 @@ private fun OverviewScreen(
 
         if (snapshot.upgrades.isEmpty() && snapshot.gearUps.isEmpty()) {
             item {
-                InfoCard("Không có bộ đếm nâng cấp trong JSON này", "Khi một công trình, anh hùng hoặc đơn vị đang nâng cấp, game sẽ xuất trường timer.")
+                InfoCard("Không có bộ đếm nâng cấp trong JSON này", "Khi một công trình, anh hùng hoặc đơn vị đang nâng cấp, game sẽ xuất bộ đếm thời gian.")
             }
         } else {
             items(snapshot.upgrades, key = { it.identity + "_" + it.timerSeconds }) { upgrade ->
@@ -870,7 +870,7 @@ private fun VillageItemCard(item: VillageItem) {
                 }
             }
             item.level?.let {
-                Text("LV.$it", color = CocCyan, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                Text("CẤP $it", color = CocCyan, fontWeight = FontWeight.Black, fontSize = 13.sp)
             }
         }
     }
