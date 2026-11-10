@@ -269,6 +269,7 @@ private data class WidgetUpgradeEntry(
     val name: String,
     val level: Int?,
     val section: String,
+    val icon: String,
     val base: String,
     val gearUp: Boolean,
     val endAt: Long,
@@ -306,6 +307,18 @@ private class UpgradeWidgetListFactory(
                         name = item.name,
                         level = item.level,
                         section = item.sectionLabel,
+                        icon = when (item.sectionKey) {
+                            "buildings", "buildings2" -> "🏗️"
+                            "traps", "traps2" -> "💣"
+                            "heroes", "heroes2" -> "👑"
+                            "pets" -> "🐾"
+                            "units", "units2" -> "⚔️"
+                            "siege_machines" -> "🚀"
+                            "spells" -> "✨"
+                            "equipment" -> "🛡️"
+                            "helpers" -> "🤝"
+                            else -> "🏰"
+                        },
                         base = item.base,
                         gearUp = item.gearUp,
                         endAt = snapshot.timestamp + seconds,
@@ -325,6 +338,7 @@ private class UpgradeWidgetListFactory(
             remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
         ).toInt().coerceIn(0, 100)
 
+        views.setTextViewText(R.id.row_icon, entry.icon)
         views.setTextViewText(
             R.id.row_title,
             entry.name + (entry.level?.let { " • cấp $it" } ?: "")
@@ -333,18 +347,17 @@ private class UpgradeWidgetListFactory(
         val special = if (entry.gearUp) " • Nâng cấp đặc biệt" else ""
         views.setTextViewText(R.id.row_subtitle, baseName + " • " + entry.section + special)
         views.setProgressBar(R.id.row_progress, 100, remainingPercent, false)
-        views.setTextViewText(R.id.row_percent, "Còn lại $remainingPercent%")
 
         if (remaining > 0L) {
             views.setChronometer(
                 R.id.row_timer,
                 SystemClock.elapsedRealtime() + remaining * 1000L,
-                "Còn %s",
+                "Còn %s • $remainingPercent%",
                 true
             )
             views.setChronometerCountDown(R.id.row_timer, true)
         } else {
-            views.setTextViewText(R.id.row_timer, "Đã hết giờ • nhập JSON mới để xác nhận")
+            views.setTextViewText(R.id.row_timer, "ĐÃ HẾT GIỜ")
         }
         return views
     }
@@ -357,11 +370,11 @@ private class UpgradeWidgetListFactory(
     override fun hasStableIds(): Boolean = true
     override fun getLoadingView(): RemoteViews? {
         return RemoteViews(context.packageName, R.layout.widget_upgrade_row).apply {
+            setTextViewText(R.id.row_icon, "🏰")
             setTextViewText(R.id.row_title, "Đang tải danh sách nâng cấp…")
             setTextViewText(R.id.row_subtitle, "COC-LIO")
-            setTextViewText(R.id.row_timer, "Đang cập nhật")
+            setTextViewText(R.id.row_timer, "ĐANG CẬP NHẬT")
             setProgressBar(R.id.row_progress, 100, 0, false)
-            setTextViewText(R.id.row_percent, "")
         }
     }
     override fun onDestroy() {
