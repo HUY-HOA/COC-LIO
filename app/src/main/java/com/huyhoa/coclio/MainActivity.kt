@@ -789,7 +789,7 @@ private fun SectionTitle(title: String, trailing: String) {
             .padding(top = 5.dp, bottom = 1.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = CocCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+        Text(title, color = CocCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
         Text(trailing, color = CocMuted, fontSize = 11.sp)
     }
 }
