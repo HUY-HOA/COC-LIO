@@ -50,7 +50,7 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 - Có tab **Cài đặt** thứ năm để chọn hồ sơ Google, quyền thông báo và kiểu nhắc tin nhắn hoặc báo thức.
 - Hồ sơ Google tách lịch sử JSON trên cùng thiết bị; dữ liệu chưa tự đồng bộ lên đám mây.
 - Nhắc nâng cấp được lập lịch từ timer trong JSON. Android có thể trì hoãn tác vụ do chế độ tiết kiệm pin hoặc chính sách hệ thống.
-- Có tiện ích màn hình chính theo từng hồ sơ và từng làng; tiện ích hiển thị mục đang nâng, đồng hồ đếm ngược và thanh thời gian.
-- Trong app, các thẻ đang nâng cũng có thanh tiến trình thời gian cập nhật theo đồng hồ.
+- Có tiện ích màn hình chính theo từng hồ sơ và từng làng; bố cục dọc mặc định 2 × 6 ô, danh sách tất cả công trình đang nâng cấp có thể cuộn, mỗi mục có đồng hồ đếm ngược và thanh tiến trình riêng.
+- Trong app, các thẻ công trình có dải LED neon chuyển động quanh viền; ảnh công trình giữ nguyên, không phủ hiệu ứng lên artwork. Các thẻ đang nâng có thanh tiến trình cập nhật theo đồng hồ.
 
 Để bật đăng nhập Google, xem [docs/GOOGLE_SIGN_IN_SETUP.md](docs/GOOGLE_SIGN_IN_SETUP.md) và cấu hình secret `GOOGLE_WEB_CLIENT_ID`.
