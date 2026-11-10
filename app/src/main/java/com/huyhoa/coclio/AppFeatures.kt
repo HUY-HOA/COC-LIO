@@ -446,7 +446,7 @@ private class UpgradeWidgetListFactory(
             views.setChronometer(
                 R.id.row_timer,
                 SystemClock.elapsedRealtime() + remaining * 1000L,
-                "Còn %s • " + remainingPercent + "%%",
+                "%s • " + remainingPercent + "%%",
                 true
             )
             views.setChronometerCountDown(R.id.row_timer, true)
