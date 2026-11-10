@@ -352,7 +352,7 @@ private class UpgradeWidgetListFactory(
             views.setChronometer(
                 R.id.row_timer,
                 SystemClock.elapsedRealtime() + remaining * 1000L,
-                "Còn %s • $remainingPercent%",
+                "%s • $remainingPercent%",
                 true
             )
             views.setChronometerCountDown(R.id.row_timer, true)
@@ -601,7 +601,7 @@ fun SettingsScreen(
                 lineHeight = 17.sp
             )
             Text(
-                "Tiện ích dạng dọc 2 × 6 ô hiển thị danh sách tất cả công trình đang nâng cấp. Vuốt lên hoặc xuống trong tiện ích để xem các mục còn lại. Mỗi mục có đồng hồ đếm ngược và thanh tiến trình.",
+                "Tiện ích dạng dọc 2 × 5 ô gọn hơn, hiển thị danh sách công trình đang nâng cấp. Vuốt lên hoặc xuống để xem các mục còn lại. Mỗi mục có biểu tượng, đồng hồ đếm ngược ở giữa thanh và phần trăm thời gian còn lại.",
                 color = FeatureMuted,
                 fontSize = 10.sp,
                 lineHeight = 15.sp
