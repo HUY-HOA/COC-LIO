@@ -324,16 +324,13 @@ private fun CocLioApp() {
                     Text("COC-LIO", color = CocCyan, fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                     Text("THEO DÕI TIẾN TRÌNH NGÔI LÀNG", color = CocMuted, fontSize = 9.sp, letterSpacing = 1.sp)
                 }
-                Button(
+                NeonButton(
+                    text = "＋ NHẬP JSON",
                     onClick = {
                         importError = null
                         showImportDialog = true
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = CocGold, contentColor = Color(0xFF201A0A)),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
-                ) {
-                    Text("Nhập JSON", fontWeight = FontWeight.Bold)
-                }
+                    }
+                )
             }
         },
         bottomBar = {
@@ -439,12 +436,7 @@ private fun EmptyWelcome(onImport: () -> Unit) {
             lineHeight = 21.sp
         )
         Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = onImport,
-            colors = ButtonDefaults.buttonColors(containerColor = CocGold, contentColor = Color(0xFF201A0A))
-        ) {
-            Text("Nhập JSON đầu tiên", fontWeight = FontWeight.Bold)
-        }
+        NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport)
         Spacer(Modifier.height(12.dp))
         Text("Trong game: Cài đặt → Cài đặt khác → Xuất dữ liệu làng → Sao chép", color = CocMuted, fontSize = 11.sp)
     }
@@ -462,19 +454,22 @@ private fun OverviewScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = CocSurface),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Column(Modifier.padding(18.dp)) {
+            NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
+                Column(Modifier.padding(3.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("LÀNG CỦA BẠN", color = CocMuted, fontSize = 10.sp, letterSpacing = 1.2.sp)
                             Text(snapshot.tag, color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                         }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("NHÀ CHÍNH", color = CocMuted, fontSize = 9.sp)
-                            Text(snapshot.townHallLevel?.toString() ?: "—", color = CocGold, fontSize = 34.sp, fontWeight = FontWeight.Black)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            snapshot.items.firstOrNull { it.sectionKey == "buildings" && it.dataId == 1000001 }?.let {
+                                CategoryEmoji(it, 62)
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("NHÀ CHÍNH", color = CocCyan, fontSize = 9.sp, letterSpacing = 1.sp)
+                                Text(snapshot.townHallLevel?.toString() ?: "—", color = CocGold, fontSize = 34.sp, fontWeight = FontWeight.Black)
+                            }
                         }
                     }
                     Spacer(Modifier.height(12.dp))
@@ -802,17 +797,16 @@ private fun HistoryScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            Text("LỊCH SỬ NHẬP JSON", color = CocGold, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("LỊCH SỬ NHẬP JSON", color = CocCyan, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Text("Lưu trên thiết bị • tối đa 60 lần nhập gần nhất", color = CocMuted, fontSize = 10.sp)
         }
         if (history.isEmpty()) {
             item { InfoCard("Chưa có lịch sử", "Nhập JSON làng để tạo mốc dữ liệu đầu tiên.") }
         } else {
             items(history, key = { it.tag + "_" + it.timestamp }) { snapshot ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = CocSurface),
-                    shape = RoundedCornerShape(14.dp),
-                    onClick = { onSelect(snapshot) }
+                NeonPanel(
+                    modifier = Modifier.fillMaxWidth().clickable { onSelect(snapshot) },
+                    glow = if (snapshot.tag == activeTag) CocCyan else CocViolet
                 ) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
@@ -848,17 +842,14 @@ private fun ImportDialog(
 ) {
     var rawText by remember { mutableStateOf("") }
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            colors = CardDefaults.cardColors(containerColor = CocSurface),
-            shape = RoundedCornerShape(20.dp)
-        ) {
+        NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocMagenta) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
-                Text("NHẬP DỮ LIỆU LÀNG", color = CocGold, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("NHẬP DỮ LIỆU LÀNG", color = CocCyan, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 Text("Dán JSON vừa sao chép trong game hoặc chọn tệp .json.", color = CocMuted, fontSize = 11.sp)
                 OutlinedTextField(
                     value = rawText,
