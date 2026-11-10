@@ -33,8 +33,9 @@ data class VillageItem(
     val idleCount: Int get() = if (timerSeconds != null && timerSeconds > 0L) 0 else count
 
     fun remainingSecondsAt(snapshotTimestamp: Long, nowSeconds: Long): Long {
-        val seconds = timerSeconds ?: return 0L
-        return (snapshotTimestamp + seconds - nowSeconds).coerceAtLeast(0L)
+        val seconds = timerSeconds?.coerceAtLeast(0L) ?: return 0L
+        val elapsed = (nowSeconds - snapshotTimestamp).coerceAtLeast(0L)
+        return (seconds - elapsed).coerceAtLeast(0L)
     }
 
     fun progressRatioAt(snapshotTimestamp: Long, nowSeconds: Long): Float {
