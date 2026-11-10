@@ -691,12 +691,14 @@ object AppWidgetUpdater {
             val previewPrefs = context.getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
             if (!previewPrefs.getBoolean("generated_preview_set", false)) {
                 runCatching {
-                    AppWidgetManager.getInstance(context).setWidgetPreview(
+                    val previewSet = AppWidgetManager.getInstance(context).setWidgetPreview(
                         ComponentName(context, UpgradeWidgetProvider::class.java),
                         AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
                         RemoteViews(context.packageName, R.layout.widget_upgrade_preview)
                     )
-                    previewPrefs.edit().putBoolean("generated_preview_set", true).apply()
+                    if (previewSet) {
+                        previewPrefs.edit().putBoolean("generated_preview_set", true).apply()
+                    }
                 }
             }
         }
@@ -922,7 +924,7 @@ fun SettingsScreen(
         FeaturePanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("${(textScale * 100).roundToInt()}%", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                Text("${(textScale * 100).roundToInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
             }
             Slider(
                 value = textScale,
@@ -1066,7 +1068,7 @@ fun SettingsScreen(
         FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Bật hiệu ứng chuyển động", color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                Text("Bật hiệu ứng chuyển động", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, modifier = Modifier.weight(1f))
                 Switch(checked = ledEnabled, onCheckedChange = onLedEnabledChanged)
             }
             Row(
@@ -1088,7 +1090,7 @@ fun SettingsScreen(
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Tốc độ chuyển màu", color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text("Tốc độ chuyển màu", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, modifier = Modifier.weight(1f))
                 Text("$ledSpeed/100", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
             Slider(
@@ -1102,7 +1104,7 @@ fun SettingsScreen(
                 Spacer(Modifier.weight(1f))
                 Text("Nhanh", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Độ sáng: ${(ledBrightness * 100).toInt()}%", color = Color.White, fontSize = 10.sp)
+            Text("Độ sáng: ${(ledBrightness * 100).toInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
             Slider(
                 value = (ledBrightness * 100f).coerceIn(1f, 100f),
                 onValueChange = { onLedBrightnessChanged(it / 100f) },
@@ -1124,7 +1126,7 @@ fun SettingsScreen(
                 }
                 Switch(checked = notificationsEnabled, onCheckedChange = onNotificationsChanged)
             }
-            Text("Kiểu thông báo", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text("Kiểu thông báo", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 FilterChip(
                     selected = notificationStyle == "message",

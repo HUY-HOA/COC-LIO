@@ -491,7 +491,7 @@ private fun CocLioApp(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("COC-LIO", color = CocCyan, fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Text("COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                     Text("THEO DÕI TIẾN TRÌNH", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, letterSpacing = 1.sp)
                 }
                 NeonButton(
@@ -529,11 +529,11 @@ private fun CocLioApp(
                                     else -> Icons.Filled.Settings
                                 },
                                 contentDescription = item.second,
-                                tint = if (selectedTab == item.third) CocCyan else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         label = {
-                            Text(item.second, fontSize = 9.sp, maxLines = 1, color = if (selectedTab == item.third) CocCyan else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(item.second, fontSize = 9.sp, maxLines = 1, color = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     )
                 }
@@ -794,7 +794,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         )
         Spacer(Modifier.height(18.dp))
         NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
-            Text("CÁCH LẤY JSON LẦN ĐẦU", color = CocCyan, fontSize = 12.sp, fontWeight = FontWeight.Black)
+            Text("CÁCH LẤY JSON LẦN ĐẦU", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Black)
             Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
             Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
             Text("3. Kéo xuống Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
@@ -1020,7 +1020,7 @@ private fun SectionTitle(title: String, trailing: String) {
             .padding(top = 5.dp, bottom = 1.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = CocCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
+        Text(title, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
         Text(trailing, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
     }
 }
@@ -1339,7 +1339,7 @@ private fun VillageGridItemCard(item: VillageItem) {
                 }
                 item.weaponLevel?.let {
                     Spacer(Modifier.width(4.dp))
-                    Text("V$it", color = CocCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text("V$it", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
         }
@@ -1360,7 +1360,7 @@ private fun VillageItemCard(item: VillageItem) {
                 if (item.count > 1) Text("×${item.count}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
             if (item.gearUp) Text("⚙", color = CocGreen, fontSize = 18.sp)
-            item.weaponLevel?.let { Text("V$it", color = CocCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+            item.weaponLevel?.let { Text("V$it", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
         }
     }
 }
@@ -1417,7 +1417,7 @@ private fun HistoryScreen(
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text("KHO DỮ LIỆU JSON", color = CocCyan, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                Text("KHO DỮ LIỆU JSON", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.Black)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1579,7 +1579,7 @@ private fun ImportDialog(
                     .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
-                Text("NHẬP DỮ LIỆU LÀNG", color = CocCyan, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("NHẬP DỮ LIỆU LÀNG", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 Text("Sao chép JSON trong Clash of Clans rồi dán vào ô bên dưới. Có thể đặt tên riêng cho làng. JSON là ảnh chụp tại thời điểm xuất; nếu dùng sách, potion, trợ thủ hoặc tăng tốc sau đó, hãy nhập JSON mới.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 14.sp)
                 OutlinedTextField(
                     value = villageName,
@@ -1592,7 +1592,7 @@ private fun ImportDialog(
                         unfocusedBorderColor = CocViolet,
                         focusedTextColor = MaterialTheme.colorScheme.onSurface,
                         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = CocCyan
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
                 OutlinedTextField(
@@ -1609,7 +1609,7 @@ private fun ImportDialog(
                         unfocusedBorderColor = CocViolet,
                         focusedTextColor = MaterialTheme.colorScheme.onSurface,
                         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = CocCyan
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
                 if (!error.isNullOrBlank()) {
@@ -1622,7 +1622,7 @@ private fun ImportDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
                         border = BorderStroke(1.dp, CocCyan.copy(alpha = 0.65f))
                     ) {
-                        Text("DÁN JSON ĐÃ SAO CHÉP", color = CocCyan, fontSize = 10.sp)
+                        Text("DÁN JSON ĐÃ SAO CHÉP", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1632,7 +1632,7 @@ private fun ImportDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                         border = BorderStroke(1.dp, CocViolet.copy(alpha = 0.65f))
                     ) {
-                        Text("Đóng", color = CocCyan)
+                        Text("Đóng", color = MaterialTheme.colorScheme.primary)
                     }
                     Button(
                         onClick = { onImport(rawText, villageName) },
