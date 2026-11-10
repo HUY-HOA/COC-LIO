@@ -38,7 +38,8 @@ Mỗi lần push lên nhánh main hoặc chạy workflow thủ công, GitHub Act
 - Quy tắc đọc JSON tham khảo hướng dẫn nhập/xuất làng của ClashClock và tài liệu theo dõi nâng cấp cộng đồng.
 - Tên theo ID hiện dùng bảng đối chiếu cộng đồng cho JSON export. ID chưa biết vẫn được giữ lại và hiển thị dưới dạng mã số.
 - Cấp độ, tên và dữ liệu có thể thay đổi khi Supercell cập nhật game; bảng đối chiếu cần được rà soát sau các bản cập nhật.
-- Ảnh công trình, bẫy, quân đội, anh hùng, phép thuật, thú cưng, máy công thành và trang bị được tải từ kho ảnh công khai `clash-of-clans-data`. Ảnh được tải lần đầu cần kết nối Internet; dữ liệu JSON và lịch sử vẫn được lưu trên điện thoại.
+- Ảnh công trình theo từng cấp, bẫy, quân đội, anh hùng, phép thuật, thú cưng, máy công thành và trang bị được tải từ kho dữ liệu công khai `clash-of-clans-data`. Ứng dụng kiểm tra URL ảnh và dùng bộ nhớ đệm Coil để tải mượt hơn; lần đầu cần Internet. Dữ liệu JSON và lịch sử vẫn được lưu trên điện thoại.
+- Viền neon, ánh sáng nền và hiệu ứng chuyển ảnh chỉ áp dụng lên giao diện xung quanh; ảnh game gốc không bị chỉnh màu hay biến đổi.
 - Việc sử dụng hình ảnh Supercell phải tuân thủ Fan Content Policy, bao gồm giới hạn phi thương mại và thông báo rõ đây là nội dung không chính thức.
 
 COC-LIO là dự án cộng đồng không chính thức, không liên kết hoặc được Supercell chứng thực. Clash of Clans và tài sản trong game thuộc về chủ sở hữu tương ứng.
