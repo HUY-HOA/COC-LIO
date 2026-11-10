@@ -895,7 +895,7 @@ private fun VillageItemCard(item: VillageItem) {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CategoryEmoji(item, 66)
+            CategoryImage(item, 66)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
