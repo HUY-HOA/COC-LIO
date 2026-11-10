@@ -1121,7 +1121,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                                 )
                         )
                         Text(
-                            "${formatCountdown(remaining)}  •  CÒN ${remainingPercent}%",
+                            formatCountdown(remaining),
                             color = if (remainingRatio <= 0.15f) CocOrange else if (remainingRatio >= 0.85f) CocGreen else MaterialTheme.colorScheme.onSurface,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
