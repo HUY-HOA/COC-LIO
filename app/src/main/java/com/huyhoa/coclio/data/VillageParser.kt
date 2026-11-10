@@ -38,7 +38,8 @@ data class VillageSnapshot(
     val timestamp: Long,
     val items: List<VillageItem>,
     val extras: Map<String, Int>,
-    val rawJson: String
+    val rawJson: String,
+    val villageName: String? = null
 ) {
     val homeItems: List<VillageItem> get() = items.filter { it.base == "home" }
     val builderItems: List<VillageItem> get() = items.filter { it.base == "builder" }
@@ -91,6 +92,26 @@ object VillageParser {
         val timestamp = root.optLong("timestamp", 0L)
         if (timestamp <= 0L) {
             throw IllegalArgumentException("JSON không có timestamp hợp lệ.")
+        }
+
+        val villageName = listOf(
+            "villageName",
+            "village_name",
+            "playerName",
+            "player_name",
+            "name"
+        ).firstNotNullOfOrNull { key ->
+            root.optString(key, "")
+                .trim()
+                .takeIf { it.isNotBlank() && it != "null" && it != tag }
+        } ?: listOf("player", "profile", "village").firstNotNullOfOrNull { key ->
+            val nested = root.optJSONObject(key) ?: return@firstNotNullOfOrNull null
+            listOf("name", "playerName", "player_name", "villageName", "village_name")
+                .firstNotNullOfOrNull { nestedKey ->
+                    nested.optString(nestedKey, "")
+                        .trim()
+                        .takeIf { it.isNotBlank() && it != "null" && it != tag }
+                }
         }
 
         val items = mutableListOf<VillageItem>()
@@ -178,7 +199,8 @@ object VillageParser {
             timestamp = timestamp,
             items = items,
             extras = extras,
-            rawJson = raw
+            rawJson = raw,
+            villageName = villageName
         )
     }
 
