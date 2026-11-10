@@ -15,6 +15,7 @@ jobs:
     env:
       VERSION_CODE: ${{ github.run_number }}
       VERSION_NAME: 1.${{ github.run_number }}.0
+      GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
