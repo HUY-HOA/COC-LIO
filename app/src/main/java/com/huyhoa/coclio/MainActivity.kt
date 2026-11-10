@@ -345,13 +345,20 @@ private fun OverviewScreen(
             SectionTitle("ĐANG NÂNG CẤP", snapshot.upgrades.size.toString())
         }
 
-        if (snapshot.upgrades.isEmpty()) {
+        if (snapshot.upgrades.isEmpty() && snapshot.gearUps.isEmpty()) {
             item {
                 InfoCard("Không có bộ đếm nâng cấp trong JSON này", "Khi một công trình, anh hùng hoặc đơn vị đang nâng cấp, game sẽ xuất trường timer.")
             }
         } else {
             items(snapshot.upgrades, key = { it.identity + "_" + it.timerSeconds }) { upgrade ->
                 UpgradeCard(upgrade, snapshot.timestamp, nowEpoch)
+            }
+        }
+
+        if (snapshot.gearUps.isNotEmpty()) {
+            item { SectionTitle("GEAR-UP MASTER BUILDER", snapshot.gearUps.size.toString()) }
+            items(snapshot.gearUps, key = { it.identity + "_gear_" + it.timerSeconds }) { item ->
+                UpgradeCard(item, snapshot.timestamp, nowEpoch)
             }
         }
 
@@ -461,6 +468,9 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
                     fontSize = 10.sp
                 )
                 Spacer(Modifier.height(5.dp))
+                if (item.gearUp) {
+                    Text("Gear-up • Master Builder", color = CocGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
                 if (remaining > 0L) {
                     Text("Còn lại " + formatDuration(remaining), color = CocGold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     Text("Dự kiến xong: " + formatTimestamp(endAt), color = CocMuted, fontSize = 10.sp)
@@ -578,6 +588,10 @@ private fun VillageItemCard(item: VillageItem) {
                         if (isNotEmpty()) append(" • ")
                         append("Vũ khí cấp $it")
                     }
+                    item.helperCooldownSeconds?.let {
+                        if (isNotEmpty()) append(" • ")
+                        append("Hồi chiêu " + formatDuration(it))
+                    }
                 }
                 if (subtitle.isNotBlank()) {
                     Text(subtitle, color = CocMuted, fontSize = 10.sp)
@@ -641,7 +655,7 @@ private fun HistoryScreen(
                             Text(
                                 "Nhà chính " + (snapshot.townHallLevel?.toString() ?: "—") +
                                     " • " + snapshot.items.size + " dòng dữ liệu" +
-                                    " • " + snapshot.upgrades.size + " bộ đếm",
+                                    " • " + (snapshot.upgrades.size + snapshot.gearUps.size) + " bộ đếm",
                                 color = CocMuted,
                                 fontSize = 10.sp
                             )
