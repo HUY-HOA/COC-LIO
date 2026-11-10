@@ -679,8 +679,8 @@ fun SettingsScreen(
                 Text(
                     "Tài khoản Google không dùng để sao lưu. Hiện đăng nhập chỉ đổi hồ sơ cục bộ; hệ thống cấp phép máy chủ chưa được kích hoạt.",
                     color = FeatureMuted,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp
                 )
             } else {
                 Text(accountEmail, color = Color.White, fontWeight = FontWeight.Bold)
@@ -724,12 +724,12 @@ fun SettingsScreen(
                     )
                 }
             }
-            Text("Tốc độ: $ledSpeed/4", color = Color.White, fontSize = 10.sp)
+            Text("Tốc độ: $ledSpeed/5  •  1 chậm nhất, 5 nhanh nhất", color = Color.White, fontSize = 11.sp)
             Slider(
                 value = ledSpeed.toFloat(),
                 onValueChange = { onLedSpeedChanged(it.toInt().coerceIn(1, 4)) },
-                valueRange = 1f..4f,
-                steps = 2
+                valueRange = 1f..5f,
+                steps = 3
             )
             Text("Độ sáng: ${(ledBrightness * 100).toInt()}%", color = Color.White, fontSize = 10.sp)
             Slider(
@@ -763,8 +763,8 @@ fun SettingsScreen(
             Text(
                 "Thời điểm nhắc lấy từ bộ đếm thời gian trong JSON đã nhập. Android vẫn có thể trì hoãn nếu tắt quyền thông báo, hạn chế pin hoặc đặt chế độ Không làm phiền.",
                 color = FeatureMuted,
-                fontSize = 10.sp,
-                lineHeight = 15.sp
+                fontSize = 11.sp,
+                lineHeight = 16.sp
             )
         }
 
@@ -773,8 +773,8 @@ fun SettingsScreen(
             Text(
                 "Nhấn giữ màn hình chính → chọn Tiện ích → COC-LIO → Theo dõi nâng cấp. Mỗi tiện ích gắn với tài khoản đang đăng nhập và một làng đã chọn. Muốn thêm tiện ích cho tài khoản khác, hãy đổi tài khoản trong COC-LIO rồi thêm một tiện ích mới.",
                 color = FeatureMuted,
-                fontSize = 11.sp,
-                lineHeight = 17.sp
+                fontSize = 12.sp,
+                lineHeight = 18.sp
             )
             Text(
                 "Tiện ích dạng dọc 2 × 4 ô gọn hơn, có viền RGB chuyển sắc liền mạch và danh sách nâng cấp có thể cuộn. Mỗi mục hiển thị ảnh công trình, đồng hồ đếm ngược ở giữa thanh và phần trăm thời gian còn lại.",
