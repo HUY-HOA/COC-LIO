@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="Làng • Nhà chính"
         android:textColor="#36F4FF"
-        android:textSize="7sp"
+        android:textSize="9sp"
         android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end" />
