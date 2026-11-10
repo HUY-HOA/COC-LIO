@@ -1,5 +1,8 @@
 package com.huyhoa.coclio
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -23,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,6 +47,7 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
@@ -58,6 +63,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -83,6 +89,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
@@ -251,7 +260,8 @@ private fun CocLioApp() {
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    val initialHistory = remember { VillageStore.loadAll(context) }
+    var activeProfile by remember { mutableStateOf(AccountProfileStore.active(context)) }
+    val initialHistory = remember(activeProfile) { VillageStore.loadAll(context, activeProfile) }
 
     var history by remember { mutableStateOf(initialHistory) }
     var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
@@ -260,6 +270,38 @@ private fun CocLioApp() {
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var nowEpoch by remember { mutableLongStateOf(System.currentTimeMillis() / 1000L) }
+    var notificationsEnabled by remember(activeProfile) {
+        mutableStateOf(AppPreferences.notificationsEnabled(context, activeProfile))
+    }
+    var notificationStyle by remember(activeProfile) {
+        mutableStateOf(AppPreferences.notificationStyle(context, activeProfile))
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            AppPreferences.setNotificationsEnabled(context, activeProfile, true)
+            notificationsEnabled = true
+            UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, true)
+        } else {
+            notificationsEnabled = false
+            scope.launch { snackbar.showSnackbar("Bạn chưa cấp quyền thông báo cho COC-LIO.") }
+        }
+    }
+
+    LaunchedEffect(activeProfile) {
+        history = VillageStore.loadAll(context, activeProfile)
+        current = history.firstOrNull()
+        events = emptyList()
+        notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
+        notificationStyle = AppPreferences.notificationStyle(context, activeProfile)
+        UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
+    }
+
+    LaunchedEffect(Unit) {
+        AppWidgetUpdater.ensureRefresh(context)
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -274,8 +316,10 @@ private fun CocLioApp() {
             val previous = history.firstOrNull {
                 it.tag == parsed.tag && it.timestamp < parsed.timestamp
             }
-            VillageStore.save(context, parsed)
-            history = VillageStore.loadAll(context)
+            VillageStore.save(context, parsed, activeProfile)
+            history = VillageStore.loadAll(context, activeProfile)
+            UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
+            AppWidgetUpdater.updateAll(context)
             current = parsed
             events = VillageParser.compare(previous, parsed)
             importError = null
@@ -317,6 +361,7 @@ private fun CocLioApp() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -339,13 +384,14 @@ private fun CocLioApp() {
                     Triple("home", "Tổng quan", 0),
                     Triple("building", "Công trình", 1),
                     Triple("army", "Quân đội", 2),
-                    Triple("history", "Lịch sử", 3)
+                    Triple("history", "Lịch sử", 3),
+                    Triple("settings", "Cài đặt", 4)
                 )
                 navItems.forEach { item ->
                     NavigationBarItem(
                         selected = selectedTab == item.third,
                         onClick = { selectedTab = item.third },
-                        icon = { Icon(imageVector = when (item.first) { "home" -> Icons.Filled.Home; "building" -> Icons.Filled.Business; "army" -> Icons.Filled.Groups; else -> Icons.Filled.History }, contentDescription = item.second, tint = if (selectedTab == item.third) CocCyan else CocMuted) },
+                        icon = { Icon(imageVector = when (item.first) { "home" -> Icons.Filled.Home; "building" -> Icons.Filled.Business; "army" -> Icons.Filled.Groups; "history" -> Icons.Filled.History; else -> Icons.Filled.Settings }, contentDescription = item.second, tint = if (selectedTab == item.third) CocCyan else CocMuted) },
                         label = { Text(item.second, fontSize = 10.sp, color = if (selectedTab == item.third) CocCyan else CocMuted) }
                     )
                 }
@@ -357,41 +403,79 @@ private fun CocLioApp() {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (current == null) {
-                EmptyWelcome(
-                    onImport = {
-                        importError = null
-                        showImportDialog = true
-                    }
-                )
-            } else {
-                Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
+            Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
                 when (page) {
-                    0 -> OverviewScreen(
-                        snapshot = current!!,
-                        events = events,
-                        nowEpoch = nowEpoch
+                    0 -> current?.let {
+                        OverviewScreen(snapshot = it, events = events, nowEpoch = nowEpoch)
+                    } ?: EmptyWelcome(
+                        onImport = { importError = null; showImportDialog = true },
+                        onOpenGame = { openClashOfClans(context) }
                     )
-                    1 -> CategoryScreen(
-                        snapshot = current!!,
-                        tab = "buildings",
-                        nowEpoch = nowEpoch
+                    1 -> current?.let {
+                        CategoryScreen(snapshot = it, tab = "buildings", nowEpoch = nowEpoch)
+                    } ?: EmptyWelcome(
+                        onImport = { importError = null; showImportDialog = true },
+                        onOpenGame = { openClashOfClans(context) }
                     )
-                    2 -> CategoryScreen(
-                        snapshot = current!!,
-                        tab = "army",
-                        nowEpoch = nowEpoch
+                    2 -> current?.let {
+                        CategoryScreen(snapshot = it, tab = "army", nowEpoch = nowEpoch)
+                    } ?: EmptyWelcome(
+                        onImport = { importError = null; showImportDialog = true },
+                        onOpenGame = { openClashOfClans(context) }
                     )
-                    else -> HistoryScreen(
+                    3 -> HistoryScreen(
                         history = history,
-                        activeTag = current!!.tag,
+                        activeTag = current?.tag.orEmpty(),
                         onSelect = {
                             current = it
                             events = emptyList()
                             selectedTab = 0
                         }
                     )
-                }
+                    else -> SettingsScreen(
+                        accountEmail = activeProfile.takeUnless { it == "local" },
+                        notificationsEnabled = notificationsEnabled,
+                        notificationStyle = notificationStyle,
+                        onGoogleSignIn = {
+                            scope.launch {
+                                try {
+                                    val email = GoogleAccountAuth.signIn(context)
+                                    AccountProfileStore.setActive(context, email)
+                                    activeProfile = email
+                                    selectedTab = 0
+                                    snackbar.showSnackbar("Đã chuyển sang hồ sơ " + email)
+                                } catch (error: Exception) {
+                                    snackbar.showSnackbar(error.message ?: "Không thể đăng nhập Google.")
+                                }
+                            }
+                        },
+                        onGoogleSignOut = {
+                            scope.launch {
+                                GoogleAccountAuth.signOut(context)
+                                AccountProfileStore.setActive(context, null)
+                                activeProfile = "local"
+                                selectedTab = 0
+                                snackbar.showSnackbar("Đã chuyển về dữ liệu trên thiết bị.")
+                            }
+                        },
+                        onOpenGame = { openClashOfClans(context) },
+                        onNotificationsChanged = { enabled ->
+                            if (enabled && Build.VERSION.SDK_INT >= 33 &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                AppPreferences.setNotificationsEnabled(context, activeProfile, enabled)
+                                notificationsEnabled = enabled
+                                UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, enabled)
+                            }
+                        },
+                        onNotificationStyleChanged = { style ->
+                            AppPreferences.setNotificationStyle(context, activeProfile, style)
+                            notificationStyle = style
+                            UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
+                        }
+                    )
                 }
             }
         }
@@ -417,28 +501,37 @@ private fun CocLioApp() {
 }
 
 @Composable
-private fun EmptyWelcome(onImport: () -> Unit) {
+private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(28.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("🏰", fontSize = 64.sp)
-        Spacer(Modifier.height(18.dp))
-        Text("Bắt đầu theo dõi ngôi làng", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(9.dp))
+        Text("🏰", fontSize = 62.sp)
+        Spacer(Modifier.height(14.dp))
+        Text("Bắt đầu theo dõi ngôi làng", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
         Text(
-            "Nhập JSON được xuất trực tiếp trong Clash of Clans. Dữ liệu sẽ được lưu trên thiết bị này.",
-            color = CocMuted,
-            fontSize = 14.sp,
-            lineHeight = 21.sp
+            "Lấy JSON trực tiếp từ game để COC-LIO đọc cấp độ, công trình đang nâng và thời gian còn lại.",
+            color = CocMuted, fontSize = 12.sp, lineHeight = 18.sp
         )
-        Spacer(Modifier.height(24.dp))
-        NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport)
-        Spacer(Modifier.height(12.dp))
-        Text("Trong game: Cài đặt → Cài đặt khác → Xuất dữ liệu làng → Sao chép", color = CocMuted, fontSize = 11.sp)
+        Spacer(Modifier.height(18.dp))
+        NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
+            Text("CÁCH LẤY JSON LẦN ĐẦU", color = CocCyan, fontSize = 12.sp, fontWeight = FontWeight.Black)
+            Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = Color.White, fontSize = 11.sp)
+            Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác (More Settings).", color = Color.White, fontSize = 11.sp)
+            Text("3. Kéo xuống Data Export → Export village data in JSON format → Copy.", color = Color.White, fontSize = 11.sp)
+            Text("4. Quay lại COC-LIO, dán JSON hoặc chọn tệp .json rồi nhấn Phân tích & lưu.", color = Color.White, fontSize = 11.sp)
+        }
+        Spacer(Modifier.height(14.dp))
+        NeonButton(text = "MỞ CLASH OF CLANS", onClick = onOpenGame, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(10.dp))
+        NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        Text("Nút mở game đưa bạn vào game; COC-LIO không thể tự bấm nút Copy hoặc ép game mở thẳng màn hình xuất JSON.", color = CocMuted, fontSize = 9.sp, lineHeight = 14.sp)
     }
 }
 
@@ -616,8 +709,16 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
                     Text("Gear-up • Master Builder", color = CocGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 if (remaining > 0L) {
+                    val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
+                    val progress = (1f - remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
                     Text("Còn lại " + formatDuration(remaining), color = CocGold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Text("Dự kiến xong: " + formatTimestamp(endAt), color = CocMuted, fontSize = 10.sp)
+                    LinearProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.fillMaxWidth().height(7.dp),
+                        color = if (item.gearUp) CocMagenta else CocCyan,
+                        trackColor = CocSurfaceAlt
+                    )
+                    Text("Đã qua " + (progress * 100).toInt() + "% thời gian • Dự kiến xong: " + formatTimestamp(endAt), color = CocMuted, fontSize = 9.sp)
                 } else {
                     Text("Đã hết giờ • chờ JSON mới xác nhận", color = CocGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
