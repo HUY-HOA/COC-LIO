@@ -146,11 +146,12 @@ data class LedThemeState(
     val palette: List<Color>,
     val enabled: Boolean,
     val speedMillis: Int,
-    val brightness: Float
+    val brightness: Float,
+    val progress: Float
 )
 
 val LocalLedTheme = staticCompositionLocalOf {
-    LedThemeState(DefaultLedPalette, true, 3000, 0.9f)
+    LedThemeState(DefaultLedPalette, true, 3000, 0.9f, 0f)
 }
 
 private fun paletteForLed(preset: String): List<Color> = when (preset) {
@@ -184,16 +185,7 @@ private fun NeonPanel(
     val shape = RoundedCornerShape(18.dp)
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val transition = rememberInfiniteTransition(label = "led-rgb-border")
-    val ledProgress by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (led.enabled) led.speedMillis else 60000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "led-rgb-progress"
-    )
+    val ledProgress = led.progress
     Column(
         modifier = modifier
             .shadow(5.dp, shape)
@@ -232,7 +224,7 @@ private fun NeonPanel(
                             alpha = led.brightness
                         )
                     }
-                    val brush = if (led.enabled) Brush.sweepGradient(movingColors) else SolidColor(palette.first())
+                    val brush = if (led.enabled && led.speedMillis > 0) Brush.sweepGradient(movingColors) else Brush.sweepGradient(palette)
                     drawPath(path, brush, style = Stroke(width = stroke))
                 }
             }
@@ -325,6 +317,16 @@ private fun CocLioApp(
 ) {
     val context = LocalContext.current
     val baseDensity = LocalDensity.current
+    val ledTransition = rememberInfiniteTransition(label = "global-led-rgb")
+    val ledProgress by ledTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "global-led-progress"
+    )
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
@@ -363,24 +365,19 @@ private fun CocLioApp(
     val savedLedSpeed = ledPrefs.getInt("speed", 50)
     var ledSpeed by remember {
         mutableStateOf(
-            when (savedLedSpeed) {
-                1 -> 64
-                2 -> 74
-                3 -> 82
-                4 -> 89
-                5 -> 95
-                else -> savedLedSpeed.coerceIn(1, 100)
-            }
+            savedLedSpeed.coerceIn(0, 100)
         )
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0.01f, 1f)) }
     val ledTheme = LedThemeState(
         palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
-        speedMillis = (
-            20000 - ((ledSpeed.coerceIn(1, 100) - 1) * 19000 / 99)
-        ).coerceIn(1000, 20000),
-        brightness = ledBrightness.coerceIn(0.01f, 1f)
+        speedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
+            20000 - ((ledSpeed.coerceIn(1, 100) - 1) * 19750 / 99)
+        ).coerceIn(250, 20000),
+        brightness = ledBrightness.coerceIn(0.01f, 1f),
+        progress = if (ledSpeed <= 0 || !ledEnabled) 0f else
+            (ledProgress * (20000f / (20000 - ((ledSpeed.coerceIn(1, 100) - 1) * 19750 / 99)).coerceIn(250, 20000))).rem(1f)
     )
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -630,7 +627,7 @@ private fun CocLioApp(
                             ledPrefs.edit().putString("preset", value).apply()
                         },
                         onLedSpeedChanged = { value ->
-                            ledSpeed = value.coerceIn(1, 100)
+                            ledSpeed = value.coerceIn(0, 100)
                             ledPrefs.edit().putInt("speed", ledSpeed).apply()
                         },
                         onLedBrightnessChanged = { value ->

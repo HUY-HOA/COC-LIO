@@ -78,21 +78,12 @@ jobs:
             echo "Release signing secrets are incomplete; only a debug APK will be built."
           fi
 
-      - name: Run tests and build debug APK
-        run: gradle --no-daemon --build-cache --parallel testDebugUnitTest assembleDebug
+      - name: Run unit tests
+        run: gradle --no-daemon --build-cache --parallel testDebugUnitTest
 
       - name: Build signed release APK
         if: steps.signing.outputs.enabled == 'true'
         run: gradle --no-daemon --build-cache assembleRelease
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: COC-LIO-${{ env.VERSION_NAME }}-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 7
 
       - name: Upload signed release APK
         if: steps.signing.outputs.enabled == 'true'

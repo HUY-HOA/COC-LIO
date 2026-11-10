@@ -921,32 +921,6 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("${(textScale * 100).roundToInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
-            }
-            Slider(
-                value = textScale,
-                onValueChange = onTextScaleChanged,
-                valueRange = 0.85f..1.30f,
-                steps = 8,
-                onValueChangeFinished = onTextScaleChangeFinished
-            )
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Nhỏ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = {
-                    onTextScaleChanged(1f)
-                    onTextScaleChangeFinished()
-                }) {
-                    Text("Mặc định", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
-                }
-                Spacer(Modifier.weight(1f))
-                Text("Lớn", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-            }
-            Text("Áp dụng cho chữ trong ứng dụng và tiện ích màn hình chính.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-        }
-        FeaturePanel {
             Text("TÀI KHOẢN GOOGLE", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             if (accountEmail.isNullOrBlank()) {
@@ -1065,6 +1039,31 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("MỨC ${(((textScale - 0.8f) / 0.05f).roundToInt() + 1).coerceIn(1, 10)}/10", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
+            }
+            Slider(
+                value = textScale.coerceIn(0.8f, 1.25f),
+                onValueChange = onTextScaleChanged,
+                valueRange = 0.8f..1.25f,
+                onValueChangeFinished = onTextScaleChangeFinished
+            )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Nhỏ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = {
+                    onTextScaleChanged(1f)
+                    onTextScaleChangeFinished()
+                }) {
+                    Text("Mặc định", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
+                }
+                Spacer(Modifier.weight(1f))
+                Text("Lớn", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+            }
+            Text("Áp dụng cho chữ trong ứng dụng và tiện ích màn hình chính.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+        }
+        FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Bật hiệu ứng chuyển động", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, modifier = Modifier.weight(1f))
@@ -1094,21 +1093,19 @@ fun SettingsScreen(
             }
             Slider(
                 value = ledSpeed.toFloat(),
-                onValueChange = { onLedSpeedChanged(it.toInt().coerceIn(1, 100)) },
-                valueRange = 1f..100f,
-                steps = 98
+                onValueChange = { onLedSpeedChanged(it.toInt().coerceIn(0, 100)) },
+                valueRange = 0f..100f
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Chậm", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Text("ĐỨNG YÊN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 Spacer(Modifier.weight(1f))
-                Text("Nhanh", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Text("CỰC NHANH", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
             Text("Độ sáng: ${(ledBrightness * 100).toInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
             Slider(
                 value = (ledBrightness * 100f).coerceIn(1f, 100f),
                 onValueChange = { onLedBrightnessChanged(it / 100f) },
-                valueRange = 1f..100f,
-                steps = 98
+                valueRange = 1f..100f
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Mờ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
@@ -1268,16 +1265,7 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
     val shape = RoundedCornerShape(18.dp)
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val transition = rememberInfiniteTransition(label = "settings-led-border")
-    val progress by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (led.enabled) led.speedMillis else 60000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "settings-led-progress"
-    )
+    val progress = led.progress
 
     Column(
         modifier = Modifier
@@ -1313,7 +1301,7 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                             alpha = led.brightness
                         )
                     }
-                    val brush = if (led.enabled) Brush.sweepGradient(colors) else SolidColor(palette.first())
+                    val brush = if (led.enabled && led.speedMillis > 0) Brush.sweepGradient(colors) else Brush.sweepGradient(palette)
                     drawPath(path, brush, style = Stroke(width = stroke))
                 }
             }
