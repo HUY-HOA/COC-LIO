@@ -64,6 +64,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -179,11 +180,10 @@ object GoogleAccountAuth {
                 credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) { "Không nhận được thông tin đăng nhập Google hợp lệ." }
         val google = GoogleIdTokenCredential.createFrom(credential.data)
-        val email = google.email.trim()
-        require(email.isNotBlank() && email.contains("@")) {
+        require(google.id.isNotBlank() && google.id.contains("@")) {
             "Google không trả về địa chỉ email hợp lệ."
         }
-        return email.lowercase()
+        return google.id.lowercase()
     }
 
     suspend fun signOut(context: Context) {
