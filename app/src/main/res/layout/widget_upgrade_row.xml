@@ -2,60 +2,82 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="10dp"
+    android:minHeight="72dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="6dp"
     android:background="@drawable/widget_upgrade_row_background">
 
     <TextView
-        android:id="@+id/row_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Đại bác • cấp 14"
-        android:textColor="#FFFFFF"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:id="@+id/row_icon"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:gravity="center"
+        android:background="@drawable/widget_icon_background"
+        android:text="🏗️"
+        android:textSize="21sp" />
 
-    <TextView
-        android:id="@+id/row_subtitle"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="Nhà chính • Công trình"
-        android:textColor="#9EAFCE"
-        android:textSize="10sp"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:layout_weight="1"
+        android:layout_marginStart="7dp"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
 
-    <Chronometer
-        android:id="@+id/row_timer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="Còn 01:23:45"
-        android:textColor="#FFD166"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:format="Còn %s" />
+        <TextView
+            android:id="@+id/row_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Đại bác • cấp 14"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
-    <ProgressBar
-        android:id="@+id/row_progress"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_marginTop="5dp"
-        android:max="100"
-        android:progress="0"
-        android:progressTint="#36F4FF"
-        android:progressBackgroundTint="#34435F" />
+        <TextView
+            android:id="@+id/row_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Nhà chính • Công trình"
+            android:textColor="#9EAFCE"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
-    <TextView
-        android:id="@+id/row_percent"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="Đã qua 45%"
-        android:textColor="#9EAFCE"
-        android:textSize="9sp" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:layout_marginTop="3dp">
+
+            <ProgressBar
+                android:id="@+id/row_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:layout_gravity="center_vertical"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="#36F4FF"
+                android:progressBackgroundTint="#34435F" />
+
+            <Chronometer
+                android:id="@+id/row_timer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="@drawable/widget_timer_badge_background"
+                android:text="Còn 01:23:45 • 85%"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:format="Còn %s" />
+        </FrameLayout>
+    </LinearLayout>
 </LinearLayout>
