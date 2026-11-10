@@ -889,7 +889,9 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
     val remainingRatio = if (remaining > 0L) {
         (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
     } else 0f
-    val remainingPercent = (remainingRatio * 100f).toInt().coerceIn(0, 100)
+    val remainingPercent = if (remaining > 0L) {
+        (remainingRatio * 100f).toInt().coerceIn(1, 100)
+    } else 0
     NeonPanel(
         modifier = Modifier.fillMaxWidth(),
         glow = if (remaining == 0L) CocGreen else if (item.gearUp) CocMagenta else CocCyan

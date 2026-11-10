@@ -489,9 +489,11 @@ private class UpgradeWidgetListFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade_row)
         val now = System.currentTimeMillis() / 1000L
         val remaining = (entry.endAt - now).coerceAtLeast(0L)
-        val remainingPercent = (
-            remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
-        ).toInt().coerceIn(0, 100)
+        val remainingPercent = if (remaining > 0L) {
+            (
+                remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
+            ).toInt().coerceIn(1, 100)
+        } else 0
 
         val iconBitmap = entry.imageUrl?.let { url ->
             decodedIcons[url] ?: widgetIconFile(context, url)
