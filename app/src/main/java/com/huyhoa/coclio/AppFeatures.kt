@@ -90,7 +90,7 @@ object AppPreferences {
 
     fun notificationsEnabled(context: Context, profile: String): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(key(profile, "notifications"), true)
+            .getBoolean(key(profile, "notifications"), false)
 
     fun setNotificationsEnabled(context: Context, profile: String, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -213,9 +213,10 @@ class UpgradeReminderWorker(
             channel.enableVibration(true)
             if (alarmStyle) channel.vibrationPattern = longArrayOf(0, 450, 250, 450)
             channel.setSound(
-                Settings.System.DEFAULT_NOTIFICATION_URI,
+                if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
+                else Settings.System.DEFAULT_NOTIFICATION_URI,
                 AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setUsage(if (alarmStyle) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_NOTIFICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
             )
@@ -232,6 +233,7 @@ class UpgradeReminderWorker(
         )
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
             .setContentTitle("Bộ đếm nâng cấp đã hết")
             .setContentText(item + " • " + tag)
             .setStyle(NotificationCompat.BigTextStyle().bigText(item + " của làng " + tag + " đã đến thời gian dự kiến hoàn thành. Mở COC-LIO và nhập JSON mới để xác nhận cấp độ."))
