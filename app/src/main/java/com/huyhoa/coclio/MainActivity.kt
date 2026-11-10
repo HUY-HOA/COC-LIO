@@ -733,7 +733,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
                 }
                 if (remaining > 0L) {
                     val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
-                    val progress = (1f - remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
+                    val progress = (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
                     Text("Còn lại " + formatDuration(remaining), color = CocGold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     LinearProgressIndicator(
                         progress = progress,
@@ -741,7 +741,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
                         color = if (item.gearUp) CocMagenta else CocCyan,
                         trackColor = CocSurfaceAlt
                     )
-                    Text("Đã qua " + (progress * 100).toInt() + "% thời gian • Dự kiến xong: " + formatTimestamp(endAt), color = CocMuted, fontSize = 9.sp)
+                    Text("Còn khoảng " + (progress * 100).toInt() + "% thời gian • Dự kiến xong: " + formatTimestamp(endAt), color = CocMuted, fontSize = 9.sp)
                 } else {
                     Text("Đã hết giờ • chờ JSON mới xác nhận", color = CocGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
