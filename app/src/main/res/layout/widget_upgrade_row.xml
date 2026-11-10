@@ -49,14 +49,14 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="24dp"
+            android:layout_height="26dp"
             android:layout_marginTop="3dp">
 
             <ProgressBar
                 android:id="@+id/row_progress"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
-                android:layout_height="10dp"
+                android:layout_height="12dp"
                 android:layout_gravity="center_vertical"
                 android:max="100"
                 android:progress="0"
@@ -75,7 +75,7 @@
                 android:background="@drawable/widget_timer_badge_background"
                 android:text="Còn 01:23:45 • 85%"
                 android:textColor="#FFFFFF"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 android:format="Còn %s" />
         </FrameLayout>
