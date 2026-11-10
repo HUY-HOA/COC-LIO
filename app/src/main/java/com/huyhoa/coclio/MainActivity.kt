@@ -234,6 +234,19 @@ class MainActivity : Activity() {
         LinearLayout.LayoutParams.MATCH_PARENT, dp(50)
     )
 
+    private fun updateApiKeyUi() {
+        val saved = apiKeys.get()
+        if (saved.isNullOrBlank()) {
+            apiKeyInput.visibility = View.VISIBLE
+            apiKeyStatus.text = "Chưa lưu API Key. Nhập khóa một lần để sử dụng."
+            changeKeyButton.visibility = View.GONE
+        } else {
+            apiKeyInput.visibility = View.GONE
+            apiKeyStatus.text = "✓ API Key đã được mã hóa và lưu trên thiết bị."
+            changeKeyButton.visibility = View.VISIBLE
+        }
+    }
+
     private fun lookupPlayer() {
         val key = apiKeyInput.text.toString().trim()
         val tag = tagInput.text.toString().trim().removePrefix("#").replace(" ", "").uppercase()
