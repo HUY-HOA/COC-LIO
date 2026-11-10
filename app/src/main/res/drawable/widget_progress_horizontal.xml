@@ -11,7 +11,12 @@
             android:clipOrientation="horizontal"
             android:gravity="left">
             <shape android:shape="rectangle">
-                <solid android:color="#FF36F4FF" />
+                <gradient
+                    android:type="linear"
+                    android:angle="0"
+                    android:startColor="#FFFFA43A"
+                    android:centerColor="#FFFFD166"
+                    android:endColor="#FF42F5C8" />
                 <corners android:radius="12dp" />
             </shape>
         </clip>
