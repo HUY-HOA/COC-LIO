@@ -64,7 +64,7 @@ data class VillageSnapshot(
 
     fun homeBuildersBusyAt(nowSeconds: Long): Int = items.count { item ->
         item.base == "home" &&
-            item.sectionKey in setOf("buildings", "traps", "heroes") &&
+            item.sectionKey in setOf("buildings", "traps", "heroes", "pets") &&
             !item.gearUp &&
             item.timerSeconds != null &&
             item.timerSeconds > 0L &&

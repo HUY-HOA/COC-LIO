@@ -99,6 +99,21 @@ class VillageParserTest {
     }
 
     @Test
+    fun petUpgradeCountsAsBusyHomeBuilder() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#PETS","timestamp":1794320000,"buildings":[
+                {"data":1000015,"lvl":5,"cnt":5}
+            ],"pets":[
+                {"data":73000000,"lvl":5,"timer":3600}
+            ]}"""
+        )
+
+        assertEquals(5, snapshot.homeBuilderTotal)
+        assertEquals(1, snapshot.homeBuildersBusyAt(1794320100L))
+        assertEquals(4, snapshot.homeBuilderTotal!! - snapshot.homeBuildersBusyAt(1794320100L))
+    }
+
+    @Test
     fun readsVillageNameWhenJsonProvidesIt() {
         val direct = VillageParser.parse(
             """{"tag":"#TEST123","timestamp":1794320000,"playerName":"Làng Chính"}"""
