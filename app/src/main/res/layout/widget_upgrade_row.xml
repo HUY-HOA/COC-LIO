@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="46dp"
+    android:minHeight="56dp"
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:padding="3dp"
@@ -49,29 +49,37 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="20dp"
-            android:layout_marginTop="1dp">
+            android:layout_height="30dp"
+            android:layout_marginTop="2dp">
 
             <ProgressBar
                 android:id="@+id/row_progress"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
-                android:layout_height="16dp"
-                android:layout_gravity="center_vertical"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
                 android:max="100"
                 android:progress="0"
-                android:progressTint="#36F4FF"
-                android:progressBackgroundTint="#34435F" />
+                android:progressDrawable="@drawable/widget_progress_horizontal"
+                android:indeterminate="false" />
 
             <Chronometer
                 android:id="@+id/row_timer"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="26dp"
+                android:minWidth="72dp"
                 android:layout_gravity="center"
-                android:text="00:00:00 • 100%"
-                android:textColor="#FFFFFF"
-                android:textSize="9sp"
+                android:gravity="center"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:background="@drawable/widget_timer_badge_background"
+                android:text="00:00:00"
+                android:textColor="#FFFFFFFF"
+                android:textSize="12sp"
                 android:textStyle="bold"
+                android:includeFontPadding="false"
+                android:shadowColor="#CC000000"
+                android:shadowRadius="2"
                 android:format="%s" />
         </FrameLayout>
     </LinearLayout>
