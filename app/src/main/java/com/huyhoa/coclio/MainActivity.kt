@@ -810,7 +810,7 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
-            Text((snapshot.villageName ?: snapshot.tag) + " • " + snapshot.tag + " • " + filtered.size + " nhóm dữ liệu", color = CocMuted, fontSize = 10.sp)
+            Text((snapshot.villageName?.takeIf { it.isNotBlank() }?.let { it + " • " + snapshot.tag } ?: snapshot.tag) + " • " + filtered.size + " nhóm dữ liệu", color = CocMuted, fontSize = 10.sp)
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
