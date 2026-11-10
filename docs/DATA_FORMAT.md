@@ -14,7 +14,7 @@ This document records the rules used by COC-LIO. The in-game JSON is treated as 
 - `data`: game data identifier.
 - `lvl`: current level in the exported snapshot.
 - `cnt`: number of idle copies at that level.
-- `timer`: seconds remaining for one instance currently upgrading. Its expected finish moment is `timestamp + timer`. Values above 30 days and divisible by 1,000 are treated as milliseconds and normalized to seconds. Normal game timers measured in seconds remain unchanged.
+- `timer`: seconds remaining for one instance currently upgrading. Its expected finish moment is `timestamp + timer`. COC-LIO keeps this field in seconds exactly as exported by the game.
 - `helper_cooldown`: helper cooldown information; it is not a building upgrade timer.
 - `gear_up`: flag used for a defence gear-up. A row with both `gear_up` and `timer` is a Master Builder gear-up and must not be reported as a normal level upgrade.
 - `types` and nested `modules`: crafted-defence/module details; each module carries its own ID and level.
@@ -37,7 +37,7 @@ A row with `timer` and no `cnt` is interpreted as one running instance. A row wi
 - It does not update itself after the player returns to the game; a new export must be imported.
 - Game updates may add identifiers, levels or fields. Unknown identifiers remain visible as numeric IDs until the mapping is verified.
 - Supercharge has special tier semantics beyond ordinary level upgrades. COC-LIO currently retains the source JSON but does not yet claim to interpret every Supercharge field. This must be validated against current real exports before it is used in completion detection.
-- An export taken while temporary boosts are active may produce timers that do not behave like a simple wall-clock countdown. Books, potions, snacks, helpers, Clock Tower boosts, and other in-game effects used after the export can make the displayed estimate differ from the game. Import a fresh JSON and compare the timer in the game before relying on the estimate.
+- The export is a snapshot. A book, potion, snack, helper, Clock Tower boost, Gold Pass boost, or other game action after export can make the estimate differ from the current in-game timer. Import a fresh JSON after those actions. The game timer is the reference.
 
 ## References
 
