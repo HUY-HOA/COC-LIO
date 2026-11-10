@@ -24,7 +24,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="1dp"
         android:layout_marginBottom="3dp"
-        android:text="Danh sách công trình đang nâng cấp"
+        android:text="Danh sách mục đang nâng cấp"
         android:textColor="#9EAFCE"
         android:textSize="8sp"
         android:maxLines="1"
@@ -48,7 +48,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:padding="10dp"
-        android:text="Chưa có công trình nào đang nâng cấp"
+        android:text="Chưa có mục nào đang nâng cấp"
         android:textColor="#9EAFCE"
         android:textSize="9sp"
         android:visibility="gone" />
