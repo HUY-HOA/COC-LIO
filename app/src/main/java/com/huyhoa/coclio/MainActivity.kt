@@ -7,6 +7,16 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.graphics.Typeface
 import android.graphics.Color
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
+import android.view.View
+import android.widget.Toast
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
@@ -18,6 +28,60 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import kotlin.concurrent.thread
+
+private class ApiKeyStore(context: Context) {
+    private val prefs = context.getSharedPreferences("coc_lio_secure", Context.MODE_PRIVATE)
+    private val alias = "coc_lio_api_key"
+
+    private fun secretKey(): SecretKey {
+        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val existing = store.getKey(alias, null) as? SecretKey
+        if (existing != null) return existing
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        generator.init(
+            KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setRandomizedEncryptionRequired(true)
+                .build()
+        )
+        return generator.generateKey()
+    }
+
+    fun save(value: String) {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey())
+        val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+        prefs.edit()
+            .putString("iv", Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
+            .putString("data", Base64.encodeToString(encrypted, Base64.NO_WRAP))
+            .apply()
+    }
+
+    fun get(): String? {
+        val ivText = prefs.getString("iv", null) ?: return null
+        val dataText = prefs.getString("data", null) ?: return null
+        return try {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                secretKey(),
+                GCMParameterSpec(128, Base64.decode(ivText, Base64.NO_WRAP))
+            )
+            String(cipher.doFinal(Base64.decode(dataText, Base64.NO_WRAP)), Charsets.UTF_8)
+        } catch (_: Exception) {
+            clear()
+            null
+        }
+    }
+
+    fun clear() {
+        prefs.edit().clear().apply()
+        try {
+            KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(alias)
+        } catch (_: Exception) {}
+    }
+}
 
 private class PlayerHistory(context: Context) : SQLiteOpenHelper(context, "coc_lio.db", null, 1) {
     override fun onCreate(db: SQLiteDatabase) {
@@ -47,6 +111,9 @@ class MainActivity : Activity() {
     private lateinit var resultView: TextView
     private lateinit var historyView: TextView
     private lateinit var searchButton: Button
+    private lateinit var apiKeyStatus: TextView
+    private lateinit var changeKeyButton: Button
+    private val apiKeys by lazy { ApiKeyStore(this) }
     private val history by lazy { PlayerHistory(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,6 +154,25 @@ class MainActivity : Activity() {
             inputType = 129
         }
         content.addView(apiKeyInput, fieldParams())
+        apiKeyStatus = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Color.rgb(134, 239, 172))
+            setPadding(0, dp(8), 0, dp(4))
+        }
+        content.addView(apiKeyStatus)
+        changeKeyButton = Button(this).apply {
+            text = "Đổi API Key"
+            isAllCaps = false
+            setOnClickListener {
+                apiKeys.clear()
+                apiKeyInput.setText("")
+                apiKeyInput.visibility = View.VISIBLE
+                apiKeyStatus.text = "Nhập API Key mới. Khóa sẽ được lưu sau lần tra cứu thành công."
+                changeKeyButton.visibility = View.GONE
+            }
+        }
+        content.addView(changeKeyButton)
+        updateApiKeyUi()
         content.addView(label("ID làng / Player Tag"))
         tagInput = EditText(this).apply {
             hint = "#ABC123XYZ"
@@ -126,7 +212,7 @@ class MainActivity : Activity() {
         }
         content.addView(historyView)
         content.addView(TextView(this).apply {
-            text = "API key chỉ dùng trong phiên nhập hiện tại, không lưu vào lịch sử. Dữ liệu hồ sơ được lưu cục bộ trên thiết bị. Supercell yêu cầu Developer API Key và IP thiết bị nằm trong danh sách cho phép."
+            text = "API Key được mã hóa bằng Android Keystore và lưu riêng trên thiết bị. Supercell vẫn yêu cầu IP thiết bị nằm trong danh sách cho phép."
             textSize = 12f
             setTextColor(Color.rgb(148, 163, 184))
             setPadding(0, dp(16), 0, 0)
