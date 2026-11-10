@@ -99,6 +99,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -148,11 +150,11 @@ data class LedThemeState(
     val enabled: Boolean,
     val speedMillis: Int,
     val brightness: Float,
-    val progress: Float
+    val progress: State<Float>
 )
 
 val LocalLedTheme = staticCompositionLocalOf {
-    LedThemeState(DefaultLedPalette, true, 3000, 0.9f, 0f)
+    LedThemeState(DefaultLedPalette, true, 3000, 0.9f, mutableStateOf(0f))
 }
 
 private fun paletteForLed(preset: String): List<Color> = when (preset) {
@@ -186,7 +188,6 @@ private fun NeonPanel(
     val shape = RoundedCornerShape(18.dp)
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val ledProgress = led.progress
     Column(
         modifier = modifier
             .shadow(5.dp, shape)
@@ -197,6 +198,7 @@ private fun NeonPanel(
                 MaterialTheme.colorScheme.surface
             )))
             .drawWithCache {
+                val ledProgress = led.progress.value
                 val stroke = 2.8.dp.toPx()
                 val inset = stroke / 2f
                 val path = Path().apply {
@@ -319,7 +321,7 @@ private fun CocLioApp(
     val context = LocalContext.current
     val baseDensity = LocalDensity.current
     val ledTransition = rememberInfiniteTransition(label = "global-led-rgb")
-    val ledProgress by ledTransition.animateFloat(
+    val ledProgress = ledTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -377,8 +379,7 @@ private fun CocLioApp(
             20000 - ((ledSpeed.coerceIn(1, 100) - 1) * 19750 / 99)
         ).coerceIn(250, 20000),
         brightness = ledBrightness.coerceIn(0.01f, 1f),
-        progress = if (ledSpeed <= 0 || !ledEnabled) 0f else
-            (ledProgress * (20000f / (20000 - ((ledSpeed.coerceIn(1, 100) - 1) * 19750 / 99)).coerceIn(250, 20000))).rem(1f)
+        progress = ledProgress
     )
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
