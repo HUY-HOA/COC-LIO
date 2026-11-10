@@ -652,7 +652,6 @@ private class UpgradeWidgetListFactory(
             (110 + remainingPercent * 1.25f).toInt().coerceIn(110, 235),
             72
         )
-        views.setProgressTintList(R.id.row_progress, android.content.res.ColorStateList.valueOf(progressColor))
         views.setTextColor(
             R.id.row_timer,
             if (remaining > 0L) progressColor else android.graphics.Color.rgb(66, 245, 200)
