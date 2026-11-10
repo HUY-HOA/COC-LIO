@@ -259,6 +259,116 @@ class WidgetRefreshWorker(
     }
 }
 
+class UpgradeWidgetListService : android.widget.RemoteViewsService() {
+    override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
+        return UpgradeWidgetListFactory(applicationContext, intent)
+    }
+}
+
+private data class WidgetUpgradeEntry(
+    val name: String,
+    val level: Int?,
+    val section: String,
+    val base: String,
+    val gearUp: Boolean,
+    val endAt: Long,
+    val totalSeconds: Long
+)
+
+private class UpgradeWidgetListFactory(
+    private val context: Context,
+    intent: Intent
+) : android.widget.RemoteViewsService.RemoteViewsFactory {
+    private val widgetId = intent.getIntExtra(
+        AppWidgetManager.EXTRA_APPWIDGET_ID,
+        AppWidgetManager.INVALID_APPWIDGET_ID
+    )
+    private var entries: List<WidgetUpgradeEntry> = emptyList()
+
+    override fun onCreate() = Unit
+
+    override fun onDataSetChanged() {
+        val prefs = context.getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
+        val profile = prefs.getString("profile_" + widgetId, AccountProfileStore.active(context)) ?: "local"
+        val tag = prefs.getString("tag_" + widgetId, null)
+        val snapshot = VillageStore.loadAll(context, profile).firstOrNull {
+            tag == null || it.tag == tag
+        }
+
+        entries = if (snapshot == null) {
+            emptyList()
+        } else {
+            (snapshot.upgrades + snapshot.gearUps)
+                .mapNotNull { item ->
+                    val seconds = item.timerSeconds ?: return@mapNotNull null
+                    if (seconds <= 0L) return@mapNotNull null
+                    WidgetUpgradeEntry(
+                        name = item.name,
+                        level = item.level,
+                        section = item.sectionLabel,
+                        base = item.base,
+                        gearUp = item.gearUp,
+                        endAt = snapshot.timestamp + seconds,
+                        totalSeconds = seconds
+                    )
+                }
+                .sortedBy { it.endAt }
+        }
+    }
+
+    override fun getViewAt(position: Int): RemoteViews? {
+        val entry = entries.getOrNull(position) ?: return null
+        val views = RemoteViews(context.packageName, R.layout.widget_upgrade_row)
+        val now = System.currentTimeMillis() / 1000L
+        val remaining = (entry.endAt - now).coerceAtLeast(0L)
+        val elapsedPercent = (
+            100.0 - remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
+        ).toInt().coerceIn(0, 100)
+
+        views.setTextViewText(
+            R.id.row_title,
+            entry.name + (entry.level?.let { " • cấp $it" } ?: "")
+        )
+        val baseName = if (entry.base == "builder") "Căn cứ thợ xây" else "Nhà chính"
+        val special = if (entry.gearUp) " • Nâng cấp đặc biệt" else ""
+        views.setTextViewText(R.id.row_subtitle, baseName + " • " + entry.section + special)
+        views.setProgressBar(R.id.row_progress, 100, elapsedPercent, false)
+        views.setTextViewText(R.id.row_percent, "Đã qua $elapsedPercent%")
+
+        if (remaining > 0L) {
+            views.setChronometer(
+                R.id.row_timer,
+                SystemClock.elapsedRealtime() + remaining * 1000L,
+                "Còn %s",
+                true
+            )
+            views.setChronometerCountDown(R.id.row_timer, true)
+        } else {
+            views.setTextViewText(R.id.row_timer, "Đã hết giờ • nhập JSON mới để xác nhận")
+        }
+        return views
+    }
+
+    override fun getCount(): Int = entries.size
+    override fun getItemId(position: Int): Long = entries.getOrNull(position)?.let {
+        (it.name + it.endAt).hashCode().toLong()
+    } ?: position.toLong()
+    override fun getViewTypeCount(): Int = 1
+    override fun hasStableIds(): Boolean = true
+    override fun getLoadingView(): RemoteViews? {
+        return RemoteViews(context.packageName, R.layout.widget_upgrade_row).apply {
+            setTextViewText(R.id.row_title, "Đang tải danh sách nâng cấp…")
+            setTextViewText(R.id.row_subtitle, "COC-LIO")
+            setTextViewText(R.id.row_timer, "Đang cập nhật")
+            setProgressBar(R.id.row_progress, 100, 0, false)
+            setTextViewText(R.id.row_percent, "")
+        }
+    }
+    override fun onDestroy() {
+        entries = emptyList()
+    }
+}
+
 object AppWidgetUpdater {
     fun ensureRefresh(context: Context) {
         val request = PeriodicWorkRequestBuilder<WidgetRefreshWorker>(15, TimeUnit.MINUTES).build()
@@ -280,45 +390,29 @@ object AppWidgetUpdater {
         val profile = prefs.getString("profile_" + appWidgetId, AccountProfileStore.active(context)) ?: "local"
         val tag = prefs.getString("tag_" + appWidgetId, null)
         val snapshot = VillageStore.loadAll(context, profile).firstOrNull { tag == null || it.tag == tag }
+        val count = snapshot?.let { it.upgrades.size + it.gearUps.size } ?: 0
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade)
 
-        if (snapshot == null) {
-            views.setTextViewText(R.id.widget_village, "COC-LIO • Chưa có dữ liệu")
-            views.setTextViewText(R.id.widget_item, "Mở ứng dụng và nhập JSON")
-            views.setTextViewText(R.id.widget_timer, "Chọn làng khi thêm tiện ích")
-            views.setProgressBar(R.id.widget_progress, 100, 0, false)
-        } else {
-            val upgrade = (snapshot.upgrades + snapshot.gearUps).firstOrNull()
-            views.setTextViewText(
-                R.id.widget_village,
-                "LÀNG " + snapshot.tag + " • NHÀ CHÍNH " + (snapshot.townHallLevel ?: "—")
-            )
-            if (upgrade == null) {
-                views.setTextViewText(R.id.widget_item, "Không có nâng cấp đang chạy")
-                views.setTextViewText(R.id.widget_timer, "Nhập JSON mới để cập nhật")
-                views.setProgressBar(R.id.widget_progress, 100, 0, false)
-            } else {
-                val total = (upgrade.timerSeconds ?: 0L).coerceAtLeast(1L)
-                val endAt = snapshot.timestamp + total
-                val remaining = (endAt - System.currentTimeMillis() / 1000L).coerceAtLeast(0L)
-                val elapsedPercent = (100.0 - remaining.toDouble() * 100.0 / total.toDouble()).toInt().coerceIn(0, 100)
-                views.setTextViewText(
-                    R.id.widget_item,
-                    upgrade.name + (upgrade.level?.let { " • cấp " + it } ?: "")
-                )
-                views.setProgressBar(R.id.widget_progress, 100, elapsedPercent, false)
-                if (remaining > 0L) {
-                    views.setChronometer(
-                        R.id.widget_timer,
-                        SystemClock.elapsedRealtime() + remaining * 1000L,
-                        null,
-                        true
-                    )
-                } else {
-                    views.setTextViewText(R.id.widget_timer, "Đã hết giờ • nhập JSON để xác nhận")
-                }
+        views.setTextViewText(
+            R.id.widget_village,
+            if (snapshot == null) "COC-LIO • Chưa có dữ liệu"
+            else "LÀNG " + snapshot.tag + " • NHÀ CHÍNH " + (snapshot.townHallLevel ?: "—")
+        )
+        views.setTextViewText(
+            R.id.widget_status,
+            when {
+                snapshot == null -> "Mở ứng dụng và nhập dữ liệu JSON"
+                count == 0 -> "Không có công trình đang nâng cấp"
+                else -> "$count công trình đang nâng cấp"
             }
+        )
+
+        val adapterIntent = Intent(context, UpgradeWidgetListService::class.java).apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            data = Uri.parse("coclio://widget/$appWidgetId")
         }
+        views.setRemoteAdapter(R.id.widget_list, adapterIntent)
+        views.setEmptyView(R.id.widget_list, R.id.widget_empty)
 
         val open = PendingIntent.getActivity(
             context,
@@ -327,11 +421,10 @@ object AppWidgetUpdater {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         views.setOnClickPendingIntent(R.id.widget_root, open)
-        managerUpdate(context, appWidgetId, views)
-    }
 
-    private fun managerUpdate(context: Context, id: Int, views: RemoteViews) {
-        AppWidgetManager.getInstance(context).updateAppWidget(id, views)
+        val manager = AppWidgetManager.getInstance(context)
+        manager.updateAppWidget(appWidgetId, views)
+        manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
     }
 }
 
