@@ -642,7 +642,7 @@ private class UpgradeWidgetListFactory(
         }
         views.setTextViewText(
             R.id.row_title,
-            if (remaining > 0L) "$levelText • CÒN $remainingPercent%"
+            if (remaining > 0L) levelText
             else "$levelText • ĐÃ HẾT GIỜ"
         )
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
@@ -653,6 +653,10 @@ private class UpgradeWidgetListFactory(
             72
         )
         views.setProgressTintList(R.id.row_progress, android.content.res.ColorStateList.valueOf(progressColor))
+        views.setTextColor(
+            R.id.row_timer,
+            if (remaining > 0L) progressColor else android.graphics.Color.rgb(66, 245, 200)
+        )
 
         if (remaining > 0L) {
             views.setChronometer(
