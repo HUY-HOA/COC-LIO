@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: coc-lio-apk-v2-${{ github.ref }}
+  group: coc-lio-apk-v3-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -21,6 +21,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       VERSION_CODE: ${{ github.run_number }}
       VERSION_NAME: 1.${{ github.run_number }}.0
