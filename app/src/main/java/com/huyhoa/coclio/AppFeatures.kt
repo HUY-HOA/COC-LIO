@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.Arrangement
@@ -945,7 +946,7 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                             alpha = led.brightness
                         )
                     }
-                    val brush = if (led.enabled) Brush.sweepGradient(colors) else Brush.solidColor(palette.first())
+                    val brush = if (led.enabled) Brush.sweepGradient(colors) else SolidColor(palette.first())
                     drawPath(path, brush, style = Stroke(width = stroke))
                 }
             }
