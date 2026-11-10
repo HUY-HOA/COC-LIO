@@ -90,7 +90,10 @@ object VillageStore {
 
     private fun writeHistory(context: Context, snapshots: List<VillageSnapshot>, profile: String) {
         val array = JSONArray()
-        snapshots.sortedByDescending { it.timestamp }.take(MAX_SNAPSHOTS).forEach { item ->
+        snapshots.distinctBy { it.tag to it.timestamp }
+            .sortedByDescending { it.timestamp }
+            .take(MAX_SNAPSHOTS)
+            .forEach { item ->
             array.put(
                 JSONObject()
                     .put("tag", item.tag)
@@ -207,7 +210,7 @@ object VillageStore {
         if (record.snapshots.isEmpty()) return false
 
         val existing = loadAll(context, profile)
-        writeHistory(context, record.snapshots + existing, profile)
+        writeHistory(context, existing + record.snapshots, profile)
         if (record.wasPinned) setPinned(context, record.tag, true, profile)
 
         val raw = preferences(context).getString(deletedKey(profile), "[]") ?: "[]"
