@@ -243,7 +243,7 @@ private fun NeonButton(
             .background(Brush.horizontalGradient(palette.take(3)))
             .border(
                 2.dp,
-                if (led.enabled) Brush.sweepGradient(palette) else Brush.solidColor(palette.first()),
+                if (led.enabled) Brush.sweepGradient(palette) else SolidColor(palette.first()),
                 shape
             )
             .clickable(onClick = onClick)
