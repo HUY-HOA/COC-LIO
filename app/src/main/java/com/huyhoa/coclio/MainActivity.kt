@@ -220,48 +220,93 @@ class MainActivity : Activity() {
     }
 
     private fun formatPlayer(p: JSONObject): String {
-        val clan = p.optJSONObject("clan")
-        val league = p.optJSONObject("league")
-        val builderHall = p.optJSONObject("builderHall")
+        val labels = mapOf(
+            "name" to "Tên người chơi", "tag" to "Player Tag",
+            "townHallLevel" to "Cấp Nhà chính", "townHallWeaponLevel" to "Cấp vũ khí Nhà chính",
+            "expLevel" to "Cấp kinh nghiệm", "trophies" to "Cúp hiện tại",
+            "bestTrophies" to "Cúp cao nhất", "warStars" to "Sao chiến tranh",
+            "attackWins" to "Số trận thắng tấn công", "defenseWins" to "Số trận thắng phòng thủ",
+            "builderHallLevel" to "Cấp Nhà thợ xây", "builderBaseTrophies" to "Cúp Nhà thợ xây",
+            "bestBuilderBaseTrophies" to "Cúp Nhà thợ xây cao nhất", "versusBattleWins" to "Trận thắng Nhà thợ xây",
+            "donations" to "Quân đã quyên góp mùa này", "donationsReceived" to "Quân đã nhận mùa này",
+            "clanCapitalContributions" to "Đóng góp Thủ đô Clan",
+            "role" to "Vai trò trong Clan", "warPreference" to "Trạng thái tham gia chiến tranh",
+            "clanRank" to "Thứ hạng trong Clan", "previousClanRank" to "Thứ hạng Clan trước đó",
+            "name" to "Tên", "level" to "Cấp", "maxLevel" to "Cấp tối đa",
+            "village" to "Khu vực", "stars" to "Số sao", "value" to "Tiến độ",
+            "target" to "Mục tiêu", "info" to "Mô tả", "completionInfo" to "Thông tin hoàn thành",
+            "clanLevel" to "Cấp Clan", "members" to "Số thành viên",
+            "badgeUrls" to "Đường dẫn huy hiệu Clan", "iconUrls" to "Đường dẫn biểu tượng",
+            "league" to "Giải đấu", "leagueTier" to "Bậc giải đấu",
+            "builderBaseLeague" to "Giải Nhà thợ xây", "legendStatistics" to "Thống kê Legend",
+            "achievements" to "Thành tựu", "troops" to "Quân lính",
+            "heroes" to "Anh hùng", "heroEquipment" to "Trang bị anh hùng",
+            "spells" to "Phép thuật", "labels" to "Nhãn người chơi",
+            "playerHouse" to "Nhà người chơi", "currentLeagueGroupTag" to "ID nhóm giải hiện tại",
+            "currentLeagueSeasonId" to "Mùa giải hiện tại", "previousLeagueGroupTag" to "ID nhóm giải trước",
+            "previousLeagueSeasonId" to "Mùa giải trước", "superTroopIsActive" to "Đang tăng cường Siêu quân"
+        )
+        fun icon(key: String): String = when (key) {
+            "clan", "clanLevel", "clanRank", "previousClanRank" -> "🛡️"
+            "league", "leagueTier", "builderBaseLeague", "trophies", "bestTrophies",
+            "builderBaseTrophies", "bestBuilderBaseTrophies" -> "🏆"
+            "townHallLevel", "townHallWeaponLevel", "builderHallLevel" -> "🏠"
+            "expLevel" -> "⭐"
+            "warStars", "attackWins", "defenseWins", "warPreference" -> "⚔️"
+            "troops", "heroes", "heroEquipment", "spells" -> "⚔️"
+            "donations", "donationsReceived", "clanCapitalContributions" -> "🎁"
+            "achievements" -> "🏅"
+            "labels" -> "🔖"
+            "playerHouse" -> "🏡"
+            else -> "•"
+        }
+        fun render(value: Any?, key: String, depth: Int): String {
+            val indent = "  ".repeat(depth.coerceAtMost(5))
+            val title = labels[key] ?: key
+            return when (value) {
+                is JSONObject -> {
+                    val out = StringBuilder()
+                    if (key.isNotEmpty()) out.appendLine("$indent${icon(key)} $title")
+                    val keys = value.keys()
+                    while (keys.hasNext()) {
+                        val childKey = keys.next()
+                        out.append(render(value.opt(childKey), childKey, depth + if (key.isEmpty()) 0 else 1))
+                    }
+                    out.toString()
+                }
+                is org.json.JSONArray -> {
+                    val out = StringBuilder()
+                    out.appendLine("$indent${icon(key)} $title (${value.length()})")
+                    for (i in 0 until value.length()) {
+                        val item = value.opt(i)
+                        if (item is JSONObject) {
+                            val itemName = item.optString("name", "Mục ${i + 1}")
+                            out.appendLine("$indent  ▸ $itemName")
+                            val keys = item.keys()
+                            while (keys.hasNext()) {
+                                val childKey = keys.next()
+                                if (childKey != "name") out.append(render(item.opt(childKey), childKey, depth + 2))
+                            }
+                        } else {
+                            out.appendLine("$indent  • $item")
+                        }
+                    }
+                    out.toString()
+                }
+                JSONObject.NULL, null -> ""
+                else -> "$indent${icon(key)} $title: $value\n"
+            }
+        }
         return buildString {
-            appendLine("🏰  LÀNG CLASH OF CLANS")
-            appendLine("━━━━━━━━━━━━━━━━━━━━")
-            appendLine("👤  ${p.optString("name", "—")}")
-            appendLine("🆔  ${p.optString("tag", "—")}")
-            appendLine()
-            appendLine("🏠  NHÀ CHÍNH")
-            appendLine("⭐  Town Hall cấp ${p.optInt("townHallLevel", 0)}")
-            appendLine("✨  Kinh nghiệm: cấp ${p.optInt("expLevel", 0)}")
-            appendLine()
-            appendLine("🏆  CÚP & GIẢI ĐẤU")
-            appendLine("🏆  Cúp hiện tại: ${p.optInt("trophies", 0)}")
-            appendLine("🥇  Cúp cao nhất: ${p.optInt("bestTrophies", 0)}")
-            appendLine("🎖️  Giải đấu: ${league?.optString("name") ?: "Chưa có"}")
-            appendLine()
-            appendLine("🛡️  BỘ TỘC")
-            appendLine("🏰  Clan: ${clan?.optString("name") ?: "Không tham gia"}")
-            if (clan != null) {
-                appendLine("🆔  ID Clan: ${clan.optString("tag", "—")}")
-                appendLine("👥  Thành viên: ${clan.optInt("members", 0)}")
-                appendLine("🏅  Cấp Clan: ${clan.optInt("clanLevel", 0)}")
+            appendLine("HỒ SƠ CLASH OF CLANS — TOÀN BỘ DỮ LIỆU API")
+            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            val keys = p.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                append(render(p.opt(key), key, 0))
             }
             appendLine()
-            appendLine("⚔️  THÀNH TÍCH CHIẾN ĐẤU")
-            appendLine("⭐  Sao chiến tranh: ${p.optInt("warStars", 0)}")
-            appendLine("⚔️  Thắng tấn công: ${p.optInt("attackWins", 0)}")
-            appendLine("🛡️  Thắng phòng thủ: ${p.optInt("defenseWins", 0)}")
-            appendLine()
-            appendLine("🎁  QUÂN ĐỘI")
-            appendLine("📤  Lính đã quyên góp: ${p.optInt("donations", 0)}")
-            appendLine("📥  Lính đã nhận: ${p.optInt("donationsReceived", 0)}")
-            if (builderHall != null) {
-                appendLine()
-                appendLine("🏡  NHÀ THỢ XÂY")
-                appendLine("⭐  Cấp nhà thợ xây: ${builderHall.optInt("builderHallLevel", 0)}")
-                appendLine("🏆  Cúp nhà thợ xây: ${builderHall.optInt("versusTrophies", 0)}")
-            }
-            appendLine()
-            appendLine("ℹ️  Thông tin hiển thị theo dữ liệu API Supercell cung cấp.")
+            appendLine("Lưu ý: API công khai không cung cấp bản đồ làng, cấp từng công trình/tường/bẫy hoặc tiến trình nâng cấp. Các mục không có trong phản hồi API sẽ không xuất hiện.")
         }
     }
 
