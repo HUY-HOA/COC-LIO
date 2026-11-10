@@ -323,8 +323,6 @@ private fun CocLioApp() {
         AppWidgetUpdater.ensureRefresh(context)
     }
 
-    var pendingVillageName by remember { mutableStateOf("") }
-
     fun importJson(raw: String, nameOverride: String? = null) {
         try {
             val parsedFromJson = VillageParser.parse(raw)
@@ -350,23 +348,6 @@ private fun CocLioApp() {
             }
         } catch (error: Exception) {
             importError = error.message ?: "Không thể đọc JSON này."
-        }
-    }
-
-    val filePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            try {
-                val raw = context.contentResolver.openInputStream(uri)
-                    ?.bufferedReader()
-                    ?.use { it.readText() }
-                    ?: throw IllegalArgumentException("Không mở được tệp đã chọn.")
-                importJson(raw, pendingVillageName)
-            } catch (error: Exception) {
-                importError = error.message ?: "Không thể đọc tệp JSON."
-                showImportDialog = true
-            }
         }
     }
 
@@ -510,10 +491,6 @@ private fun CocLioApp() {
             onPaste = {
                 clipboard.getText()?.text?.let { it }
             },
-            onChooseFile = { name ->
-                pendingVillageName = name
-                filePicker.launch(arrayOf("application/json", "text/plain", "*/*"))
-            },
             onImport = { raw, name -> importJson(raw, name) }
         )
     }
@@ -559,73 +536,91 @@ private fun OverviewScreen(
     snapshot: VillageSnapshot,
     events: List<ChangeEvent>
 ) {
+    val homeRunning = (snapshot.upgrades + snapshot.gearUps).filter { it.base == "home" }
+    val builderRunning = (snapshot.upgrades + snapshot.gearUps).filter { it.base == "builder" }
+    val homeHall = snapshot.items.firstOrNull {
+        it.sectionKey == "buildings" && it.dataId == 1000001
+    }
+    val builderHall = snapshot.items.firstOrNull {
+        it.sectionKey == "buildings2" && it.dataId == 1000034
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
             NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
-                Column(Modifier.padding(3.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("LÀNG CỦA BẠN", color = CocMuted, fontSize = 10.sp, letterSpacing = 1.2.sp)
-                            Text(
-                                snapshot.villageName ?: snapshot.tag,
-                                color = Color.White,
-                                fontSize = 23.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            if (!snapshot.villageName.isNullOrBlank()) {
-                                Text(snapshot.tag, color = CocMuted, fontSize = 10.sp)
-                            }
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            snapshot.items.firstOrNull { it.sectionKey == "buildings" && it.dataId == 1000001 }?.let {
-                                CategoryImage(it, 88)
-                                Spacer(Modifier.width(8.dp))
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("NHÀ CHÍNH", color = CocCyan, fontSize = 9.sp, letterSpacing = 1.sp)
-                                Text(snapshot.townHallLevel?.toString() ?: "—", color = CocGold, fontSize = 34.sp, fontWeight = FontWeight.Black)
-                            }
-                        }
+                Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                    Text("LÀNG ĐANG THEO DÕI", color = CocMuted, fontSize = 9.sp, letterSpacing = 1.sp)
+                    Text(
+                        snapshot.villageName ?: snapshot.tag,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (!snapshot.villageName.isNullOrBlank()) {
+                        Text(snapshot.tag, color = CocMuted, fontSize = 9.sp)
                     }
-                    Spacer(Modifier.height(12.dp))
-                    Divider(color = CocSurfaceAlt)
-                    Spacer(Modifier.height(12.dp))
-                    Text("Lần xuất dữ liệu: " + formatTimestamp(snapshot.timestamp), color = CocMuted, fontSize = 11.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 12.dp)) {
-                        StatTile("Công trình", snapshot.items.count { it.tab == "buildings" }.toString(), Modifier.weight(1f))
-                        StatTile("Quân đội", snapshot.items.count { it.tab == "army" }.toString(), Modifier.weight(1f))
-                        StatTile("Đang nâng", snapshot.upgrades.size.toString(), Modifier.weight(1f), CocGold)
-                    }
-                    if (snapshot.builderHallLevel != null) {
-                        Text("Nhà chính căn cứ thợ xây cấp " + snapshot.builderHallLevel, color = CocMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 10.dp))
-                    }
+                    Text("Dữ liệu cập nhật: " + formatTimestamp(snapshot.timestamp), color = CocMuted, fontSize = 9.sp)
                 }
             }
         }
 
         item {
-            SectionTitle("ĐANG NÂNG CẤP", (snapshot.upgrades.size + snapshot.gearUps.size).toString())
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BaseSummaryCard(
+                    title = "LÀNG CHÍNH",
+                    hallLabel = "Nhà chính",
+                    level = snapshot.townHallLevel,
+                    itemCount = snapshot.homeItems.size,
+                    upgradeCount = homeRunning.size,
+                    hallItem = homeHall,
+                    modifier = Modifier.weight(1f),
+                    glow = CocCyan
+                )
+                BaseSummaryCard(
+                    title = "LÀNG ĐÊM",
+                    hallLabel = "Nhà thợ",
+                    level = snapshot.builderHallLevel,
+                    itemCount = snapshot.builderItems.size,
+                    upgradeCount = builderRunning.size,
+                    hallItem = builderHall,
+                    modifier = Modifier.weight(1f),
+                    glow = CocMagenta
+                )
+            }
         }
 
-        if (snapshot.upgrades.isEmpty() && snapshot.gearUps.isEmpty()) {
-            item {
-                InfoCard("Không có bộ đếm nâng cấp trong JSON này", "Khi một công trình, anh hùng hoặc đơn vị đang nâng cấp, game sẽ xuất bộ đếm thời gian.")
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                StatTile("Công trình", snapshot.items.count { it.tab == "buildings" }.toString(), Modifier.weight(1f))
+                StatTile("Quân đội", snapshot.items.count { it.tab == "army" }.toString(), Modifier.weight(1f))
+                StatTile("Đang nâng", homeRunning.size.plus(builderRunning.size).toString(), Modifier.weight(1f), CocGold)
             }
+        }
+
+        item {
+            SectionTitle("LÀNG CHÍNH • ĐANG NÂNG CẤP", homeRunning.size.toString())
+        }
+        if (homeRunning.isEmpty()) {
+            item { InfoCard("Làng chính không có mục đang nâng", "Khi JSON có bộ đếm thời gian, tiến trình sẽ xuất hiện tại đây.") }
         } else {
-            items(snapshot.upgrades, key = { it.identity + "_" + it.timerSeconds }) { upgrade ->
-                UpgradeCard(upgrade, snapshot.timestamp)
+            items(homeRunning, key = { "home_" + it.identity + "_" + it.timerSeconds }) { item ->
+                UpgradeCard(item, snapshot.timestamp)
             }
         }
 
-        if (snapshot.gearUps.isNotEmpty()) {
-            item { SectionTitle("NÂNG CẤP ĐẶC BIỆT", snapshot.gearUps.size.toString()) }
-            items(snapshot.gearUps, key = { it.identity + "_gear_" + it.timerSeconds }) { item ->
+        item {
+            SectionTitle("LÀNG ĐÊM • ĐANG NÂNG CẤP", builderRunning.size.toString())
+        }
+        if (builderRunning.isEmpty()) {
+            item { InfoCard("Làng đêm không có mục đang nâng", "Các công trình và quân đội căn cứ thợ xây sẽ hiển thị riêng tại đây.") }
+        } else {
+            items(builderRunning, key = { "builder_" + it.identity + "_" + it.timerSeconds }) { item ->
                 UpgradeCard(item, snapshot.timestamp)
             }
         }
@@ -649,19 +644,53 @@ private fun OverviewScreen(
             item { SectionTitle("DỮ LIỆU KHÁC", snapshot.extras.values.sum().toString()) }
             item {
                 NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        modifier = Modifier.padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         snapshot.extras.forEach { (name, count) ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(name, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                                Text(count.toString(), color = CocGold, fontWeight = FontWeight.Bold)
+                                Text(name, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                                Text(count.toString(), color = CocGold, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
 
-
+@Composable
+private fun BaseSummaryCard(
+    title: String,
+    hallLabel: String,
+    level: Int?,
+    itemCount: Int,
+    upgradeCount: Int,
+    hallItem: VillageItem?,
+    modifier: Modifier,
+    glow: Color
+) {
+    NeonPanel(modifier = modifier, glow = glow) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, color = glow, fontSize = 9.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                Text(
+                    level?.let { "Cấp $it" } ?: "Chưa có dữ liệu",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1
+                )
+                Text(hallLabel, color = CocMuted, fontSize = 8.sp, maxLines = 1)
+                Text("$itemCount mục • $upgradeCount nâng", color = CocMuted, fontSize = 8.sp, maxLines = 1)
+            }
+            hallItem?.let { CategoryImage(it, 36) }
+        }
     }
 }
 
@@ -713,22 +742,22 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 9.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CategoryImage(item, 68)
-            Spacer(Modifier.width(12.dp))
+            CategoryImage(item, 48)
+            Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1)
                 Text(
-                    (item.sectionLabel) + (item.level?.let { " • cấp $it" } ?: "") +
+                    item.sectionLabel + (item.level?.let { " • cấp $it" } ?: "") +
                         if (item.count > 1) " • x" + item.count else "",
                     color = CocMuted,
-                    fontSize = 10.sp
+                    fontSize = 9.sp,
+                    maxLines = 1
                 )
-                Spacer(Modifier.height(5.dp))
                 if (item.gearUp) {
-                    Text("Nâng cấp đặc biệt • Thợ xây cả", color = CocGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Nâng cấp đặc biệt • Thợ xây cả", color = CocGreen, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
                 if (remaining > 0L) {
                     val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
@@ -736,8 +765,9 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(25.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .padding(top = 4.dp)
+                            .height(19.dp)
+                            .clip(RoundedCornerShape(6.dp))
                             .background(CocSurfaceAlt),
                         contentAlignment = Alignment.Center
                     ) {
@@ -754,18 +784,15 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                                 )
                         )
                         Text(
-                            "Còn " + formatCountdown(remaining) + " • " + (progress * 100).toInt() + "%",
+                            "Còn " + formatCountdown(remaining),
                             color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            modifier = Modifier
-                                .background(Color(0xCC071225), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 9.dp, vertical = 2.dp)
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
                         )
                     }
-                    Text("Dự kiến hoàn tất: " + formatTimestamp(endAt), color = CocMuted, fontSize = 9.sp)
                 } else {
-                    Text("Đã hết giờ • chờ JSON mới xác nhận", color = CocGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Đã hết giờ • chờ JSON mới xác nhận", color = CocGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -972,7 +999,6 @@ private fun ImportDialog(
     error: String?,
     onDismiss: () -> Unit,
     onPaste: () -> String?,
-    onChooseFile: (String) -> Unit,
     onImport: (String, String) -> Unit
 ) {
     var rawText by remember { mutableStateOf("") }
@@ -986,7 +1012,7 @@ private fun ImportDialog(
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
                 Text("NHẬP DỮ LIỆU LÀNG", color = CocCyan, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Text("Dán JSON từ trò chơi hoặc chọn tệp .json. Có thể đặt tên riêng cho làng bên dưới.", color = CocMuted, fontSize = 11.sp)
+                Text("Sao chép JSON trong Clash of Clans rồi dán vào ô bên dưới. Có thể đặt tên riêng cho làng.", color = CocMuted, fontSize = 11.sp)
                 OutlinedTextField(
                     value = villageName,
                     onValueChange = { villageName = it },
@@ -1024,19 +1050,11 @@ private fun ImportDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = { rawText = onPaste().orEmpty() },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
                         border = BorderStroke(1.dp, CocCyan.copy(alpha = 0.65f))
                     ) {
-                        Text("Dán nội dung đã sao chép", color = CocCyan, fontSize = 10.sp)
-                    }
-                    OutlinedButton(
-                        onClick = { onChooseFile(villageName) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
-                        border = BorderStroke(1.dp, CocMagenta.copy(alpha = 0.65f))
-                    ) {
-                        Text("Chọn tệp", color = CocCyan, fontSize = 11.sp)
+                        Text("DÁN JSON ĐÃ SAO CHÉP", color = CocCyan, fontSize = 10.sp)
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
