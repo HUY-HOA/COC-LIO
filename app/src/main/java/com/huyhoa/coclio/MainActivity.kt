@@ -1296,7 +1296,8 @@ private fun HistoryScreen(
             if (history.isEmpty()) {
                 item { InfoCard("Chưa có lịch sử nhập", "Các lần dán JSON sẽ được ghi nhận tại đây.") }
             } else {
-                items(history, key = { it.tag + "_" + it.timestamp }) { snapshot ->
+                val chronologicalHistory = history.sortedByDescending { it.timestamp }
+                items(chronologicalHistory, key = { it.tag + "_" + it.timestamp }) { snapshot ->
                     NeonPanel(
                         modifier = Modifier.fillMaxWidth().clickable { onSelect(snapshot) },
                         glow = if (snapshot.tag == activeTag) CocCyan else CocViolet

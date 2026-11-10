@@ -3,6 +3,7 @@ package com.huyhoa.coclio.data
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
 
 data class DeletedVillageRecord(
     val id: String,
@@ -140,6 +141,7 @@ object VillageStore {
         val deletedAt = System.currentTimeMillis() / 1000L
         updated.put(
             JSONObject()
+                .put("id", UUID.randomUUID().toString())
                 .put("tag", tag)
                 .put("name", savedName ?: "")
                 .put("deleted_at", deletedAt)
@@ -184,7 +186,7 @@ object VillageStore {
             }
             val deletedAt = entry.optLong("deleted_at", 0L)
             result += DeletedVillageRecord(
-                id = "$tag:$deletedAt",
+                id = entry.optString("id", "").takeIf { it.isNotBlank() } ?: "$tag:$deletedAt:$index",
                 tag = tag,
                 villageName = entry.optString("name", "").trim().takeIf { it.isNotBlank() }
                     ?: snapshots.firstOrNull()?.villageName,
@@ -213,7 +215,8 @@ object VillageStore {
         val updated = JSONArray()
         for (index in 0 until array.length()) {
             val entry = array.optJSONObject(index) ?: continue
-            val id = entry.optString("tag", "") + ":" + entry.optLong("deleted_at", 0L)
+            val id = entry.optString("id", "").takeIf { it.isNotBlank() }
+                ?: entry.optString("tag", "") + ":" + entry.optLong("deleted_at", 0L) + ":" + index
             if (id != recordId) updated.put(entry)
         }
         preferences(context).edit().putString(deletedKey(profile), updated.toString()).apply()
