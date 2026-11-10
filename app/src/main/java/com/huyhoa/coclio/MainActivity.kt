@@ -733,23 +733,33 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                     val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
                     val progress = (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
                     Box(
-                        modifier = Modifier.fillMaxWidth().height(25.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(25.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(CocSurfaceAlt),
                         contentAlignment = Alignment.Center
                     ) {
-                        LinearProgressIndicator(
-                            progress = progress,
-                            modifier = Modifier.fillMaxSize(),
-                            color = if (item.gearUp) CocMagenta else CocCyan,
-                            trackColor = CocSurfaceAlt
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(progress)
+                                .align(Alignment.CenterStart)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        if (item.gearUp) listOf(CocMagenta, CocViolet)
+                                        else listOf(CocCyan, Color(0xFF168BFF))
+                                    )
+                                )
                         )
                         Text(
                             formatDuration(remaining) + " • " + (progress * 100).toInt() + "%",
                             color = Color.White,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             modifier = Modifier
                                 .background(Color(0xCC071225), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                .padding(horizontal = 9.dp, vertical = 2.dp)
                         )
                     }
                     Text("Dự kiến hoàn tất: " + formatTimestamp(endAt), color = CocMuted, fontSize = 9.sp)
@@ -799,7 +809,7 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
-            Text(snapshot.tag + " • " + filtered.size + " nhóm dữ liệu", color = CocMuted, fontSize = 11.sp)
+            Text((snapshot.villageName ?: snapshot.tag) + " • " + snapshot.tag + " • " + filtered.size + " nhóm dữ liệu", color = CocMuted, fontSize = 10.sp)
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -938,12 +948,13 @@ private fun HistoryScreen(
                 ) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(snapshot.tag, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text(snapshot.villageName ?: snapshot.tag, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            if (!snapshot.villageName.isNullOrBlank()) Text(snapshot.tag, color = CocMuted, fontSize = 9.sp)
                             Text(formatTimestamp(snapshot.timestamp), color = CocMuted, fontSize = 10.sp)
                             Text(
                                 "Nhà chính " + (snapshot.townHallLevel?.toString() ?: "—") +
                                     " • " + snapshot.items.size + " dòng dữ liệu" +
-                                    " • " + (snapshot.upgrades.size + snapshot.gearUps.size) + " bộ đếm",
+                                    " • " + (snapshot.upgrades.size + snapshot.gearUps.size) + " mục đang nâng",
                                 color = CocMuted,
                                 fontSize = 10.sp
                             )
