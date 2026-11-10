@@ -37,6 +37,15 @@ data class VillageItem(
         return (snapshotTimestamp + seconds - nowSeconds).coerceAtLeast(0L)
     }
 
+    fun progressRatioAt(snapshotTimestamp: Long, nowSeconds: Long): Float {
+        val total = timerSeconds?.takeIf { it > 0L } ?: return 0f
+        val elapsed = (nowSeconds - snapshotTimestamp).coerceIn(0L, total)
+        return elapsed.toDouble().div(total.toDouble()).toFloat().coerceIn(0f, 1f)
+    }
+
+    fun progressPercentAt(snapshotTimestamp: Long, nowSeconds: Long): Int =
+        (progressRatioAt(snapshotTimestamp, nowSeconds) * 100f).toInt().coerceIn(0, 100)
+
     fun isTimerActive(snapshotTimestamp: Long, nowSeconds: Long): Boolean =
         remainingSecondsAt(snapshotTimestamp, nowSeconds) > 0L
 }
