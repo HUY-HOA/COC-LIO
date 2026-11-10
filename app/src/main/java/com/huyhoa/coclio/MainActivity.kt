@@ -834,6 +834,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                 if (remaining > 0L) {
                     val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
                     val remainingRatio = (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
+                    val remainingPercent = (remainingRatio * 100f).toInt().coerceIn(0, 100)
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(top = 3.dp).height(19.dp)
                             .clip(RoundedCornerShape(6.dp)).background(CocSurfaceAlt),
@@ -848,7 +849,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                                     )
                                 )
                         )
-                        Text(formatCountdown(remaining), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text("${formatCountdown(remaining)} • ${remainingPercent}%", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 } else {
                     Text("HOÀN THÀNH • CHỜ JSON XÁC NHẬN", color = CocGreen, fontSize = 9.sp, fontWeight = FontWeight.Black)
