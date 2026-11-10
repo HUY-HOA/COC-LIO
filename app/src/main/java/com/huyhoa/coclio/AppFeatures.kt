@@ -283,6 +283,63 @@ class UpgradeReminderWorker(
     }
 }
 
+
+object UpgradeNotificationTester {
+    fun show(context: Context, profile: String, style: String): Boolean = runCatching {
+        val alarmStyle = style == "alarm"
+        val profileCode = profile.hashCode().toUInt().toString(16)
+        val channelId = "upgrade_" + profileCode + if (alarmStyle) "_alarm" else "_message"
+        val manager = context.getSystemService(NotificationManager::class.java)
+        if (manager.getNotificationChannel(channelId) == null) {
+            val channel = NotificationChannel(
+                channelId,
+                if (alarmStyle) "Nhắc nâng cấp kiểu báo thức" else "Tin nhắn nâng cấp",
+                if (alarmStyle) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
+            )
+            channel.description = "Nhắc khi bộ đếm nâng cấp trong JSON đã hết thời gian"
+            channel.enableVibration(true)
+            if (alarmStyle) channel.vibrationPattern = longArrayOf(0, 450, 250, 450)
+            channel.setSound(
+                if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
+                else Settings.System.DEFAULT_NOTIFICATION_URI,
+                AudioAttributes.Builder()
+                    .setUsage(if (alarmStyle) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            manager.createNotificationChannel(channel)
+        }
+
+        val openApp = Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            ("coc_lio_test_" + profile).hashCode(),
+            openApp,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val title = "COC-LIO • Thử thông báo"
+        val message = if (alarmStyle) {
+            "Đây là thông báo thử kiểu báo thức. Âm thanh và rung phụ thuộc cài đặt thông báo của Android."
+        } else {
+            "Đây là thông báo thử kiểu tin nhắn. Thông báo nâng cấp thật sẽ xuất hiện khi bộ đếm kết thúc."
+        }
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
+            .setContentTitle(title)
+            .setContentText(if (alarmStyle) "Đang thử kiểu báo thức" else "Đang thử kiểu tin nhắn")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        NotificationManagerCompat.from(context)
+            .notify(("coc_lio_test_" + profile).hashCode(), notification)
+        true
+    }.getOrDefault(false)
+}
+
 class WidgetRefreshWorker(
     context: Context,
     parameters: WorkerParameters
@@ -650,7 +707,8 @@ fun SettingsScreen(
     onGoogleSignOut: () -> Unit,
     onOpenGame: () -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
-    onNotificationStyleChanged: (String) -> Unit
+    onNotificationStyleChanged: (String) -> Unit,
+    onTestNotification: () -> Unit
 ) {
     val context = LocalContext.current
     Column(
@@ -774,6 +832,22 @@ fun SettingsScreen(
                     label = { Text("Báo thức") }
                 )
             }
+            Button(
+                onClick = onTestNotification,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FeatureCyan,
+                    contentColor = Color(0xFF04101D)
+                )
+            ) {
+                Text("THỬ THÔNG BÁO NGAY", fontWeight = FontWeight.Black)
+            }
+            Text(
+                "Gửi một thông báo mẫu theo kiểu đang chọn. Thử nghiệm không tự bật lịch nhắc nâng cấp.",
+                color = FeatureMuted,
+                fontSize = 10.sp,
+                lineHeight = 14.sp
+            )
             Text(
                 "Thời điểm nhắc lấy từ bộ đếm thời gian trong JSON đã nhập. Android vẫn có thể trì hoãn nếu tắt quyền thông báo, hạn chế pin hoặc đặt chế độ Không làm phiền.",
                 color = FeatureMuted,

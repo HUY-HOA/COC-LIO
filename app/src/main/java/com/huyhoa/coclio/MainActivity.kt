@@ -341,6 +341,22 @@ private fun CocLioApp() {
         }
     }
 
+    val testNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle)
+            scope.launch {
+                snackbar.showSnackbar(
+                    if (sent) "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem."
+                    else "Không thể gửi thông báo thử. Hãy kiểm tra quyền thông báo của ứng dụng."
+                )
+            }
+        } else {
+            scope.launch { snackbar.showSnackbar("Bạn chưa cấp quyền thông báo cho COC-LIO.") }
+        }
+    }
+
     LaunchedEffect(activeProfile) {
         history = VillageStore.loadAll(context, activeProfile)
         current = history.firstOrNull()
@@ -573,6 +589,21 @@ private fun CocLioApp() {
                             AppPreferences.setNotificationStyle(context, activeProfile, style)
                             notificationStyle = style
                             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
+                        },
+                        onTestNotification = {
+                            if (Build.VERSION.SDK_INT >= 33 &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                testNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle)
+                                scope.launch {
+                                    snackbar.showSnackbar(
+                                        if (sent) "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem."
+                                        else "Không thể gửi thông báo thử. Hãy kiểm tra quyền thông báo của ứng dụng."
+                                    )
+                                }
+                            }
                         }
                     )
                 }
@@ -984,11 +1015,11 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 82.dp),
+        columns = GridCells.Adaptive(minSize = 68.dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1075,22 +1106,22 @@ private fun VillageGridItemCard(item: VillageItem) {
     NeonPanel(
         modifier = Modifier.fillMaxWidth(),
         glow = if (item.tab == "army") CocMagenta else CocCyan,
-        innerPadding = 5.dp
+        innerPadding = 3.dp
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(3.dp)
+            verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
-            CategoryImage(item, 58)
+            CategoryImage(item, 44)
             Text(
                 item.level?.let { "CẤP $it" } ?: "—",
                 color = CocGold,
-                fontSize = 15.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1
             )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 if (item.count > 1) {
                     Text("×${item.count}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
