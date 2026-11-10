@@ -1130,26 +1130,36 @@ private fun HistoryScreen(
                         modifier = Modifier.fillMaxWidth().clickable { onSelect(snapshot) },
                         glow = if (pinned) CocGold else if (snapshot.tag == activeTag) CocCyan else CocViolet
                     ) {
-                        Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(snapshot.villageName ?: snapshot.tag, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f))
-                                TextButton(onClick = { onTogglePin(snapshot.tag) }) {
-                                    Text(if (pinned) "★" else "☆", color = if (pinned) CocGold else CocMuted, fontSize = 20.sp)
-                                }
-                                TextButton(onClick = { pendingDelete = snapshot }) {
-                                    Text("XÓA", color = CocRed, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                }
+                                Text(
+                                    snapshot.villageName ?: snapshot.tag,
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    if (pinned) "★" else "☆",
+                                    color = if (pinned) CocGold else CocMuted,
+                                    fontSize = 19.sp,
+                                    modifier = Modifier.clickable { onTogglePin(snapshot.tag) }.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
+                                Text(
+                                    "×",
+                                    color = CocRed,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.clickable { pendingDelete = snapshot }.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
                             }
                             Text(
-                                (if (!snapshot.villageName.isNullOrBlank()) snapshot.tag + " • " else "") +
-                                    "TH ${snapshot.townHallLevel ?: "—"} • BH ${snapshot.builderHallLevel ?: "—"}",
-                                color = CocMuted,
-                                fontSize = 10.sp
-                            )
-                            Text(
-                                "${history.count { it.tag == snapshot.tag }} mốc • ${snapshot.upgrades.size + snapshot.gearUps.size} mục đang nâng",
+                                "${snapshot.tag}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.upgrades.size + snapshot.gearUps.size} nâng",
                                 color = if (snapshot.tag == activeTag) CocGreen else CocMuted,
-                                fontSize = 10.sp
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -1165,10 +1175,9 @@ private fun HistoryScreen(
                         modifier = Modifier.fillMaxWidth().clickable { onSelect(snapshot) },
                         glow = if (snapshot.tag == activeTag) CocCyan else CocViolet
                     ) {
-                        Column(Modifier.padding(9.dp)) {
-                            Text(snapshot.villageName ?: snapshot.tag, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("${snapshot.tag} • ${formatTimestamp(snapshot.timestamp)}", color = CocMuted, fontSize = 9.sp)
-                            Text("TH ${snapshot.townHallLevel ?: "—"} • BH ${snapshot.builderHallLevel ?: "—"} • ${snapshot.items.size} mục", color = CocMuted, fontSize = 9.sp)
+                        Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(snapshot.villageName ?: snapshot.tag, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("${snapshot.tag}  •  ${formatTimestamp(snapshot.timestamp)}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục", color = CocMuted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
