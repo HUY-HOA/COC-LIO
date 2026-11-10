@@ -39,6 +39,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -170,6 +174,7 @@ private fun NeonBackdrop() {
 private fun NeonPanel(
     modifier: Modifier = Modifier,
     glow: Color = CocCyan,
+    innerPadding: androidx.compose.ui.unit.Dp = 14.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(18.dp)
@@ -223,7 +228,7 @@ private fun NeonPanel(
                     drawPath(path, brush, style = Stroke(width = stroke))
                 }
             }
-            .padding(14.dp),
+            .padding(innerPadding),
         content = content
     )
 }
@@ -933,37 +938,31 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
     )
 
     val baseItems = snapshot.items.filter { it.base == selectedBase && it.tab == tab }
-    fun categoryOf(item: VillageItem): String = when {
+    fun buildingCategory(item: VillageItem): String = when {
         item.sectionKey == "traps" || item.sectionKey == "traps2" -> "traps"
         item.dataId in resourceIds -> "resources"
         item.dataId in defenseIds -> "defense"
         else -> "other"
     }
-    val filtered = when {
-        tab == "buildings" && selectedFilter == "all" -> baseItems
-        tab == "buildings" -> baseItems.filter { categoryOf(it) == selectedFilter }
-        tab == "army" && selectedFilter == "all" -> baseItems
-        tab == "army" -> baseItems.filter {
-            when (selectedFilter) {
-                "troops" -> it.sectionKey in setOf("units", "units2", "siege_machines")
-                "heroes" -> it.sectionKey == "heroes" || it.sectionKey == "heroes2"
-                "spells" -> it.sectionKey == "spells"
-                "pets" -> it.sectionKey == "pets"
-                "equipment" -> it.sectionKey == "equipment"
-                else -> true
-            }
-        }
-        else -> baseItems
+    fun armyCategory(item: VillageItem): String = when (item.sectionKey) {
+        "units", "units2", "siege_machines" -> "troops"
+        "heroes", "heroes2" -> "heroes"
+        "spells" -> "spells"
+        "pets" -> "pets"
+        "equipment" -> "equipment"
+        else -> "other"
     }
 
-    val filters = if (tab == "buildings") {
+    val filterChoices = if (tab == "buildings") {
         listOf(
             "all" to "Tất cả",
             "defense" to "Phòng thủ",
             "resources" to "Tài nguyên",
             "traps" to "Bẫy",
             "other" to "Khác"
-        )
+        ).filter { (key, _) ->
+            key == "all" || baseItems.any { buildingCategory(it) == key }
+        }
     } else {
         listOf(
             "all" to "Tất cả",
@@ -971,35 +970,49 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
             "heroes" to "Anh hùng",
             "spells" to "Phép",
             "pets" to "Thú cưng",
-            "equipment" to "Trang bị"
-        )
+            "equipment" to "Trang bị",
+            "other" to "Khác"
+        ).filter { (key, _) ->
+            key == "all" || baseItems.any { armyCategory(it) == key }
+        }
     }
 
-    LazyColumn(
+    val filtered = when {
+        selectedFilter == "all" -> baseItems
+        tab == "buildings" -> baseItems.filter { buildingCategory(it) == selectedFilter }
+        else -> baseItems.filter { armyCategory(it) == selectedFilter }
+    }
+
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 98.dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (tab == "buildings") "CÔNG TRÌNH" else "QUÂN ĐỘI",
+                        color = CocGold,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("${filtered.sumOf { it.count }} mục", color = CocMuted, fontSize = 10.sp)
+                }
                 Text(
-                    if (tab == "buildings") "CÔNG TRÌNH" else "QUÂN ĐỘI",
-                    color = CocGold,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Black,
-                    modifier = Modifier.weight(1f)
+                    snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag,
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text("${filtered.sumOf { it.count }} mục", color = CocMuted, fontSize = 10.sp)
             }
-            Text(
-                snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag,
-                color = Color.White,
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
-        item {
+
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 FilterChip(
                     selected = selectedBase == "home",
@@ -1013,12 +1026,13 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
                 )
             }
         }
-        item {
+
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                filters.forEach { (key, label) ->
+                filterChoices.forEach { (key, label) ->
                     FilterChip(
                         selected = selectedFilter == key,
                         onClick = { selectedFilter = key },
@@ -1027,16 +1041,62 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
                 }
             }
         }
+
         if (filtered.isEmpty()) {
-            item { InfoCard("Chưa có dữ liệu", "JSON không chứa mục thuộc bộ lọc này.") }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
+            }
         } else {
             val grouped = filtered.groupBy { it.sectionKey }
             grouped.forEach { (sectionKey, rows) ->
-                item(key = "section_$sectionKey") {
+                item(key = "section_$sectionKey", span = { GridItemSpan(maxLineSpan) }) {
                     SectionTitle(rows.first().sectionLabel.uppercase(), rows.sumOf { it.count }.toString())
                 }
-                items(rows, key = { it.identity + "_" + (it.timerSeconds ?: -1L) + "_" + it.count }) { item ->
-                    if (item.isRunning) UpgradeCard(item, snapshot.timestamp) else VillageItemCard(item)
+                gridItems(
+                    items = rows,
+                    key = { it.identity + "_" + (it.timerSeconds ?: -1L) + "_" + it.count },
+                    span = { item ->
+                        if (item.isRunning) GridItemSpan(maxLineSpan) else GridItemSpan(1)
+                    }
+                ) { item ->
+                    if (item.isRunning) {
+                        UpgradeCard(item, snapshot.timestamp)
+                    } else {
+                        VillageGridItemCard(item)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VillageGridItemCard(item: VillageItem) {
+    NeonPanel(
+        modifier = Modifier.fillMaxWidth(),
+        glow = if (item.tab == "army") CocMagenta else CocCyan,
+        innerPadding = 5.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            CategoryImage(item, 58)
+            Text(
+                item.level?.let { "CẤP $it" } ?: "—",
+                color = CocGold,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (item.count > 1) {
+                    Text("×${item.count}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+                if (item.gearUp) Text("GEAR-UP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                item.weaponLevel?.let {
+                    Text("V$it", color = CocCyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
