@@ -216,6 +216,21 @@ object VillageStore {
         return removed
     }
 
+    fun permanentlyDelete(context: Context, recordId: String, profile: String = "local"): Boolean {
+        val raw = preferences(context).getString(deletedKey(profile), "[]") ?: "[]"
+        val array = runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
+        val updated = JSONArray()
+        var removed = false
+        for (index in 0 until array.length()) {
+            val entry = array.optJSONObject(index) ?: continue
+            val id = entry.optString("id", "").takeIf { it.isNotBlank() }
+                ?: entry.optString("tag", "") + ":" + entry.optLong("deleted_at", 0L) + ":" + index
+            if (id == recordId) removed = true else updated.put(entry)
+        }
+        if (removed) preferences(context).edit().putString(deletedKey(profile), updated.toString()).apply()
+        return removed
+    }
+
     fun restoreDeleted(
         context: Context,
         recordId: String,
