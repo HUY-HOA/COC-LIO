@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -753,7 +754,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                                 )
                         )
                         Text(
-                            formatDuration(remaining) + " • " + (progress * 100).toInt() + "%",
+                            "Còn " + formatDuration(remaining) + " • " + (progress * 100).toInt() + "%",
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
