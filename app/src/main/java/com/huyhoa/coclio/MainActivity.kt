@@ -17,7 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -137,7 +137,6 @@ private fun NeonBackdrop() {
 private fun NeonPanel(
     modifier: Modifier = Modifier,
     glow: Color = CocCyan,
-    animatedLed: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(18.dp)
@@ -155,37 +154,16 @@ private fun NeonPanel(
             Color(0xFF00E5FF)
         )
     }
-    val ledProgress = if (animatedLed) {
-        val transition = rememberInfiniteTransition(label = "led-rgb-border")
-        val progress by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(3600, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "led-rgb-progress"
-        )
-        progress
-    } else 0f
-    val ledColors = remember(ledProgress) {
-        val intervals = palette.size - 1
-        List(64) { index ->
-            val position = ((index / 64f + ledProgress) % 1f) * intervals
-            val startIndex = position.toInt().coerceIn(0, intervals - 1)
-            val fraction = position - startIndex
-            val start = palette[startIndex]
-            val end = palette[startIndex + 1]
-            Color(
-                red = start.red + (end.red - start.red) * fraction,
-                green = start.green + (end.green - start.green) * fraction,
-                blue = start.blue + (end.blue - start.blue) * fraction,
-                alpha = 1f
-            )
-        }
-    }
-    val ledBrush = remember(ledColors) { Brush.sweepGradient(ledColors) }
-
+    val transition = rememberInfiniteTransition(label = "led-rgb-border")
+    val ledProgress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3600, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "led-rgb-progress"
+    )
     Column(
         modifier = modifier
             .shadow(5.dp, shape)
@@ -195,24 +173,38 @@ private fun NeonPanel(
                     listOf(Color(0xF2192945), Color(0xF20B142A), Color(0xF21A1230))
                 )
             )
-            .drawBehind {
-                if (animatedLed) {
-                    val stroke = 2.8.dp.toPx()
-                    val inset = stroke / 2f
-                    val borderPath = Path().apply {
-                        addRoundRect(
-                            RoundRect(
-                                left = inset,
-                                top = inset,
-                                right = size.width - inset,
-                                bottom = size.height - inset,
-                                cornerRadius = CornerRadius(18.dp.toPx())
-                            )
+            .drawWithCache {
+                val stroke = 2.8.dp.toPx()
+                val inset = stroke / 2f
+                val borderPath = Path().apply {
+                    addRoundRect(
+                        RoundRect(
+                            left = inset,
+                            top = inset,
+                            right = size.width - inset,
+                            bottom = size.height - inset,
+                            cornerRadius = CornerRadius(18.dp.toPx())
+                        )
+                    )
+                }
+                onDrawBehind {
+                    val intervals = palette.size - 1
+                    val movingColors = List(32) { index ->
+                        val position = ((index / 32f + ledProgress) % 1f) * intervals
+                        val startIndex = position.toInt().coerceIn(0, intervals - 1)
+                        val fraction = position - startIndex
+                        val first = palette[startIndex]
+                        val second = palette[startIndex + 1]
+                        Color(
+                            red = first.red + (second.red - first.red) * fraction,
+                            green = first.green + (second.green - first.green) * fraction,
+                            blue = first.blue + (second.blue - first.blue) * fraction,
+                            alpha = 1f
                         )
                     }
                     drawPath(
                         path = borderPath,
-                        brush = ledBrush,
+                        brush = Brush.sweepGradient(movingColors),
                         style = Stroke(width = stroke)
                     )
                 }
@@ -716,7 +708,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
     }
     val endAt = snapshotTimestamp + (item.timerSeconds ?: 0L)
     val remaining = (endAt - nowEpoch).coerceAtLeast(0L)
-    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (item.gearUp) CocMagenta else CocCyan, animatedLed = true) {
+    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (item.gearUp) CocMagenta else CocCyan) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
