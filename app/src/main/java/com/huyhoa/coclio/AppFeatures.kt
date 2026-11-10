@@ -647,6 +647,12 @@ private class UpgradeWidgetListFactory(
         )
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, remainingPercent, false)
+        val progressColor = android.graphics.Color.rgb(
+            (255 - (remainingPercent * 1.13f)).toInt().coerceIn(142, 255),
+            (110 + remainingPercent * 1.25f).toInt().coerceIn(110, 235),
+            72
+        )
+        views.setProgressTintList(R.id.row_progress, android.content.res.ColorStateList.valueOf(progressColor))
 
         if (remaining > 0L) {
             views.setChronometer(
