@@ -321,8 +321,8 @@ private class UpgradeWidgetListFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade_row)
         val now = System.currentTimeMillis() / 1000L
         val remaining = (entry.endAt - now).coerceAtLeast(0L)
-        val elapsedPercent = (
-            100.0 - remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
+        val remainingPercent = (
+            remaining.toDouble() * 100.0 / entry.totalSeconds.coerceAtLeast(1L)
         ).toInt().coerceIn(0, 100)
 
         views.setTextViewText(
@@ -332,8 +332,8 @@ private class UpgradeWidgetListFactory(
         val baseName = if (entry.base == "builder") "Căn cứ thợ xây" else "Nhà chính"
         val special = if (entry.gearUp) " • Nâng cấp đặc biệt" else ""
         views.setTextViewText(R.id.row_subtitle, baseName + " • " + entry.section + special)
-        views.setProgressBar(R.id.row_progress, 100, elapsedPercent, false)
-        views.setTextViewText(R.id.row_percent, "Đã qua $elapsedPercent%")
+        views.setProgressBar(R.id.row_progress, 100, remainingPercent, false)
+        views.setTextViewText(R.id.row_percent, "Còn lại $remainingPercent%")
 
         if (remaining > 0L) {
             views.setChronometer(
