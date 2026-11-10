@@ -567,6 +567,7 @@ private fun CocLioApp(
                         deletedVillages = deletedVillages,
                         pinnedTags = pinnedTags,
                         activeTag = current?.tag.orEmpty(),
+                        activeTimestamp = current?.timestamp,
                         onSelect = {
                             current = it
                             events = emptyList()
@@ -1403,6 +1404,7 @@ private fun HistoryScreen(
     deletedVillages: List<DeletedVillageRecord>,
     pinnedTags: List<String>,
     activeTag: String,
+    activeTimestamp: Long?,
     onSelect: (VillageSnapshot) -> Unit,
     onTogglePin: (String) -> Unit,
     onDelete: (String) -> Unit,
@@ -1515,7 +1517,9 @@ private fun HistoryScreen(
             if (history.isEmpty()) {
                 item { InfoCard("Chưa có lịch sử nhập", "Các lần dán JSON sẽ được ghi nhận tại đây.") }
             } else {
-                val deletedTags = deletedVillages.map { it.tag }.toSet()
+                val deletedSnapshotKeys = deletedVillages.flatMap { record ->
+                    record.snapshots.map { it.tag to it.timestamp }
+                }.toSet()
                 val chronologicalHistory = (history + deletedVillages.flatMap { it.snapshots })
                     .distinctBy { it.tag to it.timestamp }
                     .sortedByDescending { it.timestamp }
@@ -1527,9 +1531,9 @@ private fun HistoryScreen(
                         Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(snapshot.villageName ?: snapshot.tag, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                                if (snapshot.tag in deletedTags && snapshot.tag !in history.map { it.tag }) {
+                                if ((snapshot.tag to snapshot.timestamp) in deletedSnapshotKeys) {
                                     Text("ĐÃ XÓA", color = CocRed, fontSize = 9.sp, fontWeight = FontWeight.Black)
-                                } else if (snapshot.tag == activeTag) {
+                                } else if (snapshot.tag == activeTag && snapshot.timestamp == activeTimestamp) {
                                     Text("ĐANG XEM", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Black)
                                 }
                             }
