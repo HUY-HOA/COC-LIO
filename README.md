@@ -54,3 +54,15 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 - Trong app, các thẻ công trình có dải LED neon chuyển động quanh viền; ảnh công trình giữ nguyên, không phủ hiệu ứng lên artwork. Các thẻ đang nâng có thanh tiến trình cập nhật theo đồng hồ.
 
 Để bật đăng nhập Google, xem [docs/GOOGLE_SIGN_IN_SETUP.md](docs/GOOGLE_SIGN_IN_SETUP.md) và cấu hình secret `GOOGLE_WEB_CLIENT_ID`.
+
+## Cập nhật giao diện và nhập JSON
+
+- Biểu tượng ứng dụng dùng ảnh minh họa do người dùng cung cấp.
+- Tổng quan chia riêng Làng chính và Làng đêm (Căn cứ thợ xây).
+- Nhập dữ liệu bằng cách sao chép JSON trong trò chơi rồi dán vào ứng dụng; không còn chọn tệp.
+- Thời gian được chuẩn hóa về giây khi JSON dùng timestamp mili-giây hoặc timer mili-giây rõ ràng.
+- Thẻ nâng cấp và tiện ích màn hình chính được thu gọn; đồng hồ trong tiện ích không có nền nhãn riêng.
+
+## Google và giấy phép
+
+Google trong bản hiện tại chỉ chọn hồ sơ cục bộ. Cấp phép sử dụng và quyền admin cần máy chủ xác minh Google ID token. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
