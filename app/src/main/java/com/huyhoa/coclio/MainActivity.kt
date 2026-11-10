@@ -22,6 +22,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -312,7 +313,13 @@ private fun CocLioApp() {
     val ledTheme = LedThemeState(
         palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
-        speedMillis = (6000 / ledSpeed.coerceIn(1, 4)).coerceAtLeast(1200),
+        speedMillis = when (ledSpeed.coerceIn(1, 5)) {
+            1 -> 8000
+            2 -> 6000
+            3 -> 4500
+            4 -> 3200
+            else -> 2200
+        },
         brightness = ledBrightness.coerceIn(0.25f, 1f)
     )
 
@@ -404,11 +411,10 @@ private fun CocLioApp() {
             NavigationBar(containerColor = Color(0xEE091226), contentColor = Color.White) {
                 val navItems = listOf(
                     Triple("home", "Tổng quan", 0),
-                    Triple("main", "Nhà chính", 1),
-                    Triple("builder", "Làng đêm", 2),
-                    Triple("army", "Quân đội", 3),
-                    Triple("history", "Kho JSON", 4),
-                    Triple("settings", "Cài đặt", 5)
+                    Triple("buildings", "Công trình", 1),
+                    Triple("army", "Quân đội", 2),
+                    Triple("history", "Kho JSON", 3),
+                    Triple("settings", "Cài đặt", 4)
                 )
                 navItems.forEach { item ->
                     NavigationBarItem(
@@ -418,8 +424,7 @@ private fun CocLioApp() {
                             Icon(
                                 imageVector = when (item.first) {
                                     "home" -> Icons.Filled.Home
-                                    "main" -> Icons.Filled.Business
-                                    "builder" -> Icons.Filled.Business
+                                    "buildings" -> Icons.Filled.Business
                                     "army" -> Icons.Filled.Groups
                                     "history" -> Icons.Filled.History
                                     else -> Icons.Filled.Settings
@@ -429,7 +434,7 @@ private fun CocLioApp() {
                             )
                         },
                         label = {
-                            Text(item.second, fontSize = 7.sp, maxLines = 1, color = if (selectedTab == item.third) CocCyan else CocMuted)
+                            Text(item.second, fontSize = 9.sp, maxLines = 1, color = if (selectedTab == item.third) CocCyan else CocMuted)
                         }
                     )
                 }
@@ -450,24 +455,18 @@ private fun CocLioApp() {
                         onOpenGame = { openClashOfClans(context) }
                     )
                     1 -> current?.let {
-                        CategoryScreen(snapshot = it, tab = "buildings", initialBase = "home")
+                        CategoryScreen(snapshot = it, tab = "buildings")
                     } ?: EmptyWelcome(
                         onImport = { importError = null; showImportDialog = true },
                         onOpenGame = { openClashOfClans(context) }
                     )
                     2 -> current?.let {
-                        CategoryScreen(snapshot = it, tab = "buildings", initialBase = "builder")
+                        CategoryScreen(snapshot = it, tab = "army")
                     } ?: EmptyWelcome(
                         onImport = { importError = null; showImportDialog = true },
                         onOpenGame = { openClashOfClans(context) }
                     )
-                    3 -> current?.let {
-                        CategoryScreen(snapshot = it, tab = "army", initialBase = "home")
-                    } ?: EmptyWelcome(
-                        onImport = { importError = null; showImportDialog = true },
-                        onOpenGame = { openClashOfClans(context) }
-                    )
-                    4 -> HistoryScreen(
+                    3 -> HistoryScreen(
                         history = history,
                         deletedVillages = deletedVillages,
                         pinnedTags = pinnedTags,
@@ -507,7 +506,7 @@ private fun CocLioApp() {
                             }
                         }
                     )
-                    5 -> SettingsScreen(
+                    4 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
                         notificationsEnabled = notificationsEnabled,
                         ledEnabled = ledEnabled,
@@ -523,12 +522,12 @@ private fun CocLioApp() {
                             ledPrefs.edit().putString("preset", value).apply()
                         },
                         onLedSpeedChanged = { value ->
-                            ledSpeed = value.coerceIn(1, 4)
+                            ledSpeed = value.coerceIn(1, 5)
                             ledPrefs.edit().putInt("speed", ledSpeed).apply()
                         },
                         onLedBrightnessChanged = { value ->
                             ledBrightness = value.coerceIn(0.25f, 1f)
-                            ledPrefs.edit().putFloat("brightness", ledBrightness).apply()
+                            ledPrefs.edit().putFloat("brightness", value).apply()
                         },
                         notificationStyle = notificationStyle,
                         onGoogleSignIn = {
@@ -572,6 +571,7 @@ private fun CocLioApp() {
                         }
                     )
                 }
+
             }
         }
     }
@@ -614,9 +614,9 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         Spacer(Modifier.height(18.dp))
         NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
             Text("CÁCH LẤY JSON LẦN ĐẦU", color = CocCyan, fontSize = 12.sp, fontWeight = FontWeight.Black)
-            Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = Color.White, fontSize = 11.sp)
-            Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác.", color = Color.White, fontSize = 11.sp)
-            Text("3. Kéo xuống Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.", color = Color.White, fontSize = 11.sp)
+            Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = Color.White, fontSize = 12.sp)
+            Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác.", color = Color.White, fontSize = 12.sp)
+            Text("3. Kéo xuống Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.", color = Color.White, fontSize = 12.sp)
             Text("4. Quay lại COC-LIO, dán JSON rồi nhấn Phân tích & lưu.", color = Color.White, fontSize = 11.sp)
         }
         Spacer(Modifier.height(14.dp))
@@ -624,7 +624,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        Text("Nút mở game chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong game.", color = CocMuted, fontSize = 9.sp, lineHeight = 14.sp)
+        Text("Nút mở game chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong game.", color = CocMuted, fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
@@ -735,7 +735,7 @@ private fun OverviewScreen(
             item { SectionTitle("DỮ LIỆU KHÁC", snapshot.extras.values.sum().toString()) }
             item {
                 NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
-                    Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         snapshot.extras.forEach { (name, count) ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(name, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
@@ -821,27 +821,57 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
         item.level != null -> "CẤP ${item.level} → ${item.level + 1}"
         else -> "ĐANG NÂNG"
     }
-    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (remaining == 0L) CocGreen else if (item.gearUp) CocMagenta else CocCyan) {
+    val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
+    val remainingRatio = if (remaining > 0L) {
+        (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
+    } else 0f
+    val remainingPercent = (remainingRatio * 100f).toInt().coerceIn(0, 100)
+    NeonPanel(
+        modifier = Modifier.fillMaxWidth(),
+        glow = if (remaining == 0L) CocGreen else if (item.gearUp) CocMagenta else CocCyan
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 9.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CategoryImage(item, 44)
-            Spacer(Modifier.width(7.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(levelText, color = if (remaining == 0L) CocGreen else CocGold, fontWeight = FontWeight.Black, fontSize = 14.sp, maxLines = 1)
-                if (item.count > 1) Text("×${item.count}", color = CocMuted, fontSize = 8.sp)
+            CategoryImage(item, 48)
+            Spacer(Modifier.width(9.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        levelText,
+                        color = if (remaining == 0L) CocGreen else Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (item.count > 1) {
+                        Text(
+                            "×${item.count}",
+                            color = CocGold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier
+                                .background(CocGold.copy(alpha = 0.13f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
+                        )
+                    }
+                }
                 if (remaining > 0L) {
-                    val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
-                    val remainingRatio = (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
-                    val remainingPercent = (remainingRatio * 100f).toInt().coerceIn(0, 100)
                     Box(
-                        modifier = Modifier.fillMaxWidth().padding(top = 3.dp).height(19.dp)
-                            .clip(RoundedCornerShape(6.dp)).background(CocSurfaceAlt),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(23.dp)
+                            .clip(RoundedCornerShape(7.dp))
+                            .background(CocSurfaceAlt),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
-                            modifier = Modifier.fillMaxHeight().fillMaxWidth(remainingRatio).align(Alignment.CenterStart)
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(remainingRatio)
+                                .align(Alignment.CenterStart)
                                 .background(
                                     Brush.horizontalGradient(
                                         if (item.gearUp) listOf(CocMagenta, CocViolet)
@@ -849,10 +879,21 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                                     )
                                 )
                         )
-                        Text("${formatCountdown(remaining)} • ${remainingPercent}%", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(
+                            "${formatCountdown(remaining)}  •  CÒN ${remainingPercent}%",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1
+                        )
                     }
                 } else {
-                    Text("HOÀN THÀNH • CHỜ JSON XÁC NHẬN", color = CocGreen, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                    Text(
+                        "HOÀN THÀNH • CHỜ JSON XÁC NHẬN",
+                        color = CocGreen,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black
+                    )
                 }
             }
         }
@@ -874,39 +915,120 @@ private fun ChangeCard(event: ChangeEvent) {
 }
 
 @Composable
-private fun CategoryScreen(snapshot: VillageSnapshot, tab: String, initialBase: String) {
-    var selectedBase by remember(snapshot.tag, tab, initialBase) { mutableStateOf(initialBase) }
-    val filtered = snapshot.items.filter {
-        it.tab == tab && it.base == selectedBase && it.sectionKey != "helpers"
+private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
+    var selectedBase by remember(snapshot.tag, tab) { mutableStateOf("home") }
+    var selectedFilter by remember(snapshot.tag, tab) { mutableStateOf("all") }
+
+    val resourceIds = setOf(
+        1000002, 1000003, 1000004, 1000005, 1000023, 1000024,
+        1000035, 1000036, 1000037, 1000038, 1000058
+    )
+    val defenseIds = setOf(
+        1000008, 1000009, 1000010, 1000011, 1000012, 1000013, 1000019,
+        1000021, 1000027, 1000028, 1000031, 1000032, 1000067, 1000077,
+        1000079, 1000084, 1000085, 1000086, 1000089, 1000102,
+        1000033, 1000041, 1000043, 1000044, 1000045, 1000048, 1000050,
+        1000051, 1000052, 1000054, 1000055, 1000056, 1000057, 1000063,
+        1000080, 1000081, 1000082
+    )
+
+    val baseItems = snapshot.items.filter { it.base == selectedBase && it.tab == tab }
+    fun categoryOf(item: VillageItem): String = when {
+        item.sectionKey == "traps" || item.sectionKey == "traps2" -> "traps"
+        item.dataId in resourceIds -> "resources"
+        item.dataId in defenseIds -> "defense"
+        else -> "other"
     }
-    val title = when {
-        tab == "buildings" && selectedBase == "home" -> "NHÀ CHÍNH"
-        tab == "buildings" -> "LÀNG ĐÊM"
-        selectedBase == "home" -> "QUÂN ĐỘI"
-        else -> "QUÂN ĐỘI • LÀNG ĐÊM"
+    val filtered = when {
+        tab == "buildings" && selectedFilter == "all" -> baseItems
+        tab == "buildings" -> baseItems.filter { categoryOf(it) == selectedFilter }
+        tab == "army" && selectedFilter == "all" -> baseItems
+        tab == "army" -> baseItems.filter {
+            when (selectedFilter) {
+                "troops" -> it.sectionKey in setOf("units", "units2", "siege_machines")
+                "heroes" -> it.sectionKey == "heroes" || it.sectionKey == "heroes2"
+                "spells" -> it.sectionKey == "spells"
+                "pets" -> it.sectionKey == "pets"
+                "equipment" -> it.sectionKey == "equipment"
+                else -> true
+            }
+        }
+        else -> baseItems
     }
+
+    val filters = if (tab == "buildings") {
+        listOf(
+            "all" to "Tất cả",
+            "defense" to "Phòng thủ",
+            "resources" to "Tài nguyên",
+            "traps" to "Bẫy",
+            "other" to "Khác"
+        )
+    } else {
+        listOf(
+            "all" to "Tất cả",
+            "troops" to "Quân",
+            "heroes" to "Anh hùng",
+            "spells" to "Phép",
+            "pets" to "Thú cưng",
+            "equipment" to "Trang bị"
+        )
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(title, color = CocGold, fontSize = 12.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-                Text("${filtered.size} mục", color = CocMuted, fontSize = 9.sp)
+                Text(
+                    if (tab == "buildings") "CÔNG TRÌNH" else "QUÂN ĐỘI",
+                    color = CocGold,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.weight(1f)
+                )
+                Text("${filtered.sumOf { it.count }} mục", color = CocMuted, fontSize = 10.sp)
             }
-            Text(snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag, color = CocMuted, fontSize = 9.sp)
+            Text(
+                snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag,
+                color = Color.White,
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
-        if (tab == "army") {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip(selected = selectedBase == "home", onClick = { selectedBase = "home" }, label = { Text("Nhà chính") })
-                    FilterChip(selected = selectedBase == "builder", onClick = { selectedBase = "builder" }, label = { Text("Làng đêm") })
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                FilterChip(
+                    selected = selectedBase == "home",
+                    onClick = { selectedBase = "home"; selectedFilter = "all" },
+                    label = { Text("Nhà chính", fontSize = 11.sp) }
+                )
+                FilterChip(
+                    selected = selectedBase == "builder",
+                    onClick = { selectedBase = "builder"; selectedFilter = "all" },
+                    label = { Text("Làng đêm", fontSize = 11.sp) }
+                )
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                filters.forEach { (key, label) ->
+                    FilterChip(
+                        selected = selectedFilter == key,
+                        onClick = { selectedFilter = key },
+                        label = { Text(label, fontSize = 10.sp) }
+                    )
                 }
             }
         }
         if (filtered.isEmpty()) {
-            item { InfoCard("Chưa có dữ liệu", "JSON không chứa các mục thuộc khu vực này.") }
+            item { InfoCard("Chưa có dữ liệu", "JSON không chứa mục thuộc bộ lọc này.") }
         } else {
             val grouped = filtered.groupBy { it.sectionKey }
             grouped.forEach { (sectionKey, rows) ->
@@ -1010,7 +1132,7 @@ private fun HistoryScreen(
                     ) {
                         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(snapshot.villageName ?: snapshot.tag, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f))
+                                Text(snapshot.villageName ?: snapshot.tag, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f))
                                 TextButton(onClick = { onTogglePin(snapshot.tag) }) {
                                     Text(if (pinned) "★" else "☆", color = if (pinned) CocGold else CocMuted, fontSize = 20.sp)
                                 }
@@ -1022,12 +1144,12 @@ private fun HistoryScreen(
                                 (if (!snapshot.villageName.isNullOrBlank()) snapshot.tag + " • " else "") +
                                     "TH ${snapshot.townHallLevel ?: "—"} • BH ${snapshot.builderHallLevel ?: "—"}",
                                 color = CocMuted,
-                                fontSize = 9.sp
+                                fontSize = 10.sp
                             )
                             Text(
                                 "${history.count { it.tag == snapshot.tag }} mốc • ${snapshot.upgrades.size + snapshot.gearUps.size} mục đang nâng",
                                 color = if (snapshot.tag == activeTag) CocGreen else CocMuted,
-                                fontSize = 9.sp
+                                fontSize = 10.sp
                             )
                         }
                     }
