@@ -1274,14 +1274,13 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
     val shape = RoundedCornerShape(18.dp)
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val progress = led.progress
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
             .background(MaterialTheme.colorScheme.surface)
             .drawWithCache {
+                val progress = led.progress.value
                 val stroke = 2.6.dp.toPx()
                 val inset = stroke / 2f
                 val path = Path().apply {
