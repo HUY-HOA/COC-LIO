@@ -91,6 +91,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -414,7 +415,7 @@ private fun CocLioApp() {
 
     CompositionLocalProvider(
         LocalLedTheme provides ledTheme,
-        LocalDensity provides baseDensity.copy(fontScale = baseDensity.fontScale * appFontScale)
+        LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * appFontScale)
     ) {
     Box(Modifier.fillMaxSize()) {
         NeonBackdrop()
@@ -639,7 +640,7 @@ private fun CocLioApp() {
 
     if (showImportDialog) {
         CompositionLocalProvider(
-            LocalDensity provides baseDensity.copy(fontScale = baseDensity.fontScale * appFontScale)
+            LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * appFontScale)
         ) {
         ImportDialog(
             error = importError,
