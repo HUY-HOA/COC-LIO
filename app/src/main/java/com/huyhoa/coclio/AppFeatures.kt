@@ -30,8 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Slider
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -100,41 +98,6 @@ import java.util.concurrent.TimeUnit
 private val FeatureCyan = Color(0xFF36F4FF)
 private val FeatureMuted = Color(0xFF9EAFCE)
 private const val ZALO_CONTACT_URL = "https://zaloapp.com/qr/p/1gl8y41uqztdt?src=qr"
-private val ZALO_QR_ROWS = """
-000000000000000000000000000000000
-000000000000000000000000000000000
-001111111001000000111100111111100
-001000001011011011010000100000100
-001011101001110001100100101110100
-001011101011010111110010101110100
-001011101000101010100110101110100
-001000001010100011001010100000100
-001111111010101010101010111111100
-000000000000001000001000000000000
-001111101111101100111011010101000
-000011110101000110111111111000100
-001111101111011111110011010000000
-000010010011110011000110010101000
-001110111011010111111100000110000
-001111000101101010100100111000100
-001111011010100101101011001110000
-001000000011101011100011010001000
-000101001110101111110100000110000
-001011110101000010101110111010100
-001011001100111101110011011010000
-001010000010110001000111001001000
-001110111001011111110111111011100
-000000000010101000011010001111100
-001111111011001101000110101110000
-001000001001111011101110001000000
-001011101010100101111011111010100
-001011101010110110010111000111100
-001011101010000011101001111111000
-001000001010101011001010100101000
-001111111010000110110101100110000
-000000000000000000000000000000000
-000000000000000000000000000000000
-""".trimIndent().lines()
 
 object AccountProfileStore {
     private const val PREFS = "coc_lio_profiles"
@@ -849,17 +812,27 @@ fun SettingsScreen(
                         .background(Color.White, RoundedCornerShape(12.dp))
                         .padding(12.dp)
                 ) {
+                    val qrMatrix = androidx.compose.runtime.remember {
+                        com.google.zxing.qrcode.QRCodeWriter().encode(
+                            ZALO_CONTACT_URL,
+                            com.google.zxing.BarcodeFormat.QR_CODE,
+                            512,
+                            512
+                        )
+                    }
                     Canvas(Modifier.fillMaxSize()) {
-                        val rows = ZALO_QR_ROWS
-                        val modules = rows.first().length
-                        val cell = size.width / modules
-                        rows.forEachIndexed { y, row ->
-                            row.forEachIndexed { x, value ->
-                                if (value == '1') {
+                        val cellWidth = size.width / qrMatrix.width
+                        val cellHeight = size.height / qrMatrix.height
+                        for (y in 0 until qrMatrix.height) {
+                            for (x in 0 until qrMatrix.width) {
+                                if (qrMatrix[x, y]) {
                                     drawRect(
                                         color = Color.Black,
-                                        topLeft = Offset(x * cell, y * cell),
-                                        size = Size(cell, cell)
+                                        topLeft = androidx.compose.ui.geometry.Offset(
+                                            x * cellWidth,
+                                            y * cellHeight
+                                        ),
+                                        size = androidx.compose.ui.geometry.Size(cellWidth, cellHeight)
                                     )
                                 }
                             }
