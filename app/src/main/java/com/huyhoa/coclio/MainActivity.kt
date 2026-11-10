@@ -353,7 +353,6 @@ private fun CocLioApp() {
     var selectedTab by remember { mutableStateOf(0) }
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
-    var nowEpoch by remember { mutableLongStateOf(System.currentTimeMillis() / 1000L) }
     var notificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationsEnabled(context, activeProfile))
     }
@@ -387,30 +386,28 @@ private fun CocLioApp() {
         AppWidgetUpdater.ensureRefresh(context)
     }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            nowEpoch = System.currentTimeMillis() / 1000L
-        }
-    }
+    var pendingVillageName by remember { mutableStateOf("") }
 
-    fun importJson(raw: String) {
+    fun importJson(raw: String, nameOverride: String? = null) {
         try {
-            val parsed = VillageParser.parse(raw)
+            val parsedFromJson = VillageParser.parse(raw)
+            val customName = nameOverride?.trim()?.takeIf { it.isNotBlank() }
+            val parsed = if (customName == null) parsedFromJson
+            else parsedFromJson.copy(villageName = customName)
             val previous = history.firstOrNull {
                 it.tag == parsed.tag && it.timestamp < parsed.timestamp
             }
-            VillageStore.save(context, parsed, activeProfile)
+            VillageStore.save(context, parsed, activeProfile, customName)
             history = VillageStore.loadAll(context, activeProfile)
             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
             AppWidgetUpdater.updateAll(context)
-            current = parsed
+            current = history.firstOrNull { it.tag == parsed.tag } ?: parsed
             events = VillageParser.compare(previous, parsed)
             importError = null
             showImportDialog = false
             scope.launch {
                 snackbar.showSnackbar(
-                    if (previous == null) "Đã lưu mốc dữ liệu đầu tiên cho " + parsed.tag
+                    if (previous == null) "Đã lưu dữ liệu đầu tiên cho " + (parsed.villageName ?: parsed.tag)
                     else "Đã nhập JSON và so sánh với lần trước"
                 )
             }
@@ -428,7 +425,7 @@ private fun CocLioApp() {
                     ?.bufferedReader()
                     ?.use { it.readText() }
                     ?: throw IllegalArgumentException("Không mở được tệp đã chọn.")
-                importJson(raw)
+                importJson(raw, pendingVillageName)
             } catch (error: Exception) {
                 importError = error.message ?: "Không thể đọc tệp JSON."
                 showImportDialog = true
@@ -490,19 +487,19 @@ private fun CocLioApp() {
             Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
                 when (page) {
                     0 -> current?.let {
-                        OverviewScreen(snapshot = it, events = events, nowEpoch = nowEpoch)
+                        OverviewScreen(snapshot = it, events = events)
                     } ?: EmptyWelcome(
                         onImport = { importError = null; showImportDialog = true },
                         onOpenGame = { openClashOfClans(context) }
                     )
                     1 -> current?.let {
-                        CategoryScreen(snapshot = it, tab = "buildings", nowEpoch = nowEpoch)
+                        CategoryScreen(snapshot = it, tab = "buildings")
                     } ?: EmptyWelcome(
                         onImport = { importError = null; showImportDialog = true },
                         onOpenGame = { openClashOfClans(context) }
                     )
                     2 -> current?.let {
-                        CategoryScreen(snapshot = it, tab = "army", nowEpoch = nowEpoch)
+                        CategoryScreen(snapshot = it, tab = "army")
                     } ?: EmptyWelcome(
                         onImport = { importError = null; showImportDialog = true },
                         onOpenGame = { openClashOfClans(context) }
@@ -576,10 +573,11 @@ private fun CocLioApp() {
             onPaste = {
                 clipboard.getText()?.text?.let { it }
             },
-            onChooseFile = {
+            onChooseFile = { name ->
+                pendingVillageName = name
                 filePicker.launch(arrayOf("application/json", "text/plain", "*/*"))
             },
-            onImport = { importJson(it) }
+            onImport = { raw, name -> importJson(raw, name) }
         )
     }
 }
@@ -622,8 +620,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
 @Composable
 private fun OverviewScreen(
     snapshot: VillageSnapshot,
-    events: List<ChangeEvent>,
-    nowEpoch: Long
+    events: List<ChangeEvent>
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -669,7 +666,7 @@ private fun OverviewScreen(
                         StatTile("Đang nâng", snapshot.upgrades.size.toString(), Modifier.weight(1f), CocGold)
                     }
                     if (snapshot.builderHallLevel != null) {
-                        Text("Nhà Builder cấp " + snapshot.builderHallLevel, color = CocMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 10.dp))
+                        Text("Nhà chính căn cứ thợ xây cấp " + snapshot.builderHallLevel, color = CocMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 10.dp))
                     }
                 }
             }
@@ -685,14 +682,14 @@ private fun OverviewScreen(
             }
         } else {
             items(snapshot.upgrades, key = { it.identity + "_" + it.timerSeconds }) { upgrade ->
-                UpgradeCard(upgrade, snapshot.timestamp, nowEpoch)
+                UpgradeCard(upgrade, snapshot.timestamp)
             }
         }
 
         if (snapshot.gearUps.isNotEmpty()) {
-            item { SectionTitle("GEAR-UP MASTER BUILDER", snapshot.gearUps.size.toString()) }
+            item { SectionTitle("NÂNG CẤP ĐẶC BIỆT", snapshot.gearUps.size.toString()) }
             items(snapshot.gearUps, key = { it.identity + "_gear_" + it.timerSeconds }) { item ->
-                UpgradeCard(item, snapshot.timestamp, nowEpoch)
+                UpgradeCard(item, snapshot.timestamp)
             }
         }
 
@@ -763,7 +760,16 @@ private fun InfoCard(title: String, detail: String) {
 }
 
 @Composable
-private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Long) {
+private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
+    var nowEpoch by remember(item.identity, snapshotTimestamp) {
+        mutableLongStateOf(System.currentTimeMillis() / 1000L)
+    }
+    LaunchedEffect(item.identity, snapshotTimestamp) {
+        while (true) {
+            delay(1000L)
+            nowEpoch = System.currentTimeMillis() / 1000L
+        }
+    }
     val endAt = snapshotTimestamp + (item.timerSeconds ?: 0L)
     val remaining = (endAt - nowEpoch).coerceAtLeast(0L)
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (item.gearUp) CocMagenta else CocCyan, animatedLed = true) {
@@ -790,14 +796,27 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
                 if (remaining > 0L) {
                     val totalSeconds = (item.timerSeconds ?: 1L).coerceAtLeast(1L)
                     val progress = (remaining.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
-                    Text("Còn lại " + formatDuration(remaining), color = CocGold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    LinearProgressIndicator(
-                        progress = progress,
-                        modifier = Modifier.fillMaxWidth().height(7.dp),
-                        color = if (item.gearUp) CocMagenta else CocCyan,
-                        trackColor = CocSurfaceAlt
-                    )
-                    Text("Còn khoảng " + (progress * 100).toInt() + "% thời gian • Dự kiến xong: " + formatTimestamp(endAt), color = CocMuted, fontSize = 9.sp)
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(25.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        LinearProgressIndicator(
+                            progress = progress,
+                            modifier = Modifier.fillMaxSize(),
+                            color = if (item.gearUp) CocMagenta else CocCyan,
+                            trackColor = CocSurfaceAlt
+                        )
+                        Text(
+                            formatDuration(remaining) + " • " + (progress * 100).toInt() + "%",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier
+                                .background(Color(0xCC071225), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    Text("Dự kiến hoàn tất: " + formatTimestamp(endAt), color = CocMuted, fontSize = 9.sp)
                 } else {
                     Text("Đã hết giờ • chờ JSON mới xác nhận", color = CocGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
@@ -826,7 +845,7 @@ private fun ChangeCard(event: ChangeEvent) {
 }
 
 @Composable
-private fun CategoryScreen(snapshot: VillageSnapshot, tab: String, nowEpoch: Long) {
+private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
     var selectedBase by remember(snapshot.tag, tab) { mutableStateOf("home") }
     val filtered = snapshot.items.filter {
         it.tab == tab && it.base == selectedBase && it.sectionKey != "helpers"
@@ -875,7 +894,7 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String, nowEpoch: Lon
                 }
                 items(rows, key = { it.identity + "_" + (it.timerSeconds ?: -1L) + "_" + it.count }) { item ->
                     if (item.isRunning) {
-                        UpgradeCard(item, snapshot.timestamp, nowEpoch)
+                        UpgradeCard(item, snapshot.timestamp)
                     } else {
                         VillageItemCard(item)
                     }
@@ -1010,10 +1029,11 @@ private fun ImportDialog(
     error: String?,
     onDismiss: () -> Unit,
     onPaste: () -> String?,
-    onChooseFile: () -> Unit,
-    onImport: (String) -> Unit
+    onChooseFile: (String) -> Unit,
+    onImport: (String, String) -> Unit
 ) {
     var rawText by remember { mutableStateOf("") }
+    var villageName by remember { mutableStateOf("") }
     Dialog(onDismissRequest = onDismiss) {
         NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocMagenta) {
             Column(
@@ -1023,7 +1043,21 @@ private fun ImportDialog(
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
                 Text("NHẬP DỮ LIỆU LÀNG", color = CocCyan, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Text("Dán JSON vừa sao chép trong game hoặc chọn tệp .json.", color = CocMuted, fontSize = 11.sp)
+                Text("Dán JSON từ trò chơi hoặc chọn tệp .json. Có thể đặt tên riêng cho làng bên dưới.", color = CocMuted, fontSize = 11.sp)
+                OutlinedTextField(
+                    value = villageName,
+                    onValueChange = { villageName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("Tên làng (không bắt buộc)") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CocCyan,
+                        unfocusedBorderColor = CocViolet,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = CocCyan
+                    )
+                )
                 OutlinedTextField(
                     value = rawText,
                     onValueChange = { rawText = it },
@@ -1054,7 +1088,7 @@ private fun ImportDialog(
                         Text("Dán nội dung đã sao chép", color = CocCyan, fontSize = 10.sp)
                     }
                     OutlinedButton(
-                        onClick = onChooseFile,
+                        onClick = { onChooseFile(villageName) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
                         border = BorderStroke(1.dp, CocMagenta.copy(alpha = 0.65f))
@@ -1072,7 +1106,7 @@ private fun ImportDialog(
                         Text("Đóng", color = CocCyan)
                     }
                     Button(
-                        onClick = { onImport(rawText) },
+                        onClick = { onImport(rawText, villageName) },
                         enabled = rawText.isNotBlank(),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
