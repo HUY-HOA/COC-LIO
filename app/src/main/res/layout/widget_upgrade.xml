@@ -11,7 +11,7 @@
         android:id="@+id/widget_village"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Làng • Nhà chính"
+        android:text="COC-LIO"
         android:textColor="#36F4FF"
         android:textSize="9sp"
         android:textStyle="bold"
