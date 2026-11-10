@@ -46,6 +46,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
@@ -217,7 +218,7 @@ private fun NeonPanel(
                             alpha = led.brightness
                         )
                     }
-                    val brush = if (led.enabled) Brush.sweepGradient(movingColors) else Brush.solidColor(palette.first())
+                    val brush = if (led.enabled) Brush.sweepGradient(movingColors) else SolidColor(palette.first())
                     drawPath(path, brush, style = Stroke(width = stroke))
                 }
             }
@@ -840,7 +841,12 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                     ) {
                         Box(
                             modifier = Modifier.fillMaxHeight().fillMaxWidth(remainingRatio).align(Alignment.CenterStart)
-                                .background(Brush.horizontalGradient(if (item.gearUp) listOf(CocMagenta, CocViolet) else listOf(CocCyan, Color(0xFF168BFF)))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        if (item.gearUp) listOf(CocMagenta, CocViolet)
+                                        else listOf(CocCyan, Color(0xFF168BFF))
+                                    )
+                                )
                         )
                         Text(formatCountdown(remaining), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
