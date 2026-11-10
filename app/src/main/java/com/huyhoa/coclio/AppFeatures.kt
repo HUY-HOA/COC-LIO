@@ -783,32 +783,33 @@ fun SettingsScreen(
                     )
                 }
             }
-            Text("Tốc độ: $ledSpeed/5  •  1 chậm nhất, 5 nhanh nhất", color = Color.White, fontSize = 11.sp)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                (1..5).forEach { level ->
-                    FilterChip(
-                        selected = ledSpeed == level,
-                        onClick = { onLedSpeedChanged(level) },
-                        modifier = Modifier.weight(1f),
-                        label = { Text(level.toString(), fontSize = 11.sp) }
-                    )
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Tốc độ chuyển màu", color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text("$ledSpeed/100", color = FeatureCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
             Slider(
                 value = ledSpeed.toFloat(),
-                onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(1, 5)) },
-                valueRange = 1f..5f,
-                steps = 3
+                onValueChange = { onLedSpeedChanged(it.toInt().coerceIn(1, 100)) },
+                valueRange = 1f..100f,
+                steps = 98
             )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Chậm", color = FeatureMuted, fontSize = 9.sp)
+                Spacer(Modifier.weight(1f))
+                Text("Nhanh", color = FeatureMuted, fontSize = 9.sp)
+            }
             Text("Độ sáng: ${(ledBrightness * 100).toInt()}%", color = Color.White, fontSize = 10.sp)
             Slider(
-                value = ledBrightness,
-                onValueChange = onLedBrightnessChanged,
-                valueRange = 0.25f..1f
+                value = (ledBrightness * 100f).coerceIn(1f, 100f),
+                onValueChange = { onLedBrightnessChanged(it / 100f) },
+                valueRange = 1f..100f,
+                steps = 98
             )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Mờ", color = FeatureMuted, fontSize = 9.sp)
+                Spacer(Modifier.weight(1f))
+                Text("Sáng", color = FeatureMuted, fontSize = 9.sp)
+            }
         }
 
         FeaturePanel {

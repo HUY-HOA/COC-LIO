@@ -52,6 +52,16 @@ jobs:
           gradle-version: "8.11.1"
           cache-read-only: false
 
+      - name: Verify Google sign-in configuration
+        shell: bash
+        run: |
+          if [[ "$GOOGLE_WEB_CLIENT_ID" == *.apps.googleusercontent.com ]]; then
+            echo "Google Web OAuth Client ID is configured."
+          else
+            echo "::error::GOOGLE_WEB_CLIENT_ID is missing or has an invalid format. Check the GitHub Actions Secret."
+            exit 1
+          fi
+
       - name: Prepare Android signing key
         id: signing
         shell: bash

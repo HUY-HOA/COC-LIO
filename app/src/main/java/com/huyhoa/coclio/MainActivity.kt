@@ -313,19 +313,27 @@ private fun CocLioApp() {
     }
     var ledEnabled by remember { mutableStateOf(ledPrefs.getBoolean("enabled", true)) }
     var ledPreset by remember { mutableStateOf(ledPrefs.getString("preset", "rainbow") ?: "rainbow") }
-    var ledSpeed by remember { mutableStateOf(ledPrefs.getInt("speed", 2)) }
-    var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f)) }
+    val savedLedSpeed = ledPrefs.getInt("speed", 50)
+    var ledSpeed by remember {
+        mutableStateOf(
+            when (savedLedSpeed) {
+                1 -> 64
+                2 -> 74
+                3 -> 82
+                4 -> 89
+                5 -> 95
+                else -> savedLedSpeed.coerceIn(1, 100)
+            }
+        )
+    }
+    var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0.01f, 1f)) }
     val ledTheme = LedThemeState(
         palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
-        speedMillis = when (ledSpeed.coerceIn(1, 5)) {
-            1 -> 8000
-            2 -> 6000
-            3 -> 4500
-            4 -> 3200
-            else -> 2200
-        },
-        brightness = ledBrightness.coerceIn(0.25f, 1f)
+        speedMillis = (
+            20000 - ((ledSpeed.coerceIn(1, 100) - 1) * 19000 / 99)
+        ).coerceIn(1000, 20000),
+        brightness = ledBrightness.coerceIn(0.01f, 1f)
     )
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -545,12 +553,12 @@ private fun CocLioApp() {
                             ledPrefs.edit().putString("preset", value).apply()
                         },
                         onLedSpeedChanged = { value ->
-                            ledSpeed = value.coerceIn(1, 5)
+                            ledSpeed = value.coerceIn(1, 100)
                             ledPrefs.edit().putInt("speed", ledSpeed).apply()
                         },
                         onLedBrightnessChanged = { value ->
-                            ledBrightness = value.coerceIn(0.25f, 1f)
-                            ledPrefs.edit().putFloat("brightness", value).apply()
+                            ledBrightness = value.coerceIn(0.01f, 1f)
+                            ledPrefs.edit().putFloat("brightness", ledBrightness).apply()
                         },
                         notificationStyle = notificationStyle,
                         onGoogleSignIn = {
@@ -655,7 +663,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
             Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = Color.White, fontSize = 12.sp)
             Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác.", color = Color.White, fontSize = 12.sp)
             Text("3. Kéo xuống Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.", color = Color.White, fontSize = 12.sp)
-            Text("4. Quay lại COC-LIO, dán JSON rồi nhấn Phân tích & lưu.", color = Color.White, fontSize = 11.sp)
+            Text("4. Quay lại COC-LIO, dán JSON rồi nhấn Phân tích.", color = Color.White, fontSize = 11.sp)
         }
         Spacer(Modifier.height(14.dp))
         NeonButton(text = "MỞ CLASH OF CLANS", onClick = onOpenGame, modifier = Modifier.fillMaxWidth())
@@ -1430,7 +1438,13 @@ private fun ImportDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = CocCyan, contentColor = Color(0xFF04101D))
                     ) {
-                        Text("Phân tích & lưu", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text(
+                            "Phân tích",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }
