@@ -8,7 +8,7 @@ The identifier-to-name mappings used by COC-LIO are informed by:
 - Repository: https://github.com/chiefpansancolt/clash-of-clans-data
 - License: MIT
 
-The dataset is used as a reference for game entity names and data identifiers. COC-LIO does not bundle that project's Node.js package or its image files in this build.
+The dataset is used as a reference for game entity names and data identifiers. COC-LIO loads published PNG artwork directly from the repository's public images directory at runtime; the full Node.js package is not bundled in the APK. These images are cached by the Android image loader after retrieval.
 
 MIT License
 
@@ -34,4 +34,4 @@ SOFTWARE.
 
 ## Clash of Clans marks and game assets
 
-Clash of Clans, Supercell and all related game marks and game artwork belong to their respective owners. COC-LIO is an unofficial fan project and is not endorsed by Supercell. This initial build uses text labels and category emoji, not extracted in-game artwork.
+Clash of Clans, Supercell and all related game marks and game artwork belong to their respective owners. COC-LIO is unofficial fan content and is not endorsed by Supercell. Use of Supercell game artwork is subject to the Supercell Fan Content Policy: https://supercell.com/en/fan-content-policy/. The policy limits fan content to non-commercial purposes unless Supercell has expressly approved otherwise, and requires a clear unofficial-content disclaimer.
