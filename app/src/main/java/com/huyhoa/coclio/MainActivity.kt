@@ -773,7 +773,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CategoryEmoji(item, 68)
+            CategoryImage(item, 68)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -958,6 +958,7 @@ private fun CategoryImage(item: VillageItem, size: Int) {
     }
 }
 
+@Composable
 private fun HistoryScreen(
     history: List<VillageSnapshot>,
     activeTag: String,
