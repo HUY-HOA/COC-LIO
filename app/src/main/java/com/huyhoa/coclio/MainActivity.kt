@@ -57,6 +57,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -524,8 +525,8 @@ private fun OverviewScreen(
         if (snapshot.extras.isNotEmpty()) {
             item { SectionTitle("DỮ LIỆU KHÁC", snapshot.extras.values.sum().toString()) }
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = CocSurface)) {
-                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         snapshot.extras.forEach { (name, count) ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(name, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
@@ -856,7 +857,14 @@ private fun ImportDialog(
                         .height(190.dp),
                     placeholder = { Text("{ \"tag\": \"#...\", ... }", fontSize = 11.sp) },
                     minLines = 6,
-                    maxLines = 10
+                    maxLines = 10,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CocCyan,
+                        unfocusedBorderColor = CocViolet,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = CocCyan
+                    )
                 )
                 if (!error.isNullOrBlank()) {
                     Text(error, color = CocRed, fontSize = 11.sp)
@@ -864,26 +872,36 @@ private fun ImportDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = { rawText = onPaste().orEmpty() },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
+                        border = BorderStroke(1.dp, CocCyan.copy(alpha = 0.65f))
                     ) {
-                        Text("Dán clipboard", fontSize = 11.sp)
+                        Text(color = CocCyan, "Dán clipboard", fontSize = 11.sp)
                     }
                     OutlinedButton(
                         onClick = onChooseFile,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CocCyan),
+                        border = BorderStroke(1.dp, CocMagenta.copy(alpha = 0.65f))
                     ) {
-                        Text("Chọn tệp", fontSize = 11.sp)
+                        Text(color = CocCyan, "Chọn tệp", fontSize = 11.sp)
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                        Text("Đóng")
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CocMuted),
+                        border = BorderStroke(1.dp, CocViolet.copy(alpha = 0.65f))
+                    ) {
+                        Text(color = CocCyan, "Đóng")
                     }
                     Button(
                         onClick = { onImport(rawText) },
                         enabled = rawText.isNotBlank(),
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = CocGold, contentColor = Color(0xFF201A0A))
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CocCyan, contentColor = Color(0xFF04101D))
                     ) {
                         Text("Phân tích & lưu", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
