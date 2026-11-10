@@ -1012,7 +1012,7 @@ private fun ImportDialog(
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
                 Text("NHẬP DỮ LIỆU LÀNG", color = CocCyan, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Text("Sao chép JSON trong Clash of Clans rồi dán vào ô bên dưới. Có thể đặt tên riêng cho làng.", color = CocMuted, fontSize = 11.sp)
+                Text("Sao chép JSON trong Clash of Clans rồi dán vào ô bên dưới. Có thể đặt tên riêng cho làng. JSON là ảnh chụp tại thời điểm xuất; nếu dùng sách, potion, trợ thủ hoặc tăng tốc sau đó, hãy nhập JSON mới.", color = CocMuted, fontSize = 10.sp, lineHeight = 14.sp)
                 OutlinedTextField(
                     value = villageName,
                     onValueChange = { villageName = it },
