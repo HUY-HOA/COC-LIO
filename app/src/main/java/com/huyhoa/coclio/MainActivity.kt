@@ -694,6 +694,8 @@ private fun OverviewScreen(
     val builderRunning = activeUpgrades.filter { it.base == "builder" }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
     val homeCompleted = expiredUpgrades.filter { it.base == "home" }.sortedByDescending { it.timerSeconds ?: 0L }
     val builderCompleted = expiredUpgrades.filter { it.base == "builder" }.sortedByDescending { it.timerSeconds ?: 0L }
+    val hasHomeBase = snapshot.homeItems.isNotEmpty()
+    val hasBuilderBase = snapshot.builderItems.isNotEmpty()
     val homeHall = snapshot.items.firstOrNull { it.sectionKey == "buildings" && it.dataId == 1000001 }
     val builderHall = snapshot.items.firstOrNull { it.sectionKey == "buildings2" && it.dataId == 1000034 }
     val builderTotal = snapshot.homeBuilderTotal
@@ -723,28 +725,54 @@ private fun OverviewScreen(
             }
         }
 
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                BaseSummaryCard(
-                    title = "NHÀ CHÍNH",
-                    levelLabel = "TH",
-                    level = snapshot.townHallLevel,
-                    itemCount = snapshot.homeItems.size,
-                    upgradeCount = homeRunning.size,
-                    hallItem = homeHall,
-                    modifier = Modifier.weight(1f),
-                    glow = CocCyan
-                )
-                BaseSummaryCard(
-                    title = "LÀNG ĐÊM",
-                    levelLabel = "BH",
-                    level = snapshot.builderHallLevel,
-                    itemCount = snapshot.builderItems.size,
-                    upgradeCount = builderRunning.size,
-                    hallItem = builderHall,
-                    modifier = Modifier.weight(1f),
-                    glow = CocMagenta
-                )
+        if (hasHomeBase || hasBuilderBase) {
+            item {
+                when {
+                    hasHomeBase && hasBuilderBase -> {
+                        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                            BaseSummaryCard(
+                                title = "NHÀ CHÍNH",
+                                levelLabel = "TH",
+                                level = snapshot.townHallLevel,
+                                itemCount = snapshot.homeItems.size,
+                                upgradeCount = homeRunning.size,
+                                hallItem = homeHall,
+                                modifier = Modifier.weight(1f),
+                                glow = CocCyan
+                            )
+                            BaseSummaryCard(
+                                title = "LÀNG ĐÊM",
+                                levelLabel = "BH",
+                                level = snapshot.builderHallLevel,
+                                itemCount = snapshot.builderItems.size,
+                                upgradeCount = builderRunning.size,
+                                hallItem = builderHall,
+                                modifier = Modifier.weight(1f),
+                                glow = CocMagenta
+                            )
+                        }
+                    }
+                    hasHomeBase -> BaseSummaryCard(
+                        title = "NHÀ CHÍNH",
+                        levelLabel = "TH",
+                        level = snapshot.townHallLevel,
+                        itemCount = snapshot.homeItems.size,
+                        upgradeCount = homeRunning.size,
+                        hallItem = homeHall,
+                        modifier = Modifier.fillMaxWidth(),
+                        glow = CocCyan
+                    )
+                    else -> BaseSummaryCard(
+                        title = "LÀNG ĐÊM",
+                        levelLabel = "BH",
+                        level = snapshot.builderHallLevel,
+                        itemCount = snapshot.builderItems.size,
+                        upgradeCount = builderRunning.size,
+                        hallItem = builderHall,
+                        modifier = Modifier.fillMaxWidth(),
+                        glow = CocMagenta
+                    )
+                }
             }
         }
 
@@ -756,31 +784,35 @@ private fun OverviewScreen(
             }
         }
 
-        item { SectionTitle("NHÀ CHÍNH • ĐANG NÂNG", homeRunning.size.toString()) }
-        if (homeRunning.isEmpty()) {
-            item { InfoCard("Không có tiến trình", "Các mục đang nâng của Nhà chính sẽ xuất hiện ở đây.") }
-        } else {
-            items(homeRunning, key = { "home_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
-        }
+        if (hasHomeBase) {
+            item { SectionTitle("NHÀ CHÍNH • ĐANG NÂNG", homeRunning.size.toString()) }
+            if (homeRunning.isEmpty()) {
+                item { InfoCard("Không có tiến trình", "Các mục đang nâng của Nhà chính sẽ xuất hiện ở đây.") }
+            } else {
+                items(homeRunning, key = { "home_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
+            }
 
-        if (homeCompleted.isNotEmpty()) {
-            item { SectionTitle("NHÀ CHÍNH • HẾT GIỜ, CHỜ JSON MỚI", homeCompleted.size.toString()) }
-            items(homeCompleted, key = { "home_done_" + it.identity + "_" + it.timerSeconds }) {
-                UpgradeCard(it, snapshot.timestamp)
+            if (homeCompleted.isNotEmpty()) {
+                item { SectionTitle("NHÀ CHÍNH • HẾT GIỜ, CHỜ JSON MỚI", homeCompleted.size.toString()) }
+                items(homeCompleted, key = { "home_done_" + it.identity + "_" + it.timerSeconds }) {
+                    UpgradeCard(it, snapshot.timestamp)
+                }
             }
         }
 
-        item { SectionTitle("LÀNG ĐÊM • ĐANG NÂNG", builderRunning.size.toString()) }
-        if (builderRunning.isEmpty()) {
-            item { InfoCard("Không có tiến trình", "Các mục đang nâng của Làng đêm sẽ xuất hiện ở đây.") }
-        } else {
-            items(builderRunning, key = { "builder_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
-        }
+        if (hasBuilderBase) {
+            item { SectionTitle("LÀNG ĐÊM • ĐANG NÂNG", builderRunning.size.toString()) }
+            if (builderRunning.isEmpty()) {
+                item { InfoCard("Không có tiến trình", "Các mục đang nâng của Làng đêm sẽ xuất hiện ở đây.") }
+            } else {
+                items(builderRunning, key = { "builder_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
+            }
 
-        if (builderCompleted.isNotEmpty()) {
-            item { SectionTitle("LÀNG ĐÊM • HẾT GIỜ, CHỜ JSON MỚI", builderCompleted.size.toString()) }
-            items(builderCompleted, key = { "builder_done_" + it.identity + "_" + it.timerSeconds }) {
-                UpgradeCard(it, snapshot.timestamp)
+            if (builderCompleted.isNotEmpty()) {
+                item { SectionTitle("LÀNG ĐÊM • HẾT GIỜ, CHỜ JSON MỚI", builderCompleted.size.toString()) }
+                items(builderCompleted, key = { "builder_done_" + it.identity + "_" + it.timerSeconds }) {
+                    UpgradeCard(it, snapshot.timestamp)
+                }
             }
         }
 
@@ -982,8 +1014,15 @@ private fun ChangeCard(event: ChangeEvent) {
 
 @Composable
 private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
-    var selectedBase by remember(snapshot.tag, tab) { mutableStateOf("home") }
-    var selectedFilter by remember(snapshot.tag, tab) { mutableStateOf("all") }
+    val availableBases = listOf("home", "builder").filter { base ->
+        snapshot.items.any { it.base == base && it.tab == tab }
+    }
+    var selectedBase by remember(snapshot.tag, snapshot.timestamp, tab) {
+        mutableStateOf(availableBases.firstOrNull() ?: "home")
+    }
+    var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab) {
+        mutableStateOf("all")
+    }
 
     val resourceIds = setOf(
         1000002, 1000003, 1000004, 1000005, 1000023, 1000024,
@@ -1051,59 +1090,45 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
         horizontalArrangement = Arrangement.spacedBy(5.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        if (tab == "buildings") "CÔNG TRÌNH" else "QUÂN ĐỘI",
-                        color = CocGold,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text("${filtered.sumOf { it.count }} mục", color = CocMuted, fontSize = 10.sp)
-                }
-                Text(
-                    snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag,
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                FilterChip(
-                    selected = selectedBase == "home",
-                    onClick = { selectedBase = "home"; selectedFilter = "all" },
-                    label = { Text("Nhà chính", fontSize = 11.sp) }
-                )
-                FilterChip(
-                    selected = selectedBase == "builder",
-                    onClick = { selectedBase = "builder"; selectedFilter = "all" },
-                    label = { Text("Làng đêm", fontSize = 11.sp) }
-                )
-            }
-        }
-
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                filterChoices.forEach { (key, label) ->
-                    FilterChip(
-                        selected = selectedFilter == key,
-                        onClick = { selectedFilter = key },
-                        label = { Text(label, fontSize = 10.sp) }
-                    )
+        if (availableBases.size > 1) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    availableBases.forEach { base ->
+                        FilterChip(
+                            selected = selectedBase == base,
+                            onClick = { selectedBase = base; selectedFilter = "all" },
+                            label = {
+                                Text(if (base == "home") "Nhà chính" else "Làng đêm", fontSize = 11.sp)
+                            }
+                        )
+                    }
                 }
             }
         }
 
-        if (filtered.isEmpty()) {
+        if (availableBases.isNotEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    filterChoices.forEach { (key, label) ->
+                        FilterChip(
+                            selected = selectedFilter == key,
+                            onClick = { selectedFilter = key },
+                            label = { Text(label, fontSize = 10.sp) }
+                        )
+                    }
+                }
+            }
+        }
+
+        if (availableBases.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
+            }
+        } else if (filtered.isEmpty()) {
+
             item(span = { GridItemSpan(maxLineSpan) }) {
                 InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
             }
