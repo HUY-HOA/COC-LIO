@@ -45,6 +45,8 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.huyhoa.coclio.data.CocAssets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -461,7 +463,7 @@ private fun OverviewScreen(
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             snapshot.items.firstOrNull { it.sectionKey == "buildings" && it.dataId == 1000001 }?.let {
-                                CategoryEmoji(it, 62)
+                                CategoryEmoji(it, 88)
                                 Spacer(Modifier.width(8.dp))
                             }
                             Column(horizontalAlignment = Alignment.End) {
@@ -541,7 +543,7 @@ private fun OverviewScreen(
         item {
             NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
                 Text(
-                    "COC-LIO là nội dung cộng đồng không chính thức, không được Supercell chứng thực.",
+                    "COC-LIO là ứng dụng cộng đồng không chính thức, không được Supercell chứng thực. Hình ảnh game thuộc quyền sở hữu của Supercell.",
                     color = CocMuted,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
@@ -599,7 +601,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, nowEpoch: Lo
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CategoryEmoji(item, 52)
+            CategoryEmoji(item, 68)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -713,7 +715,7 @@ private fun VillageItemCard(item: VillageItem) {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CategoryEmoji(item, 48)
+            CategoryEmoji(item, 66)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -752,6 +754,7 @@ private fun VillageItemCard(item: VillageItem) {
 
 @Composable
 private fun CategoryEmoji(item: VillageItem, size: Int) {
+    val context = LocalContext.current
     val emoji = when (item.sectionKey) {
         "buildings", "buildings2" -> "🏰"
         "traps", "traps2" -> "💣"
@@ -769,19 +772,51 @@ private fun CategoryEmoji(item: VillageItem, size: Int) {
         else -> CocCyan
     }
     val url = CocAssets.imageUrl(item)
+    val transition = rememberInfiniteTransition(label = "asset-frame")
+    val pulse by transition.animateFloat(
+        initialValue = 0.48f,
+        targetValue = 0.96f,
+        animationSpec = infiniteRepeatable(tween(1900), RepeatMode.Reverse),
+        label = "asset-glow"
+    )
+    val imageRequest = remember(url) {
+        url?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                .crossfade(420)
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .build()
+        }
+    }
+    val shape = RoundedCornerShape(15.dp)
     Box(
         modifier = Modifier
             .size(size.dp)
-            .shadow(8.dp, RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF101D36))
-            .border(1.dp, glow.copy(alpha = 0.75f), RoundedCornerShape(12.dp)),
+            .shadow(12.dp, shape)
+            .clip(shape)
+            .background(
+                Brush.radialGradient(
+                    listOf(glow.copy(alpha = 0.24f), Color(0xFF142440), Color(0xFF091326))
+                )
+            )
+            .border(
+                1.dp,
+                Brush.linearGradient(
+                    listOf(
+                        glow.copy(alpha = pulse),
+                        CocMagenta.copy(alpha = pulse * 0.62f),
+                        CocViolet.copy(alpha = 0.72f)
+                    )
+                ),
+                shape
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(emoji, fontSize = (size * 0.52f).sp)
-        if (url != null) {
+        if (imageRequest != null) {
             AsyncImage(
-                model = url,
+                model = imageRequest,
                 contentDescription = item.name,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize().padding(3.dp)
