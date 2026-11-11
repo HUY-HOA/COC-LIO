@@ -233,7 +233,7 @@ object AppPreferences {
 
     fun notificationStyle(context: Context, profile: String): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(key(profile, "notification_style"), "message") ?: "message"
+            .getString(key(profile, "notification_style"), "alarm") ?: "alarm"
 
     fun setNotificationStyle(context: Context, profile: String, style: String) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
