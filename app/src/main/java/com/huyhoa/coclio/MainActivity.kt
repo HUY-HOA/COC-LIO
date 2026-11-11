@@ -668,7 +668,16 @@ private fun CocLioApp(
                                         snackbar.showSnackbar("Đã chuyển sang hồ sơ " + savedName)
                                     }
                                 } catch (error: Exception) {
-                                    snackbar.showSnackbar(error.message ?: "Không thể đăng nhập Google.")
+                                    val errorText = error.message.orEmpty()
+                                    val displayError = if (
+                                        errorText.contains("[16]") ||
+                                        errorText.contains("Account reauth failed", ignoreCase = true)
+                                    ) {
+                                        "Google không hoàn tất bước xác thực tài khoản (mã 16). Hãy cập nhật Dịch vụ Google Play rồi thử lại."
+                                    } else {
+                                        errorText.ifBlank { "Không thể đăng nhập Google." }
+                                    }
+                                    snackbar.showSnackbar(displayError)
                                 }
                             }
                         },

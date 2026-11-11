@@ -95,6 +95,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import androidx.credentials.exceptions.NoCredentialException
 import com.huyhoa.coclio.data.VillageSnapshot
@@ -263,27 +264,52 @@ object GoogleAccountAuth {
             "Chưa cấu hình mã ứng dụng đăng nhập Google. Cần thêm mã GOOGLE_WEB_CLIENT_ID trong phần bí mật của GitHub để bật tính năng này."
         }
 
-        val option = GetSignInWithGoogleOption.Builder(serverClientId = clientId)
-            .build()
-        val request = GetCredentialRequest.Builder()
-            .addCredentialOption(option)
-            .build()
         val credentialManager = CredentialManager.create(context)
         val result = try {
-            credentialManager.getCredential(context, request)
+            val authorizedOption = GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(true)
+                .setServerClientId(clientId)
+                .build()
+            val authorizedRequest = GetCredentialRequest.Builder()
+                .addCredentialOption(authorizedOption)
+                .build()
+
+            try {
+                credentialManager.getCredential(context, authorizedRequest)
+            } catch (_: NoCredentialException) {
+                val allAccountsOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId(clientId)
+                    .build()
+                val allAccountsRequest = GetCredentialRequest.Builder()
+                    .addCredentialOption(allAccountsOption)
+                    .build()
+
+                try {
+                    credentialManager.getCredential(context, allAccountsRequest)
+                } catch (_: NoCredentialException) {
+                    val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId)
+                        .build()
+                    val signInRequest = GetCredentialRequest.Builder()
+                        .addCredentialOption(signInOption)
+                        .build()
+                    credentialManager.getCredential(context, signInRequest)
+                }
+            }
         } catch (error: NoCredentialException) {
             throw IllegalStateException(
                 "Không tìm thấy tài khoản Google có thể đăng nhập. Hãy kiểm tra tài khoản Google trên điện thoại rồi thử lại.",
                 error
             )
         }
+
         val credential = result.credential
         require(
             credential is CustomCredential &&
                 credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) { "Không nhận được thông tin đăng nhập Google hợp lệ." }
         val google = GoogleIdTokenCredential.createFrom(credential.data)
-        val email = google.id.trim().takeIf { it.contains("@") }
+        val email = google.email?.trim()?.takeIf { it.contains("@") }
             ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ.")
         return GoogleAccountData(
             email = email.lowercase(),
