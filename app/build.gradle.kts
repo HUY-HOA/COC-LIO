@@ -15,7 +15,7 @@ android {
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
         val googleWebClientId = System.getenv("GOOGLE_WEB_CLIENT_ID") ?: ""
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\""+ googleWebClientId.replace("\"", "") + "\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"" + googleWebClientId.replace("\"", "") + "\"")
     }
 
     signingConfigs {
