@@ -788,6 +788,8 @@ private fun CocLioApp(
     }
 }
 
+}
+
 @Composable
 private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
     Column(
