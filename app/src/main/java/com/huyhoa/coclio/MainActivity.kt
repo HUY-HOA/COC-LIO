@@ -1070,7 +1070,7 @@ private fun BaseSummaryCard(
                 Text("$levelLabel ${level ?: "—"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 19.sp, fontWeight = FontWeight.Black, maxLines = 1)
                 Text("$itemCount mục • $upgradeCount nâng", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 1)
             }
-            hallItem?.let { CategoryImage(it, 60) }
+            hallItem?.let { CategoryImage(it, if (levelLabel == "TH") 60 else 52) }
         }
     }
 }
