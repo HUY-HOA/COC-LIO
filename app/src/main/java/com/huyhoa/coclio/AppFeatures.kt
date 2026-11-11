@@ -502,7 +502,6 @@ class UpgradeReminderWorker(
         }
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setLargeIcon(iconBitmap)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
             .setContentTitle("Đã hoàn thành • $item")
             .setContentText("$villageName • ID $dataId • $levelText")
@@ -757,14 +756,24 @@ private class UpgradeWidgetListFactory(
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, progressPercent, false)
         val progressFraction = progressPercent / 100f
-        val progressColor = android.graphics.Color.rgb(
-            (255f + (66f - 255f) * progressFraction).toInt(),
-            (164f + (245f - 164f) * progressFraction).toInt(),
-            (58f + (200f - 58f) * progressFraction).toInt()
-        )
+        val progressColor = if (progressFraction < 0.5f) {
+            val fraction = progressFraction * 2f
+            android.graphics.Color.rgb(
+                255,
+                (59f + (213f - 59f) * fraction).toInt(),
+                (48f + (79f - 48f) * fraction).toInt()
+            )
+        } else {
+            val fraction = (progressFraction - 0.5f) * 2f
+            android.graphics.Color.rgb(
+                (255f + (37f - 255f) * fraction).toInt(),
+                (213f + (211f - 213f) * fraction).toInt(),
+                (79f + (102f - 79f) * fraction).toInt()
+            )
+        }
         views.setTextColor(
             R.id.row_timer,
-            if (remaining > 0L) progressColor else android.graphics.Color.rgb(66, 245, 200)
+            if (remaining > 0L) android.graphics.Color.WHITE else android.graphics.Color.rgb(37, 211, 102)
         )
 
         if (remaining > 0L) {
