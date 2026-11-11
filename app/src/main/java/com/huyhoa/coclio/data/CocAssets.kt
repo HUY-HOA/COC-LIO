@@ -49,8 +49,7 @@ object CocAssets {
         1000089 to "home/defenses/firespitter",
         1000093 to "home/other/helper-hut",
         1000102 to "home/defenses/super-wizard-tower",
-        1000097 to "home/defenses/crafting-station",
-        1000102 to "home/defenses/super-wizard-tower"
+        1000097 to "home/defenses/crafting-station"
     )
 
     private val builderBuildings = mapOf(
