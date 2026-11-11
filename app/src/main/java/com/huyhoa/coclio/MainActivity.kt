@@ -549,8 +549,8 @@ private fun CocLioApp(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
                     .widthIn(max = 1100.dp)
+                    .fillMaxSize()
             ) {
             Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
                 when (page) {
