@@ -61,6 +61,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.Icon
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
@@ -201,7 +202,6 @@ private fun NeonPanel(
                 MaterialTheme.colorScheme.surface
             )))
             .drawWithCache {
-                val ledProgress = if (led.speedMillis <= 0) 0f else (led.progress.value * (20000f / led.speedMillis)).rem(1f)
                 val stroke = 2.8.dp.toPx()
                 val inset = stroke / 2f
                 val path = Path().apply {
@@ -216,21 +216,26 @@ private fun NeonPanel(
                     )
                 }
                 onDrawBehind {
-                    val intervals = palette.size - 1
-                    val movingColors = List(32) { index ->
-                        val position = ((index / 32f + ledProgress) % 1f) * intervals
-                        val startIndex = position.toInt().coerceIn(0, intervals - 1)
-                        val fraction = position - startIndex
-                        val first = palette[startIndex]
-                        val second = palette[startIndex + 1]
-                        Color(
-                            red = first.red + (second.red - first.red) * fraction,
-                            green = first.green + (second.green - first.green) * fraction,
-                            blue = first.blue + (second.blue - first.blue) * fraction,
-                            alpha = led.brightness
-                        )
+                    val brush = if (led.enabled && led.speedMillis > 0) {
+                        val ledProgress = (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+                        val intervals = palette.size - 1
+                        val movingColors = List(32) { index ->
+                            val position = ((index / 32f + ledProgress) % 1f) * intervals
+                            val startIndex = position.toInt().coerceIn(0, intervals - 1)
+                            val fraction = position - startIndex
+                            val first = palette[startIndex]
+                            val second = palette[startIndex + 1]
+                            Color(
+                                red = first.red + (second.red - first.red) * fraction,
+                                green = first.green + (second.green - first.green) * fraction,
+                                blue = first.blue + (second.blue - first.blue) * fraction,
+                                alpha = led.brightness
+                            )
+                        }
+                        Brush.sweepGradient(movingColors)
+                    } else {
+                        Brush.sweepGradient(palette)
                     }
-                    val brush = if (led.enabled && led.speedMillis > 0) Brush.sweepGradient(movingColors) else Brush.sweepGradient(palette)
                     drawPath(path, brush, style = Stroke(width = stroke))
                 }
             }
@@ -323,16 +328,6 @@ private fun CocLioApp(
 ) {
     val context = LocalContext.current
     val baseDensity = LocalDensity.current
-    val ledTransition = rememberInfiniteTransition(label = "global-led-rgb")
-    val ledProgress = ledTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(20000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "global-led-progress"
-    )
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
@@ -382,6 +377,20 @@ private fun CocLioApp(
         )
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0.01f, 1f)) }
+    val ledProgress = if (ledEnabled && ledSpeed > 0) {
+        val ledTransition = rememberInfiniteTransition(label = "global-led-rgb")
+        ledTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(20000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "global-led-progress"
+        )
+    } else {
+        remember { mutableStateOf(0f) }
+    }
     val ledTheme = LedThemeState(
         palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
@@ -732,9 +741,9 @@ private fun CocLioApp(
                         },
                         onTextScaleChanged = { value ->
                             appFontScale = value.coerceIn(0.8f, 1.25f)
-                            AppPreferences.setTextScale(context, appFontScale)
                         },
                         onTextScaleChangeFinished = {
+                            AppPreferences.setTextScale(context, appFontScale)
                             AppWidgetUpdater.updateAll(context)
                         }
                     )
@@ -883,14 +892,25 @@ private fun OverviewScreen(
                 Column(Modifier.padding(horizontal = 9.dp, vertical = 7.dp)) {
                     Text("ĐANG THEO DÕI", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp, letterSpacing = 1.sp)
                     Text(
-                        snapshot.villageName ?: snapshot.tag,
+                        snapshot.villageName?.takeIf { it.isNotBlank() } ?: "Làng chưa đặt tên",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (!snapshot.villageName.isNullOrBlank()) Text(snapshot.tag, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Tag,
+                            contentDescription = "Mã người chơi",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(10.dp)
+                        )
+                        Text("ID: ${snapshot.tag}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                    }
                     Text("Cập nhật " + formatTimestamp(snapshot.timestamp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
             }
@@ -1056,7 +1076,7 @@ private fun BaseSummaryCard(
                 Text("$levelLabel ${level ?: "—"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 19.sp, fontWeight = FontWeight.Black, maxLines = 1)
                 Text("$itemCount mục • $upgradeCount nâng", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 1)
             }
-            hallItem?.let { CategoryImage(it, 52) }
+            hallItem?.let { CategoryImage(it, 60) }
         }
     }
 }
@@ -1618,13 +1638,21 @@ private fun HistoryScreen(
                                     modifier = Modifier.clickable { pendingDelete = snapshot }.padding(horizontal = 5.dp, vertical = 1.dp)
                                 )
                             }
-                            Text(
-                                "${snapshot.tag}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
-                                color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 10.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Filled.Tag,
+                                    contentDescription = "Mã người chơi",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Text(
+                                    "ID: ${snapshot.tag}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
+                                    color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 10.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
