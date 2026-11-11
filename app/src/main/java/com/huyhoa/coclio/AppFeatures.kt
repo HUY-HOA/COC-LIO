@@ -503,11 +503,11 @@ class UpgradeReminderWorker(
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
-            .setContentTitle("Đã hoàn thành • $item")
+            .setContentTitle("Đến giờ hoàn thành • $item")
             .setContentText("$villageName • ID $dataId • $levelText")
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText(
-                    "Làng: $villageName\nCăn cứ: $baseText\nNhóm: $section\nCông trình: $item\nID: $dataId\n$levelText\nHãy nhập JSON mới để xác nhận cấp độ hiện tại."
+                    "Làng: $villageName ($tag)\nCăn cứ: $baseText\nNhóm: $section\nCông trình: $item\nID: $dataId\nDự kiến: $levelText\nBộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
                 )
             )
             .setContentIntent(pendingIntent)
@@ -769,6 +769,13 @@ private class UpgradeWidgetListFactory(
                 (255f + (37f - 255f) * fraction).toInt(),
                 (213f + (211f - 213f) * fraction).toInt(),
                 (79f + (102f - 79f) * fraction).toInt()
+            )
+        }
+        if (Build.VERSION.SDK_INT >= 31) {
+            views.setColorStateList(
+                R.id.row_progress,
+                "setProgressTintList",
+                android.content.res.ColorStateList.valueOf(progressColor)
             )
         }
         views.setTextColor(
