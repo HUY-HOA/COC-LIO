@@ -363,7 +363,14 @@ private fun CocLioApp(
         mutableStateOf(VillageStore.pinnedTags(context, activeProfile))
     }
     val ledPrefs = remember {
-        context.getSharedPreferences("coc_lio_led", android.content.Context.MODE_PRIVATE)
+        context.getSharedPreferences("coc_lio_led", android.content.Context.MODE_PRIVATE).also { prefs ->
+            if (prefs.getInt("settings_version", 0) < 1) {
+                prefs.edit()
+                    .putInt("speed", 50)
+                    .putInt("settings_version", 1)
+                    .apply()
+            }
+        }
     }
     var ledEnabled by remember { mutableStateOf(ledPrefs.getBoolean("enabled", true)) }
     var ledPreset by remember { mutableStateOf(ledPrefs.getString("preset", "rainbow") ?: "rainbow") }
