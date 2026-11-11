@@ -240,9 +240,16 @@ object AppPreferences {
             .edit().putString(key(profile, "notification_style"), style).apply()
     }
 
-    fun textScale(context: Context): Float =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getFloat("text_scale", 1f).coerceIn(0.8f, 1.25f)
+    fun textScale(context: Context): Float {
+        val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (preferences.getInt("text_scale_version", 0) < 1) {
+            preferences.edit()
+                .putFloat("text_scale", 1f)
+                .putInt("text_scale_version", 1)
+                .apply()
+        }
+        return preferences.getFloat("text_scale", 1f).coerceIn(0.8f, 1.25f)
+    }
 
     fun themeMode(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
