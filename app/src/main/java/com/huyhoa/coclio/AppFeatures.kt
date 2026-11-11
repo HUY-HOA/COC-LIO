@@ -314,6 +314,46 @@ fun openClashOfClans(context: Context) {
     }
 }
 
+private fun ensureUpgradeNotificationChannel(
+    context: Context,
+    channelId: String,
+    alarmStyle: Boolean
+) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+    val manager = context.getSystemService(NotificationManager::class.java)
+    if (manager.getNotificationChannel(channelId) != null) return
+    val channel = NotificationChannel(
+        channelId,
+        if (alarmStyle) "Nhắc nâng cấp kiểu báo thức" else "Tin nhắn nâng cấp",
+        if (alarmStyle) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
+    )
+    channel.description = "Nhắc khi bộ đếm nâng cấp trong JSON đã hết thời gian"
+    channel.enableVibration(true)
+    if (alarmStyle) channel.vibrationPattern = longArrayOf(0, 450, 250, 450)
+    channel.setSound(
+        if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
+        else Settings.System.DEFAULT_NOTIFICATION_URI,
+        AudioAttributes.Builder()
+            .setUsage(if (alarmStyle) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+    )
+    manager.createNotificationChannel(channel)
+}
+
+private fun applyLegacyNotificationSettings(
+    builder: NotificationCompat.Builder,
+    alarmStyle: Boolean
+) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) return
+    builder
+        .setSound(
+            if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
+            else Settings.System.DEFAULT_NOTIFICATION_URI
+        )
+        .setVibrate(if (alarmStyle) longArrayOf(0, 450, 250, 450) else longArrayOf(0, 250))
+}
+
 object UpgradeReminderScheduler {
     private fun profileTag(profile: String) =
         "coc_lio_upgrade_" + profile.hashCode().toUInt().toString(16)
@@ -362,26 +402,7 @@ class UpgradeReminderWorker(
         val alarmStyle = AppPreferences.notificationStyle(applicationContext, profile) == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode + if (alarmStyle) "_alarm" else "_message"
-        val manager = applicationContext.getSystemService(NotificationManager::class.java)
-        if (manager.getNotificationChannel(channelId) == null) {
-            val channel = NotificationChannel(
-                channelId,
-                if (alarmStyle) "Nhắc nâng cấp kiểu báo thức" else "Tin nhắn nâng cấp",
-                if (alarmStyle) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
-            )
-            channel.description = "Nhắc khi bộ đếm nâng cấp trong JSON đã hết thời gian"
-            channel.enableVibration(true)
-            if (alarmStyle) channel.vibrationPattern = longArrayOf(0, 450, 250, 450)
-            channel.setSound(
-                if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
-                else Settings.System.DEFAULT_NOTIFICATION_URI,
-                AudioAttributes.Builder()
-                    .setUsage(if (alarmStyle) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_NOTIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
-            manager.createNotificationChannel(channel)
-        }
+        ensureUpgradeNotificationChannel(applicationContext, channelId, alarmStyle)
 
         val openApp = Intent(applicationContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -391,7 +412,7 @@ class UpgradeReminderWorker(
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val notification = NotificationCompat.Builder(applicationContext, channelId)
+        val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
             .setContentTitle("Bộ đếm nâng cấp đã hết")
@@ -400,7 +421,8 @@ class UpgradeReminderWorker(
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
-            .build()
+        applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
+        val notification = notificationBuilder.build()
         runCatching {
             NotificationManagerCompat.from(applicationContext)
                 .notify((item + tag + profile).hashCode(), notification)
@@ -415,26 +437,7 @@ object UpgradeNotificationTester {
         val alarmStyle = style == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode + if (alarmStyle) "_alarm" else "_message"
-        val manager = context.getSystemService(NotificationManager::class.java)
-        if (manager.getNotificationChannel(channelId) == null) {
-            val channel = NotificationChannel(
-                channelId,
-                if (alarmStyle) "Nhắc nâng cấp kiểu báo thức" else "Tin nhắn nâng cấp",
-                if (alarmStyle) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
-            )
-            channel.description = "Nhắc khi bộ đếm nâng cấp trong JSON đã hết thời gian"
-            channel.enableVibration(true)
-            if (alarmStyle) channel.vibrationPattern = longArrayOf(0, 450, 250, 450)
-            channel.setSound(
-                if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
-                else Settings.System.DEFAULT_NOTIFICATION_URI,
-                AudioAttributes.Builder()
-                    .setUsage(if (alarmStyle) AudioAttributes.USAGE_ALARM else AudioAttributes.USAGE_NOTIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
-            manager.createNotificationChannel(channel)
-        }
+        ensureUpgradeNotificationChannel(context, channelId, alarmStyle)
 
         val openApp = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -450,7 +453,7 @@ object UpgradeNotificationTester {
         } else {
             "Đây là thông báo thử kiểu tin nhắn. Thông báo nâng cấp thật sẽ xuất hiện khi bộ đếm kết thúc."
         }
-        val notification = NotificationCompat.Builder(context, channelId)
+        val notificationBuilder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
             .setContentTitle(title)
@@ -459,7 +462,8 @@ object UpgradeNotificationTester {
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
-            .build()
+        applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
+        val notification = notificationBuilder.build()
         NotificationManagerCompat.from(context)
             .notify(("coc_lio_test_" + profile).hashCode(), notification)
         true

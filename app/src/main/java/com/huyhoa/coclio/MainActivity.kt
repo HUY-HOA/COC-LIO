@@ -37,6 +37,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -114,6 +116,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.huyhoa.coclio.data.DeletedVillageRecord
@@ -541,8 +544,14 @@ private fun CocLioApp(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 1100.dp)
+                    .fillMaxSize()
+            ) {
             Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
                 when (page) {
                     0 -> current?.let {
@@ -715,8 +724,8 @@ private fun CocLioApp(
                 }
 
             }
+            }
         }
-    }
     }
 
     pendingGoogleAccount?.let { googleAccount ->
@@ -777,6 +786,8 @@ private fun CocLioApp(
         }
     }
     }
+}
+
 }
 
 @Composable
@@ -1615,11 +1626,14 @@ private fun ImportDialog(
 ) {
     var rawText by remember { mutableStateOf("") }
     var villageName by remember { mutableStateOf("") }
+    val maxDialogHeight = (LocalConfiguration.current.screenHeightDp.dp - 32.dp).coerceAtLeast(240.dp)
     Dialog(onDismissRequest = onDismiss) {
         NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocMagenta) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = maxDialogHeight)
+                    .verticalScroll(rememberScrollState())
                     .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
