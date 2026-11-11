@@ -10,6 +10,25 @@ data class SectionSpec(
     val base: String
 )
 
+private data class ExtraSectionSpec(
+    val key: String,
+    val label: String,
+    val base: String
+)
+
+data class VillageExtraItem(
+    val sectionKey: String,
+    val sectionLabel: String,
+    val base: String,
+    val dataId: Int?,
+    val level: Int?,
+    val count: Int,
+    val value: String? = null
+) {
+    val name: String
+        get() = dataId?.let { CocNames.name(it, sectionKey) } ?: value ?: sectionLabel
+}
+
 data class VillageItem(
     val sectionKey: String,
     val sectionLabel: String,
@@ -22,7 +41,8 @@ data class VillageItem(
     val helperCooldownSeconds: Long?,
     val gearUp: Boolean,
     val weaponLevel: Int?,
-    val details: List<String>
+    val details: List<String>,
+    val properties: Map<String, String> = emptyMap()
 ) {
     val name: String get() = CocNames.name(dataId, sectionKey)
     val isRunning: Boolean get() = timerSeconds != null && timerSeconds > 0L
@@ -57,7 +77,9 @@ data class VillageSnapshot(
     val items: List<VillageItem>,
     val extras: Map<String, Int>,
     val rawJson: String,
-    val villageName: String? = null
+    val villageName: String? = null,
+    val extraItems: List<VillageExtraItem> = emptyList(),
+    val extraFields: Map<String, String> = emptyMap()
 ) {
     val homeItems: List<VillageItem> get() = items.filter { it.base == "home" }
     val builderItems: List<VillageItem> get() = items.filter { it.base == "builder" }
@@ -194,6 +216,17 @@ object VillageParser {
                         }
                     }
                 }
+                val properties = linkedMapOf<String, String>()
+                val itemKeys = obj.keys()
+                while (itemKeys.hasNext()) {
+                    val key = itemKeys.next()
+                    if (key !in setOf("data", "lvl", "timer", "helper_cooldown", "cnt", "gear_up", "weapon", "types")) {
+                        val value = obj.opt(key)
+                        if (value != null && value !== JSONObject.NULL) {
+                            properties[key] = value.toString()
+                        }
+                    }
+                }
                 items += VillageItem(
                     sectionKey = spec.key,
                     sectionLabel = spec.label,
@@ -206,35 +239,97 @@ object VillageParser {
                     helperCooldownSeconds = helperCooldown,
                     gearUp = gearUp,
                     weaponLevel = weapon,
-                    details = details
+                    details = details,
+                    properties = properties
                 )
             }
         }
 
         val extras = linkedMapOf<String, Int>()
-        listOf(
-            "decos" to "Trang trí Nhà chính",
-            "obstacles" to "Chướng ngại Nhà chính",
-            "decos2" to "Trang trí căn cứ thợ xây",
-            "obstacles2" to "Chướng ngại căn cứ thợ xây",
-            "house_parts" to "Bộ phận nhà",
-            "skins" to "Trang phục",
-            "sceneries" to "Cảnh quan",
-            "skins2" to "Trang phục căn cứ thợ xây",
-            "sceneries2" to "Cảnh quan căn cứ thợ xây"
-        ).forEach { (key, label) ->
-            val array = root.optJSONArray(key)
-            if (array != null) {
-                val amount = (0 until array.length()).sumOf { index ->
-                    val value = array.opt(index)
-                    if (value is JSONObject) value.optInt("cnt", 1) else 1
+        val extraItems = mutableListOf<VillageExtraItem>()
+        val extraSpecs = listOf(
+            ExtraSectionSpec("decos", "Đồ trang trí", "home"),
+            ExtraSectionSpec("obstacles", "Chướng ngại vật", "home"),
+            ExtraSectionSpec("house_parts", "Bộ phận nhà", "home"),
+            ExtraSectionSpec("skins", "Trang phục tướng", "home"),
+            ExtraSectionSpec("sceneries", "Phong cảnh", "home"),
+            ExtraSectionSpec("decos2", "Đồ trang trí", "builder"),
+            ExtraSectionSpec("obstacles2", "Chướng ngại vật", "builder"),
+            ExtraSectionSpec("skins2", "Trang phục", "builder"),
+            ExtraSectionSpec("sceneries2", "Phong cảnh", "builder")
+        )
+        extraSpecs.forEach { spec ->
+            val array = root.optJSONArray(spec.key) ?: return@forEach
+            var amount = 0
+            for (index in 0 until array.length()) {
+                val entry = array.opt(index)
+                val obj = entry as? JSONObject
+                val dataId = when {
+                    obj != null -> obj.optInt("data", -1).takeIf { it >= 0 }
+                    entry is Number -> entry.toInt().takeIf { it >= 0 }
+                    entry is String -> entry.toIntOrNull()?.takeIf { it >= 0 }
+                    else -> null
                 }
-                extras[label] = amount
+                val level = obj?.takeIf { it.has("lvl") && !it.isNull("lvl") }?.optInt("lvl")
+                val count = obj?.takeIf { it.has("cnt") && !it.isNull("cnt") }
+                    ?.optInt("cnt", 1)?.coerceAtLeast(1) ?: 1
+                val value = if (dataId == null && entry != null && entry !== JSONObject.NULL) entry.toString() else null
+                if (dataId == null && value.isNullOrBlank()) continue
+                extraItems += VillageExtraItem(
+                    sectionKey = spec.key,
+                    sectionLabel = spec.label,
+                    base = spec.base,
+                    dataId = dataId,
+                    level = level,
+                    count = count,
+                    value = value
+                )
+                amount += count
             }
+            extras[spec.key] = amount
         }
+
         val boosts = root.optJSONObject("boosts")
         if (boosts != null && boosts.length() > 0) {
-            extras["Thông tin tăng tốc"] = boosts.length()
+            val boostKeys = boosts.keys()
+            while (boostKeys.hasNext()) {
+                val key = boostKeys.next()
+                val value = boosts.opt(key)
+                val label = when (key) {
+                    "lab_boost" -> "Tăng tốc phòng thí nghiệm"
+                    "builder_boost" -> "Tăng tốc thợ xây"
+                    "clock_tower_boost" -> "Tăng tốc tháp đồng hồ"
+                    else -> "Tăng tốc " + key.replace('_', ' ')
+                }
+                extraItems += VillageExtraItem(
+                    sectionKey = "boosts",
+                    sectionLabel = "Tăng tốc",
+                    base = if (key.startsWith("builder") || key.startsWith("clock_tower")) "builder" else "home",
+                    dataId = null,
+                    level = null,
+                    count = 1,
+                    value = "$label: ${value ?: "—"}"
+                )
+            }
+            extras["boosts"] = boosts.length()
+        }
+
+        val knownTopLevel = sections.map { it.key }.toSet() +
+            extraSpecs.map { it.key }.toSet() +
+            setOf(
+                "tag", "timestamp", "villageName", "village_name", "playerName",
+                "player_name", "name", "player", "profile", "village", "boosts"
+            )
+        val extraFields = linkedMapOf<String, String>()
+        val rootKeys = root.keys()
+        while (rootKeys.hasNext()) {
+            val key = rootKeys.next()
+            if (key !in knownTopLevel) {
+                val value = root.opt(key)
+                if (value != null && value !== JSONObject.NULL) {
+                    extraFields[key] = value.toString()
+                }
+            }
         }
 
         return VillageSnapshot(
@@ -243,7 +338,9 @@ object VillageParser {
             items = items,
             extras = extras,
             rawJson = raw,
-            villageName = villageName
+            villageName = villageName,
+            extraItems = extraItems,
+            extraFields = extraFields
         )
     }
 
@@ -468,6 +565,11 @@ object CocNames {
     fun name(id: Int, section: String): String {
         if (id < 0) return "Không xác định"
         return names[id] ?: when {
+            section == "skins" || section == "skins2" -> "Trang phục #$id"
+            section == "sceneries" || section == "sceneries2" -> "Phong cảnh #$id"
+            section == "decos" || section == "decos2" -> "Đồ trang trí #$id"
+            section == "obstacles" || section == "obstacles2" -> "Chướng ngại vật #$id"
+            section == "house_parts" -> "Bộ phận nhà #$id"
             section.endsWith("2") -> "Mục căn cứ thợ xây #$id"
             else -> "Mục #$id"
         }

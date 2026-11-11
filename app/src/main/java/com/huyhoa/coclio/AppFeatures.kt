@@ -364,7 +364,15 @@ private fun ensureUpgradeNotificationChannel(
     )
     channel.description = "Nhắc khi bộ đếm nâng cấp trong JSON đã hết thời gian"
     channel.enableVibration(true)
-    if (alarmStyle) channel.vibrationPattern = longArrayOf(0, 450, 250, 450)
+    if (alarmStyle) {
+        channel.vibrationPattern = LongArray(21) { index ->
+            when {
+                index == 0 -> 0L
+                index % 2 == 1 -> 650L
+                else -> 350L
+            }
+        }
+    }
     channel.setSound(
         if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
         else Settings.System.DEFAULT_NOTIFICATION_URI,
@@ -386,7 +394,15 @@ private fun applyLegacyNotificationSettings(
             if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
             else Settings.System.DEFAULT_NOTIFICATION_URI
         )
-        .setVibrate(if (alarmStyle) longArrayOf(0, 450, 250, 450) else longArrayOf(0, 250))
+        .setVibrate(
+            if (alarmStyle) LongArray(21) { index ->
+                when {
+                    index == 0 -> 0L
+                    index % 2 == 1 -> 650L
+                    else -> 350L
+                }
+            } else longArrayOf(0, 250)
+        )
 }
 
 object UpgradeReminderScheduler {
@@ -401,14 +417,24 @@ object UpgradeReminderScheduler {
 
         val nowSeconds = System.currentTimeMillis() / 1000L
         snapshots.distinctBy { it.tag }.forEach { snapshot ->
-            (snapshot.upgrades + snapshot.gearUps).forEach { item ->
+            (snapshot.upgrades + snapshot.gearUps).forEachIndexed { itemIndex, item ->
                 val delay = item.remainingSecondsAt(snapshot.timestamp, nowSeconds)
                 if (delay > 0L) {
-                    val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag + "_" + item.identity
+                    val endAt = snapshot.timestamp + (item.timerSeconds ?: 0L)
+                    val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag +
+                        "_" + item.identity.hashCode() + "_" + endAt + "_" + itemIndex
                     val data = Data.Builder()
                         .putString("profile", profile)
                         .putString("tag", snapshot.tag)
+                        .putString("village_name", snapshot.villageName ?: snapshot.tag)
                         .putString("item", item.name)
+                        .putString("section", item.sectionLabel)
+                        .putString("base", item.base)
+                        .putInt("data_id", item.dataId)
+                        .putInt("level", item.level ?: -1)
+                        .putBoolean("gear_up", item.gearUp)
+                        .putString("icon_url", CocAssets.imageUrl(item))
+                        .putLong("end_at", endAt)
                         .build()
                     val request = OneTimeWorkRequestBuilder<UpgradeReminderWorker>()
                         .setInitialDelay(delay, TimeUnit.SECONDS)
@@ -434,33 +460,76 @@ class UpgradeReminderWorker(
 
         val item = inputData.getString("item") ?: "Công trình"
         val tag = inputData.getString("tag") ?: ""
+        val villageName = inputData.getString("village_name") ?: tag
+        val section = inputData.getString("section") ?: "Công trình"
+        val base = inputData.getString("base") ?: "home"
+        val dataId = inputData.getInt("data_id", -1)
+        val level = inputData.getInt("level", -1)
+        val gearUp = inputData.getBoolean("gear_up", false)
+        val iconUrl = inputData.getString("icon_url")
+        val endAt = inputData.getLong("end_at", 0L)
         val alarmStyle = AppPreferences.notificationStyle(applicationContext, profile) == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
-        val channelId = "upgrade_" + profileCode + if (alarmStyle) "_alarm" else "_message"
+        val channelId = "upgrade_" + profileCode + if (alarmStyle) "_alarm_10s" else "_message"
         ensureUpgradeNotificationChannel(applicationContext, channelId, alarmStyle)
 
+        val notificationKey = "$profile|$tag|$dataId|$endAt"
+        val notificationId = notificationKey.hashCode()
         val openApp = Intent(applicationContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pendingIntent = PendingIntent.getActivity(
             applicationContext,
-            (item + tag + profile).hashCode(),
+            notificationId,
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val levelText = if (level >= 0) {
+            if (gearUp) "Cấp $level • GEAR-UP" else "Cấp $level → ${level + 1}"
+        } else {
+            if (gearUp) "GEAR-UP" else "Chưa rõ cấp độ"
+        }
+        val baseText = if (base == "builder") "Làng đêm" else "Nhà chính"
+        val gameIntent = applicationContext.packageManager
+            .getLaunchIntentForPackage("com.supercell.clashofclans")
+            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val iconBitmap = iconUrl?.let { url ->
+            runCatching {
+                downloadWidgetIcon(applicationContext, url)
+                widgetIconFile(applicationContext, url)
+                    .takeIf { it.exists() && it.length() > 0L }
+                    ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+            }.getOrNull()
+        }
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
-            .setContentTitle("Bộ đếm nâng cấp đã hết")
-            .setContentText(item + " • " + tag)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(item + " của làng " + tag + " đã đến thời gian dự kiến hoàn thành. Mở COC-LIO và nhập JSON mới để xác nhận cấp độ."))
+            .setContentTitle("Đến giờ hoàn thành • $item")
+            .setContentText("$villageName • ID $dataId • $levelText")
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(
+                    "Làng: $villageName ($tag)\nCăn cứ: $baseText\nNhóm: $section\nCông trình: $item\nID: $dataId\nDự kiến: $levelText\nBộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
+                )
+            )
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setOnlyAlertOnce(false)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+        if (alarmStyle) notificationBuilder.setTimeoutAfter(10_000L)
+        if (gameIntent != null) {
+            val gamePendingIntent = PendingIntent.getActivity(
+                applicationContext,
+                notificationId xor 0x4C494F,
+                gameIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            notificationBuilder.addAction(android.R.drawable.ic_media_play, "MỞ GAME", gamePendingIntent)
+        }
+        if (iconBitmap != null) notificationBuilder.setLargeIcon(iconBitmap)
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
         val notification = notificationBuilder.build()
         runCatching {
             NotificationManagerCompat.from(applicationContext)
-                .notify((item + tag + profile).hashCode(), notification)
+                .notify(notificationId, notification)
         }
         Result.success()
     }
@@ -471,7 +540,7 @@ object UpgradeNotificationTester {
     fun show(context: Context, profile: String, style: String): Boolean = runCatching {
         val alarmStyle = style == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
-        val channelId = "upgrade_" + profileCode + if (alarmStyle) "_alarm" else "_message"
+        val channelId = "upgrade_" + profileCode + if (alarmStyle) "_alarm_10s" else "_message"
         ensureUpgradeNotificationChannel(context, channelId, alarmStyle)
 
         val openApp = Intent(context, MainActivity::class.java)
@@ -498,6 +567,7 @@ object UpgradeNotificationTester {
             .setAutoCancel(true)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
+        if (alarmStyle) notificationBuilder.setTimeoutAfter(10_000L)
         val notification = notificationBuilder.build()
         NotificationManagerCompat.from(context)
             .notify(("coc_lio_test_" + profile).hashCode(), notification)
@@ -686,14 +756,31 @@ private class UpgradeWidgetListFactory(
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, progressPercent, false)
         val progressFraction = progressPercent / 100f
-        val progressColor = android.graphics.Color.rgb(
-            (255f + (66f - 255f) * progressFraction).toInt(),
-            (164f + (245f - 164f) * progressFraction).toInt(),
-            (58f + (200f - 58f) * progressFraction).toInt()
-        )
+        val progressColor = if (progressFraction < 0.5f) {
+            val fraction = progressFraction * 2f
+            android.graphics.Color.rgb(
+                255,
+                (59f + (213f - 59f) * fraction).toInt(),
+                (48f + (79f - 48f) * fraction).toInt()
+            )
+        } else {
+            val fraction = (progressFraction - 0.5f) * 2f
+            android.graphics.Color.rgb(
+                (255f + (37f - 255f) * fraction).toInt(),
+                (213f + (211f - 213f) * fraction).toInt(),
+                (79f + (102f - 79f) * fraction).toInt()
+            )
+        }
+        if (Build.VERSION.SDK_INT >= 31) {
+            views.setColorStateList(
+                R.id.row_progress,
+                "setProgressTintList",
+                android.content.res.ColorStateList.valueOf(progressColor)
+            )
+        }
         views.setTextColor(
             R.id.row_timer,
-            if (remaining > 0L) progressColor else android.graphics.Color.rgb(66, 245, 200)
+            if (remaining > 0L) android.graphics.Color.WHITE else android.graphics.Color.rgb(37, 211, 102)
         )
 
         if (remaining > 0L) {
