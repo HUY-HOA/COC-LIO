@@ -14,13 +14,27 @@ Tài liệu chính thức: https://developer.android.com/identity/sign-in/creden
 
 ## OAuth Android và chữ ký APK
 
-Google khuyến nghị có OAuth Client riêng cho Android và Web. Android Client được ràng buộc với:
-- Package name: `com.huyhoa.coclio`
-- SHA-1 của chứng thư ký APK.
+COC-LIO dùng hai loại OAuth Client trong **cùng một dự án Google Cloud**:
 
-Không tạo Android Client theo SHA-1 của APK debug tạm thời từ GitHub Actions: chứng thư debug trên runner có thể thay đổi giữa các lần build. Trước khi bật đăng nhập dùng thật, cần chốt khóa ký APK ổn định. Việc đổi từ chữ ký debug hiện tại sang khóa ký ổn định có thể khiến Android không cho cài đè bản cũ; cần chuẩn bị cách giữ hoặc xuất dữ liệu cục bộ trước khi đổi.
+- **Web application client**: dùng làm `GOOGLE_WEB_CLIENT_ID` trong GitHub Actions Secret. Không dùng Android Client ID ở biến này.
+- **Android client**: ràng buộc với package `com.huyhoa.coclio` và SHA-1 của chứng thư ký APK cài trên điện thoại.
 
-Web Client ID ở phần trên là thông tin cần thêm vào Secret ngay bây giờ. Tôi sẽ hướng dẫn phần Android Client và chữ ký ổn định riêng sau khi chốt cách ký APK.
+### Lấy SHA-1 chính xác của APK release
+
+Workflow đã ký APK bằng keystore ổn định lưu trong GitHub Secrets. Sau khi tự chạy workflow **Build COC-LIO APK**, mở log bước **Print release signing certificate fingerprints**. Bước này in package name cùng SHA-1 và SHA-256 công khai của chứng thư release; không in khóa riêng hay mật khẩu.
+
+Trong Google Cloud Console → Google Auth Platform → Clients:
+
+1. Mở đúng dự án đã tạo Web application client.
+2. Tạo hoặc mở OAuth Client loại **Android**.
+3. Nhập package name chính xác: `com.huyhoa.coclio`.
+4. Nhập SHA-1 lấy từ log release ở trên, không lấy SHA-1 của debug APK.
+5. Lưu cấu hình. Giữ Web Client ID ở Secret `GOOGLE_WEB_CLIENT_ID` như phần dưới.
+
+Nếu sau này phân phối qua Google Play với Play App Signing, cần thêm cả SHA-1 của **App signing key certificate** trong Play Console → App integrity; chứng thư này có thể khác upload key và khác khóa release ký trực tiếp trong GitHub Actions.
+
+Mã lỗi xác thực 16 không đủ để kết luận Dịch vụ Google Play đã cũ. Hãy kiểm tra Web Client ID, dự án OAuth, package và SHA-1 của đúng chứng thư trước. Nếu cấu hình ngoài ứng dụng chưa khớp, chỉ sửa mã APK sẽ không giải quyết được lỗi.
+
 
 ## Thêm Secret vào GitHub
 
