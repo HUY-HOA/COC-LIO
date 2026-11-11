@@ -97,8 +97,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import com.huyhoa.coclio.data.VillageSnapshot
 import com.huyhoa.coclio.data.VillageStore
@@ -274,42 +274,28 @@ object GoogleAccountAuth {
         }
 
         val credentialManager = CredentialManager.create(context)
+        val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId)
+            .build()
+        val signInRequest = GetCredentialRequest.Builder()
+            .addCredentialOption(signInOption)
+            .build()
         val result = try {
-            val authorizedOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(true)
-                .setServerClientId(clientId)
-                .build()
-            val authorizedRequest = GetCredentialRequest.Builder()
-                .addCredentialOption(authorizedOption)
-                .build()
-
-            try {
-                credentialManager.getCredential(context, authorizedRequest)
-            } catch (_: NoCredentialException) {
-                val allAccountsOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(clientId)
-                    .build()
-                val allAccountsRequest = GetCredentialRequest.Builder()
-                    .addCredentialOption(allAccountsOption)
-                    .build()
-
-                try {
-                    credentialManager.getCredential(context, allAccountsRequest)
-                } catch (_: NoCredentialException) {
-                    val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId)
-                        .build()
-                    val signInRequest = GetCredentialRequest.Builder()
-                        .addCredentialOption(signInOption)
-                        .build()
-                    credentialManager.getCredential(context, signInRequest)
-                }
+            credentialManager.getCredential(context, signInRequest)
+        } catch (error: GetCredentialException) {
+            val errorMessage = error.message.orEmpty()
+            if (errorMessage.contains("[16] Account reauth failed", ignoreCase = true)) {
+                throw IllegalStateException(
+                    "Google trả về lỗi xác thực 16. Đây thường là lỗi cấu hình OAuth hoặc chữ ký ứng dụng, không phải lỗi JSON. Cần kiểm tra Web Client ID thuộc đúng dự án Google Cloud và Android OAuth Client có package com.huyhoa.coclio cùng SHA-1 của APK release.",
+                    error
+                )
             }
-        } catch (error: NoCredentialException) {
-            throw IllegalStateException(
-                "Không tìm thấy tài khoản Google có thể đăng nhập. Hãy kiểm tra tài khoản Google trên điện thoại rồi thử lại.",
-                error
-            )
+            if (error is NoCredentialException) {
+                throw IllegalStateException(
+                    "Không tìm thấy tài khoản Google có thể đăng nhập. Hãy kiểm tra tài khoản Google trên điện thoại rồi thử lại.",
+                    error
+                )
+            }
+            throw error
         }
 
         val credential = result.credential
@@ -1178,15 +1164,15 @@ fun SettingsScreen(
         } else {
             (50f + ((textScale.coerceIn(1f, 1.25f) - 1f) / 0.25f) * 50f).roundToInt()
         }).coerceIn(1, 100)
-        val fontSliderLevel = remember(textScale) {
+        val fontSliderLevel = remember {
             mutableFloatStateOf(currentFontLevel.toFloat())
         }
-        fun fontScaleForLevel(level: Int): Float {
-            val safeLevel = level.coerceIn(1, 100)
-            return if (safeLevel <= 50) {
-                0.8f + (safeLevel - 1) * (0.2f / 49f)
+        fun fontScaleForLevel(level: Float): Float {
+            val safeLevel = level.coerceIn(1f, 100f)
+            return if (safeLevel <= 50f) {
+                0.8f + (safeLevel - 1f) * (0.2f / 49f)
             } else {
-                1f + (safeLevel - 50) * (0.25f / 50f)
+                1f + (safeLevel - 50f) * (0.25f / 50f)
             }
         }
         FeaturePanel {
@@ -1196,12 +1182,12 @@ fun SettingsScreen(
             }
             Slider(
                 value = fontSliderLevel.floatValue,
-                onValueChange = { fontSliderLevel.floatValue = it },
+                onValueChange = {
+                    fontSliderLevel.floatValue = it
+                    onTextScaleChanged(fontScaleForLevel(it))
+                },
                 valueRange = 1f..100f,
-                onValueChangeFinished = {
-                    onTextScaleChanged(fontScaleForLevel(fontSliderLevel.floatValue.roundToInt()))
-                    onTextScaleChangeFinished()
-                }
+                onValueChangeFinished = onTextScaleChangeFinished
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Nhỏ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
@@ -1216,7 +1202,7 @@ fun SettingsScreen(
                 Spacer(Modifier.weight(1f))
                 Text("Lớn", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Có 100 mức. Mức 50 là cỡ chữ mặc định. Kéo thanh để chọn mức, cỡ chữ chỉ áp dụng sau khi thả tay để thanh kéo không bị giật hoặc mất thao tác.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Có 100 mức. Mức 50 là cỡ chữ mặc định. Kích thước thay đổi ngay khi kéo và được lưu khi thả tay.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -1426,7 +1412,6 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
             .clip(shape)
             .background(MaterialTheme.colorScheme.surface)
             .drawWithCache {
-                val progress = if (led.speedMillis <= 0) 0f else (led.progress.value * (20000f / led.speedMillis)).rem(1f)
                 val stroke = 2.6.dp.toPx()
                 val inset = stroke / 2f
                 val path = Path().apply {
@@ -1441,21 +1426,26 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                     )
                 }
                 onDrawBehind {
-                    val intervals = palette.size - 1
-                    val colors = List(32) { index ->
-                        val position = ((index / 32f + progress) % 1f) * intervals
-                        val startIndex = position.toInt().coerceIn(0, intervals - 1)
-                        val fraction = position - startIndex
-                        val first = palette[startIndex]
-                        val second = palette[startIndex + 1]
-                        Color(
-                            red = first.red + (second.red - first.red) * fraction,
-                            green = first.green + (second.green - first.green) * fraction,
-                            blue = first.blue + (second.blue - first.blue) * fraction,
-                            alpha = led.brightness
-                        )
+                    val brush = if (led.enabled && led.speedMillis > 0) {
+                        val progress = (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+                        val intervals = palette.size - 1
+                        val colors = List(32) { index ->
+                            val position = ((index / 32f + progress) % 1f) * intervals
+                            val startIndex = position.toInt().coerceIn(0, intervals - 1)
+                            val fraction = position - startIndex
+                            val first = palette[startIndex]
+                            val second = palette[startIndex + 1]
+                            Color(
+                                red = first.red + (second.red - first.red) * fraction,
+                                green = first.green + (second.green - first.green) * fraction,
+                                blue = first.blue + (second.blue - first.blue) * fraction,
+                                alpha = led.brightness
+                            )
+                        }
+                        Brush.sweepGradient(colors)
+                    } else {
+                        Brush.sweepGradient(palette)
                     }
-                    val brush = if (led.enabled && led.speedMillis > 0) Brush.sweepGradient(colors) else Brush.sweepGradient(palette)
                     drawPath(path, brush, style = Stroke(width = stroke))
                 }
             }
