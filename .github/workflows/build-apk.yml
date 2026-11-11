@@ -73,6 +73,18 @@ jobs:
             exit 1
           fi
 
+      - name: Print release signing certificate fingerprints
+        if: steps.signing.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          echo "Android package: com.huyhoa.coclio"
+          FINGERPRINTS="$(keytool -list -v -keystore "$ANDROID_KEYSTORE_FILE" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" | awk '/SHA1:|SHA256:/ { print }')"
+          if ! grep -q 'SHA1:' <<< "$FINGERPRINTS"; then
+            echo "::error::Could not read SHA-1 fingerprint from the release signing certificate."
+            exit 1
+          fi
+          echo "$FINGERPRINTS"
+
       - name: Run unit tests
         run: gradle --no-daemon --build-cache --parallel testDebugUnitTest
 
