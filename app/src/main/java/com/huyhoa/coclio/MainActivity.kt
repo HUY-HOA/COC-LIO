@@ -1441,6 +1441,10 @@ private fun HelperCompactCard(item: VillageItem, modifier: Modifier = Modifier) 
                 fontSize = 7.sp,
                 maxLines = 1
             )
+            val helperDetails = (item.details + item.properties.map { (key, value) -> "$key: $value" }).joinToString(" • ")
+            if (helperDetails.isNotBlank()) {
+                Text(helperDetails, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }
