@@ -48,3 +48,19 @@ A row with `timer` and no `cnt` is interpreted as one running instance. A row wi
 - Game data and images dataset (MIT package): https://github.com/chiefpansancolt/clash-of-clans-data
 
 These are independent community references, not official Supercell API documentation. Their mappings can lag a game release or contain uncertain labels. Where the current JSON differs, the exported data is retained and should be checked against a fresh in-game export.
+
+
+## Additional fields now surfaced by COC-LIO
+
+- `decos`, `obstacles`, `house_parts`, `skins`, `sceneries` and the matching `decos2`, `obstacles2`, `skins2`, `sceneries2` arrays are parsed into individual entries, including numeric data IDs, optional levels and counts. Home Village and Builder Base entries are kept separate.
+- `boosts` entries are listed with their raw values.
+- Unknown fields on known item objects and unknown top-level JSON fields are retained and shown as extra metadata. The full raw JSON remains stored as before.
+- If a cosmetic or scenery ID has no verified localized name or image mapping, the app shows its category and numeric ID instead of inventing a name or icon.
+
+## Upgrade notifications and widgets
+
+- The completion alarm notification includes the saved village name (or player tag if no name is available), base, section, building name, data ID and expected level transition. A large icon is attached only when a matching asset can be downloaded.
+- The notification offers a direct game-launch action only when Android resolves the Clash of Clans launch activity. Opening the notification itself opens COC-LIO.
+- Alarm-style notifications use a roughly 10-second vibration pattern and a 10-second notification timeout on Android versions that support it. Actual sound duration, vibration and visibility are still controlled by Android notification-channel settings, Do Not Disturb and device software.
+- An expired JSON countdown is an estimated finish time, not proof that the game upgrade has completed. Import a fresh JSON to confirm the actual level.
+- The upgrade progress view starts at 0% at the JSON timestamp, advances with elapsed time, and transitions from red through yellow to green. The widget keeps its existing static RGB gradient border; Android RemoteViews widgets do not provide the same continuously animated Compose LED effect used inside the app.
