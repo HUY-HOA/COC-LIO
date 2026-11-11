@@ -122,6 +122,7 @@ import kotlinx.coroutines.launch
 import com.huyhoa.coclio.data.DeletedVillageRecord
 import com.huyhoa.coclio.data.ChangeEvent
 import com.huyhoa.coclio.data.VillageItem
+import com.huyhoa.coclio.data.VillageExtraItem
 import com.huyhoa.coclio.data.VillageParser
 import com.huyhoa.coclio.data.VillageSnapshot
 import com.huyhoa.coclio.data.VillageStore
@@ -859,8 +860,9 @@ private fun OverviewScreen(
     val expiredUpgrades = snapshot.expiredUpgradesAt(nowEpoch)
     val homeRunning = activeUpgrades.filter { it.base == "home" }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
     val builderRunning = activeUpgrades.filter { it.base == "builder" }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
-    val homeCompleted = expiredUpgrades.filter { it.base == "home" }.sortedByDescending { it.timerSeconds ?: 0L }
-    val builderCompleted = expiredUpgrades.filter { it.base == "builder" }.sortedByDescending { it.timerSeconds ?: 0L }
+    val homeCompleted = expiredUpgrades.filter { it.base == "home" }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+    val builderCompleted = expiredUpgrades.filter { it.base == "builder" }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+    val completedUpgrades = (homeCompleted + builderCompleted).sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
     val hasHomeBase = snapshot.homeItems.isNotEmpty()
     val hasBuilderBase = snapshot.builderItems.isNotEmpty()
     val homeHall = snapshot.items.firstOrNull { it.sectionKey == "buildings" && it.dataId == 1000001 }
@@ -868,6 +870,8 @@ private fun OverviewScreen(
     val builderTotal = snapshot.homeBuilderTotal
     val builderBusy = snapshot.homeBuildersBusyAt(nowEpoch)
     val builderFree = builderTotal?.let { (it - builderBusy).coerceAtLeast(0) }
+    val homeExtras = snapshot.extraItems.filter { it.base == "home" }
+    val builderExtras = snapshot.extraItems.filter { it.base == "builder" }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -951,6 +955,13 @@ private fun OverviewScreen(
             }
         }
 
+        if (completedUpgrades.isNotEmpty()) {
+            item { SectionTitle("ĐÃ HẾT GIỜ • CHỜ JSON XÁC NHẬN", completedUpgrades.size.toString()) }
+            items(completedUpgrades, key = { "completed_" + it.base + "_" + it.identity + "_" + it.timerSeconds }) {
+                UpgradeCard(it, snapshot.timestamp)
+            }
+        }
+
         if (hasHomeBase) {
             item { SectionTitle("NHÀ CHÍNH • ĐANG NÂNG", homeRunning.size.toString()) }
             if (homeRunning.isEmpty()) {
@@ -959,12 +970,6 @@ private fun OverviewScreen(
                 items(homeRunning, key = { "home_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
             }
 
-            if (homeCompleted.isNotEmpty()) {
-                item { SectionTitle("NHÀ CHÍNH • HẾT GIỜ, CHỜ JSON MỚI", homeCompleted.size.toString()) }
-                items(homeCompleted, key = { "home_done_" + it.identity + "_" + it.timerSeconds }) {
-                    UpgradeCard(it, snapshot.timestamp)
-                }
-            }
         }
 
         if (hasBuilderBase) {
@@ -975,12 +980,6 @@ private fun OverviewScreen(
                 items(builderRunning, key = { "builder_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
             }
 
-            if (builderCompleted.isNotEmpty()) {
-                item { SectionTitle("LÀNG ĐÊM • HẾT GIỜ, CHỜ JSON MỚI", builderCompleted.size.toString()) }
-                items(builderCompleted, key = { "builder_done_" + it.identity + "_" + it.timerSeconds }) {
-                    UpgradeCard(it, snapshot.timestamp)
-                }
-            }
         }
 
         if (events.isNotEmpty()) {
@@ -991,18 +990,45 @@ private fun OverviewScreen(
         val helpers = snapshot.items.filter { it.sectionKey == "helpers" }
         if (helpers.isNotEmpty()) {
             item { SectionTitle("TRỢ THỦ", helpers.size.toString()) }
-            items(helpers, key = { it.identity }) { VillageItemCard(it) }
+            items(helpers.chunked(3), key = { row -> row.joinToString("_") { it.identity } }) { helperRow ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    helperRow.forEach { helper ->
+                        HelperCompactCard(helper, Modifier.weight(1f))
+                    }
+                    repeat(3 - helperRow.size) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
         }
 
-        if (snapshot.extras.isNotEmpty()) {
-            item { SectionTitle("DỮ LIỆU KHÁC", snapshot.extras.values.sum().toString()) }
+        homeExtras.groupBy { it.sectionKey }.forEach { (_, entries) ->
+            item {
+                SectionTitle("NHÀ CHÍNH • ${entries.first().sectionLabel.uppercase()}", entries.sumOf { it.count }.toString())
+            }
+            item { ExtraEntriesCard(entries) }
+        }
+
+        builderExtras.groupBy { it.sectionKey }.forEach { (_, entries) ->
+            item {
+                SectionTitle("LÀNG ĐÊM • ${entries.first().sectionLabel.uppercase()}", entries.sumOf { it.count }.toString())
+            }
+            item { ExtraEntriesCard(entries) }
+        }
+
+        if (snapshot.extraFields.isNotEmpty()) {
+            item { SectionTitle("TRƯỜNG JSON KHÁC", snapshot.extraFields.size.toString()) }
             item {
                 NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
-                    Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        snapshot.extras.forEach { (name, count) ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(name, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, modifier = Modifier.weight(1f))
-                                Text(count.toString(), color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                    Column(Modifier.padding(7.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        snapshot.extraFields.forEach { (key, value) ->
+                            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                Text(key, color = MaterialTheme.colorScheme.tertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
@@ -1030,7 +1056,7 @@ private fun BaseSummaryCard(
                 Text("$levelLabel ${level ?: "—"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 19.sp, fontWeight = FontWeight.Black, maxLines = 1)
                 Text("$itemCount mục • $upgradeCount nâng", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 1)
             }
-            hallItem?.let { CategoryImage(it, 32) }
+            hallItem?.let { CategoryImage(it, 52) }
         }
     }
 }
@@ -1086,8 +1112,13 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
     }
     val elapsedRatio = item.progressRatioAt(snapshotTimestamp, nowEpoch)
     val progressPercent = item.progressPercentAt(snapshotTimestamp, nowEpoch)
+    val targetProgressColor = if (elapsedRatio < 0.5f) {
+        androidx.compose.ui.graphics.lerp(Color(0xFFFF3B30), Color(0xFFFFD54F), elapsedRatio * 2f)
+    } else {
+        androidx.compose.ui.graphics.lerp(Color(0xFFFFD54F), Color(0xFF25D366), (elapsedRatio - 0.5f) * 2f)
+    }
     val progressColor by androidx.compose.animation.animateColorAsState(
-        targetValue = androidx.compose.ui.graphics.lerp(CocOrange, CocGreen, elapsedRatio),
+        targetValue = targetProgressColor,
         animationSpec = tween(900),
         label = "upgrade-progress-color"
     )
@@ -1102,6 +1133,14 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
             CategoryImage(item, 48)
             Spacer(Modifier.width(9.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    item.name + " • ID " + item.dataId + if (item.base == "builder") " • LÀNG ĐÊM" else " • NHÀ CHÍNH",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         levelText,
@@ -1150,6 +1189,10 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                         fontWeight = FontWeight.Black,
                         maxLines = 1
                     )
+                }
+                val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" }).joinToString(" • ")
+                if (detailText.isNotBlank()) {
+                    Text(detailText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 if (remaining == 0L) {
                     Text(
@@ -1304,18 +1347,18 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
                 item(key = "section_$sectionKey", span = { GridItemSpan(maxLineSpan) }) {
                     SectionTitle(rows.first().sectionLabel.uppercase(), rows.sumOf { it.count }.toString())
                 }
-                val orderedRows = rows.sortedWith(
+                val orderedRows = rows.filter { it.timerSeconds == null }.sortedWith(
                     compareBy<VillageItem> { it.count > 1 }
                         .thenBy { it.level ?: Int.MIN_VALUE }
-                )
+                ) + rows.filter { it.timerSeconds != null }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
                 gridItems(
                     items = orderedRows,
                     key = { it.identity + "_" + (it.timerSeconds ?: -1L) + "_" + it.count },
                     span = { item ->
-                        if (item.isRunning) GridItemSpan(maxLineSpan) else GridItemSpan(1)
+                        if (item.timerSeconds != null) GridItemSpan(maxLineSpan) else GridItemSpan(1)
                     }
                 ) { item ->
-                    if (item.isRunning) {
+                    if (item.timerSeconds != null) {
                         UpgradeCard(item, snapshot.timestamp)
                     } else {
                         VillageGridItemCard(item)
@@ -1336,7 +1379,7 @@ private fun VillageGridItemCard(item: VillageItem) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(104.dp),
+                .height(116.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
@@ -1371,6 +1414,52 @@ private fun VillageGridItemCard(item: VillageItem) {
                 item.weaponLevel?.let {
                     Spacer(Modifier.width(4.dp))
                     Text("V$it", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+            }
+            val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" }).joinToString(" • ")
+            if (detailText.isNotBlank()) {
+                Text(detailText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HelperCompactCard(item: VillageItem, modifier: Modifier = Modifier) {
+    NeonPanel(modifier = modifier.fillMaxWidth(), glow = CocMagenta, innerPadding = 5.dp) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            CategoryImage(item, 38)
+            Text(item.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, overflow = TextOverflow.Ellipsis)
+            Text("Cấp ${item.level ?: "—"}", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Black)
+            Text(
+                item.helperCooldownSeconds?.let { "Hồi ${formatDuration(it)}" } ?: "Sẵn sàng",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 7.sp,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExtraEntriesCard(entries: List<VillageExtraItem>) {
+    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet, innerPadding = 7.dp) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            entries.forEach { entry ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(entry.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    val metadata = buildList {
+                        entry.dataId?.let { add("ID $it") }
+                        entry.level?.let { add("Cấp $it") }
+                        if (entry.count > 1) add("×${entry.count}")
+                    }.joinToString(" • ")
+                    if (metadata.isNotBlank()) {
+                        Text(metadata, color = MaterialTheme.colorScheme.tertiary, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
