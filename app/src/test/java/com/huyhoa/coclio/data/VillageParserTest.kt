@@ -180,4 +180,37 @@ class VillageParserTest {
         assertEquals(null, exportOnly.villageName)
     }
 
+
+    @Test
+    fun parsesCosmeticsBoostsAndUnknownJsonFields() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#EXTRAS","timestamp":1794320000,
+                "buildings":[{"data":1000001,"lvl":16,"helper_recurrent":1}],
+                "skins":[{"data":52000120,"cnt":1}],
+                "sceneries":[{"data":51000001}],
+                "decos2":[{"data":53000002,"cnt":2}],
+                "skins2":[52000003],
+                "boosts":{"lab_boost":3600,"builder_boost":1800},
+                "custom_flag":"kept"}"""
+        )
+
+        assertTrue(snapshot.extraItems.any {
+            it.sectionKey == "skins" && it.base == "home" && it.dataId == 52000120
+        })
+        assertTrue(snapshot.extraItems.any {
+            it.sectionKey == "sceneries" && it.base == "home" && it.dataId == 51000001
+        })
+        assertTrue(snapshot.extraItems.any {
+            it.sectionKey == "decos2" && it.base == "builder" && it.dataId == 53000002 && it.count == 2
+        })
+        assertTrue(snapshot.extraItems.any {
+            it.sectionKey == "skins2" && it.base == "builder" && it.dataId == 52000003
+        })
+        assertTrue(snapshot.extraItems.any { it.value?.contains("Tăng tốc phòng thí nghiệm") == true })
+        assertTrue(snapshot.extraItems.any { it.value?.contains("Tăng tốc thợ xây") == true })
+        assertEquals("kept", snapshot.extraFields["custom_flag"])
+        assertEquals("1", snapshot.items.single().properties["helper_recurrent"])
+        assertEquals(16, snapshot.townHallLevel)
+    }
+
 }
