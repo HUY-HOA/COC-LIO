@@ -72,6 +72,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -240,7 +242,7 @@ object AppPreferences {
 
     fun textScale(context: Context): Float =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getFloat("text_scale", 1f).coerceIn(0.85f, 1.30f)
+            .getFloat("text_scale", 1f).coerceIn(0.8f, 1.25f)
 
     fun themeMode(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -253,7 +255,7 @@ object AppPreferences {
 
     fun setTextScale(context: Context, scale: Float) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putFloat("text_scale", scale.coerceIn(0.85f, 1.30f)).apply()
+            .edit().putFloat("text_scale", scale.coerceIn(0.8f, 1.25f)).apply()
     }
 }
 
@@ -947,19 +949,6 @@ fun SettingsScreen(
         Text("CÀI ĐẶT", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
 
         FeaturePanel {
-            Text("GIAO DIỆN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("system" to "Theo thiết bị", "light" to "Sáng", "dark" to "Tối").forEach { (mode, label) ->
-                    FilterChip(
-                        selected = themeMode == mode,
-                        onClick = { onThemeModeChanged(mode) },
-                        label = { Text(label, fontSize = 10.sp) }
-                    )
-                }
-            }
-        }
-
-        FeaturePanel {
             Text("TÀI KHOẢN GOOGLE", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             if (accountEmail.isNullOrBlank()) {
@@ -1078,29 +1067,63 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
+            Text("GIAO DIỆN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("system" to "Theo thiết bị", "light" to "Sáng", "dark" to "Tối").forEach { (mode, label) ->
+                    FilterChip(
+                        selected = themeMode == mode,
+                        onClick = { onThemeModeChanged(mode) },
+                        label = { Text(label, fontSize = 10.sp) }
+                    )
+                }
+            }
+        }
+
+        val currentFontLevel = if (textScale <= 1f) {
+            (((textScale.coerceIn(0.8f, 1f) - 0.8f) / 0.2f) * 49f + 1f).roundToInt()
+        } else {
+            (50f + ((textScale.coerceIn(1f, 1.25f) - 1f) / 0.25f) * 50f).roundToInt()
+        }.coerceIn(1, 100)
+        val fontSliderLevel = remember(textScale) {
+            mutableFloatStateOf(currentFontLevel.toFloat())
+        }
+        fun fontScaleForLevel(level: Int): Float {
+            val safeLevel = level.coerceIn(1, 100)
+            return if (safeLevel <= 50) {
+                0.8f + (safeLevel - 1) * (0.2f / 49f)
+            } else {
+                1f + (safeLevel - 50) * (0.25f / 50f)
+            }
+        }
+        FeaturePanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("MỨC ${(((textScale - 0.8f) / 0.05f).roundToInt() + 1).coerceIn(1, 10)}/10", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                Text("MỨC ${fontSliderLevel.floatValue.roundToInt().coerceIn(1, 100)}/100", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
             }
             Slider(
-                value = textScale.coerceIn(0.8f, 1.25f),
-                onValueChange = onTextScaleChanged,
-                valueRange = 0.8f..1.25f,
-                onValueChangeFinished = onTextScaleChangeFinished
+                value = fontSliderLevel.floatValue,
+                onValueChange = { fontSliderLevel.floatValue = it },
+                valueRange = 1f..100f,
+                steps = 98,
+                onValueChangeFinished = {
+                    onTextScaleChanged(fontScaleForLevel(fontSliderLevel.floatValue.roundToInt()))
+                    onTextScaleChangeFinished()
+                }
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Nhỏ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 Spacer(Modifier.weight(1f))
                 TextButton(onClick = {
+                    fontSliderLevel.floatValue = 50f
                     onTextScaleChanged(1f)
                     onTextScaleChangeFinished()
                 }) {
-                    Text("Mặc định", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
+                    Text("Mức 50 · Mặc định", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
                 }
                 Spacer(Modifier.weight(1f))
                 Text("Lớn", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Áp dụng cho chữ trong ứng dụng và tiện ích màn hình chính.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Có 100 mức. Mức 50 là cỡ chữ mặc định. Kéo thanh để chọn mức, cỡ chữ chỉ áp dụng sau khi thả tay để thanh kéo không bị giật hoặc mất thao tác.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
