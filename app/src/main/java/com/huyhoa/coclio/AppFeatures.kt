@@ -1086,11 +1086,11 @@ fun SettingsScreen(
             }
         }
 
-        val currentFontLevel = if (textScale <= 1f) {
+        val currentFontLevel = (if (textScale <= 1f) {
             (((textScale.coerceIn(0.8f, 1f) - 0.8f) / 0.2f) * 49f + 1f).roundToInt()
         } else {
             (50f + ((textScale.coerceIn(1f, 1.25f) - 1f) / 0.25f) * 50f).roundToInt()
-        }.coerceIn(1, 100)
+        }).coerceIn(1, 100)
         val fontSliderLevel = remember(textScale) {
             mutableFloatStateOf(currentFontLevel.toFloat())
         }
@@ -1111,7 +1111,6 @@ fun SettingsScreen(
                 value = fontSliderLevel.floatValue,
                 onValueChange = { fontSliderLevel.floatValue = it },
                 valueRange = 1f..100f,
-                steps = 98,
                 onValueChangeFinished = {
                     onTextScaleChanged(fontScaleForLevel(fontSliderLevel.floatValue.roundToInt()))
                     onTextScaleChangeFinished()
