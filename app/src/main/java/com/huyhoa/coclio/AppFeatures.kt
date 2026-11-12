@@ -260,6 +260,15 @@ object AppPreferences {
             .edit().putString("theme_mode", mode).apply()
     }
 
+    fun displaySizeLevel(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getInt("display_size_level", 3).coerceIn(1, 5)
+
+    fun setDisplaySizeLevel(context: Context, level: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putInt("display_size_level", level.coerceIn(1, 5)).apply()
+    }
+
     fun setTextScale(context: Context, scale: Float) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putFloat("text_scale", scale.coerceIn(0.8f, 1.25f)).apply()
