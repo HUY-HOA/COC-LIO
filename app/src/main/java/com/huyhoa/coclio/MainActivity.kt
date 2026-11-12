@@ -1240,7 +1240,7 @@ private fun GoogleLoginStartScreen(
                     Text("ĐĂNG NHẬP VỚI GOOGLE")
                 }
                 Text(
-                    "Khi đăng nhập, COC-LIO lưu UID, email, tên và ảnh đại diện Google để xác thực và quản lý tài khoản. IP, thiết bị và lịch sử hoạt động không tự động được ghi nhận nếu chưa có lựa chọn riêng.",
+                    "Khi đăng nhập, COC-LIO lưu UID, email, tên và ảnh đại diện Google để xác thực và quản lý tài khoản. IP, thiết bị và lịch sử hoạt động không được tự động thu thập chỉ vì bạn đăng nhập Google.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
