@@ -269,6 +269,14 @@ object AppPreferences {
             .edit().putInt("display_size_level", level.coerceIn(1, 5)).apply()
     }
 
+    fun displaySizeScale(context: Context): Float = when (displaySizeLevel(context)) {
+        1 -> 0.82f
+        2 -> 0.89f
+        3 -> 0.96f
+        4 -> 1.03f
+        else -> 1.10f
+    }
+
     fun setTextScale(context: Context, scale: Float) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putFloat("text_scale", scale.coerceIn(0.8f, 1.25f)).apply()
@@ -728,9 +736,24 @@ private class UpgradeWidgetListFactory(
     override fun getViewAt(position: Int): RemoteViews? {
         val entry = entries.getOrNull(position) ?: return null
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade_row)
-        val textScale = AppPreferences.textScale(context)
-        views.setTextViewTextSize(R.id.row_title, TypedValue.COMPLEX_UNIT_SP, 12f * textScale)
-        views.setTextViewTextSize(R.id.row_timer, TypedValue.COMPLEX_UNIT_SP, 12f * textScale)
+        val displayScale = AppPreferences.displaySizeScale(context)
+        val combinedScale = AppPreferences.textScale(context) * displayScale
+        views.setTextViewTextSize(R.id.row_title, TypedValue.COMPLEX_UNIT_SP, 12f * combinedScale)
+        views.setTextViewTextSize(R.id.row_subtitle, TypedValue.COMPLEX_UNIT_SP, 7f * combinedScale)
+        views.setTextViewTextSize(R.id.row_timer, TypedValue.COMPLEX_UNIT_SP, 13f * combinedScale)
+        val rowPadding = (4f * displayScale * context.resources.displayMetrics.density).roundToInt()
+        views.setViewPadding(R.id.row_root, rowPadding, rowPadding, rowPadding, rowPadding)
+        views.setInt(
+            R.id.row_root,
+            "setMinimumHeight",
+            (58f * displayScale * context.resources.displayMetrics.density).roundToInt()
+        )
+        if (Build.VERSION.SDK_INT >= 31) {
+            views.setViewLayoutWidth(R.id.row_icon, 40f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
+            views.setViewLayoutHeight(R.id.row_icon, 40f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
+            views.setViewLayoutHeight(R.id.row_progress_container, 30f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
+            views.setViewLayoutHeight(R.id.row_progress, 17f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
+        }
         val now = System.currentTimeMillis() / 1000L
         val remaining = (entry.endAt - now).coerceIn(0L, entry.totalSeconds.coerceAtLeast(1L))
         val totalSeconds = entry.totalSeconds.coerceAtLeast(1L)
@@ -866,10 +889,12 @@ object AppWidgetUpdater {
         val activeCount = snapshot?.activeUpgradesAt(nowSeconds)?.size ?: 0
         val expiredCount = snapshot?.expiredUpgradesAt(nowSeconds)?.size ?: 0
         val views = RemoteViews(context.packageName, R.layout.widget_upgrade)
-        val textScale = AppPreferences.textScale(context)
-        views.setTextViewTextSize(R.id.widget_village, TypedValue.COMPLEX_UNIT_SP, 10f * textScale)
-        views.setTextViewTextSize(R.id.widget_status, TypedValue.COMPLEX_UNIT_SP, 9f * textScale)
-        views.setTextViewTextSize(R.id.widget_empty, TypedValue.COMPLEX_UNIT_SP, 9f * textScale)
+        val combinedScale = AppPreferences.textScale(context) * AppPreferences.displaySizeScale(context)
+        views.setTextViewTextSize(R.id.widget_village, TypedValue.COMPLEX_UNIT_SP, 10f * combinedScale)
+        views.setTextViewTextSize(R.id.widget_status, TypedValue.COMPLEX_UNIT_SP, 9f * combinedScale)
+        views.setTextViewTextSize(R.id.widget_empty, TypedValue.COMPLEX_UNIT_SP, 9f * combinedScale)
+        val widgetPadding = (5f * AppPreferences.displaySizeScale(context) * context.resources.displayMetrics.density).roundToInt()
+        views.setViewPadding(R.id.widget_root, widgetPadding, widgetPadding, widgetPadding, widgetPadding)
 
         val builderTotal = snapshot?.homeBuilderTotal
         val buildersFree = if (snapshot == null || builderTotal == null) null else
