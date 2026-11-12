@@ -373,6 +373,7 @@ private suspend fun syncFirebaseUserProfile(
         "photoUrl" to (google.profilePictureUri ?: user.photoUrl?.toString().orEmpty()),
         "emailVerified" to user.isEmailVerified,
         "providerId" to "google.com",
+        "dataSharingConsent" to true,
         "updatedAt" to FieldValue.serverTimestamp()
     )
     if (!existing.exists()) {
@@ -430,6 +431,7 @@ object FirebaseAccountAdministration {
     suspend fun loadAccounts(): List<AdminGoogleAccount> {
         val result = FirebaseFirestore.getInstance()
             .collection("users")
+            .whereEqualTo("dataSharingConsent", true)
             .get()
             .awaitFirebaseResult()
         return result.documents.map { document ->
@@ -584,24 +586,25 @@ object GoogleAccountAuth {
             profilePictureUri = google.profilePictureUri?.toString()
         )
 
-        syncFirebaseUserProfile(firebaseUser, accountData)
-
         return accountData
     }
 
-    suspend fun syncCurrentProfile(context: Context, expectedEmail: String) {
+    suspend fun shareProfile(google: GoogleAccountData) {
+        val user = FirebaseAuth.getInstance().currentUser
+            ?: throw IllegalStateException("Bạn cần đăng nhập Google trước.")
+        if (!user.email.equals(google.email, ignoreCase = true)) {
+            throw IllegalStateException("Tài khoản Google hiện tại không khớp với hồ sơ vừa chọn.")
+        }
+        syncFirebaseUserProfile(user, google)
+    }
+
+    suspend fun removeSharedProfile() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
-        val email = user.email?.trim().orEmpty()
-        if (email.isBlank() || !email.equals(expectedEmail, ignoreCase = true)) return
-        val stored = AccountProfileStore.googleData(context, expectedEmail)
-        val google = stored ?: GoogleAccountData(
-            email = email,
-            displayName = user.displayName,
-            givenName = null,
-            familyName = null,
-            profilePictureUri = user.photoUrl?.toString()
-        )
-        syncFirebaseUserProfile(user, google, countAsSignIn = false)
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .delete()
+            .awaitFirebaseResult()
     }
 
     suspend fun signOut(context: Context) {
@@ -1474,7 +1477,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 fontSize = 8.sp
                             )
                             Text(
-                                "Tự động đồng bộ hồ sơ khi đăng nhập Google",
+                                "Đã đồng ý chia sẻ hồ sơ với quản lý",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 8.sp
                             )
@@ -1501,7 +1504,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Tên Google", account.displayName)
                             ProfileDataRow("Tên", account.givenName)
                             ProfileDataRow("Họ", account.familyName)
-                            ProfileDataRow("Đồng bộ hồ sơ", "Tự động khi đăng nhập Google")
+                            ProfileDataRow("Đồng bộ hồ sơ", "Đã đồng ý chia sẻ với quản lý")
                             ProfileDataRow("Ảnh đại diện", account.photoUrl)
                             ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
                             ProfileDataRow("Nhà cung cấp", account.providerId)
@@ -1516,7 +1519,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             }
         }
         if (!loading && errorMessage == null && accounts.isEmpty()) {
-            Text("Chưa có tài khoản nào được đồng bộ lên Firestore.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Chưa có tài khoản nào đồng ý chia sẻ hồ sơ.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
     }
 }
@@ -1547,6 +1550,7 @@ fun SettingsScreen(
     notificationStyle: String,
     alarmDurationSeconds: Int,
     onGoogleSignIn: () -> Unit,
+    onGoogleSwitchAccount: () -> Unit,
     onGoogleSignOut: () -> Unit,
     onOpenGame: () -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
@@ -1573,7 +1577,7 @@ fun SettingsScreen(
             if (accountEmail.isNullOrBlank()) {
                 Text("Chưa đăng nhập", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                 Text(
-                    "Google cung cấp email, tên và ảnh đại diện nếu có. Tên hiển thị bạn tự đặt cũng được lưu trong hồ sơ tài khoản để quản lý nhận biết tài khoản.",
+                    "Sau khi đăng nhập Google, bạn sẽ được chọn đồng ý hoặc không chia sẻ hồ sơ Google với quản lý.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     lineHeight = 16.sp
@@ -1646,7 +1650,7 @@ fun SettingsScreen(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(
-                        onClick = onGoogleSignIn,
+                        onClick = onGoogleSwitchAccount,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF04101D))
                     ) { Text("ĐỔI TÀI KHOẢN", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
