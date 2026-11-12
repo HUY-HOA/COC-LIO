@@ -124,6 +124,11 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -402,6 +407,8 @@ private suspend fun syncFirebaseUserProfile(
         "emailVerified" to user.isEmailVerified,
         "providerId" to "google.com",
         "dataSharingConsent" to true,
+        "activityDataConsentVersion" to 2L,
+        "activityConsentAt" to FieldValue.serverTimestamp(),
         "updatedAt" to FieldValue.serverTimestamp()
     )
     if (!existing.exists()) {
@@ -428,7 +435,23 @@ data class AdminGoogleAccount(
     val signInCount: Long,
     val createdAt: Long,
     val lastSignInAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val isAdmin: Boolean = false,
+    val isOnline: Boolean = false,
+    val lastActiveAt: Long = 0L,
+    val lastOpenedAt: Long = 0L,
+    val lastBackgroundAt: Long = 0L,
+    val appOpenCount: Long = 0L,
+    val lastSessionDurationSeconds: Long = 0L,
+    val totalForegroundSeconds: Long = 0L,
+    val lastIp: String = "",
+    val deviceManufacturer: String = "",
+    val deviceModel: String = "",
+    val androidVersion: String = "",
+    val sdkInt: Long = 0L,
+    val appVersionName: String = "",
+    val appVersionCode: Long = 0L,
+    val activityDataConsentVersion: Long = 0L
 )
 
 object FirebaseAccountAdministration {
@@ -456,7 +479,7 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
     }
 
-    suspend fun loadAccounts(): List<AdminGoogleAccount> {
+    suspend fun loadAccounts(context: Context): List<AdminGoogleAccount> {
         FirebaseFunctions.getInstance("asia-southeast1")
             .getHttpsCallable("adminSyncSharedAccounts")
             .call()
@@ -466,10 +489,13 @@ object FirebaseAccountAdministration {
             .whereEqualTo("dataSharingConsent", true)
             .get()
             .awaitFirebaseResult()
-        return result.documents.map { document ->
+        val accounts = result.documents.map { document ->
+            val email = document.getString("email").orEmpty()
+            val lastActiveAt = document.getTimestamp("lastActiveAt")?.toDate()?.time ?: 0L
+            val lastBackgroundAt = document.getTimestamp("lastBackgroundAt")?.toDate()?.time ?: 0L
             AdminGoogleAccount(
                 uid = document.getString("uid") ?: document.id,
-                email = document.getString("email").orEmpty(),
+                email = email,
                 preferredName = document.getString("preferredName").orEmpty(),
                 displayName = document.getString("displayName").orEmpty(),
                 givenName = document.getString("givenName").orEmpty(),
@@ -480,9 +506,72 @@ object FirebaseAccountAdministration {
                 signInCount = document.getLong("signInCount") ?: 0L,
                 createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
                 lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
-                updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L
+                updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L,
+                isAdmin = isOwner(email),
+                isOnline = lastActiveAt > lastBackgroundAt &&
+                    lastActiveAt > 0L &&
+                    System.currentTimeMillis() - lastActiveAt <= 120_000L,
+                lastActiveAt = lastActiveAt,
+                lastOpenedAt = document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L,
+                lastBackgroundAt = lastBackgroundAt,
+                appOpenCount = document.getLong("appOpenCount") ?: 0L,
+                lastSessionDurationSeconds = document.getLong("lastSessionDurationSeconds") ?: 0L,
+                totalForegroundSeconds = document.getLong("totalForegroundSeconds") ?: 0L,
+                lastIp = document.getString("lastIp").orEmpty(),
+                deviceManufacturer = document.getString("deviceManufacturer").orEmpty(),
+                deviceModel = document.getString("deviceModel").orEmpty(),
+                androidVersion = document.getString("androidVersion").orEmpty(),
+                sdkInt = document.getLong("sdkInt") ?: 0L,
+                appVersionName = document.getString("appVersionName").orEmpty(),
+                appVersionCode = document.getLong("appVersionCode") ?: 0L,
+                activityDataConsentVersion = document.getLong("activityDataConsentVersion") ?: 0L
             )
-        }.sortedByDescending { it.lastSignInAt }
+        }.toMutableList()
+
+        val owner = FirebaseAuth.getInstance().currentUser
+            ?.takeIf { isOwner(it.email) }
+        if (owner != null && accounts.none { it.uid == owner.uid }) {
+            val packageInfo = runCatching {
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }.getOrNull()
+            val now = System.currentTimeMillis()
+            accounts.add(
+                AdminGoogleAccount(
+                    uid = owner.uid,
+                    email = owner.email.orEmpty(),
+                    preferredName = "Tài khoản quản lý",
+                    displayName = owner.displayName.orEmpty(),
+                    givenName = "",
+                    familyName = "",
+                    photoUrl = owner.photoUrl?.toString().orEmpty(),
+                    emailVerified = owner.isEmailVerified,
+                    providerId = owner.providerData.firstOrNull { it.providerId == "google.com" }?.providerId.orEmpty(),
+                    signInCount = 0L,
+                    createdAt = owner.metadata?.creationTimestamp ?: 0L,
+                    lastSignInAt = owner.metadata?.lastSignInTimestamp ?: 0L,
+                    updatedAt = owner.metadata?.lastSignInTimestamp ?: 0L,
+                    isAdmin = true,
+                    isOnline = true,
+                    lastActiveAt = now,
+                    lastOpenedAt = now,
+                    deviceManufacturer = Build.MANUFACTURER.orEmpty(),
+                    deviceModel = Build.MODEL.orEmpty(),
+                    androidVersion = Build.VERSION.RELEASE.orEmpty(),
+                    sdkInt = Build.VERSION.SDK_INT.toLong(),
+                    appVersionName = packageInfo?.versionName.orEmpty(),
+                    appVersionCode = if (Build.VERSION.SDK_INT >= 28) {
+                        packageInfo?.longVersionCode ?: 0L
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageInfo?.versionCode?.toLong() ?: 0L
+                    }
+                )
+            )
+        }
+        return accounts.sortedWith(
+            compareByDescending<AdminGoogleAccount> { it.isAdmin }
+                .thenByDescending { it.lastSignInAt }
+        )
     }
 
     suspend fun deleteAccount(uid: String) {
@@ -491,6 +580,85 @@ object FirebaseAccountAdministration {
             .getHttpsCallable("adminDeleteUser")
             .call(mapOf("uid" to uid))
             .awaitFirebaseResult()
+    }
+}
+
+object AccountActivityTracker {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var heartbeatJob: Job? = null
+    @Volatile private var sessionStartedAt = 0L
+
+    fun start(context: Context) {
+        if (heartbeatJob?.isActive == true) return
+        heartbeatJob = scope.launch {
+            val user = FirebaseAuth.getInstance().currentUser ?: return@launch
+            if (!hasConsent(user.uid)) return@launch
+            sessionStartedAt = System.currentTimeMillis()
+            record(context.applicationContext, "open", 0L)
+            while (isActive) {
+                delay(45_000L)
+                if (!hasConsent(user.uid)) break
+                record(context.applicationContext, "heartbeat", 0L)
+            }
+        }
+    }
+
+    fun stop(context: Context) {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+        val duration = if (sessionStartedAt > 0L) {
+            ((System.currentTimeMillis() - sessionStartedAt) / 1000L).coerceAtLeast(0L)
+        } else {
+            0L
+        }
+        sessionStartedAt = 0L
+        scope.launch {
+            val user = FirebaseAuth.getInstance().currentUser ?: return@launch
+            if (hasConsent(user.uid)) {
+                record(context.applicationContext, "background", duration)
+            }
+        }
+    }
+
+    private suspend fun hasConsent(uid: String): Boolean {
+        return runCatching {
+            val profile = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .get()
+                .awaitFirebaseResult()
+            profile.exists() &&
+                profile.getBoolean("dataSharingConsent") == true &&
+                profile.getLong("activityDataConsentVersion") == 2L
+        }.getOrDefault(false)
+    }
+
+    private suspend fun record(context: Context, event: String, durationSeconds: Long) {
+        runCatching {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val versionCode = if (Build.VERSION.SDK_INT >= 28) {
+                packageInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode.toLong()
+            }
+            val payload = hashMapOf<String, Any>(
+                "event" to event,
+                "deviceManufacturer" to Build.MANUFACTURER.orEmpty(),
+                "deviceModel" to Build.MODEL.orEmpty(),
+                "androidVersion" to Build.VERSION.RELEASE.orEmpty(),
+                "sdkInt" to Build.VERSION.SDK_INT.toLong(),
+                "appVersionName" to packageInfo.versionName.orEmpty(),
+                "appVersionCode" to versionCode
+            )
+            if (durationSeconds > 0L) {
+                payload["sessionDurationSeconds"] = durationSeconds
+            }
+            FirebaseFunctions.getInstance("asia-southeast1")
+                .getHttpsCallable("recordAccountActivity")
+                .call(payload)
+                .awaitFirebaseResult()
+        }
     }
 }
 
@@ -1422,6 +1590,7 @@ private fun formatAdminAccountTime(timestamp: Long): String =
 
 @Composable
 private fun AdminAccountsPanel(onClose: () -> Unit) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var accounts by remember { mutableStateOf<List<AdminGoogleAccount>>(emptyList()) }
     var expandedAccounts by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -1435,7 +1604,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             loading = true
             errorMessage = null
             try {
-                accounts = FirebaseAccountAdministration.loadAccounts()
+                accounts = FirebaseAccountAdministration.loadAccounts(context)
             } catch (error: Exception) {
                 errorMessage = error.message ?: "Không thể tải danh sách tài khoản."
             } finally {
@@ -1470,7 +1639,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 FirebaseAccountAdministration.deleteAccount(account.uid)
                                 pendingDelete = null
                                 expandedAccounts = expandedAccounts - account.uid
-                                accounts = FirebaseAccountAdministration.loadAccounts()
+                                accounts = FirebaseAccountAdministration.loadAccounts(context)
                             } catch (error: Exception) {
                                 errorMessage = error.message ?: "Không thể xóa tài khoản Firebase."
                             } finally {
@@ -1555,6 +1724,12 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             Text(account.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                             Text(
+                                if (account.isOnline) "● ĐANG ONLINE" else "● OFFLINE",
+                                color = if (account.isOnline) Color(0xFF35D6A3) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
                                 "Đăng nhập ${account.signInCount} lần · ${formatAdminAccountTime(account.lastSignInAt)}",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 8.sp
@@ -1593,16 +1768,43 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                     }
                     if (expanded) {
                         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            ProfileDataRow("Loại tài khoản", if (account.isAdmin) "QUẢN LÝ / CHỦ SỞ HỮU" else "Người dùng")
                             ProfileDataRow("Tên người dùng đặt", account.preferredName)
                             ProfileDataRow("Tên Google", account.displayName)
                             ProfileDataRow("Tên", account.givenName)
                             ProfileDataRow("Họ", account.familyName)
                             ProfileDataRow("Đồng bộ hồ sơ", "Đã đồng ý chia sẻ với quản lý")
+                            ProfileDataRow(
+                                "Quyền theo dõi hoạt động",
+                                if (account.activityDataConsentVersion >= 2L) "Đã đồng ý chia sẻ IP, thiết bị và hoạt động"
+                                else "Chưa đồng ý ghi nhận IP, thiết bị và hoạt động"
+                            )
                             ProfileDataRow("Ảnh đại diện", account.photoUrl)
                             ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
                             ProfileDataRow("Nhà cung cấp", account.providerId)
-                            ProfileDataRow("Số lần đăng nhập", account.signInCount.toString())
+                            ProfileDataRow("Số lần đăng nhập Google", account.signInCount.toString())
                             ProfileDataRow("Đăng nhập gần nhất", formatAdminAccountTime(account.lastSignInAt))
+                            ProfileDataRow("Lần mở COC-LIO gần nhất", formatAdminAccountTime(account.lastOpenedAt))
+                            ProfileDataRow("Hoạt động gần nhất", formatAdminAccountTime(account.lastActiveAt))
+                            ProfileDataRow("Lần chuyển ứng dụng xuống nền", formatAdminAccountTime(account.lastBackgroundAt))
+                            ProfileDataRow("Số phiên mở COC-LIO", account.appOpenCount.toString())
+                            ProfileDataRow(
+                                "Thời lượng phiên gần nhất",
+                                if (account.lastSessionDurationSeconds > 0L) formatDuration(account.lastSessionDurationSeconds) else "Chưa ghi nhận"
+                            )
+                            ProfileDataRow(
+                                "Tổng thời gian hoạt động",
+                                if (account.totalForegroundSeconds > 0L) formatDuration(account.totalForegroundSeconds) else "Chưa ghi nhận"
+                            )
+                            ProfileDataRow("IP gần nhất", account.lastIp.ifBlank { "Chưa ghi nhận hoặc chưa được đồng ý" })
+                            ProfileDataRow(
+                                "Thiết bị",
+                                listOf(account.deviceManufacturer, account.deviceModel).filter { it.isNotBlank() }.joinToString(" ").ifBlank { "Chưa ghi nhận" }
+                            )
+                            ProfileDataRow("Android", account.androidVersion.ifBlank { "Chưa ghi nhận" })
+                            ProfileDataRow("API Android", if (account.sdkInt > 0L) account.sdkInt.toString() else "Chưa ghi nhận")
+                            ProfileDataRow("Phiên bản COC-LIO", account.appVersionName.ifBlank { "Chưa ghi nhận" })
+                            ProfileDataRow("Mã phiên bản ứng dụng", if (account.appVersionCode > 0L) account.appVersionCode.toString() else "Chưa ghi nhận")
                             ProfileDataRow("Tạo hồ sơ", formatAdminAccountTime(account.createdAt))
                             ProfileDataRow("Cập nhật hồ sơ", formatAdminAccountTime(account.updatedAt))
                             ProfileDataRow("Firebase UID", account.uid)
