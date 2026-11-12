@@ -808,10 +808,18 @@ private fun CocLioApp(
                                         pendingPreferredName = googleAccount.displayName.orEmpty()
                                         pendingGoogleAccount = googleAccount
                                     } else {
-                                        AccountProfileStore.setActive(context, googleAccount.email)
-                                        activeProfile = googleAccount.email
-                                        selectedTab = 0
-                                        snackbar.showSnackbar("Đã chuyển sang hồ sơ " + savedName)
+                                        val sharingChoice = runCatching {
+                                            FirebaseAccountAdministration.getDataSharingConsent()
+                                        }.getOrNull()
+                                        if (sharingChoice == null) {
+                                            pendingPreferredName = savedName
+                                            pendingGoogleAccount = googleAccount
+                                        } else {
+                                            AccountProfileStore.setActive(context, googleAccount.email)
+                                            activeProfile = googleAccount.email
+                                            selectedTab = 0
+                                            snackbar.showSnackbar("Đã chuyển sang hồ sơ " + savedName)
+                                        }
                                     }
                                 } catch (error: Exception) {
                                     googleAuthError = error.message
