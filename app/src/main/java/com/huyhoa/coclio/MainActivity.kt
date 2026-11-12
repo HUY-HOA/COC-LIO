@@ -490,16 +490,6 @@ private fun CocLioApp(
                 android.util.Log.w("COC-LIO", "Không thể làm mới hồ sơ Google trên Firestore.", it)
             }
         }
-        if (activeProfile != "local" && isGoogleSignedIn && pendingGoogleAccount == null) {
-            val sharingChoice = runCatching {
-                FirebaseAccountAdministration.getDataSharingConsent(activeProfile)
-            }.getOrNull()
-            if (sharingChoice == null) {
-                pendingGoogleAccount = AccountProfileStore.googleData(context, activeProfile)
-                    ?: GoogleAccountData(activeProfile, null, null, null, null)
-                pendingPreferredName = AccountProfileStore.preferredName(context, activeProfile).orEmpty()
-            }
-        }
         UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
     }
 
@@ -810,18 +800,10 @@ private fun CocLioApp(
                                         pendingPreferredName = googleAccount.displayName.orEmpty()
                                         pendingGoogleAccount = googleAccount
                                     } else {
-                                        val sharingChoice = runCatching {
-                                            FirebaseAccountAdministration.getDataSharingConsent(googleAccount.email)
-                                        }.getOrNull()
-                                        if (sharingChoice == null) {
-                                            pendingPreferredName = savedName
-                                            pendingGoogleAccount = googleAccount
-                                        } else {
-                                            AccountProfileStore.setActive(context, googleAccount.email)
-                                            activeProfile = googleAccount.email
-                                            selectedTab = 0
-                                            snackbar.showSnackbar("Đã chuyển sang hồ sơ " + savedName)
-                                        }
+                                        AccountProfileStore.setActive(context, googleAccount.email)
+                                        activeProfile = googleAccount.email
+                                        selectedTab = 0
+                                        snackbar.showSnackbar("Đã chuyển sang hồ sơ " + savedName)
                                     }
                                 } catch (error: Exception) {
                                     googleAuthError = error.message
@@ -898,7 +880,7 @@ private fun CocLioApp(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        "Thông tin cơ bản như email, tên Google và ảnh đại diện vẫn được dùng cho tài khoản. Tên và họ bổ sung từ Google chỉ được lưu vào hồ sơ quản lý nếu bạn đồng ý. Bạn có thể từ chối và vẫn đăng nhập, sử dụng ứng dụng bình thường.",
+                        "Khi đăng nhập Google, COC-LIO tự động đồng bộ thông tin hồ sơ được Google cung cấp như email, tên, ảnh đại diện và các thông tin hồ sơ liên quan để quản lý tài khoản. Bạn có thể xem nội dung và mục đích sử dụng trong chính sách quyền riêng tư của ứng dụng.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp,
                         lineHeight = 16.sp
@@ -914,48 +896,21 @@ private fun CocLioApp(
                 }
             },
             confirmButton = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Button(
-                        enabled = pendingPreferredName.trim().isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            val name = pendingPreferredName.trim()
-                            scope.launch {
-                                runCatching {
-                                    FirebaseAccountAdministration.saveDataSharingConsent(googleAccount, true)
-                                }.onFailure {
-                                    android.util.Log.w("COC-LIO", "Không thể lưu lựa chọn chia sẻ dữ liệu.", it)
-                                }
-                                AccountProfileStore.setPreferredName(context, googleAccount.email, name)
-                                AccountProfileStore.setActive(context, googleAccount.email)
-                                activeProfile = googleAccount.email
-                                selectedTab = 0
-                                pendingGoogleAccount = null
-                                snackbar.showSnackbar("Đã đăng nhập với tên " + name)
-                            }
+                Button(
+                    enabled = pendingPreferredName.trim().isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        val name = pendingPreferredName.trim()
+                        scope.launch {
+                            AccountProfileStore.setPreferredName(context, googleAccount.email, name)
+                            AccountProfileStore.setActive(context, googleAccount.email)
+                            activeProfile = googleAccount.email
+                            selectedTab = 0
+                            pendingGoogleAccount = null
+                            snackbar.showSnackbar("Đã đăng nhập với tên " + name)
                         }
-                    ) { Text("ĐỒNG Ý CHIA SẺ") }
-                    OutlinedButton(
-                        enabled = pendingPreferredName.trim().isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            val name = pendingPreferredName.trim()
-                            scope.launch {
-                                runCatching {
-                                    FirebaseAccountAdministration.saveDataSharingConsent(googleAccount, false)
-                                }.onFailure {
-                                    android.util.Log.w("COC-LIO", "Không thể lưu lựa chọn chia sẻ dữ liệu.", it)
-                                }
-                                AccountProfileStore.setPreferredName(context, googleAccount.email, name)
-                                AccountProfileStore.setActive(context, googleAccount.email)
-                                activeProfile = googleAccount.email
-                                selectedTab = 0
-                                pendingGoogleAccount = null
-                                snackbar.showSnackbar("Đã đăng nhập, không chia sẻ dữ liệu bổ sung.")
-                            }
-                        }
-                    ) { Text("TIẾP TỤC KHÔNG CHIA SẺ") }
-                }
+                    }
+                ) { Text("TIẾP TỤC") }
             },
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
