@@ -766,6 +766,7 @@ private fun CocLioApp(
 
     fun leaveGoogleAccount(message: String) {
         scope.launch {
+            AccountActivityTracker.stopAndWait(context)
             FirebaseTelemetry.logSignOut(context)
             GoogleAccountAuth.signOut(context)
             AccountProfileStore.setActive(context, null)
@@ -779,6 +780,7 @@ private fun CocLioApp(
     fun signInWithGoogle() {
         scope.launch {
             try {
+                AccountActivityTracker.stopAndWait(context)
                 val googleAccount = GoogleAccountAuth.signIn(context)
                 AccountProfileStore.saveGoogleData(context, googleAccount)
                 pendingGoogleAccount = googleAccount
