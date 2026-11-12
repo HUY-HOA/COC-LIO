@@ -490,13 +490,15 @@ private fun CocLioApp(
                 android.util.Log.w("COC-LIO", "Không thể làm mới hồ sơ Google trên Firestore.", it)
             }
         }
-        if (activeProfile != "local" &&
-            AccountProfileStore.preferredName(context, activeProfile).isNullOrBlank() &&
-            pendingGoogleAccount == null
-        ) {
-            pendingGoogleAccount = AccountProfileStore.googleData(context, activeProfile)
-                ?: GoogleAccountData(activeProfile, null, null, null, null)
-            pendingPreferredName = ""
+        if (activeProfile != "local" && isGoogleSignedIn && pendingGoogleAccount == null) {
+            val sharingChoice = runCatching {
+                FirebaseAccountAdministration.getDataSharingConsent(activeProfile)
+            }.getOrNull()
+            if (sharingChoice == null) {
+                pendingGoogleAccount = AccountProfileStore.googleData(context, activeProfile)
+                    ?: GoogleAccountData(activeProfile, null, null, null, null)
+                pendingPreferredName = AccountProfileStore.preferredName(context, activeProfile).orEmpty()
+            }
         }
         UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
     }
@@ -809,7 +811,7 @@ private fun CocLioApp(
                                         pendingGoogleAccount = googleAccount
                                     } else {
                                         val sharingChoice = runCatching {
-                                            FirebaseAccountAdministration.getDataSharingConsent()
+                                            FirebaseAccountAdministration.getDataSharingConsent(googleAccount.email)
                                         }.getOrNull()
                                         if (sharingChoice == null) {
                                             pendingPreferredName = savedName
