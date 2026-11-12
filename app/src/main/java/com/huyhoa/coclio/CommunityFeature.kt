@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.android.gms.tasks.Task
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -70,6 +71,7 @@ import com.google.firebase.storage.StorageMetadata
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -105,6 +107,92 @@ private data class CommunityRelease(
     val fileSize: Long,
     val createdAt: Long
 )
+
+private data class CommunityArchiveItem(
+    val id: String,
+    val category: String,
+    val displayName: String,
+    val text: String,
+    val fileName: String,
+    val storagePath: String,
+    val downloadUrl: String,
+    val fileSize: Long,
+    val createdAt: Long,
+    val archivedAt: Long,
+    val versionName: String,
+    val notes: String
+)
+
+private fun communityArchiveCollection(category: String): String = when (category) {
+    "image" -> "community_deleted_images"
+    "file" -> "community_deleted_files"
+    "apk" -> "app_update_archive"
+    else -> "community_deleted_messages"
+}
+
+private fun communityArchiveExpiry(archivedAt: Long, value: Int, unit: String): Timestamp {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = archivedAt
+        add(if (unit == "months") Calendar.MONTH else Calendar.DAY_OF_YEAR, value)
+    }
+    return Timestamp(calendar.time)
+}
+
+private suspend fun cleanupCommunityArchive(): Int {
+    val firestore = FirebaseFirestore.getInstance()
+    val collections = listOf(
+        "community_deleted_messages",
+        "community_deleted_images",
+        "community_deleted_files",
+        "app_update_archive"
+    )
+    var removed = 0
+    for (collectionName in collections) {
+        val expired = firestore.collection(collectionName)
+            .whereLessThanOrEqualTo("expiresAt", Timestamp.now())
+            .limit(100)
+            .get()
+            .awaitCommunityResult()
+        for (document in expired.documents) {
+            val path = document.getString("storagePath").orEmpty()
+            if (path.isNotBlank()) {
+                runCatching {
+                    FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult()
+                }
+            }
+            document.reference.delete().awaitCommunityResult()
+            removed++
+        }
+    }
+    return removed
+}
+
+private suspend fun updateCommunityArchiveRetention(keepForever: Boolean, value: Int, unit: String) {
+    val firestore = FirebaseFirestore.getInstance()
+    val collections = listOf(
+        "community_deleted_messages",
+        "community_deleted_images",
+        "community_deleted_files",
+        "app_update_archive"
+    )
+    for (collectionName in collections) {
+        val snapshot = firestore.collection(collectionName).get().awaitCommunityResult()
+        for (chunk in snapshot.documents.chunked(400)) {
+            val batch = firestore.batch()
+            for (document in chunk) {
+                val expiry: Any = if (keepForever) {
+                    FieldValue.delete()
+                } else {
+                    val archivedAt = document.getTimestamp("archivedAt")?.toDate()?.time
+                        ?: System.currentTimeMillis()
+                    communityArchiveExpiry(archivedAt, value, unit)
+                }
+                batch.update(document.reference, "expiresAt", expiry)
+            }
+            if (chunk.isNotEmpty()) batch.commit().awaitCommunityResult()
+        }
+    }
+}
 
 private suspend fun <T> Task<T>.awaitCommunityResult(): T =
     suspendCancellableCoroutine { continuation ->
@@ -214,6 +302,14 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
     var selectedApkUri by remember { mutableStateOf<Uri?>(null) }
     var deleteMessage by remember { mutableStateOf<CommunityMessage?>(null) }
     var deleteRelease by remember { mutableStateOf<CommunityRelease?>(null) }
+    var deleteArchiveItem by remember { mutableStateOf<CommunityArchiveItem?>(null) }
+    var archiveItems by remember { mutableStateOf<List<CommunityArchiveItem>>(emptyList()) }
+    var loadingArchive by remember { mutableStateOf(false) }
+    var archiveError by remember { mutableStateOf<String?>(null) }
+    var archiveCategory by remember { mutableStateOf("text") }
+    var archiveKeepForever by remember { mutableStateOf(true) }
+    var archiveRetentionValue by remember { mutableStateOf("30") }
+    var archiveRetentionUnit by remember { mutableStateOf("days") }
     val messageListState = rememberLazyListState()
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
