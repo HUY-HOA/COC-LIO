@@ -67,6 +67,7 @@ import androidx.compose.material3.Icon
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.google.firebase.auth.FirebaseAuth
 import com.huyhoa.coclio.data.CocAssets
 import com.huyhoa.coclio.data.CocAssetCache
 import com.huyhoa.coclio.data.CocAssetPrefetchWorker
@@ -104,6 +105,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -343,6 +345,25 @@ private fun CocLioApp(
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     var activeProfile by remember { mutableStateOf(AccountProfileStore.active(context)) }
+    var firebaseGoogleEmail by remember {
+        mutableStateOf(
+            FirebaseAuth.getInstance().currentUser
+                ?.takeIf { user -> user.providerData.any { it.providerId == "google.com" } }
+                ?.email
+        )
+    }
+    DisposableEffect(Unit) {
+        val auth = FirebaseAuth.getInstance()
+        val listener = FirebaseAuth.AuthStateListener { state ->
+            firebaseGoogleEmail = state.currentUser
+                ?.takeIf { user -> user.providerData.any { it.providerId == "google.com" } }
+                ?.email
+        }
+        auth.addAuthStateListener(listener)
+        onDispose { auth.removeAuthStateListener(listener) }
+    }
+    val isGoogleSignedIn = activeProfile != "local" &&
+        firebaseGoogleEmail?.equals(activeProfile, ignoreCase = true) == true
     val initialHistory = remember(activeProfile) { VillageStore.loadAll(context, activeProfile) }
 
     var history by remember { mutableStateOf(initialHistory) }
@@ -492,7 +513,31 @@ private fun CocLioApp(
         }
     }
 
+    LaunchedEffect(isGoogleSignedIn) {
+        if (!isGoogleSignedIn) {
+            showImportDialog = false
+            importError = null
+        }
+    }
+
+    fun requestImportJson() {
+        if (isGoogleSignedIn) {
+            importError = null
+            showImportDialog = true
+        } else {
+            showImportDialog = false
+            selectedTab = 5
+            scope.launch {
+                snackbar.showSnackbar("Bạn cần đăng nhập Google trước khi nhập JSON và xem dữ liệu làng.")
+            }
+        }
+    }
+
     fun importJson(raw: String, nameOverride: String? = null) {
+        if (!isGoogleSignedIn) {
+            requestImportJson()
+            return
+        }
         try {
             val parsedFromJson = VillageParser.parse(raw)
             val customName = nameOverride?.trim()?.takeIf { it.isNotBlank() }
@@ -574,11 +619,8 @@ private fun CocLioApp(
                     Text("THEO DÕI TIẾN TRÌNH", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, letterSpacing = 1.sp)
                 }
                 NeonButton(
-                    text = "＋ NHẬP JSON",
-                    onClick = {
-                        importError = null
-                        showImportDialog = true
-                    }
+                    text = if (isGoogleSignedIn) "＋ NHẬP JSON" else "ĐĂNG NHẬP",
+                    onClick = { requestImportJson() }
                 )
             }
         },
@@ -642,23 +684,26 @@ private fun CocLioApp(
                     .fillMaxSize()
             ) {
             Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
-                when (page) {
+                if (page in 0..3 && !isGoogleSignedIn) {
+                    GoogleSignInRequiredScreen(onOpenSettings = { selectedTab = 5 })
+                } else {
+                    when (page) {
                     0 -> current?.let {
                         OverviewScreen(snapshot = it)
                     } ?: EmptyWelcome(
-                        onImport = { importError = null; showImportDialog = true },
+                        onImport = { requestImportJson() },
                         onOpenGame = { openClashOfClans(context) }
                     )
                     1 -> current?.let {
                         CategoryScreen(snapshot = it, tab = "buildings")
                     } ?: EmptyWelcome(
-                        onImport = { importError = null; showImportDialog = true },
+                        onImport = { requestImportJson() },
                         onOpenGame = { openClashOfClans(context) }
                     )
                     2 -> current?.let {
                         CategoryScreen(snapshot = it, tab = "army")
                     } ?: EmptyWelcome(
-                        onImport = { importError = null; showImportDialog = true },
+                        onImport = { requestImportJson() },
                         onOpenGame = { openClashOfClans(context) }
                     )
                     3 -> HistoryScreen(
@@ -707,7 +752,10 @@ private fun CocLioApp(
                             }
                         }
                     )
-                    4 -> CommunityScreen(onOpenSettings = { selectedTab = 5 })
+                    4 -> CommunityScreen(
+                        isGoogleSignedIn = isGoogleSignedIn,
+                        onOpenSettings = { selectedTab = 5 }
+                    )
                     5 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
                         isAdmin = FirebaseAccountAdministration.isOwner(activeProfile),
@@ -818,6 +866,7 @@ private fun CocLioApp(
                             AppWidgetUpdater.updateAll(context)
                         }
                     )
+                    }
                 }
 
             }
@@ -936,7 +985,7 @@ private fun CocLioApp(
         )
     }
 
-    if (showImportDialog) {
+    if (showImportDialog && isGoogleSignedIn) {
         CompositionLocalProvider(
             LocalDensity provides Density(baseDensity.density * appDisplayScale, baseDensity.fontScale * appFontScale)
         ) {
@@ -956,6 +1005,51 @@ private fun CocLioApp(
     }
 }
 
+}
+
+@Composable
+private fun GoogleSignInRequiredScreen(onOpenSettings: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(11.dp)
+            ) {
+                Text("🔐", fontSize = 42.sp)
+                Text(
+                    "ĐĂNG NHẬP GOOGLE ĐỂ SỬ DỤNG",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Text(
+                    "Bạn cần đăng nhập Google để nhập JSON, xem dữ liệu làng, công trình, quân đội và lịch sử.",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 12.sp,
+                    lineHeight = 18.sp
+                )
+                Button(
+                    onClick = onOpenSettings,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("MỞ CÀI ĐẶT ĐỂ ĐĂNG NHẬP")
+                }
+                Text(
+                    "Dữ liệu đã lưu trên điện thoại vẫn được giữ nguyên.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp
+                )
+            }
+        }
+    }
 }
 
 @Composable
