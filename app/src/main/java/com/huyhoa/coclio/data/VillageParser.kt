@@ -565,13 +565,13 @@ object CocNames {
     fun name(id: Int, section: String): String {
         if (id < 0) return "Không xác định"
         return names[id] ?: when {
-            section == "skins" || section == "skins2" -> "Trang phục #$id"
-            section == "sceneries" || section == "sceneries2" -> "Phong cảnh #$id"
-            section == "decos" || section == "decos2" -> "Đồ trang trí #$id"
-            section == "obstacles" || section == "obstacles2" -> "Chướng ngại vật #$id"
-            section == "house_parts" -> "Bộ phận nhà #$id"
-            section.endsWith("2") -> "Mục căn cứ thợ xây #$id"
-            else -> "Mục #$id"
+            section == "skins" || section == "skins2" -> "Trang phục"
+            section == "sceneries" || section == "sceneries2" -> "Phong cảnh"
+            section == "decos" || section == "decos2" -> "Đồ trang trí"
+            section == "obstacles" || section == "obstacles2" -> "Chướng ngại vật"
+            section == "house_parts" -> "Bộ phận nhà"
+            section.endsWith("2") -> "Mục căn cứ thợ xây"
+            else -> "Mục"
         }
     }
 }
