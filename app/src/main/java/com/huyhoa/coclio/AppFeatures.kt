@@ -1420,6 +1420,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     var showAdminAccounts by remember(accountEmail, isAdmin) { mutableStateOf(false) }
+    var selectedSizeSetting by remember { mutableStateOf(0) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1538,57 +1539,104 @@ fun SettingsScreen(
             }
         }
 
-        FeaturePanel {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("KÍCH THƯỚC HIỂN THỊ", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("MỨC $displaySizeLevel/5 · ${(AppPreferences.displaySizeScale(displaySizeLevel) * 100f).roundToInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Black)
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                (1..5).forEach { level ->
-                    FilterChip(
-                        selected = displaySizeLevel == level,
-                        onClick = { onDisplaySizeLevelChanged(level) },
-                        modifier = Modifier.weight(1f).height(30.dp),
-                        label = { Text(level.toString(), fontSize = 9.sp) }
-                    )
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("RẤT GỌN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                Spacer(Modifier.weight(1f))
-                Text("LỚN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-            }
-            Text("Điều chỉnh kích thước nút và khoảng cách giao diện. Mức 3 (96%) là mặc định.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-        }
-
         val currentFontLevel = AppPreferences.textScaleLevel(textScale)
+        val activeSizeLevel = if (selectedSizeSetting == 0) displaySizeLevel else currentFontLevel
+        val activeSizePercent = if (selectedSizeSetting == 0) {
+            (AppPreferences.displaySizeScale(displaySizeLevel) * 100f).roundToInt()
+        } else {
+            (AppPreferences.textScaleForLevel(currentFontLevel) * 100f).roundToInt()
+        }
         FeaturePanel {
+            Text("KÍCH THƯỚC GIAO DIỆN & CỠ CHỮ", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = selectedSizeSetting == 0,
+                    onClick = { selectedSizeSetting = 0 },
+                    modifier = Modifier.weight(1f).heightIn(min = 42.dp),
+                    label = {
+                        Text(
+                            "Kích thước giao diện",
+                            fontSize = 9.sp,
+                            lineHeight = 11.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            maxLines = 2
+                        )
+                    }
+                )
+                FilterChip(
+                    selected = selectedSizeSetting == 1,
+                    onClick = { selectedSizeSetting = 1 },
+                    modifier = Modifier.weight(1f).heightIn(min = 42.dp),
+                    label = {
+                        Text(
+                            "Cỡ chữ",
+                            fontSize = 9.sp,
+                            lineHeight = 11.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            maxLines = 2
+                        )
+                    }
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("MỨC $currentFontLevel/5 · ${(AppPreferences.textScaleForLevel(currentFontLevel) * 100f).roundToInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                Text(
+                    if (selectedSizeSetting == 0) "KÍCH THƯỚC GIAO DIỆN" else "CỠ CHỮ TOÀN ỨNG DỤNG",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    "MỨC $activeSizeLevel/5 · $activeSizePercent%",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 (1..5).forEach { level ->
                     FilterChip(
-                        selected = currentFontLevel == level,
-                        onClick = { onTextScaleChanged(AppPreferences.textScaleForLevel(level)) },
-                        modifier = Modifier.weight(1f).height(30.dp),
-                        label = { Text(level.toString(), fontSize = 9.sp) }
+                        selected = activeSizeLevel == level,
+                        onClick = {
+                            if (selectedSizeSetting == 0) {
+                                onDisplaySizeLevelChanged(level)
+                            } else {
+                                onTextScaleChanged(AppPreferences.textScaleForLevel(level))
+                            }
+                        },
+                        modifier = Modifier.weight(1f).heightIn(min = 38.dp),
+                        label = { Text(level.toString(), fontSize = 10.sp) }
                     )
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("NHỎ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Text(
+                    if (selectedSizeSetting == 0) "RẤT GỌN" else "NHỎ",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp
+                )
                 Spacer(Modifier.weight(1f))
-                Text("TO", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Text(
+                    if (selectedSizeSetting == 0) "LỚN" else "TO",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp
+                )
             }
-            Text("Điều chỉnh cỡ chữ toàn ứng dụng. Mức 3 (100%) là mặc định.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text(
+                if (selectedSizeSetting == 0)
+                    "Điều chỉnh kích thước tổng thể của giao diện, nút và khoảng cách. Mức 3 (96%) là mặc định."
+                else
+                    "Điều chỉnh cỡ chữ trong toàn ứng dụng. Mức 3 (100%) là mặc định.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                lineHeight = 14.sp
+            )
         }
         FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
