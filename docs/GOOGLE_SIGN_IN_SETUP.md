@@ -2,7 +2,7 @@
 
 ## Google Sign-In và cho phép mọi tài khoản
 
-COC-LIO dùng Credential Manager để đăng nhập bằng Google ID token. Mã ứng dụng hiện không giới hạn email theo danh sách cho phép; tài khoản Google khác có thể đăng nhập khi dự án OAuth được cấu hình cho người dùng bên ngoài.
+COC-LIO dùng Credential Manager để lấy Google ID token, sau đó dùng token đó đăng nhập Firebase Authentication bằng `GoogleAuthProvider`. Mã ứng dụng không giới hạn email theo danh sách cho phép; tài khoản Google khác có thể đăng nhập khi dự án OAuth được cấu hình cho người dùng bên ngoài.
 
 1. Mở [Google Cloud Console](https://console.cloud.google.com/) và chọn đúng dự án đang chứa hai OAuth Client của COC-LIO.
 2. Vào **Google Auth Platform → Audience**.
@@ -73,14 +73,15 @@ Tệp `firestore.rules` ở thư mục gốc đã được chuẩn bị để th
 - `admin/{document}`: chỉ chủ sở hữu được đọc và ghi.
 - Email chủ sở hữu được đối chiếu trong Security Rules, không dựa vào cờ admin lưu trong APK.
 
-**Quan trọng:** các quy tắc này mới nằm trong repository, chưa được triển khai lên Firebase. Bản APK hiện tại cũng chưa tích hợp Firebase Authentication/Cloud Firestore; phần Google Sign-In vẫn chỉ lưu hồ sơ cục bộ trên điện thoại. Vì vậy, chưa có màn hình quản trị hoặc hệ thống cấp phép trực tuyến hoạt động. Không được coi việc nhận diện email trong giao diện là quyền admin an toàn.
+**Trạng thái mã nguồn:** Firebase Authentication đã được tích hợp. Sau khi đăng nhập, ứng dụng thử tạo hoặc cập nhật `users/{uid}` trong Firestore với UID, email, tên hiển thị và ảnh đại diện. Nếu Firestore chưa được tạo hoặc Security Rules chưa Publish, quá trình đăng nhập Firebase vẫn thành công nhưng thao tác ghi hồ sơ đám mây sẽ thất bại và được ghi log. Các quy tắc này hiện vẫn chỉ nằm trong repository, chưa được triển khai lên Firebase. Chưa có màn hình quản trị hoặc hệ thống cấp phép trực tuyến hoạt động. Không được coi việc nhận diện email trong giao diện là quyền admin an toàn.
 
 ### Việc cần có để bật quản lý trực tuyến
 
-1. Tạo/chọn dự án Firebase và đăng ký Android app với package `com.huyhoa.coclio`.
-2. Bật **Authentication → Google** và liên kết đúng dự án Google Cloud/OAuth đang dùng.
-3. Tạo Cloud Firestore, triển khai nội dung tệp `firestore.rules` trong tab **Rules**, sau đó Publish.
-4. Cung cấp tệp cấu hình Firebase Android `google-services.json` để tích hợp Firebase Authentication, Firestore và màn hình quản trị vào APK.
+1. Dự án Firebase `coc-lio-73de9` đã có Android app với package `com.huyhoa.coclio`; tệp `app/google-services.json` đã nằm trong repository.
+2. **Authentication → Google** đã được bật. Web OAuth Client ID được truyền qua GitHub Secret `GOOGLE_WEB_CLIENT_ID`.
+3. Tạo cơ sở dữ liệu **Cloud Firestore** ở chế độ Native nếu chưa có. Trong tab **Rules**, dán nội dung `firestore.rules` từ repository rồi nhấn **Publish**.
+4. Chạy thử đăng nhập Google trong APK. Sau khi đăng nhập, kiểm tra Authentication → Users để xác nhận tài khoản đã được tạo và Firestore → `users` để kiểm tra hồ sơ (chỉ xuất hiện khi Firestore đã tạo và Rules đã Publish).
+5. Muốn đồng bộ lịch sử JSON giữa nhiều điện thoại, quản lý giấy phép hoặc có trang Admin, cần triển khai thêm cấu trúc dữ liệu, đồng bộ hai chiều và giao diện quản trị; các phần này chưa được bật trong APK hiện tại.
 
 Tài liệu Firebase:
 - https://firebase.google.com/docs/auth/android/google-signin
@@ -88,6 +89,14 @@ Tài liệu Firebase:
 
 Không đưa khóa Admin SDK, service account private key hoặc bí mật quản trị vào APK hay GitHub repository.
 
-## Giới hạn hiện tại
+## Các dịch vụ Firebase đã thêm vào mã nguồn
 
-Đăng nhập Google trong mã hiện tại mới chỉ đổi hồ sơ lưu cục bộ trên điện thoại; nó chưa kiểm tra giấy phép. Tệp Firestore Rules là bước chuẩn bị bảo mật, không tự tạo máy chủ hoặc tự bật chức năng quản trị. Cần hoàn tất cấu hình Firebase và tích hợp Firebase vào ứng dụng trước khi quyền chủ sở hữu và quản lý giấy phép hoạt động thực tế.
+- **Authentication:** đăng nhập Google bằng Firebase Auth; đăng xuất cũng kết thúc phiên Firebase.
+- **Firestore:** tạo/cập nhật hồ sơ cơ bản tại `users/{uid}` khi database và Rules đã sẵn sàng. Lịch sử làng, hồ sơ cục bộ và giấy phép chưa đồng bộ lên đám mây.
+- **Analytics:** ghi các sự kiện `login`, `logout` và `village_json_import`; không gửi email, Player Tag hoặc nội dung JSON vào Analytics.
+- **Crashlytics:** SDK và Gradle plugin đã được thêm để thu thập sự cố của bản phát hành.
+- **Performance Monitoring:** SDK và Gradle plugin đã được thêm để thu thập hiệu năng tự động.
+
+**Chưa triển khai:** Firebase Cloud Messaging cho thông báo từ máy chủ, đồng bộ lịch sử JSON nhiều thiết bị, hệ thống cấp phép/Admin và xuất BigQuery. BigQuery cần bật liên kết/xuất dữ liệu từ Google Analytics/Firebase Console; chỉ thêm SDK vào APK không tự bật tính năng này.
+
+Tệp `firestore.rules` không tự triển khai khi build APK. Cần tạo Firestore database và Publish Rules trong Firebase Console trước khi hồ sơ người dùng có thể được ghi lên đám mây. Không đưa khóa Admin SDK, service account private key hoặc bí mật quản trị vào APK hay GitHub repository.
