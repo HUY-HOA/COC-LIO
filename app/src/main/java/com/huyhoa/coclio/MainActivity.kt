@@ -351,6 +351,7 @@ private fun CocLioApp(
     var selectedTab by remember { mutableStateOf(0) }
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
+    var googleAuthError by remember { mutableStateOf<String?>(null) }
     var pendingGoogleAccount by remember { mutableStateOf<GoogleAccountData?>(null) }
     var pendingPreferredName by remember { mutableStateOf("") }
     var lastUsedAt by remember(activeProfile) {
@@ -704,10 +705,9 @@ private fun CocLioApp(
                                         snackbar.showSnackbar("Đã chuyển sang hồ sơ " + savedName)
                                     }
                                 } catch (error: Exception) {
-                                    val displayError = error.message
+                                    googleAuthError = error.message
                                         ?.takeIf { it.isNotBlank() }
                                         ?: "Không thể đăng nhập Google. Hãy kiểm tra kết nối mạng và cấu hình OAuth."
-                                    snackbar.showSnackbar(displayError)
                                 }
                             }
                         },
@@ -800,6 +800,47 @@ private fun CocLioApp(
                         scope.launch { snackbar.showSnackbar("Đã đăng nhập với tên " + name) }
                     }
                 ) { Text("XÁC NHẬN") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
+    googleAuthError?.let { details ->
+        AlertDialog(
+            onDismissRequest = { googleAuthError = null },
+            title = { Text("Không thể đăng nhập Google") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 320.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Chi tiết bên dưới giúp xác định chính xác cấu hình OAuth nào chưa khớp. Bạn có thể sao chép để gửi kiểm tra.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        details,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        clipboard.setText(androidx.compose.ui.text.AnnotatedString(details))
+                        googleAuthError = null
+                    }
+                ) { Text("SAO CHÉP CHẨN ĐOÁN") }
+            },
+            dismissButton = {
+                TextButton(onClick = { googleAuthError = null }) { Text("ĐÓNG") }
             },
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
