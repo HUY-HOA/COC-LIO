@@ -417,8 +417,9 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
     }
 
-    suspend fun getDataSharingConsent(): Boolean? {
+    suspend fun getDataSharingConsent(expectedEmail: String): Boolean? {
         val user = FirebaseAuth.getInstance().currentUser ?: return null
+        if (!user.email.equals(expectedEmail, ignoreCase = true)) return null
         val document = FirebaseFirestore.getInstance()
             .collection("users")
             .document(user.uid)
