@@ -45,6 +45,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -339,6 +340,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var releaseVersion by remember { mutableStateOf("") }
     var releaseNotes by remember { mutableStateOf("") }
+    var notifyUsersForRelease by remember { mutableStateOf(false) }
     var selectedApkName by remember { mutableStateOf<String?>(null) }
     var selectedApkUri by remember { mutableStateOf<Uri?>(null) }
     var deleteMessage by remember { mutableStateOf<CommunityMessage?>(null) }
@@ -1000,6 +1002,19 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text("THÔNG BÁO TỚI NGƯỜI DÙNG", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("Tắt mặc định. Chỉ gửi tới người đã bật nhận thông báo APK.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                            }
+                            Switch(
+                                checked = notifyUsersForRelease,
+                                onCheckedChange = { notifyUsersForRelease = it }
+                            )
+                        }
                         Button(
                             onClick = {
                                 val signedInUser = FirebaseAuth.getInstance().currentUser
@@ -1033,6 +1048,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                                                     "downloadUrl" to downloadUrl,
                                                     "fileSize" to size,
                                                     "createdBy" to signedInUser.uid,
+                                                    "notifyUsers" to notifyUsersForRelease,
                                                     "createdAt" to FieldValue.serverTimestamp()
                                                 )
                                             ).awaitCommunityResult()
@@ -1040,7 +1056,12 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                                             releaseNotes = ""
                                             selectedApkUri = null
                                             selectedApkName = null
-                                            statusMessage = "Đã đăng bản cập nhật. Thành viên có thể tải APK trong mục này."
+                                            statusMessage = if (notifyUsersForRelease) {
+                                                "Đã đăng APK và yêu cầu gửi thông báo tới người dùng đã bật nhận thông báo."
+                                            } else {
+                                                "Đã đăng APK. Không gửi thông báo tới người dùng."
+                                            }
+                                            notifyUsersForRelease = false
                                         } catch (error: Exception) {
                                             uploadedPath?.let { path ->
                                                 runCatching { FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult() }
