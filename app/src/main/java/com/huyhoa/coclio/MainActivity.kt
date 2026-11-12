@@ -68,6 +68,7 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.google.firebase.auth.FirebaseAuth
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.huyhoa.coclio.data.CocAssets
 import com.huyhoa.coclio.data.CocAssetCache
 import com.huyhoa.coclio.data.CocAssetPrefetchWorker
@@ -379,6 +380,7 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
+    var pendingGoogleAccount by remember { mutableStateOf<GoogleAccountData?>(null) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var lastUsedAt by remember(activeProfile) {
         mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
@@ -481,16 +483,6 @@ private fun CocLioApp(
         notificationStyle = AppPreferences.notificationStyle(context, activeProfile)
         AccountProfileStore.markLastUsed(context, activeProfile)
         lastUsedAt = AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L
-        if (activeProfile != "local") {
-            runCatching {
-                GoogleAccountAuth.syncCurrentProfile(context, activeProfile)
-                AccountProfileStore.preferredName(context, activeProfile)
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { FirebaseAccountAdministration.savePreferredName(it) }
-            }.onFailure {
-                android.util.Log.w("COC-LIO", "Không thể làm mới hồ sơ Google trên Firestore.", it)
-            }
-        }
         UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
     }
 
@@ -593,12 +585,9 @@ private fun CocLioApp(
         }
     }
 
-    fun signInWithGoogle() {
+    fun finishGoogleSignIn(googleAccount: GoogleAccountData, shareData: Boolean) {
         scope.launch {
             try {
-                val googleAccount = GoogleAccountAuth.signIn(context)
-                FirebaseTelemetry.logGoogleSignIn(context)
-                AccountProfileStore.saveGoogleData(context, googleAccount)
                 val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
                 val profileName = savedName?.takeIf { it.isNotBlank() }
                     ?: googleAccount.displayName?.takeIf { it.isNotBlank() }
@@ -606,15 +595,70 @@ private fun CocLioApp(
                 if (savedName.isNullOrBlank()) {
                     AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
                 }
+                if (shareData) {
+                    GoogleAccountAuth.shareProfile(googleAccount)
+                    FirebaseAccountAdministration.savePreferredName(profileName)
+                    FirebaseTelemetry.logGoogleSignIn(context)
+                } else {
+                    GoogleAccountAuth.removeSharedProfile()
+                }
                 AccountProfileStore.setActive(context, googleAccount.email)
                 activeProfile = googleAccount.email
                 selectedTab = 0
+                pendingGoogleAccount = null
                 googleAuthError = null
-                snackbar.showSnackbar("Đã đăng nhập với tên " + profileName)
+                snackbar.showSnackbar(
+                    if (shareData) "Đã đăng nhập và đồng ý chia sẻ hồ sơ với quản lý."
+                    else "Đã đăng nhập. Bạn không chia sẻ hồ sơ Google với quản lý."
+                )
             } catch (error: Exception) {
-                googleAuthError = error.message
-                    ?.takeIf { it.isNotBlank() }
-                    ?: "Không thể đăng nhập Google. Hãy kiểm tra kết nối mạng và cấu hình OAuth."
+                snackbar.showSnackbar(
+                    error.message?.takeIf { it.isNotBlank() }
+                        ?: "Không thể lưu lựa chọn chia sẻ dữ liệu. Hãy thử lại."
+                )
+            }
+        }
+    }
+
+    fun cancelPendingGoogleSignIn() {
+        scope.launch {
+            pendingGoogleAccount = null
+            GoogleAccountAuth.signOut(context)
+            AccountProfileStore.setActive(context, null)
+            activeProfile = "local"
+            selectedTab = 0
+            snackbar.showSnackbar("Bạn đã hủy đăng nhập Google.")
+        }
+    }
+
+    fun leaveGoogleAccount(message: String) {
+        scope.launch {
+            FirebaseTelemetry.logSignOut(context)
+            GoogleAccountAuth.signOut(context)
+            AccountProfileStore.setActive(context, null)
+            pendingGoogleAccount = null
+            activeProfile = "local"
+            selectedTab = 0
+            snackbar.showSnackbar(message)
+        }
+    }
+
+    fun signInWithGoogle() {
+        scope.launch {
+            try {
+                val googleAccount = GoogleAccountAuth.signIn(context)
+                AccountProfileStore.saveGoogleData(context, googleAccount)
+                pendingGoogleAccount = googleAccount
+                googleAuthError = null
+            } catch (error: Exception) {
+                if (error is GetCredentialCancellationException) {
+                    googleAuthError = null
+                    snackbar.showSnackbar("Bạn đã hủy đăng nhập Google.")
+                } else {
+                    googleAuthError = error.message
+                        ?.takeIf { it.isNotBlank() }
+                        ?: "Không thể đăng nhập Google. Hãy kiểm tra kết nối mạng và cấu hình OAuth."
+                }
             }
         }
     }
@@ -825,15 +869,11 @@ private fun CocLioApp(
                         notificationStyle = notificationStyle,
                         alarmDurationSeconds = alarmDurationSeconds,
                         onGoogleSignIn = { signInWithGoogle() },
+                        onGoogleSwitchAccount = {
+                            leaveGoogleAccount("Đã đăng xuất tài khoản hiện tại. Hãy chọn tài khoản Google khác trên màn hình đăng nhập.")
+                        },
                         onGoogleSignOut = {
-                            scope.launch {
-                                FirebaseTelemetry.logSignOut(context)
-                                GoogleAccountAuth.signOut(context)
-                                AccountProfileStore.setActive(context, null)
-                                activeProfile = "local"
-                                selectedTab = 0
-                                snackbar.showSnackbar("Đã đăng xuất Google. Dữ liệu cục bộ vẫn được giữ trên thiết bị.")
-                            }
+                            leaveGoogleAccount("Đã đăng xuất Google. Dữ liệu cục bộ vẫn được giữ trên thiết bị.")
                         },
                         onOpenGame = { openClashOfClans(context) },
                         onNotificationsChanged = { enabled ->
@@ -909,6 +949,64 @@ private fun CocLioApp(
             },
             confirmButton = {
                 TextButton(onClick = { importSummary = null }) { Text("ĐÓNG") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
+    pendingGoogleAccount?.let { googleAccount ->
+        AlertDialog(
+            onDismissRequest = { cancelPendingGoogleSignIn() },
+            title = { Text("Bạn có đồng ý chia sẻ dữ liệu không?") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 340.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Tài khoản Google: " + googleAccount.email,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        "Nếu đồng ý, COC-LIO sẽ lưu email, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email, số lần đăng nhập và thời điểm đăng nhập vào hồ sơ để tài khoản quản lý xem.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                    Text(
+                        "Nếu không chia sẻ, bạn vẫn đăng nhập và sử dụng ứng dụng; hồ sơ sẽ không được đưa vào danh sách quản lý. Khi bạn tự gửi tin nhắn hoặc ảnh trong cộng đồng, tên và ảnh đại diện vẫn hiển thị kèm nội dung bạn gửi.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                    Text(
+                        "Google/Firebase vẫn xử lý email và mã tài khoản cần thiết để xác thực đăng nhập.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = { finishGoogleSignIn(googleAccount, false) }) {
+                        Text("KHÔNG CHIA SẺ", fontSize = 9.sp)
+                    }
+                    TextButton(onClick = { finishGoogleSignIn(googleAccount, true) }) {
+                        Text("ĐỒNG Ý", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { cancelPendingGoogleSignIn() }) {
+                    Text("HỦY ĐĂNG NHẬP", fontSize = 9.sp)
+                }
             },
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -1020,7 +1118,7 @@ private fun GoogleLoginStartScreen(
                     Text("ĐĂNG NHẬP VỚI GOOGLE")
                 }
                 Text(
-                    "Sau khi đăng nhập, bạn sẽ được đưa thẳng vào ứng dụng.",
+                    "Sau bước này, bạn sẽ chọn có chia sẻ hồ sơ Google với quản lý hay không.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
