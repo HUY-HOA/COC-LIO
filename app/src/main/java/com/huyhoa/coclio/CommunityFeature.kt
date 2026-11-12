@@ -378,7 +378,7 @@ private fun downloadCommunityFile(context: Context, url: String, fileName: Strin
 @Composable
 fun CommunityScreen(
     isGoogleSignedIn: Boolean,
-    onImportJson: (String, String, String, String, Long, String) -> Unit,
+    onImportJson: (String, String, String, String, String, Long, String) -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
@@ -567,6 +567,7 @@ fun CommunityScreen(
                     document.getString("uid").orEmpty(),
                     document.getString("displayName").orEmpty(),
                     document.getString("playerTag").orEmpty(),
+                    document.getString("villageName").orEmpty(),
                     document.getLong("timestamp") ?: 0L,
                     jsonId
                 )
