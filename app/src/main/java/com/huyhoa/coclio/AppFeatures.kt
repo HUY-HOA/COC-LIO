@@ -2,6 +2,7 @@ package com.huyhoa.coclio
 
 import android.app.Activity
 import com.huyhoa.coclio.data.CocAssets
+import java.security.MessageDigest
 import java.net.URL
 import java.net.HttpURLConnection
 import java.io.FileOutputStream
@@ -16,6 +17,7 @@ import android.appwidget.AppWidgetProvider
 import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -395,6 +397,33 @@ object FirebaseTelemetry {
     }
 }
 
+@Suppress("DEPRECATION")
+private fun installedSigningSha1(context: Context): String = runCatching {
+    val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        context.packageManager.getPackageInfo(
+            context.packageName,
+            PackageManager.GET_SIGNING_CERTIFICATES
+        )
+    } else {
+        context.packageManager.getPackageInfo(
+            context.packageName,
+            PackageManager.GET_SIGNATURES
+        )
+    }
+    val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        packageInfo.signingInfo?.apkContentsSigners
+    } else {
+        packageInfo.signatures
+    }
+    signatures.orEmpty().map { signature ->
+        MessageDigest.getInstance("SHA-1")
+            .digest(signature.toByteArray())
+            .joinToString(":") { byte ->
+                (byte.toInt() and 0xFF).toString(16).uppercase().padStart(2, '0')
+            }
+    }.distinct().joinToString(", ").ifBlank { "không đọc được" }
+}.getOrElse { "không đọc được (\${it.javaClass.simpleName})" }
+
 object GoogleAccountAuth {
     suspend fun signIn(context: Context): GoogleAccountData {
         val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
@@ -412,7 +441,15 @@ object GoogleAccountAuth {
             credentialManager.getCredential(context, signInRequest)
         } catch (error: GetCredentialException) {
             val errorMessage = error.message.orEmpty()
-            if (errorMessage.contains("[16] Account reauth failed", ignoreCase = true)) {
+            if (errorMessage.contains("28444", ignoreCase = true)) {
+                val signingSha1 = installedSigningSha1(context)
+                val diagnostic = "packageName=\${context.packageName}; APK SHA-1=\${signingSha1}; GOOGLE_WEB_CLIENT_ID=\${clientId}"
+                android.util.Log.e("COC-LIO_AUTH", diagnostic, error)
+                throw IllegalStateException(
+                    "Google từ chối cấu hình OAuth [28444]. Web Client ID đang nhúng trong APK: \${clientId}. Package APK: \${context.packageName}. SHA-1 thực tế của APK: \${signingSha1}. Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud.",
+                    error
+                )
+            } else if (errorMessage.contains("[16] Account reauth failed", ignoreCase = true)) {
                 runCatching {
                     credentialManager.clearCredentialState(ClearCredentialStateRequest())
                 }
