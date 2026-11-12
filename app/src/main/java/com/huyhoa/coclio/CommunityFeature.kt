@@ -7,11 +7,6 @@ import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -334,6 +329,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
     var releaseError by remember { mutableStateOf<String?>(null) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf("") }
+    var showEmojiPicker by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var releaseVersion by remember { mutableStateOf("") }
     var releaseNotes by remember { mutableStateOf("") }
@@ -356,8 +352,6 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
             val signedInUser = FirebaseAuth.getInstance().currentUser
             if (signedInUser == null) {
                 statusMessage = "Bạn cần đăng nhập Google để gửi ảnh."
-            } else if (!isOwner) {
-                statusMessage = "Chỉ tài khoản quản lý mới được gửi hình ảnh."
             } else {
                 scope.launch {
                     busy = true
@@ -411,7 +405,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
             if (signedInUser == null) {
                 statusMessage = "Bạn cần đăng nhập Google để gửi tệp."
             } else if (!isOwner) {
-                statusMessage = "Chỉ tài khoản quản lý mới được gửi tệp."
+                statusMessage = "Không thể gửi tệp bằng tài khoản hiện tại."
             } else {
                 scope.launch {
                     busy = true
@@ -616,24 +610,13 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
         if (messages.isNotEmpty()) messageListState.animateScrollToItem(messages.lastIndex)
     }
 
-    val emojiTransition = rememberInfiniteTransition(label = "community-emoji-motion")
-    val emojiMotion by emojiTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "community-emoji-pulse"
-    )
-
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("CỘNG ĐỒNG COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
-            Text("Trò chuyện, chia sẻ tệp và nhận bản cập nhật chính thức.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Trò chuyện, chia sẻ hình ảnh và cập nhật COC-LIO cùng mọi thành viên.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
@@ -670,8 +653,8 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("ĐĂNG NHẬP ĐỂ THAM GIA", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-                    Text("Bạn cần đăng nhập Google trong mục Cài đặt để xem tin nhắn, nhắn tin, gửi tệp và tải bản cập nhật.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, lineHeight = 16.sp)
-                    Button(onClick = onOpenSettings) { Text("MỞ CÀI ĐẶT") }
+                    Text("Đăng nhập Google để trò chuyện và chia sẻ cùng cộng đồng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, lineHeight = 16.sp)
+                    Button(onClick = onOpenSettings) { Text("ĐĂNG NHẬP") }
                 }
             }
         } else if (selectedSection == 0) {
@@ -715,21 +698,54 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        listOf("😂", "🤣", "😅", "🥳", "❤️", "🔥", "👍", "😎", "🎉", "😭", "😁", "💪", "😍", "🥰", "🤩", "🤗", "🙏", "👏", "💯", "✨").forEachIndexed { index, emoji ->
-                            TextButton(onClick = { draft += emoji }) {
-                                Text(
-                                    emoji,
-                                    modifier = Modifier.graphicsLayer {
-                                        val motion = if (index % 2 == 0) emojiMotion else 1f - emojiMotion
-                                        val scale = 0.96f + motion * 0.08f
-                                        scaleX = scale
-                                        scaleY = scale
-                                        translationY = -2.5f * motion
-                                    },
-                                    fontSize = 20.sp
-                                )
+                        OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
+                            Text("🖼 ẢNH", fontSize = 10.sp)
+                        }
+                        if (isOwner) {
+                            OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
+                                Text("📎 TỆP", fontSize = 10.sp)
+                            }
+                        }
+                        OutlinedButton(onClick = { showEmojiPicker = !showEmojiPicker }, enabled = !busy) {
+                            Text(if (showEmojiPicker) "✖ ĐÓNG" else "😊 EMOJI", fontSize = 10.sp)
+                        }
+                    }
+                    if (showEmojiPicker) {
+                        val chatEmojis = listOf(
+                            "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃",
+                            "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😋",
+                            "😛", "😜", "🤪", "😎", "🤓", "🧐", "🤗", "🤭", "🤫", "🤔",
+                            "🫡", "🤐", "🤨", "😐", "😑", "😶", "🙄", "😏", "😣", "😥",
+                            "😮", "😯", "😪", "😫", "🥱", "😴", "🤤", "😵", "🤯", "🥳",
+                            "😤", "😭", "😢", "😱", "😡", "🤬", "😈", "👻", "💀", "💩",
+                            "🤖", "👋", "🤚", "✋", "🖖", "👌", "🤌", "🤏", "✌️", "🤞",
+                            "🫶", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝️", "👍",
+                            "👎", "✊", "👊", "👏", "🙌", "👐", "🤝", "🙏", "💪", "❤️",
+                            "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "💕",
+                            "💞", "💖", "💗", "💓", "💘", "💝", "💟", "🔥", "✨", "⭐",
+                            "🌟", "💫", "⚡", "💥", "🎉", "🎊", "🏆", "🥇", "🎮", "🎯",
+                            "🚀", "💎", "🛡️", "⚔️", "🏰", "🐉", "👑", "💯", "✅", "❌",
+                            "⭕", "❗", "❓", "💬", "📌", "🎁", "🍀", "🌈", "☀️"
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            chatEmojis.chunked(10).forEach { emojiRow ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    emojiRow.forEach { emoji ->
+                                        TextButton(
+                                            onClick = {
+                                                if (draft.length + emoji.length <= 2000) draft += emoji
+                                                showEmojiPicker = false
+                                            }
+                                        ) {
+                                            Text(emoji, fontSize = 21.sp)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -781,23 +797,8 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                             else Text("GỬI", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (isOwner) {
-                            OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
-                                Text("ẢNH", fontSize = 9.sp)
-                            }
-                            OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
-                                Text("TỆP", fontSize = 9.sp)
-                            }
-                        } else {
-                            Text(
-                                "Chỉ tài khoản quản lý được gửi ảnh và tệp.",
-                                modifier = Modifier.align(Alignment.CenterVertically),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp
-                            )
-                        }
-                        if (busy) Text("Đang gửi…", modifier = Modifier.align(Alignment.CenterVertically), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    if (busy) {
+                        Text("Đang gửi…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                     }
                 }
             }
@@ -1037,7 +1038,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                             if (busy) CircularProgressIndicator(Modifier.size(15.dp), strokeWidth = 2.dp)
                             else Text("ĐĂNG BẢN CẬP NHẬT", fontWeight = FontWeight.Bold)
                         }
-                        Text("Chỉ tài khoản quản lý mới được đăng APK. Người dùng cần tự xác nhận cài đặt trên Android.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                        Text("Bản cập nhật APK được chia sẻ tại đây. Người dùng cần tự xác nhận cài đặt trên Android.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                     }
                 }
             }
