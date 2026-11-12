@@ -1962,7 +1962,7 @@ fun SettingsScreen(
             if (accountEmail.isNullOrBlank()) {
                 Text("Chưa đăng nhập", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                 Text(
-                    "Khi đăng nhập Google, hồ sơ cơ bản gồm mã tài khoản, email, tên và ảnh đại diện sẽ được đồng bộ để quản lý tài khoản. IP, thiết bị và lịch sử hoạt động không tự động được ghi nhận nếu chưa có lựa chọn riêng.",
+                    "Khi đăng nhập Google, hồ sơ cơ bản gồm mã tài khoản, email, tên và ảnh đại diện sẽ được đồng bộ để quản lý tài khoản. IP, thiết bị và lịch sử hoạt động không được tự động thu thập chỉ vì bạn đăng nhập Google.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     lineHeight = 16.sp
