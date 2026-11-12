@@ -378,6 +378,8 @@ private fun downloadCommunityFile(context: Context, url: String, fileName: Strin
 @Composable
 fun CommunityScreen(
     isGoogleSignedIn: Boolean,
+    initialSection: Int = 0,
+    onInitialSectionConsumed: () -> Unit = {},
     onImportJson: (String, String, String, String, String, Long, String) -> Unit,
     onOpenSettings: () -> Unit
 ) {
@@ -386,6 +388,12 @@ fun CommunityScreen(
     val user = FirebaseAuth.getInstance().currentUser?.takeIf { isGoogleSignedIn }
     val isOwner = FirebaseAccountAdministration.isOwner(user?.email)
     var selectedSection by remember { mutableStateOf(0) }
+    LaunchedEffect(initialSection) {
+        if (initialSection == 3) {
+            selectedSection = 3
+            onInitialSectionConsumed()
+        }
+    }
     var messages by remember { mutableStateOf<List<CommunityMessage>>(emptyList()) }
     var sharedJsons by remember { mutableStateOf<List<CommunitySharedJson>>(emptyList()) }
     var releases by remember { mutableStateOf<List<CommunityRelease>>(emptyList()) }
@@ -765,11 +773,6 @@ fun CommunityScreen(
                 selected = selectedSection == 1,
                 onClick = { selectedSection = 1; statusMessage = null },
                 label = { Text("CẬP NHẬT APK", fontSize = 10.sp) }
-            )
-            FilterChip(
-                selected = selectedSection == 3,
-                onClick = { selectedSection = 3; statusMessage = null },
-                label = { Text("JSON CHIA SẺ", fontSize = 10.sp) }
             )
             if (isOwner) {
                 FilterChip(
