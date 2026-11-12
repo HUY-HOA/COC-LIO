@@ -91,6 +91,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import com.huyhoa.coclio.data.VillageSnapshot
 
 private const val COMMUNITY_APK_MIME = "application/vnd.android.package-archive"
 private const val COMMUNITY_MAX_FILE_BYTES = 15L * 1024L * 1024L
@@ -109,6 +110,18 @@ private data class CommunityMessage(
     val downloadUrl: String,
     val contentType: String,
     val fileSize: Long,
+    val createdAt: Long,
+    val sharedJsonId: String = ""
+)
+
+private data class CommunitySharedJson(
+    val id: String,
+    val uid: String,
+    val displayName: String,
+    val playerTag: String,
+    val villageName: String,
+    val timestamp: Long,
+    val rawJson: String,
     val createdAt: Long
 )
 
@@ -322,21 +335,29 @@ private fun downloadCommunityFile(context: Context, url: String, fileName: Strin
 }
 
 @Composable
-fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
+fun CommunityScreen(
+    isGoogleSignedIn: Boolean,
+    availableJson: List<VillageSnapshot>,
+    onImportJson: (String) -> Unit,
+    onOpenSettings: () -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val user = FirebaseAuth.getInstance().currentUser?.takeIf { isGoogleSignedIn }
     val isOwner = FirebaseAccountAdministration.isOwner(user?.email)
     var selectedSection by remember { mutableStateOf(0) }
     var messages by remember { mutableStateOf<List<CommunityMessage>>(emptyList()) }
+    var sharedJsons by remember { mutableStateOf<List<CommunitySharedJson>>(emptyList()) }
     var releases by remember { mutableStateOf<List<CommunityRelease>>(emptyList()) }
     var loadingMessages by remember { mutableStateOf(true) }
+    var loadingSharedJsons by remember { mutableStateOf(true) }
     var loadingReleases by remember { mutableStateOf(true) }
     var messageError by remember { mutableStateOf<String?>(null) }
     var releaseError by remember { mutableStateOf<String?>(null) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf("") }
     var showEmojiPicker by remember { mutableStateOf(false) }
+    var showJsonPicker by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var releaseVersion by remember { mutableStateOf("") }
     var releaseNotes by remember { mutableStateOf("") }
