@@ -352,12 +352,13 @@ private suspend fun syncFirebaseUserProfile(
         .document(user.uid)
     val existing = reference.get().awaitFirebaseResult()
     val signInCount = (existing.getLong("signInCount") ?: 0L) + 1L
+    val sharesAdditionalData = existing.getBoolean("dataSharingConsent") == true
     val profile = hashMapOf<String, Any>(
         "uid" to user.uid,
         "email" to email,
         "displayName" to (google.displayName ?: user.displayName.orEmpty()),
-        "givenName" to google.givenName.orEmpty(),
-        "familyName" to google.familyName.orEmpty(),
+        "givenName" to if (sharesAdditionalData) google.givenName.orEmpty() else "",
+        "familyName" to if (sharesAdditionalData) google.familyName.orEmpty() else "",
         "photoUrl" to (google.profilePictureUri ?: user.photoUrl?.toString().orEmpty()),
         "emailVerified" to user.isEmailVerified,
         "providerId" to "google.com",
@@ -387,7 +388,8 @@ data class AdminGoogleAccount(
     val signInCount: Long,
     val createdAt: Long,
     val lastSignInAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val dataSharingConsent: Boolean?
 )
 
 object FirebaseAccountAdministration {
@@ -415,6 +417,26 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
     }
 
+    suspend fun saveDataSharingConsent(google: GoogleAccountData, consented: Boolean) {
+        val user = FirebaseAuth.getInstance().currentUser
+            ?: throw IllegalStateException("Bạn cần đăng nhập Google để lưu lựa chọn chia sẻ dữ liệu.")
+        require(user.email.equals(google.email, ignoreCase = true)) {
+            "Tài khoản Google hiện tại không khớp."
+        }
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .update(
+                mapOf(
+                    "dataSharingConsent" to consented,
+                    "givenName" to if (consented) google.givenName.orEmpty() else "",
+                    "familyName" to if (consented) google.familyName.orEmpty() else "",
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+            )
+            .awaitFirebaseResult()
+    }
+
     suspend fun loadAccounts(): List<AdminGoogleAccount> {
         val result = FirebaseFirestore.getInstance()
             .collection("users")
@@ -434,7 +456,8 @@ object FirebaseAccountAdministration {
                 signInCount = document.getLong("signInCount") ?: 0L,
                 createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
                 lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
-                updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L
+                updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L,
+                dataSharingConsent = document.getBoolean("dataSharingConsent")
             )
         }.sortedByDescending { it.lastSignInAt }
     }
@@ -1429,6 +1452,14 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Tên Google", account.displayName)
                             ProfileDataRow("Tên", account.givenName)
                             ProfileDataRow("Họ", account.familyName)
+                            ProfileDataRow(
+                                "Chia sẻ dữ liệu bổ sung",
+                                when (account.dataSharingConsent) {
+                                    true -> "Đã đồng ý"
+                                    false -> "Không đồng ý"
+                                    null -> "Chưa lựa chọn"
+                                }
+                            )
                             ProfileDataRow("Ảnh đại diện", account.photoUrl)
                             ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
                             ProfileDataRow("Nhà cung cấp", account.providerId)
