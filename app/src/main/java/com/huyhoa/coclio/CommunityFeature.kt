@@ -994,25 +994,49 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
     deleteMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { deleteMessage = null },
-            title = { Text("Xóa tin nhắn?") },
-            text = { Text("Tin nhắn này sẽ bị gỡ khỏi cộng đồng.") },
+            title = { Text("Gỡ tin nhắn vào kho?") },
+            text = { Text("Tin nhắn và tệp đính kèm sẽ được chuyển vào Kho đã gỡ, không bị xóa khỏi bộ nhớ.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteMessage = null
                     scope.launch {
                         try {
-                            if (message.storagePath.isNotBlank()) {
-                                runCatching {
-                                    FirebaseStorage.getInstance().reference.child(message.storagePath).delete().awaitCommunityResult()
-                                }
+                            val firestore = FirebaseFirestore.getInstance()
+                            val archiveCollection = communityArchiveCollection(message.type)
+                            val archiveData = mutableMapOf<String, Any>(
+                                "originalId" to message.id,
+                                "uid" to message.uid,
+                                "displayName" to message.displayName,
+                                "photoUrl" to message.photoUrl,
+                                "type" to message.type,
+                                "text" to message.text,
+                                "fileName" to message.fileName,
+                                "storagePath" to message.storagePath,
+                                "downloadUrl" to message.downloadUrl,
+                                "contentType" to message.contentType,
+                                "fileSize" to message.fileSize,
+                                "createdAt" to Timestamp(Date(message.createdAt)),
+                                "archivedBy" to FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
+                                "archivedAt" to FieldValue.serverTimestamp()
+                            )
+                            if (!archiveKeepForever) {
+                                val retention = archiveRetentionValue.toIntOrNull() ?: 30
+                                archiveData["expiresAt"] = communityArchiveExpiry(
+                                    System.currentTimeMillis(),
+                                    retention,
+                                    archiveRetentionUnit
+                                )
                             }
-                            FirebaseFirestore.getInstance().collection("community_messages").document(message.id).delete().awaitCommunityResult()
-                            statusMessage = "Đã xóa tin nhắn."
+                            val batch = firestore.batch()
+                            batch.set(firestore.collection(archiveCollection).document(message.id), archiveData)
+                            batch.delete(firestore.collection("community_messages").document(message.id))
+                            batch.commit().awaitCommunityResult()
+                            statusMessage = "Đã gỡ và lưu vào Kho đã gỡ."
                         } catch (error: Exception) {
-                            statusMessage = error.message ?: "Không thể xóa tin nhắn."
+                            statusMessage = error.message ?: "Không thể chuyển tin nhắn vào kho."
                         }
                     }
-                }) { Text("XÓA") }
+                }) { Text("GỠ VÀ LƯU") }
             },
             dismissButton = { TextButton(onClick = { deleteMessage = null }) { Text("HỦY") } }
         )
