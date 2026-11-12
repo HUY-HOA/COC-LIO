@@ -181,6 +181,7 @@ private fun communitySafeFileName(value: String): String =
 private fun downloadCommunityFile(context: Context, url: String, fileName: String) {
     val request = DownloadManager.Request(Uri.parse(url))
         .setTitle(fileName)
+        .setMimeType(if (fileName.endsWith(".apk", ignoreCase = true)) COMMUNITY_APK_MIME else "application/octet-stream")
         .setDescription("Đang tải từ COC-LIO")
         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         .setDestinationInExternalPublicDir(
