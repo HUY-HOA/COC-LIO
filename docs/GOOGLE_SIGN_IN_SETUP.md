@@ -35,6 +35,17 @@ Nếu sau này phân phối qua Google Play với Play App Signing, cần thêm 
 
 Mã lỗi xác thực 16 không đủ để kết luận Dịch vụ Google Play đã cũ. Hãy kiểm tra Web Client ID, dự án OAuth, package và SHA-1 của đúng chứng thư trước. Nếu cấu hình ngoài ứng dụng chưa khớp, chỉ sửa mã APK sẽ không giải quyết được lỗi.
 
+### Xử lý lỗi [28444] Developer console is not set up correctly
+
+Lỗi này được trả về từ Google Credential Manager trước khi Firebase Authentication nhận được Google ID Token. Cần kiểm tra cấu hình OAuth mà APK thực sự đang dùng, không chỉ nhìn SHA-1 đã nhập trong Firebase.
+
+1. Cập nhật Secret `GOOGLE_WEB_CLIENT_ID` bằng đúng **Client ID của OAuth Client loại Web application** trong dự án `coc-lio-73de9`. Không dùng Client ID loại Android.
+2. Mở Android OAuth Client trong cùng dự án. Package phải là `com.huyhoa.coclio`; SHA-1 phải trùng với SHA-1 của APK đang cài.
+3. Sau khi build APK mới, nếu vẫn gặp [28444], hộp thoại lỗi trong ứng dụng sẽ hiển thị Client ID đang được nhúng, package và SHA-1 thực tế đọc từ chữ ký APK. Dùng các giá trị này để đối chiếu lại Google Cloud Console.
+4. Nếu GitHub Actions dừng ở bước **Verify Firebase and Google OAuth configuration**, hãy đọc thông báo của bước đó: workflow kiểm tra Firebase Project ID, Project Number, package Android, định dạng Client ID, project number của Client ID và khoảng trắng thừa. Bước này không thể tự xác nhận loại OAuth Client; loại **Web application** vẫn phải được kiểm tra trong Google Cloud Console.
+
+Lưu ý: GitHub không hiển thị lại nội dung Secret đã lưu. Nếu không chắc Secret hiện tại có đúng Client ID hay không, hãy cập nhật lại bằng cách sao chép trực tiếp Client ID từ OAuth Client loại Web application của dự án `coc-lio-73de9`. Client ID là mã định danh công khai của ứng dụng; không cung cấp Client Secret hoặc khóa riêng.
+
 ## Thêm Secret vào GitHub
 
 Mở repository [HUY-HOA-1/COC-LIO](https://github.com/HUY-HOA-1/COC-LIO):
