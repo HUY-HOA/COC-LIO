@@ -52,10 +52,19 @@ service cloud.firestore {
             'photoUrl',
             'emailVerified',
             'providerId',
+            'preferredName',
             'signInCount',
             'lastSignInAt',
             'updatedAt'
           ])
+          && (
+            !request.resource.data.keys().hasAny(['preferredName'])
+            || (
+              request.resource.data.preferredName is string
+              && request.resource.data.preferredName.size() > 0
+              && request.resource.data.preferredName.size() <= 40
+            )
+          )
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.email == request.auth.token.email
           && request.resource.data.emailVerified == request.auth.token.email_verified
