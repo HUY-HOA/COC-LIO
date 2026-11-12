@@ -144,8 +144,23 @@ service cloud.firestore {
           )
         );
 
-      allow delete: if signedIn()
-        && (isOwner() || resource.data.uid == request.auth.uid);
+      allow delete: if isOwner();
+    }
+
+    match /community_deleted_messages/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /community_deleted_images/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /community_deleted_files/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /app_update_archive/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
     }
 
     match /app_updates/{updateId} {
