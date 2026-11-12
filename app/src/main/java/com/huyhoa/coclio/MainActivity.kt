@@ -483,6 +483,9 @@ private fun CocLioApp(
             val customName = nameOverride?.trim()?.takeIf { it.isNotBlank() }
             val parsed = if (customName == null) parsedFromJson
             else parsedFromJson.copy(villageName = customName)
+            val previous = history.firstOrNull {
+                it.tag == parsed.tag && it.timestamp < parsed.timestamp
+            }
             VillageStore.save(context, parsed, activeProfile, customName)
             history = VillageStore.loadAll(context, activeProfile)
             pinnedTags = VillageStore.pinnedTags(context, activeProfile)
