@@ -833,9 +833,13 @@ class UpgradeReminderWorker(
 
 
 object UpgradeNotificationTester {
-    fun show(context: Context, profile: String, style: String): Boolean = runCatching {
+    fun show(
+        context: Context,
+        profile: String,
+        style: String,
+        alarmDurationSeconds: Int = AppPreferences.alarmDurationSeconds(context, profile)
+    ): Boolean = runCatching {
         val alarmStyle = style == "alarm"
-        val alarmDurationSeconds = AppPreferences.alarmDurationSeconds(context, profile)
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
             if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v2" else "_message"
