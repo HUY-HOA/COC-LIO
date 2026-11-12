@@ -86,6 +86,38 @@ service cloud.firestore {
       allow delete: if isOwner() || isSelf(userId);
     }
 
+    match /community_shared_jsons/{jsonId} {
+      allow get, list: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'playerTag',
+          'villageName',
+          'timestamp',
+          'rawJson',
+          'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.playerTag is string
+        && request.resource.data.playerTag.matches('^#[A-Za-z0-9]+$')
+        && request.resource.data.villageName is string
+        && request.resource.data.villageName.size() <= 100
+        && request.resource.data.timestamp is int
+        && request.resource.data.timestamp > 0
+        && request.resource.data.rawJson is string
+        && request.resource.data.rawJson.size() > 0
+        && request.resource.data.rawJson.size() <= 700000
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if isOwner();
+    }
+
     match /community_messages/{messageId} {
       allow get, list: if signedIn();
 
@@ -102,6 +134,7 @@ service cloud.firestore {
           'downloadUrl',
           'contentType',
           'fileSize',
+          'sharedJsonId',
           'createdAt'
         ])
         && request.resource.data.uid == request.auth.uid
@@ -117,7 +150,7 @@ service cloud.firestore {
         )
         && request.resource.data.photoUrl is string
         && request.resource.data.photoUrl.size() <= 1000
-        && request.resource.data.type in ['text', 'image', 'file']
+        && request.resource.data.type in ['text', 'image', 'file', 'json']
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 2000
         && request.resource.data.fileName is string
@@ -125,6 +158,8 @@ service cloud.firestore {
         && request.resource.data.downloadUrl is string
         && request.resource.data.contentType is string
         && request.resource.data.fileSize is int
+        && request.resource.data.sharedJsonId is string
+        && request.resource.data.sharedJsonId.size() <= 100
         && request.resource.data.createdAt == request.time
         && (
           (
@@ -134,6 +169,7 @@ service cloud.firestore {
             && request.resource.data.downloadUrl == ''
             && request.resource.data.contentType == ''
             && request.resource.data.fileSize == 0
+            && request.resource.data.sharedJsonId == ''
           )
           ||
           (
@@ -144,6 +180,7 @@ service cloud.firestore {
             && request.resource.data.fileName.size() > 0
             && request.resource.data.fileSize > 0
             && request.resource.data.fileSize <= 15 * 1024 * 1024
+            && request.resource.data.sharedJsonId == ''
           )
           ||
           (
@@ -170,6 +207,21 @@ service cloud.firestore {
             && request.resource.data.fileName.size() > 0
             && request.resource.data.fileSize > 0
             && request.resource.data.fileSize <= 15 * 1024 * 1024
+            && request.resource.data.sharedJsonId == ''
+          )
+          ||
+          (
+            request.resource.data.type == 'json'
+            && request.resource.data.text.size() > 0
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.storagePath == ''
+            && request.resource.data.downloadUrl == ''
+            && request.resource.data.contentType == 'application/json'
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 700000
+            && request.resource.data.sharedJsonId.size() > 0
+            && exists(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId))
+            && get(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId)).data.uid == request.auth.uid
           )
         );
 
@@ -186,6 +238,10 @@ service cloud.firestore {
           || (
             resource.data.type == 'file'
             && existsAfter(/databases/$(database)/documents/community_deleted_files/$(messageId))
+          )
+          || (
+            resource.data.type == 'json'
+            && existsAfter(/databases/$(database)/documents/community_deleted_messages/$(messageId))
           )
         );
     }
