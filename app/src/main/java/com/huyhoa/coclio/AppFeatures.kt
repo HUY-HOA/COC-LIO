@@ -486,10 +486,16 @@ object FirebaseAccountAdministration {
         syncBeforeLoad: Boolean = true
     ): List<AdminGoogleAccount> {
         if (syncBeforeLoad) {
-            FirebaseFunctions.getInstance("asia-southeast1")
-                .getHttpsCallable("adminSyncSharedAccounts")
-                .call()
-                .awaitFirebaseResult()
+            try {
+                FirebaseFunctions.getInstance("asia-southeast1")
+                    .getHttpsCallable("adminSyncSharedAccounts")
+                    .call()
+                    .awaitFirebaseResult()
+            } catch (error: com.google.firebase.functions.FirebaseFunctionsException) {
+                if (error.code != com.google.firebase.functions.FirebaseFunctionsException.Code.NOT_FOUND) {
+                    throw error
+                }
+            }
         }
         val result = FirebaseFirestore.getInstance()
             .collection("users")
