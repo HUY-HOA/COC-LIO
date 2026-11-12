@@ -358,6 +358,16 @@ private fun NeonButton(
 }
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        AccountActivityTracker.start(this)
+    }
+
+    override fun onPause() {
+        AccountActivityTracker.stop(this)
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -720,8 +730,10 @@ private fun CocLioApp(
                     GoogleAccountAuth.shareProfile(googleAccount)
                     FirebaseAccountAdministration.savePreferredName(profileName)
                     FirebaseTelemetry.logGoogleSignIn(context)
+                    AccountActivityTracker.start(context)
                 } else {
                     GoogleAccountAuth.removeSharedProfile()
+                    AccountActivityTracker.stop(context)
                 }
                 AccountProfileStore.setActive(context, googleAccount.email)
                 activeProfile = googleAccount.email
@@ -1123,19 +1135,19 @@ private fun CocLioApp(
                         fontSize = 12.sp
                     )
                     Text(
-                        "Nếu đồng ý, COC-LIO sẽ lưu email, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email, số lần đăng nhập và thời điểm đăng nhập vào hồ sơ để tài khoản quản lý xem.",
+                        "Nếu đồng ý, COC-LIO lưu email, tên Google, tên riêng, họ, ảnh đại diện, trạng thái xác minh, số lần và thời điểm đăng nhập. Ứng dụng cũng ghi nhận IP công khai mà máy chủ nhìn thấy, hãng/model thiết bị, phiên bản Android và COC-LIO, số lần mở ứng dụng, lần hoạt động gần nhất, trạng thái online/offline và thời lượng phiên để tài khoản quản lý xem.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp,
                         lineHeight = 16.sp
                     )
                     Text(
-                        "Nếu không chia sẻ, bạn vẫn đăng nhập và sử dụng ứng dụng; hồ sơ sẽ không được đưa vào danh sách quản lý. Khi bạn tự gửi tin nhắn hoặc ảnh trong cộng đồng, tên và ảnh đại diện vẫn hiển thị kèm nội dung bạn gửi.",
+                        "Nếu không đồng ý, bạn vẫn đăng nhập và sử dụng COC-LIO bình thường; ứng dụng không ghi IP, thiết bị và lịch sử hoạt động vào hồ sơ quản lý, tài khoản sẽ không có trong danh sách chi tiết. Khi bạn tự gửi tin nhắn hoặc ảnh trong cộng đồng, tên và ảnh đại diện vẫn hiển thị kèm nội dung bạn gửi.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp,
                         lineHeight = 16.sp
                     )
                     Text(
-                        "Google/Firebase vẫn xử lý email và mã tài khoản cần thiết để xác thực đăng nhập.",
+                        "Google/Firebase vẫn xử lý dữ liệu kỹ thuật cần thiết để xác thực và bảo vệ đăng nhập. IP ghi trong hồ sơ COC-LIO là IP mà máy chủ nhận được, không phải vị trí GPS.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 10.sp,
                         lineHeight = 14.sp
