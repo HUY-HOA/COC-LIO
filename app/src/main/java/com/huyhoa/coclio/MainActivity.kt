@@ -593,6 +593,32 @@ private fun CocLioApp(
         }
     }
 
+    fun signInWithGoogle() {
+        scope.launch {
+            try {
+                val googleAccount = GoogleAccountAuth.signIn(context)
+                FirebaseTelemetry.logGoogleSignIn(context)
+                AccountProfileStore.saveGoogleData(context, googleAccount)
+                val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
+                val profileName = savedName?.takeIf { it.isNotBlank() }
+                    ?: googleAccount.displayName?.takeIf { it.isNotBlank() }
+                    ?: googleAccount.email.substringBefore("@")
+                if (savedName.isNullOrBlank()) {
+                    AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
+                }
+                AccountProfileStore.setActive(context, googleAccount.email)
+                activeProfile = googleAccount.email
+                selectedTab = 0
+                googleAuthError = null
+                snackbar.showSnackbar("Đã đăng nhập với tên " + profileName)
+            } catch (error: Exception) {
+                googleAuthError = error.message
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Không thể đăng nhập Google. Hãy kiểm tra kết nối mạng và cấu hình OAuth."
+            }
+        }
+    }
+
     CompositionLocalProvider(
         LocalLedTheme provides ledTheme,
         LocalDensity provides Density(baseDensity.density * appDisplayScale, baseDensity.fontScale * appFontScale)
@@ -603,6 +629,7 @@ private fun CocLioApp(
         containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
+            if (isGoogleSignedIn) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -619,8 +646,10 @@ private fun CocLioApp(
                     onClick = { requestImportJson() }
                 )
             }
+            }
         },
         bottomBar = {
+            if (isGoogleSignedIn) {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
                 contentColor = MaterialTheme.colorScheme.onSurface
@@ -666,8 +695,15 @@ private fun CocLioApp(
                     )
                 }
             }
+            }
         }
     ) { innerPadding ->
+        if (!isGoogleSignedIn) {
+            GoogleLoginStartScreen(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                onGoogleSignIn = { signInWithGoogle() }
+            )
+        } else {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -791,30 +827,7 @@ private fun CocLioApp(
                         },
                         notificationStyle = notificationStyle,
                         alarmDurationSeconds = alarmDurationSeconds,
-                        onGoogleSignIn = {
-                            scope.launch {
-                                try {
-                                    val googleAccount = GoogleAccountAuth.signIn(context)
-                                    FirebaseTelemetry.logGoogleSignIn(context)
-                                    AccountProfileStore.saveGoogleData(context, googleAccount)
-                                    val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
-                                    val profileName = savedName?.takeIf { it.isNotBlank() }
-                                        ?: googleAccount.displayName?.takeIf { it.isNotBlank() }
-                                        ?: googleAccount.email.substringBefore("@")
-                                    if (savedName.isNullOrBlank()) {
-                                        AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
-                                    }
-                                    AccountProfileStore.setActive(context, googleAccount.email)
-                                    activeProfile = googleAccount.email
-                                    selectedTab = 0
-                                    snackbar.showSnackbar("Đã đăng nhập với tên " + profileName)
-                                } catch (error: Exception) {
-                                    googleAuthError = error.message
-                                        ?.takeIf { it.isNotBlank() }
-                                        ?: "Không thể đăng nhập Google. Hãy kiểm tra kết nối mạng và cấu hình OAuth."
-                                }
-                            }
-                        },
+                        onGoogleSignIn = { signInWithGoogle() },
                         onGoogleSignOut = {
                             scope.launch {
                                 FirebaseTelemetry.logSignOut(context)
@@ -873,6 +886,7 @@ private fun CocLioApp(
 
             }
             }
+        }
         }
     }
 
@@ -967,6 +981,57 @@ private fun CocLioApp(
     }
 }
 
+}
+
+@Composable
+private fun GoogleLoginStartScreen(
+    modifier: Modifier = Modifier,
+    onGoogleSignIn: () -> Unit
+) {
+    Box(
+        modifier = modifier.padding(22.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(13.dp)
+            ) {
+                Text("COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 26.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text(
+                    "CHÀO MỪNG ĐẾN VỚI CỘNG ĐỒNG COC-LIO",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Text(
+                    "Đăng nhập Google để vào ứng dụng, theo dõi làng, trò chuyện và chia sẻ cùng mọi thành viên.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    lineHeight = 18.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Button(
+                    onClick = onGoogleSignIn,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("ĐĂNG NHẬP VỚI GOOGLE")
+                }
+                Text(
+                    "Sau khi đăng nhập, bạn sẽ được đưa thẳng vào ứng dụng.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        }
+    }
 }
 
 @Composable
