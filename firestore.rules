@@ -66,6 +66,122 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
+    match /community_messages/{messageId} {
+      allow get, list: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'photoUrl',
+          'type',
+          'text',
+          'fileName',
+          'storagePath',
+          'downloadUrl',
+          'contentType',
+          'fileSize',
+          'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.photoUrl is string
+        && request.resource.data.photoUrl.size() <= 1000
+        && request.resource.data.type in ['text', 'image', 'file']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.fileName is string
+        && request.resource.data.storagePath is string
+        && request.resource.data.downloadUrl is string
+        && request.resource.data.contentType is string
+        && request.resource.data.fileSize is int
+        && request.resource.data.createdAt == request.time
+        && (
+          (
+            request.resource.data.type == 'text'
+            && request.resource.data.text.size() > 0
+            && request.resource.data.storagePath == ''
+            && request.resource.data.downloadUrl == ''
+            && request.resource.data.contentType == ''
+            && request.resource.data.fileSize == 0
+          )
+          ||
+          (
+            request.resource.data.type == 'image'
+            && request.resource.data.contentType.matches('image/.*')
+            && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
+            && request.resource.data.downloadUrl.matches('https://.*')
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 15 * 1024 * 1024
+          )
+          ||
+          (
+            request.resource.data.type == 'file'
+            && request.resource.data.contentType in [
+              'application/pdf',
+              'text/plain',
+              'application/zip',
+              'application/msword',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/vnd.ms-powerpoint',
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              'application/vnd.ms-excel',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'application/vnd.android.package-archive'
+            ]
+            && (
+              request.resource.data.contentType != 'application/vnd.android.package-archive'
+              || isOwner()
+            )
+            && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
+            && request.resource.data.downloadUrl.matches('https://.*')
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 15 * 1024 * 1024
+          )
+        );
+
+      allow delete: if signedIn()
+        && (isOwner() || resource.data.uid == request.auth.uid);
+    }
+
+    match /app_updates/{updateId} {
+      allow get, list: if signedIn();
+
+      allow create: if isOwner()
+        && request.resource.data.keys().hasOnly([
+          'versionName',
+          'notes',
+          'fileName',
+          'storagePath',
+          'downloadUrl',
+          'fileSize',
+          'createdBy',
+          'createdAt'
+        ])
+        && request.resource.data.versionName is string
+        && request.resource.data.versionName.size() > 0
+        && request.resource.data.versionName.size() <= 40
+        && request.resource.data.notes is string
+        && request.resource.data.notes.size() <= 3000
+        && request.resource.data.fileName is string
+        && request.resource.data.fileName.matches('.*\\.apk')
+        && request.resource.data.storagePath is string
+        && request.resource.data.storagePath.matches('updates/.*')
+        && request.resource.data.downloadUrl is string
+        && request.resource.data.downloadUrl.matches('https://.*')
+        && request.resource.data.fileSize is int
+        && request.resource.data.fileSize > 0
+        && request.resource.data.fileSize <= 150 * 1024 * 1024
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if isOwner();
+    }
+
     match /licenses/{userId} {
       allow get: if isOwner() || isSelf(userId);
       allow list, create, update, delete: if isOwner();
