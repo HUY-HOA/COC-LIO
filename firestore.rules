@@ -30,6 +30,7 @@ service cloud.firestore {
           'photoUrl',
           'emailVerified',
           'providerId',
+          'dataSharingConsent',
           'signInCount',
           'lastSignInAt',
           'createdAt',
@@ -39,6 +40,7 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.emailVerified == request.auth.token.email_verified
         && request.resource.data.providerId == 'google.com'
+        && request.resource.data.dataSharingConsent == true
         && request.resource.data.signInCount == 1;
 
       allow update: if isOwner()
@@ -77,7 +79,7 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt
         );
 
-      allow delete: if isOwner();
+      allow delete: if isOwner() || isSelf(userId);
     }
 
     match /community_messages/{messageId} {
@@ -87,6 +89,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
           'uid',
           'displayName',
+          'senderIsAdmin',
           'photoUrl',
           'type',
           'text',
@@ -101,6 +104,8 @@ service cloud.firestore {
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
         && request.resource.data.displayName.size() <= 80
+        && request.resource.data.senderIsAdmin is bool
+        && request.resource.data.senderIsAdmin == isOwner()
         && request.resource.data.photoUrl is string
         && request.resource.data.photoUrl.size() <= 1000
         && request.resource.data.type in ['text', 'image', 'file']
