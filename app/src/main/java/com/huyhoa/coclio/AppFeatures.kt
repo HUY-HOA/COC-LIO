@@ -2164,6 +2164,13 @@ fun SettingsScreen(
                 lineHeight = 14.sp
             )
         }
+        val ledSliderColors = androidx.compose.material3.SliderDefaults.colors(
+            activeTrackColor = Color(0xFF36F4FF),
+            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            thumbColor = Color.Transparent,
+            activeTickColor = Color.Transparent,
+            inactiveTickColor = Color.Transparent
+        )
         FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2196,8 +2203,16 @@ fun SettingsScreen(
                 value = ledSpeed.coerceIn(0, 100).toFloat(),
                 onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(0, 100)) },
                 valueRange = 0f..100f,
-                colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Color.Transparent),
-                thumb = {}
+                colors = ledSliderColors,
+                thumb = {},
+                track = { sliderState ->
+                    androidx.compose.material3.SliderDefaults.Track(
+                        sliderState = sliderState,
+                        colors = ledSliderColors,
+                        modifier = Modifier.height(12.dp),
+                        drawStopIndicator = null
+                    )
+                }
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("ĐỨNG YÊN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
@@ -2209,8 +2224,16 @@ fun SettingsScreen(
                 value = (ledBrightness * 100f).roundToInt().coerceIn(0, 100).toFloat(),
                 onValueChange = { onLedBrightnessChanged(it.roundToInt().coerceIn(0, 100) / 100f) },
                 valueRange = 0f..100f,
-                colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Color.Transparent),
-                thumb = {}
+                colors = ledSliderColors,
+                thumb = {},
+                track = { sliderState ->
+                    androidx.compose.material3.SliderDefaults.Track(
+                        sliderState = sliderState,
+                        colors = ledSliderColors,
+                        modifier = Modifier.height(12.dp),
+                        drawStopIndicator = null
+                    )
+                }
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Mờ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
