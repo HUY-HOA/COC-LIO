@@ -42,8 +42,15 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.emailVerified == request.auth.token.email_verified
         && request.resource.data.providerId == 'google.com'
-        && request.resource.data.dataSharingConsent == true
-        && request.resource.data.signInCount == 1;
+        && request.resource.data.signInCount == 1
+        && (
+          !request.resource.data.keys().hasAny(['dataSharingConsent'])
+          || request.resource.data.dataSharingConsent is bool
+        )
+        && (
+          !request.resource.data.keys().hasAny(['activityDataConsentVersion'])
+          || request.resource.data.activityDataConsentVersion is int
+        );
 
       allow update: if isOwner()
         || (
