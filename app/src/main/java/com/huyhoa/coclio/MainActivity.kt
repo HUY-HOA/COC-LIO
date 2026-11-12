@@ -500,9 +500,9 @@ private fun CocLioApp(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isGoogleSignedIn) {
         AppWidgetUpdater.ensureRefresh(context)
-        if (Build.VERSION.SDK_INT >= 33 &&
+        if (isGoogleSignedIn && Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -716,10 +716,7 @@ private fun CocLioApp(
                     .fillMaxSize()
             ) {
             Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
-                if (page in 0..3 && !isGoogleSignedIn) {
-                    GoogleSignInRequiredScreen(onOpenSettings = { selectedTab = 5 })
-                } else {
-                    when (page) {
+                when (page) {
                     0 -> current?.let {
                         OverviewScreen(snapshot = it)
                     } ?: EmptyWelcome(
@@ -882,7 +879,6 @@ private fun CocLioApp(
                         }
                     )
                     }
-                }
 
             }
             }
@@ -1028,51 +1024,6 @@ private fun GoogleLoginStartScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GoogleSignInRequiredScreen(onOpenSettings: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(11.dp)
-            ) {
-                Text("🔐", fontSize = 42.sp)
-                Text(
-                    "ĐĂNG NHẬP GOOGLE ĐỂ SỬ DỤNG",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    "Bạn cần đăng nhập Google để nhập JSON, xem dữ liệu làng, công trình, quân đội và lịch sử.",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 12.sp,
-                    lineHeight = 18.sp
-                )
-                Button(
-                    onClick = onOpenSettings,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("MỞ CÀI ĐẶT ĐỂ ĐĂNG NHẬP")
-                }
-                Text(
-                    "Dữ liệu đã lưu trên điện thoại vẫn được giữ nguyên.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp
                 )
             }
         }
