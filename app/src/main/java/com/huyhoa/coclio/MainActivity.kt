@@ -483,6 +483,9 @@ private fun CocLioApp(
         if (activeProfile != "local") {
             runCatching {
                 GoogleAccountAuth.syncCurrentProfile(context, activeProfile)
+                AccountProfileStore.preferredName(context, activeProfile)
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { FirebaseAccountAdministration.savePreferredName(it) }
             }.onFailure {
                 android.util.Log.w("COC-LIO", "Không thể làm mới hồ sơ Google trên Firestore.", it)
             }
