@@ -180,6 +180,72 @@ private fun paletteForLed(preset: String): List<Color> = when (preset) {
 }
 
 @Composable
+private fun animatedLedTextBrush(): Brush {
+    val led = LocalLedTheme.current
+    val phase = if (led.enabled && led.speedMillis > 0) {
+        (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+    } else 0f
+    val offset = phase * 420f
+    return Brush.linearGradient(
+        colors = led.palette.map { it.copy(alpha = led.brightness) },
+        start = Offset(offset, 0f),
+        end = Offset(offset + 420f, 80f)
+    )
+}
+
+@Composable
+private fun LedFrameBox(
+    modifier: Modifier = Modifier,
+    content: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit
+) {
+    val led = LocalLedTheme.current
+    val palette = led.palette.map { it.copy(alpha = led.brightness) }
+    val phase = if (led.enabled && led.speedMillis > 0) {
+        (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+    } else 0f
+    val movingColors = List(48) { index ->
+        val position = ((index / 48f + phase) % 1f) * (palette.size - 1)
+        val startIndex = position.toInt().coerceIn(0, palette.size - 2)
+        val fraction = position - startIndex
+        val first = palette[startIndex]
+        val second = palette[startIndex + 1]
+        Color(
+            red = first.red + (second.red - first.red) * fraction,
+            green = first.green + (second.green - first.green) * fraction,
+            blue = first.blue + (second.blue - first.blue) * fraction,
+            alpha = led.brightness
+        )
+    }
+    val brush = if (led.enabled && led.speedMillis > 0) {
+        Brush.sweepGradient(movingColors)
+    } else {
+        Brush.sweepGradient(palette)
+    }
+    Box(
+        modifier = modifier.drawWithCache {
+            val stroke = 3.dp.toPx()
+            val inset = stroke / 2f
+            val path = Path().apply {
+                addRoundRect(
+                    RoundRect(
+                        left = inset,
+                        top = inset,
+                        right = size.width - inset,
+                        bottom = size.height - inset,
+                        cornerRadius = CornerRadius(22.dp.toPx())
+                    )
+                )
+            }
+            onDrawBehind {
+                drawPath(path, brush, style = Stroke(width = stroke))
+            }
+        },
+        contentAlignment = Alignment.Center,
+        content = content
+    )
+}
+
+@Composable
 private fun NeonBackdrop() {
     Box(
         Modifier
@@ -444,7 +510,7 @@ private fun CocLioApp(
         palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
         speedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
-            20000.0 * Math.pow(0.02, ledSpeed.coerceIn(1, 100) / 100.0)
+            20000.0 - 19600.0 * ledSpeed.coerceIn(0, 100) / 100.0
         ).toInt().coerceIn(400, 20000),
         brightness = ledBrightness.coerceIn(0f, 1f),
         progress = ledProgress
@@ -532,11 +598,6 @@ private fun CocLioApp(
 
     LaunchedEffect(isGoogleSignedIn) {
         AppWidgetUpdater.ensureRefresh(context)
-        if (isGoogleSignedIn && Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
     }
 
     LaunchedEffect(isGoogleSignedIn) {
@@ -735,7 +796,7 @@ private fun CocLioApp(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "COC-LIO",
-                        brush = Brush.linearGradient(ledTheme.palette),
+                        brush = animatedLedTextBrush(),
                         fontSize = 23.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 2.sp
@@ -1161,12 +1222,11 @@ private fun GoogleLoginStartScreen(
     modifier: Modifier = Modifier,
     onGoogleSignIn: () -> Unit
 ) {
-    Box(
-        modifier = modifier.padding(22.dp),
-        contentAlignment = Alignment.Center
+    LedFrameBox(
+        modifier = modifier.padding(10.dp)
     ) {
         NeonPanel(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             glow = CocCyan,
             innerPadding = 20.dp
         ) {
@@ -1177,7 +1237,7 @@ private fun GoogleLoginStartScreen(
             ) {
                 Text(
                     "COC-LIO",
-                    brush = Brush.linearGradient(LocalLedTheme.current.palette),
+                    brush = animatedLedTextBrush(),
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 2.sp
