@@ -451,6 +451,12 @@ object FirebaseAccountAdministration {
     }
 
     suspend fun loadAccounts(): List<AdminGoogleAccount> {
+        runCatching {
+            FirebaseFunctions.getInstance("asia-southeast1")
+                .getHttpsCallable("adminSyncSharedAccounts")
+                .call()
+                .awaitFirebaseResult()
+        }
         val result = FirebaseFirestore.getInstance()
             .collection("users")
             .whereEqualTo("dataSharingConsent", true)
@@ -473,6 +479,14 @@ object FirebaseAccountAdministration {
                 updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L
             )
         }.sortedByDescending { it.lastSignInAt }
+    }
+
+    suspend fun deleteAccount(uid: String) {
+        require(uid.isNotBlank()) { "Thiếu mã tài khoản cần xóa." }
+        FirebaseFunctions.getInstance("asia-southeast1")
+            .getHttpsCallable("adminDeleteUser")
+            .call(mapOf("uid" to uid))
+            .awaitFirebaseResult()
     }
 }
 
@@ -1408,6 +1422,8 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
     var expandedAccounts by remember { mutableStateOf<Set<String>>(emptySet()) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var pendingDelete by remember { mutableStateOf<AdminGoogleAccount?>(null) }
+    var deleting by remember { mutableStateOf(false) }
 
     fun refreshAccounts() {
         scope.launch {
@@ -1427,10 +1443,49 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
         refreshAccounts()
     }
 
+    pendingDelete?.let { account ->
+        AlertDialog(
+            onDismissRequest = { if (!deleting) pendingDelete = null },
+            title = { Text("Xóa tài khoản Google?") },
+            text = {
+                Text(
+                    "Tài khoản ${account.email} sẽ bị xóa khỏi Firebase Authentication và hồ sơ chia sẻ của tài khoản này sẽ bị xóa khỏi Firestore. Người dùng sẽ không thể đăng nhập lại bằng tài khoản này vào COC-LIO.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !deleting,
+                    onClick = {
+                        scope.launch {
+                            deleting = true
+                            errorMessage = null
+                            try {
+                                FirebaseAccountAdministration.deleteAccount(account.uid)
+                                pendingDelete = null
+                                expandedAccounts = expandedAccounts - account.uid
+                                accounts = FirebaseAccountAdministration.loadAccounts()
+                            } catch (error: Exception) {
+                                errorMessage = error.message ?: "Không thể xóa tài khoản Firebase."
+                            } finally {
+                                deleting = false
+                            }
+                        }
+                    }
+                ) {
+                    Text(if (deleting) "ĐANG XÓA…" else "XÓA TÀI KHOẢN")
+                }
+            },
+            dismissButton = {
+                TextButton(enabled = !deleting, onClick = { pendingDelete = null }) { Text("HỦY") }
+            }
+        )
+    }
+
     FeaturePanel {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "DANH SÁCH QUẢN LÝ NGƯỜI DÙNG",
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
@@ -1511,14 +1566,24 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             fontWeight = FontWeight.Black
                         )
                     }
-                    TextButton(
-                        onClick = {
-                            expandedAccounts = if (expanded) expandedAccounts - account.uid
-                            else expandedAccounts + account.uid
-                        },
-                        modifier = Modifier.align(Alignment.End)
+                    Row(
+                        modifier = Modifier.align(Alignment.End),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(if (expanded) "ẨN THÔNG TIN" else "XEM THÔNG TIN", fontSize = 9.sp)
+                        TextButton(
+                            onClick = {
+                                expandedAccounts = if (expanded) expandedAccounts - account.uid
+                                else expandedAccounts + account.uid
+                            }
+                        ) {
+                            Text(if (expanded) "ẨN THÔNG TIN" else "XEM THÔNG TIN", fontSize = 9.sp)
+                        }
+                        TextButton(
+                            onClick = { pendingDelete = account },
+                            enabled = !deleting
+                        ) {
+                            Text("XÓA TÀI KHOẢN", color = Color(0xFFFF5D91), fontSize = 9.sp)
+                        }
                     }
                     if (expanded) {
                         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
