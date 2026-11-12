@@ -1177,7 +1177,6 @@ fun SettingsScreen(
         } else {
             (50f + ((textScale.coerceIn(1f, 1.25f) - 1f) / 0.25f) * 50f).roundToInt()
         }).coerceIn(10, 100)
-        val selectedFontLevel = (((currentFontLevel + 5) / 10) * 10).coerceIn(10, 100)
         fun fontScaleForLevel(level: Int): Float {
             val safeLevel = level.coerceIn(10, 100)
             return if (safeLevel <= 50) {
@@ -1189,29 +1188,23 @@ fun SettingsScreen(
         FeaturePanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("MỨC $selectedFontLevel/100", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                Text("MỨC $currentFontLevel%", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
             }
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                (10..100 step 10).toList().chunked(5).forEach { levels ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        levels.forEach { level ->
-                            FilterChip(
-                                selected = selectedFontLevel == level,
-                                onClick = {
-                                    onTextScaleChanged(fontScaleForLevel(level))
-                                    onTextScaleChangeFinished()
-                                },
-                                modifier = Modifier.weight(1f),
-                                label = { Text(level.toString(), fontSize = 10.sp) }
-                            )
-                        }
-                    }
-                }
+            Slider(
+                value = currentFontLevel.toFloat(),
+                onValueChange = { level ->
+                    onTextScaleChanged(fontScaleForLevel(level.roundToInt()))
+                },
+                onValueChangeFinished = onTextScaleChangeFinished,
+                valueRange = 10f..100f,
+                steps = 89
+            )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("10%", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Spacer(Modifier.weight(1f))
+                Text("100%", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Chọn mức từ 10 đến 100. Mức 50 là cỡ chữ mặc định. Thay đổi được áp dụng và lưu ngay khi chọn.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Kéo thanh để chỉnh từ 10% đến 100%. Mỗi nấc là 1%. Mức 50% là mặc định.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
