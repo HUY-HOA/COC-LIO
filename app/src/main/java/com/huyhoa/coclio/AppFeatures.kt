@@ -2212,6 +2212,7 @@ class CocLioMessagingService : FirebaseMessagingService() {
         val data = message.data
         val type = data["type"] ?: return
         val isCommunity = type == "community_message"
+        if (isCommunity && FirebaseAuth.getInstance().currentUser?.uid == data["senderUid"]) return
         val channelId = if (isCommunity) COC_LIO_COMMUNITY_CHANNEL else COC_LIO_UPDATE_CHANNEL
         val title = data["title"] ?: if (isCommunity) "Cộng đồng COC-LIO" else "COC-LIO có bản cập nhật"
         val body = data["body"] ?: if (isCommunity) "Có tin nhắn mới trong cộng đồng." else "Có phiên bản APK mới."
