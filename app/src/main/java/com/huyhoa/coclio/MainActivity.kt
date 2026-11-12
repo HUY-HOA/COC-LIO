@@ -884,8 +884,14 @@ private fun CocLioApp(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Bạn muốn COC-LIO gọi bạn là gì? Tên này được đồng bộ vào hồ sơ tài khoản để hiển thị trong COC-LIO và giúp quản lý nhận biết tài khoản.",
+                        "Bạn muốn COC-LIO gọi bạn là gì? Tên này được dùng để hiển thị trong ứng dụng.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "Thông tin cơ bản như email, tên Google và ảnh đại diện vẫn được dùng cho tài khoản. Tên và họ bổ sung từ Google chỉ được lưu vào hồ sơ quản lý nếu bạn đồng ý. Bạn có thể từ chối và vẫn đăng nhập, sử dụng ứng dụng bình thường.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
                     )
                     OutlinedTextField(
                         value = pendingPreferredName,
@@ -898,18 +904,48 @@ private fun CocLioApp(
                 }
             },
             confirmButton = {
-                Button(
-                    enabled = pendingPreferredName.trim().isNotEmpty(),
-                    onClick = {
-                        val name = pendingPreferredName.trim()
-                        AccountProfileStore.setPreferredName(context, googleAccount.email, name)
-                        AccountProfileStore.setActive(context, googleAccount.email)
-                        activeProfile = googleAccount.email
-                        selectedTab = 0
-                        pendingGoogleAccount = null
-                        scope.launch { snackbar.showSnackbar("Đã đăng nhập với tên " + name) }
-                    }
-                ) { Text("XÁC NHẬN") }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(
+                        enabled = pendingPreferredName.trim().isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            val name = pendingPreferredName.trim()
+                            scope.launch {
+                                runCatching {
+                                    FirebaseAccountAdministration.saveDataSharingConsent(googleAccount, true)
+                                }.onFailure {
+                                    android.util.Log.w("COC-LIO", "Không thể lưu lựa chọn chia sẻ dữ liệu.", it)
+                                }
+                                AccountProfileStore.setPreferredName(context, googleAccount.email, name)
+                                AccountProfileStore.setActive(context, googleAccount.email)
+                                activeProfile = googleAccount.email
+                                selectedTab = 0
+                                pendingGoogleAccount = null
+                                snackbar.showSnackbar("Đã đăng nhập với tên " + name)
+                            }
+                        }
+                    ) { Text("ĐỒNG Ý CHIA SẺ") }
+                    OutlinedButton(
+                        enabled = pendingPreferredName.trim().isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            val name = pendingPreferredName.trim()
+                            scope.launch {
+                                runCatching {
+                                    FirebaseAccountAdministration.saveDataSharingConsent(googleAccount, false)
+                                }.onFailure {
+                                    android.util.Log.w("COC-LIO", "Không thể lưu lựa chọn chia sẻ dữ liệu.", it)
+                                }
+                                AccountProfileStore.setPreferredName(context, googleAccount.email, name)
+                                AccountProfileStore.setActive(context, googleAccount.email)
+                                activeProfile = googleAccount.email
+                                selectedTab = 0
+                                pendingGoogleAccount = null
+                                snackbar.showSnackbar("Đã đăng nhập, không chia sẻ dữ liệu bổ sung.")
+                            }
+                        }
+                    ) { Text("TIẾP TỤC KHÔNG CHIA SẺ") }
+                }
             },
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
