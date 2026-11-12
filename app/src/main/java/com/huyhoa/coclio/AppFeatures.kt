@@ -457,12 +457,10 @@ object FirebaseAccountAdministration {
     }
 
     suspend fun loadAccounts(): List<AdminGoogleAccount> {
-        runCatching {
-            FirebaseFunctions.getInstance("asia-southeast1")
-                .getHttpsCallable("adminSyncSharedAccounts")
-                .call()
-                .awaitFirebaseResult()
-        }
+        FirebaseFunctions.getInstance("asia-southeast1")
+            .getHttpsCallable("adminSyncSharedAccounts")
+            .call()
+            .awaitFirebaseResult()
         val result = FirebaseFirestore.getInstance()
             .collection("users")
             .whereEqualTo("dataSharingConsent", true)
