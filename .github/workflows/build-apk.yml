@@ -72,7 +72,7 @@ jobs:
           web_client_id = raw_web_client_id.strip()
 
           if raw_web_client_id != web_client_id:
-              sys.exit("::error::GOOGLE_WEB_CLIENT_ID contiene espacios al inicio o al final.")
+              sys.exit("::error::GOOGLE_WEB_CLIENT_ID có khoảng trắng ở đầu hoặc cuối.")
 
           if project_id != "coc-lio-73de9" or project_number != "854984158580":
               sys.exit("::error::google-services.json không thuộc Firebase project COC-LIO.")
