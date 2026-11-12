@@ -344,7 +344,7 @@ private fun CocLioApp(
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    var activeProfile by remember { mutableStateOf(AccountProfileStore.active(context)) }
+    var activeProfile by remember { mutableStateOf("local") }
     var firebaseGoogleEmail by remember {
         mutableStateOf(
             FirebaseAuth.getInstance().currentUser
