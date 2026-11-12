@@ -1175,7 +1175,13 @@ private fun GoogleLoginStartScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(13.dp)
             ) {
-                Text("COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 26.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text(
+                    "COC-LIO",
+                    brush = Brush.linearGradient(LocalLedTheme.current.palette),
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
                 Text(
                     "CHÀO MỪNG ĐẾN VỚI CỘNG ĐỒNG COC-LIO",
                     color = MaterialTheme.colorScheme.onSurface,
