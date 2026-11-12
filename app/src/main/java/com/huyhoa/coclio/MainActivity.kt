@@ -67,6 +67,7 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.huyhoa.coclio.data.CocAssets
+import com.huyhoa.coclio.data.CocAssetCache
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
@@ -336,6 +337,13 @@ private fun CocLioApp(
     val initialHistory = remember(activeProfile) { VillageStore.loadAll(context, activeProfile) }
 
     var history by remember { mutableStateOf(initialHistory) }
+    val assetUrls = remember(activeProfile, history) {
+        history.asSequence()
+            .flatMap { it.items.asSequence() }
+            .mapNotNull(CocAssets::imageUrl)
+            .distinct()
+            .toList()
+    }
     var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
     var events by remember { mutableStateOf(emptyList<ChangeEvent>()) }
     var selectedTab by remember { mutableStateOf(0) }
@@ -451,6 +459,12 @@ private fun CocLioApp(
             pendingPreferredName = ""
         }
         UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
+    }
+
+    LaunchedEffect(activeProfile, assetUrls) {
+        if (assetUrls.isNotEmpty()) {
+            CocAssetCache.prefetch(context, assetUrls)
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -1507,10 +1521,11 @@ private fun VillageItemCard(item: VillageItem) {
 private fun CategoryImage(item: VillageItem, size: Int) {
     val context = LocalContext.current
     val url = CocAssets.imageUrl(item)
-    val imageRequest = remember(url) {
+    val cachedFile = url?.let { CocAssetCache.cachedFile(context, it) }
+    val imageRequest = remember(url, cachedFile) {
         url?.let {
             ImageRequest.Builder(context)
-                .data(it)
+                .data(cachedFile ?: it)
                 .crossfade(false)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .diskCachePolicy(CachePolicy.ENABLED)
