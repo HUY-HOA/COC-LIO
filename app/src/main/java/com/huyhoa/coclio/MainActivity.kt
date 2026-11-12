@@ -331,6 +331,14 @@ private fun CocLioApp(
     val context = LocalContext.current
     val baseDensity = LocalDensity.current
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
+    var displaySizeLevel by remember { mutableStateOf(AppPreferences.displaySizeLevel(context)) }
+    val appDisplayScale = when (displaySizeLevel.coerceIn(1, 5)) {
+        1 -> 0.82f
+        2 -> 0.89f
+        3 -> 0.96f
+        4 -> 1.03f
+        else -> 1.10f
+    }
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -508,7 +516,7 @@ private fun CocLioApp(
 
     CompositionLocalProvider(
         LocalLedTheme provides ledTheme,
-        LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * appFontScale)
+        LocalDensity provides Density(baseDensity.density * appDisplayScale, baseDensity.fontScale * appFontScale)
     ) {
     Box(Modifier.fillMaxSize()) {
         NeonBackdrop()
@@ -662,6 +670,11 @@ private fun CocLioApp(
                         themeMode = themeMode,
                         onThemeModeChanged = onThemeModeChanged,
                         textScale = appFontScale,
+                        displaySizeLevel = displaySizeLevel,
+                        onDisplaySizeLevelChanged = { level ->
+                            displaySizeLevel = level.coerceIn(1, 5)
+                            AppPreferences.setDisplaySizeLevel(context, displaySizeLevel)
+                        },
                         notificationsEnabled = notificationsEnabled,
                         ledEnabled = ledEnabled,
                         ledPreset = ledPreset,
@@ -805,7 +818,7 @@ private fun CocLioApp(
 
     if (showImportDialog) {
         CompositionLocalProvider(
-            LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * appFontScale)
+            LocalDensity provides Density(baseDensity.density * appDisplayScale, baseDensity.fontScale * appFontScale)
         ) {
         ImportDialog(
             error = importError,
