@@ -1045,23 +1045,44 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
     deleteRelease?.let { release ->
         AlertDialog(
             onDismissRequest = { deleteRelease = null },
-            title = { Text("Xóa bản cập nhật?") },
-            text = { Text("Bản ${release.versionName} sẽ bị gỡ khỏi danh sách tải xuống.") },
+            title = { Text("Gỡ bản cập nhật vào kho?") },
+            text = { Text("Bản ${release.versionName} sẽ được chuyển vào mục APK cập nhật đã gỡ, tệp APK vẫn được giữ.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteRelease = null
                     scope.launch {
                         try {
-                            if (release.storagePath.isNotBlank()) {
-                                FirebaseStorage.getInstance().reference.child(release.storagePath).delete().awaitCommunityResult()
+                            val firestore = FirebaseFirestore.getInstance()
+                            val archiveData = mutableMapOf<String, Any>(
+                                "originalId" to release.id,
+                                "versionName" to release.versionName,
+                                "notes" to release.notes,
+                                "fileName" to release.fileName,
+                                "storagePath" to release.storagePath,
+                                "downloadUrl" to release.downloadUrl,
+                                "fileSize" to release.fileSize,
+                                "createdAt" to Timestamp(Date(release.createdAt)),
+                                "archivedBy" to FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
+                                "archivedAt" to FieldValue.serverTimestamp()
+                            )
+                            if (!archiveKeepForever) {
+                                val retention = archiveRetentionValue.toIntOrNull() ?: 30
+                                archiveData["expiresAt"] = communityArchiveExpiry(
+                                    System.currentTimeMillis(),
+                                    retention,
+                                    archiveRetentionUnit
+                                )
                             }
-                            FirebaseFirestore.getInstance().collection("app_updates").document(release.id).delete().awaitCommunityResult()
-                            statusMessage = "Đã xóa bản cập nhật."
+                            val batch = firestore.batch()
+                            batch.set(firestore.collection("app_update_archive").document(release.id), archiveData)
+                            batch.delete(firestore.collection("app_updates").document(release.id))
+                            batch.commit().awaitCommunityResult()
+                            statusMessage = "Đã gỡ và lưu APK cập nhật."
                         } catch (error: Exception) {
-                            statusMessage = error.message ?: "Không thể xóa bản cập nhật."
+                            statusMessage = error.message ?: "Không thể chuyển APK vào kho."
                         }
                     }
-                }) { Text("XÓA") }
+                }) { Text("GỠ VÀ LƯU") }
             },
             dismissButton = { TextButton(onClick = { deleteRelease = null }) { Text("HỦY") } }
         )
