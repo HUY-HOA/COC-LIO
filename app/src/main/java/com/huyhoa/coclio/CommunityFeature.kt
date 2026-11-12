@@ -193,10 +193,10 @@ private fun downloadCommunityFile(context: Context, url: String, fileName: Strin
 }
 
 @Composable
-fun CommunityScreen(onOpenSettings: () -> Unit) {
+fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val user = FirebaseAuth.getInstance().currentUser
+    val user = FirebaseAuth.getInstance().currentUser?.takeIf { isGoogleSignedIn }
     val isOwner = FirebaseAccountAdministration.isOwner(user?.email)
     var selectedSection by remember { mutableStateOf(0) }
     var messages by remember { mutableStateOf<List<CommunityMessage>>(emptyList()) }
@@ -452,7 +452,7 @@ fun CommunityScreen(onOpenSettings: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("ĐĂNG NHẬP ĐỂ THAM GIA", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-                    Text("Bạn cần đăng nhập Google trong mục Cài đặt để trò chuyện và tải bản cập nhật.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                    Text("Bạn cần đăng nhập Google trong mục Cài đặt để xem tin nhắn, nhắn tin, gửi tệp và tải bản cập nhật.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, lineHeight = 16.sp)
                     Button(onClick = onOpenSettings) { Text("MỞ CÀI ĐẶT") }
                 }
             }
