@@ -68,6 +68,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.huyhoa.coclio.data.CocAssets
 import com.huyhoa.coclio.data.CocAssetCache
+import com.huyhoa.coclio.data.CocAssetPrefetchWorker
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
@@ -463,7 +464,7 @@ private fun CocLioApp(
 
     LaunchedEffect(activeProfile, assetUrls) {
         if (assetUrls.isNotEmpty()) {
-            CocAssetCache.prefetch(context, assetUrls)
+            CocAssetPrefetchWorker.enqueue(context, activeProfile, assetUrls.hashCode())
         }
     }
 
