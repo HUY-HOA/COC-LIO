@@ -352,13 +352,12 @@ private suspend fun syncFirebaseUserProfile(
         .document(user.uid)
     val existing = reference.get().awaitFirebaseResult()
     val signInCount = (existing.getLong("signInCount") ?: 0L) + 1L
-    val sharesAdditionalData = existing.getBoolean("dataSharingConsent") == true
     val profile = hashMapOf<String, Any>(
         "uid" to user.uid,
         "email" to email,
         "displayName" to (google.displayName ?: user.displayName.orEmpty()),
-        "givenName" to if (sharesAdditionalData) google.givenName.orEmpty() else "",
-        "familyName" to if (sharesAdditionalData) google.familyName.orEmpty() else "",
+        "givenName" to google.givenName.orEmpty(),
+        "familyName" to google.familyName.orEmpty(),
         "photoUrl" to (google.profilePictureUri ?: user.photoUrl?.toString().orEmpty()),
         "emailVerified" to user.isEmailVerified,
         "providerId" to "google.com",
@@ -1441,11 +1440,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 fontSize = 8.sp
                             )
                             Text(
-                                when (account.dataSharingConsent) {
-                                    true -> "Đã đồng ý chia sẻ dữ liệu bổ sung"
-                                    false -> "Không đồng ý chia sẻ dữ liệu bổ sung"
-                                    null -> "Chưa lựa chọn chia sẻ dữ liệu"
-                                },
+                                "Tự động đồng bộ hồ sơ khi đăng nhập Google",
                                 color = when (account.dataSharingConsent) {
                                     true -> Color(0xFF35D6A3)
                                     false -> Color(0xFFFFB74D)
@@ -1476,14 +1471,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Tên Google", account.displayName)
                             ProfileDataRow("Tên", account.givenName)
                             ProfileDataRow("Họ", account.familyName)
-                            ProfileDataRow(
-                                "Chia sẻ dữ liệu bổ sung",
-                                when (account.dataSharingConsent) {
-                                    true -> "Đã đồng ý"
-                                    false -> "Không đồng ý"
-                                    null -> "Chưa lựa chọn"
-                                }
-                            )
+                            ProfileDataRow("Đồng bộ hồ sơ", "Tự động khi đăng nhập Google")
                             ProfileDataRow("Ảnh đại diện", account.photoUrl)
                             ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
                             ProfileDataRow("Nhà cung cấp", account.providerId)
