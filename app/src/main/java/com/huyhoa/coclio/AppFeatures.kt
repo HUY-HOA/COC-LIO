@@ -113,6 +113,10 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.FirebaseMessagingService
+import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
@@ -250,6 +254,24 @@ object AppPreferences {
             .edit().putBoolean(key(profile, "notifications"), enabled).apply()
     }
 
+    fun communityNotificationsEnabled(context: Context, profile: String): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getBoolean(key(profile, "community_notifications"), false)
+
+    fun setCommunityNotificationsEnabled(context: Context, profile: String, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(key(profile, "community_notifications"), enabled).apply()
+    }
+
+    fun updateNotificationsEnabled(context: Context, profile: String): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getBoolean(key(profile, "update_notifications"), false)
+
+    fun setUpdateNotificationsEnabled(context: Context, profile: String, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(key(profile, "update_notifications"), enabled).apply()
+    }
+
     fun notificationStyle(context: Context, profile: String): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(key(profile, "notification_style"), "alarm") ?: "alarm"
@@ -324,11 +346,11 @@ object AppPreferences {
     fun displaySizeScale(context: Context): Float = displaySizeScale(displaySizeLevel(context))
 
     fun displaySizeScale(level: Int): Float = when (level.coerceIn(1, 5)) {
-        1 -> 0.82f
-        2 -> 0.89f
-        3 -> 0.96f
-        4 -> 1.03f
-        else -> 1.10f
+        1 -> 0.80f
+        2 -> 0.90f
+        3 -> 1.00f
+        4 -> 1.10f
+        else -> 1.20f
     }
 
     fun setTextScale(context: Context, scale: Float) {
