@@ -232,7 +232,10 @@ service cloud.firestore {
         && request.resource.data.fileSize > 0
         && request.resource.data.fileSize <= 150 * 1024 * 1024
         && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.notifyUsers is bool
+        && (
+          !request.resource.data.keys().hasAny(['notifyUsers'])
+          || request.resource.data.notifyUsers is bool
+        )
         && request.resource.data.createdAt == request.time;
 
       allow update: if isOwner();
