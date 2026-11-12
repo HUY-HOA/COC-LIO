@@ -417,6 +417,16 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
     }
 
+    suspend fun getDataSharingConsent(): Boolean? {
+        val user = FirebaseAuth.getInstance().currentUser ?: return null
+        val document = FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .get()
+            .awaitFirebaseResult()
+        return document.getBoolean("dataSharingConsent")
+    }
+
     suspend fun saveDataSharingConsent(google: GoogleAccountData, consented: Boolean) {
         val user = FirebaseAuth.getInstance().currentUser
             ?: throw IllegalStateException("Bạn cần đăng nhập Google để lưu lựa chọn chia sẻ dữ liệu.")
@@ -1427,6 +1437,19 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             Text(
                                 "Đăng nhập ${account.signInCount} lần · ${formatAdminAccountTime(account.lastSignInAt)}",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 8.sp
+                            )
+                            Text(
+                                when (account.dataSharingConsent) {
+                                    true -> "Đã đồng ý chia sẻ dữ liệu bổ sung"
+                                    false -> "Không đồng ý chia sẻ dữ liệu bổ sung"
+                                    null -> "Chưa lựa chọn chia sẻ dữ liệu"
+                                },
+                                color = when (account.dataSharingConsent) {
+                                    true -> Color(0xFF35D6A3)
+                                    false -> Color(0xFFFFB74D)
+                                    null -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                                 fontSize = 8.sp
                             )
                         }
