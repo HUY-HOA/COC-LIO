@@ -349,7 +349,6 @@ private fun CocLioApp(
             .toList()
     }
     var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
-    var events by remember { mutableStateOf(emptyList<ChangeEvent>()) }
     var selectedTab by remember { mutableStateOf(0) }
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
@@ -449,7 +448,6 @@ private fun CocLioApp(
         current = history.firstOrNull()
         deletedVillages = VillageStore.loadDeleted(context, activeProfile)
         pinnedTags = VillageStore.pinnedTags(context, activeProfile)
-        events = emptyList()
         notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
         notificationStyle = AppPreferences.notificationStyle(context, activeProfile)
         AccountProfileStore.markLastUsed(context, activeProfile)
@@ -486,16 +484,12 @@ private fun CocLioApp(
             val customName = nameOverride?.trim()?.takeIf { it.isNotBlank() }
             val parsed = if (customName == null) parsedFromJson
             else parsedFromJson.copy(villageName = customName)
-            val previous = history.firstOrNull {
-                it.tag == parsed.tag && it.timestamp < parsed.timestamp
-            }
             VillageStore.save(context, parsed, activeProfile, customName)
             history = VillageStore.loadAll(context, activeProfile)
             pinnedTags = VillageStore.pinnedTags(context, activeProfile)
             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
             AppWidgetUpdater.updateAll(context)
             current = history.firstOrNull { it.tag == parsed.tag } ?: parsed
-            events = VillageParser.compare(previous, parsed)
             importError = null
             showImportDialog = false
             scope.launch {
@@ -590,7 +584,7 @@ private fun CocLioApp(
             Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
                 when (page) {
                     0 -> current?.let {
-                        OverviewScreen(snapshot = it, events = events)
+                        OverviewScreen(snapshot = it)
                     } ?: EmptyWelcome(
                         onImport = { importError = null; showImportDialog = true },
                         onOpenGame = { openClashOfClans(context) }
@@ -871,7 +865,6 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
 @Composable
 private fun OverviewScreen(
     snapshot: VillageSnapshot,
-    events: List<ChangeEvent>
 ) {
     var nowEpoch by remember(snapshot.tag, snapshot.timestamp) {
         mutableLongStateOf(System.currentTimeMillis() / 1000L)
@@ -1019,11 +1012,6 @@ private fun OverviewScreen(
 
         }
 
-        if (events.isNotEmpty()) {
-            item { SectionTitle("THAY ĐỔI", events.size.toString()) }
-            items(events, key = { it.title + it.detail }) { ChangeCard(it) }
-        }
-
         val helpers = snapshot.items.filter { it.sectionKey == "helpers" }
         if (helpers.isNotEmpty()) {
             item { SectionTitle("TRỢ THỦ", helpers.size.toString()) }
@@ -1043,18 +1031,18 @@ private fun OverviewScreen(
             }
         }
 
-        homeExtras.groupBy { it.sectionKey }.forEach { (_, entries) ->
+        if (homeExtras.isNotEmpty()) {
             item {
-                SectionTitle("NHÀ CHÍNH • ${entries.first().sectionLabel.uppercase()}", entries.sumOf { it.count }.toString())
+                SectionTitle("NHÀ CHÍNH", homeExtras.sumOf { it.count }.toString())
             }
-            item { ExtraEntriesCard(entries) }
+            item { ExtraEntriesCard(homeExtras) }
         }
 
-        builderExtras.groupBy { it.sectionKey }.forEach { (_, entries) ->
+        if (builderExtras.isNotEmpty()) {
             item {
-                SectionTitle("LÀNG ĐÊM • ${entries.first().sectionLabel.uppercase()}", entries.sumOf { it.count }.toString())
+                SectionTitle("LÀNG ĐÊM", builderExtras.sumOf { it.count }.toString())
             }
-            item { ExtraEntriesCard(entries) }
+            item { ExtraEntriesCard(builderExtras) }
         }
 
         if (snapshot.extraFields.isNotEmpty()) {
@@ -1239,20 +1227,6 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                         fontWeight = FontWeight.Black
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ChangeCard(event: ChangeEvent) {
-    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = if (event.completed) CocGreen else CocMagenta) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (event.completed) "✦" else "↗", color = if (event.completed) CocGreen else CocMagenta, fontSize = 22.sp, fontWeight = FontWeight.Black)
-            Spacer(Modifier.width(12.dp))
-            Column {
-                Text(event.title, color = if (event.completed) CocGreen else CocCyan, fontWeight = FontWeight.Black, fontSize = 12.sp)
-                Text(event.detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
             }
         }
     }
@@ -1486,45 +1460,22 @@ private fun HelperCompactCard(item: VillageItem, modifier: Modifier = Modifier) 
     }
 }
 
-private fun extraEntryIcon(sectionKey: String): String = when (sectionKey) {
-    "decos", "decos2" -> "🌸"
-    "obstacles", "obstacles2" -> "🪨"
-    "house_parts" -> "🏠"
-    "skins", "skins2" -> "👑"
-    "sceneries", "sceneries2" -> "🏞️"
-    "boosts" -> "⚡"
-    else -> "✦"
-}
-
 @Composable
 private fun ExtraEntriesCard(entries: List<VillageExtraItem>) {
+    val summary = entries
+        .groupBy { it.sectionKey }
+        .values
+        .map { group -> group.first().sectionLabel to group.sumOf { it.count } }
+        .joinToString(" • ") { (label, count) -> "$label ×$count" }
+
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet, innerPadding = 7.dp) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            entries.forEach { entry ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        extraEntryIcon(entry.sectionKey),
-                        fontSize = 16.sp,
-                        modifier = Modifier.width(25.dp)
-                    )
-                    Text(
-                        entry.name,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 9.sp,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    val metadata = buildList {
-                        entry.level?.let { add("Cấp " + it) }
-                        if (entry.count > 1) add("×" + entry.count)
-                    }.joinToString(" • ")
-                    if (metadata.isNotBlank()) {
-                        Text(metadata, color = MaterialTheme.colorScheme.tertiary, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
+        Text(
+            summary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 9.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
