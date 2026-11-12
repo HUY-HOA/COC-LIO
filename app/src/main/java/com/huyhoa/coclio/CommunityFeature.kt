@@ -1354,7 +1354,7 @@ private fun CommunityReleaseCard(
                 }
                 Spacer(Modifier.width(6.dp))
                 if (isOwner) {
-                    TextButton(onClick = onDelete) { Text("XÓA", fontSize = 9.sp) }
+                    TextButton(onClick = onDelete) { Text("GỠ VÀO KHO", fontSize = 9.sp) }
                 }
             }
         }
