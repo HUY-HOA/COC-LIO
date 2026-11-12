@@ -144,7 +144,21 @@ service cloud.firestore {
           )
         );
 
-      allow delete: if isOwner();
+      allow delete: if isOwner()
+        && (
+          (
+            resource.data.type == 'text'
+            && existsAfter(/databases/$(database)/documents/community_deleted_messages/$(messageId))
+          )
+          || (
+            resource.data.type == 'image'
+            && existsAfter(/databases/$(database)/documents/community_deleted_images/$(messageId))
+          )
+          || (
+            resource.data.type == 'file'
+            && existsAfter(/databases/$(database)/documents/community_deleted_files/$(messageId))
+          )
+        );
     }
 
     match /community_deleted_messages/{archiveId} {
@@ -194,7 +208,9 @@ service cloud.firestore {
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time;
 
-      allow update, delete: if isOwner();
+      allow update: if isOwner();
+      allow delete: if isOwner()
+        && existsAfter(/databases/$(database)/documents/app_update_archive/$(updateId));
     }
 
     match /licenses/{userId} {
