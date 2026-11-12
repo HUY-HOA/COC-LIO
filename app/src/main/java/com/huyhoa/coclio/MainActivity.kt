@@ -520,7 +520,7 @@ private fun CocLioApp(
                 comparisonEvents.isEmpty() -> ImportSummary(
                     "Đã phân tích và lưu JSON",
                     listOf(
-                        "Không phát hiện thay đổi trong các mục và cấp độ mà COC-LIO đang theo dõi.",
+                        "Không phát hiện thay đổi về nâng cấp hoặc cấp độ trong các mục mà bộ so sánh hiện hỗ trợ.",
                         "Dữ liệu mới đã được lưu làm mốc hiện tại."
                     )
                 )
