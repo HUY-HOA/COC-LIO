@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "854984158580",
+    "project_id": "coc-lio-73de9",
+    "storage_bucket": "coc-lio-73de9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:854984158580:android:99a25efc5e8b6156f51021",
+        "android_client_info": {
+          "package_name": "com.huyhoa.coclio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXhiZK57n1NO9iJ5ngYkjCVTL998D5Nq8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
