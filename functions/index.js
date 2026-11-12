@@ -114,6 +114,7 @@ exports.notifyCommunityMessage = onDocumentCreated(
         type: "community_message",
         messageId: event.params.messageId,
         senderUid: String(data.uid || ""),
+        senderName: sender,
         title: "Cộng đồng COC-LIO",
         body: (sender + ": " + content).slice(0, 450)
       },
