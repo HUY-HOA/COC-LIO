@@ -394,6 +394,12 @@ private fun CocLioApp(
     var alarmDurationSeconds by remember(activeProfile) {
         mutableStateOf(AppPreferences.alarmDurationSeconds(context, activeProfile))
     }
+    var communityNotificationsEnabled by remember(activeProfile) {
+        mutableStateOf(AppPreferences.communityNotificationsEnabled(context, activeProfile))
+    }
+    var updateNotificationsEnabled by remember(activeProfile) {
+        mutableStateOf(AppPreferences.updateNotificationsEnabled(context, activeProfile))
+    }
     var deletedVillages by remember(activeProfile) {
         mutableStateOf(VillageStore.loadDeleted(context, activeProfile))
     }
@@ -437,9 +443,9 @@ private fun CocLioApp(
         palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
         speedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
-            20000 - ((ledSpeed.coerceIn(1, 100) - 1) * 19750 / 99)
-        ).coerceIn(250, 20000),
-        brightness = ledBrightness.coerceIn(0.01f, 1f),
+            20000.0 * Math.pow(0.02, ledSpeed.coerceIn(1, 100) / 100.0)
+        ).toInt().coerceIn(400, 20000),
+        brightness = ledBrightness.coerceIn(0f, 1f),
         progress = ledProgress
     )
 
@@ -508,13 +514,24 @@ private fun CocLioApp(
         }
     }
 
+    LaunchedEffect(
+        isGoogleSignedIn,
+        communityNotificationsEnabled,
+        updateNotificationsEnabled
+    ) {
+        CocLioPushSubscriptions.sync(
+            communityEnabled = isGoogleSignedIn && communityNotificationsEnabled,
+            updatesEnabled = isGoogleSignedIn && updateNotificationsEnabled
+        )
+    }
+
     fun requestImportJson() {
         if (isGoogleSignedIn) {
             importError = null
             showImportDialog = true
         } else {
             showImportDialog = false
-            selectedTab = 5
+            selectedTab = 4
             scope.launch {
                 snackbar.showSnackbar("Bạn cần đăng nhập Google trước khi nhập JSON và xem dữ liệu làng.")
             }
@@ -684,8 +701,20 @@ private fun CocLioApp(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 23.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-                    Text("THEO DÕI TIẾN TRÌNH", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, letterSpacing = 1.sp)
+                    Text(
+                        "COC-LIO",
+                        brush = Brush.linearGradient(ledTheme.palette.map { it.copy(alpha = ledTheme.brightness) }),
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 2.sp
+                    )
+                    Text(
+                        "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 8.sp,
+                        letterSpacing = 0.3.sp,
+                        maxLines = 1
+                    )
                 }
                 NeonButton(
                     text = if (isGoogleSignedIn) "＋ NHẬP JSON" else "ĐĂNG NHẬP",
@@ -702,11 +731,10 @@ private fun CocLioApp(
             ) {
                 val navItems = listOf(
                     Triple("home", "Tổng quan", 0),
-                    Triple("buildings", "Công trình", 1),
-                    Triple("army", "Quân đội", 2),
-                    Triple("history", "Kho JSON", 3),
-                    Triple("community", "Cộng đồng", 4),
-                    Triple("settings", "Cài đặt", 5)
+                    Triple("buildings", "Công trình & Quân đội", 1),
+                    Triple("history", "Kho JSON", 2),
+                    Triple("community", "Cộng đồng", 3),
+                    Triple("settings", "Cài đặt", 4)
                 )
                 navItems.forEach { item ->
                     NavigationBarItem(
@@ -717,7 +745,6 @@ private fun CocLioApp(
                                 imageVector = when (item.first) {
                                     "home" -> Icons.Filled.Home
                                     "buildings" -> Icons.Filled.Business
-                                    "army" -> Icons.Filled.Groups
                                     "history" -> Icons.Filled.History
                                     "community" -> Icons.Filled.Forum
                                     else -> Icons.Filled.Settings
@@ -770,18 +797,12 @@ private fun CocLioApp(
                         onOpenGame = { openClashOfClans(context) }
                     )
                     1 -> current?.let {
-                        CategoryScreen(snapshot = it, tab = "buildings")
+                        BuildingsAndArmyScreen(snapshot = it)
                     } ?: EmptyWelcome(
                         onImport = { requestImportJson() },
                         onOpenGame = { openClashOfClans(context) }
                     )
-                    2 -> current?.let {
-                        CategoryScreen(snapshot = it, tab = "army")
-                    } ?: EmptyWelcome(
-                        onImport = { requestImportJson() },
-                        onOpenGame = { openClashOfClans(context) }
-                    )
-                    3 -> HistoryScreen(
+                    2 -> HistoryScreen(
                         history = history,
                         deletedVillages = deletedVillages,
                         pinnedTags = pinnedTags,
@@ -827,11 +848,11 @@ private fun CocLioApp(
                             }
                         }
                     )
-                    4 -> CommunityScreen(
+                    3 -> CommunityScreen(
                         isGoogleSignedIn = isGoogleSignedIn,
-                        onOpenSettings = { selectedTab = 5 }
+                        onOpenSettings = { selectedTab = 4 }
                     )
-                    5 -> SettingsScreen(
+                    4 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
                         isAdmin = FirebaseAccountAdministration.isOwner(activeProfile),
                         accountData = AccountProfileStore.googleData(context, activeProfile),
@@ -865,11 +886,21 @@ private fun CocLioApp(
                             ledPrefs.edit().putInt("speed", ledSpeed).apply()
                         },
                         onLedBrightnessChanged = { value ->
-                            ledBrightness = value.coerceIn(0.01f, 1f)
+                            ledBrightness = value.coerceIn(0f, 1f)
                             ledPrefs.edit().putFloat("brightness", ledBrightness).apply()
                         },
                         notificationStyle = notificationStyle,
                         alarmDurationSeconds = alarmDurationSeconds,
+                        communityNotificationsEnabled = communityNotificationsEnabled,
+                        updateNotificationsEnabled = updateNotificationsEnabled,
+                        onCommunityNotificationsChanged = { enabled ->
+                            AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, enabled)
+                            communityNotificationsEnabled = enabled
+                        },
+                        onUpdateNotificationsChanged = { enabled ->
+                            AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, enabled)
+                            updateNotificationsEnabled = enabled
+                        },
                         onGoogleSignIn = { signInWithGoogle() },
                         onGoogleSwitchAccount = {
                             leaveGoogleAccount("Đã đăng xuất tài khoản hiện tại. Hãy chọn tài khoản Google khác trên màn hình đăng nhập.")
