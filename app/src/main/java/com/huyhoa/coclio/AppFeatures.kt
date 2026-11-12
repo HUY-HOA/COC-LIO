@@ -1636,6 +1636,10 @@ fun SettingsScreen(
     onLedBrightnessChanged: (Float) -> Unit,
     notificationStyle: String,
     alarmDurationSeconds: Int,
+    communityNotificationsEnabled: Boolean,
+    updateNotificationsEnabled: Boolean,
+    onCommunityNotificationsChanged: (Boolean) -> Unit,
+    onUpdateNotificationsChanged: (Boolean) -> Unit,
     onGoogleSignIn: () -> Unit,
     onGoogleSwitchAccount: () -> Unit,
     onGoogleSignOut: () -> Unit,
@@ -1858,7 +1862,7 @@ fun SettingsScreen(
             }
             Text(
                 if (selectedSizeSetting == 0)
-                    "Điều chỉnh kích thước tổng thể của giao diện, nút và khoảng cách. Mức 3 (96%) là mặc định."
+                    "Điều chỉnh kích thước tổng thể của giao diện, nút và khoảng cách. Mức 3 (100%) là mặc định."
                 else
                     "Điều chỉnh cỡ chữ trong toàn ứng dụng. Mức 3 (100%) là mặc định.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1897,18 +1901,20 @@ fun SettingsScreen(
             Slider(
                 value = ledSpeed.coerceIn(0, 100).toFloat(),
                 onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(0, 100)) },
-                valueRange = 0f..100f
+                valueRange = 0f..100f,
+                colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Color.Transparent)
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("ĐỨNG YÊN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 Spacer(Modifier.weight(1f))
                 Text("CỰC NHANH", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Độ sáng: ${(ledBrightness * 100f).roundToInt().coerceIn(1, 100)}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+            Text("Độ sáng: ${(ledBrightness * 100f).roundToInt().coerceIn(0, 100)}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
             Slider(
-                value = (ledBrightness * 100f).roundToInt().coerceIn(1, 100).toFloat(),
-                onValueChange = { onLedBrightnessChanged(it.roundToInt().coerceIn(1, 100) / 100f) },
-                valueRange = 1f..100f
+                value = (ledBrightness * 100f).roundToInt().coerceIn(0, 100).toFloat(),
+                onValueChange = { onLedBrightnessChanged(it.roundToInt().coerceIn(0, 100) / 100f) },
+                valueRange = 0f..100f,
+                colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Color.Transparent)
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Mờ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
@@ -1918,12 +1924,32 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
+            Text(
+                "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("THÔNG BÁO NÂNG CẤP", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("THÔNG BÁO NÂNG CẤP", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Text("Nhắc khi bộ đếm trong JSON đã đếm hết.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                 }
                 Switch(checked = notificationsEnabled, onCheckedChange = onNotificationsChanged)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("TIN NHẮN CỘNG ĐỒNG", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Nhận thông báo khi có tin nhắn mới.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                }
+                Switch(checked = communityNotificationsEnabled, onCheckedChange = onCommunityNotificationsChanged)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("THÔNG BÁO BẢN CẬP NHẬT APK", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Chỉ nhận khi quản lý chọn gửi thông báo.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                }
+                Switch(checked = updateNotificationsEnabled, onCheckedChange = onUpdateNotificationsChanged)
             }
             Text("Kiểu thông báo", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -2021,45 +2047,7 @@ fun SettingsScreen(
 
         FeaturePanel {
             Text("LIÊN HỆ NHÀ PHÁT TRIỂN", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Text("Quét mã QR để mở liên hệ Zalo của nhà phát triển COC-LIO.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(232.dp)
-                        .background(Color.White, RoundedCornerShape(12.dp))
-                        .padding(12.dp)
-                ) {
-                    val qrMatrix = androidx.compose.runtime.remember {
-                        com.google.zxing.qrcode.QRCodeWriter().encode(
-                            ZALO_CONTACT_URL,
-                            com.google.zxing.BarcodeFormat.QR_CODE,
-                            1,
-                            1
-                        )
-                    }
-                    Canvas(Modifier.fillMaxSize()) {
-                        val cellWidth = size.width / qrMatrix.width
-                        val cellHeight = size.height / qrMatrix.height
-                        for (y in 0 until qrMatrix.height) {
-                            for (x in 0 until qrMatrix.width) {
-                                if (qrMatrix[x, y]) {
-                                    drawRect(
-                                        color = Color.Black,
-                                        topLeft = androidx.compose.ui.geometry.Offset(
-                                            x * cellWidth,
-                                            y * cellHeight
-                                        ),
-                                        size = androidx.compose.ui.geometry.Size(cellWidth, cellHeight)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            Text("Mở Zalo để liên hệ nhà phát triển COC-LIO.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
             Button(
                 onClick = {
                     runCatching {
