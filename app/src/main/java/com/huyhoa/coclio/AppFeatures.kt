@@ -248,7 +248,28 @@ object AppPreferences {
                 .putInt("text_scale_version", 1)
                 .apply()
         }
-        return preferences.getFloat("text_scale", 1f).coerceIn(0.8f, 1.25f)
+        val savedScale = preferences.getFloat("text_scale", 1f).coerceIn(0.8f, 1.2f)
+        val normalizedScale = textScaleForLevel(textScaleLevel(savedScale))
+        if (savedScale != normalizedScale) {
+            preferences.edit().putFloat("text_scale", normalizedScale).apply()
+        }
+        return normalizedScale
+    }
+
+    fun textScaleLevel(scale: Float): Int = when {
+        scale < 0.85f -> 1
+        scale < 0.95f -> 2
+        scale < 1.05f -> 3
+        scale < 1.15f -> 4
+        else -> 5
+    }
+
+    fun textScaleForLevel(level: Int): Float = when (level.coerceIn(1, 5)) {
+        1 -> 0.8f
+        2 -> 0.9f
+        3 -> 1f
+        4 -> 1.1f
+        else -> 1.2f
     }
 
     fun themeMode(context: Context): String =
@@ -269,7 +290,9 @@ object AppPreferences {
             .edit().putInt("display_size_level", level.coerceIn(1, 5)).apply()
     }
 
-    fun displaySizeScale(context: Context): Float = when (displaySizeLevel(context)) {
+    fun displaySizeScale(context: Context): Float = displaySizeScale(displaySizeLevel(context))
+
+    fun displaySizeScale(level: Int): Float = when (level.coerceIn(1, 5)) {
         1 -> 0.82f
         2 -> 0.89f
         3 -> 0.96f
@@ -278,8 +301,9 @@ object AppPreferences {
     }
 
     fun setTextScale(context: Context, scale: Float) {
+        val normalizedScale = textScaleForLevel(textScaleLevel(scale))
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putFloat("text_scale", scale.coerceIn(0.8f, 1.25f)).apply()
+            .edit().putFloat("text_scale", normalizedScale).apply()
     }
 }
 
@@ -1063,8 +1087,7 @@ fun SettingsScreen(
     onNotificationsChanged: (Boolean) -> Unit,
     onNotificationStyleChanged: (String) -> Unit,
     onTestNotification: () -> Unit,
-    onTextScaleChanged: (Float) -> Unit,
-    onTextScaleChangeFinished: () -> Unit
+    onTextScaleChanged: (Float) -> Unit
 ) {
     val context = LocalContext.current
     Column(
@@ -1210,7 +1233,7 @@ fun SettingsScreen(
         FeaturePanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("KÍCH THƯỚC HIỂN THỊ", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("MỨC $displaySizeLevel/5", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                Text("MỨC $displaySizeLevel/5 · ${(AppPreferences.displaySizeScale(displaySizeLevel) * 100f).roundToInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Black)
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1230,42 +1253,34 @@ fun SettingsScreen(
                 Spacer(Modifier.weight(1f))
                 Text("LỚN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Điều chỉnh kích thước nút và khoảng cách giao diện. Mức 3 là mặc định.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Điều chỉnh kích thước nút và khoảng cách giao diện. Mức 3 (96%) là mặc định.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
 
-        val currentFontLevel = (if (textScale <= 1f) {
-            (((textScale.coerceIn(0.8f, 1f) - 0.8f) / 0.2f) * 40f + 10f).roundToInt()
-        } else {
-            (50f + ((textScale.coerceIn(1f, 1.25f) - 1f) / 0.25f) * 50f).roundToInt()
-        }).coerceIn(10, 100)
-        fun fontScaleForLevel(level: Int): Float {
-            val safeLevel = level.coerceIn(10, 100)
-            return if (safeLevel <= 50) {
-                0.8f + (safeLevel - 10) * (0.2f / 40f)
-            } else {
-                1f + (safeLevel - 50) * (0.25f / 50f)
-            }
-        }
+        val currentFontLevel = AppPreferences.textScaleLevel(textScale)
         FeaturePanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("MỨC $currentFontLevel%", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                Text("MỨC $currentFontLevel/5 · ${(AppPreferences.textScaleForLevel(currentFontLevel) * 100f).roundToInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Black)
             }
-            Slider(
-                value = currentFontLevel.toFloat(),
-                onValueChange = { level ->
-                    onTextScaleChanged(fontScaleForLevel(level.roundToInt()))
-                },
-                onValueChangeFinished = onTextScaleChangeFinished,
-                valueRange = 10f..100f,
-                steps = 89
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                (1..5).forEach { level ->
+                    FilterChip(
+                        selected = currentFontLevel == level,
+                        onClick = { onTextScaleChanged(AppPreferences.textScaleForLevel(level)) },
+                        modifier = Modifier.weight(1f).height(30.dp),
+                        label = { Text(level.toString(), fontSize = 9.sp) }
+                    )
+                }
+            }
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("10%", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Text("NHỎ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 Spacer(Modifier.weight(1f))
-                Text("100%", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Text("TO", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Kéo thanh để chỉnh từ 10% đến 100%. Mỗi nấc là 1%. Mức 50% là mặc định.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Điều chỉnh cỡ chữ toàn ứng dụng. Mức 3 (100%) là mặc định.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
