@@ -164,9 +164,7 @@ private suspend fun cleanupCommunityArchive(): Int {
             for (document in expired.documents) {
                 val path = document.getString("storagePath").orEmpty()
                 if (path.isNotBlank()) {
-                    runCatching {
-                        FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult()
-                    }
+                    FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult()
                 }
                 document.reference.delete().awaitCommunityResult()
                 removed++
@@ -182,7 +180,7 @@ class CommunityArchiveCleanupWorker(
 ) : CoroutineWorker(appContext, workerParams) {
     override suspend fun doWork(): Result {
         val user = FirebaseAuth.getInstance().currentUser ?: return Result.success()
-        if (!user.isEmailVerified || !user.email.equals("phunghuyhoahaikba@gmail.com", ignoreCase = true)) {
+        if (!user.isEmailVerified || user.email?.equals("phunghuyhoahaikba@gmail.com", ignoreCase = true) != true) {
             return Result.success()
         }
         return try {
