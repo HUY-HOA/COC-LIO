@@ -380,8 +380,6 @@ private fun CocLioApp(
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
-    var pendingGoogleAccount by remember { mutableStateOf<GoogleAccountData?>(null) }
-    var pendingPreferredName by remember { mutableStateOf("") }
     var lastUsedAt by remember(activeProfile) {
         mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
     }
@@ -796,15 +794,16 @@ private fun CocLioApp(
                                     FirebaseTelemetry.logGoogleSignIn(context)
                                     AccountProfileStore.saveGoogleData(context, googleAccount)
                                     val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
+                                    val profileName = savedName?.takeIf { it.isNotBlank() }
+                                        ?: googleAccount.displayName?.takeIf { it.isNotBlank() }
+                                        ?: googleAccount.email.substringBefore("@")
                                     if (savedName.isNullOrBlank()) {
-                                        pendingPreferredName = googleAccount.displayName.orEmpty()
-                                        pendingGoogleAccount = googleAccount
-                                    } else {
-                                        AccountProfileStore.setActive(context, googleAccount.email)
-                                        activeProfile = googleAccount.email
-                                        selectedTab = 0
-                                        snackbar.showSnackbar("Đã chuyển sang hồ sơ " + savedName)
+                                        AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
                                     }
+                                    AccountProfileStore.setActive(context, googleAccount.email)
+                                    activeProfile = googleAccount.email
+                                    selectedTab = 0
+                                    snackbar.showSnackbar("Đã đăng nhập với tên " + profileName)
                                 } catch (error: Exception) {
                                     googleAuthError = error.message
                                         ?.takeIf { it.isNotBlank() }
@@ -867,55 +866,6 @@ private fun CocLioApp(
             }
             }
         }
-    }
-
-    pendingGoogleAccount?.let { googleAccount ->
-        AlertDialog(
-            onDismissRequest = {},
-            title = { Text("Đặt tên hiển thị") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "Bạn muốn COC-LIO gọi bạn là gì? Tên này được dùng để hiển thị trong ứng dụng.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "Khi đăng nhập Google, COC-LIO tự động đồng bộ thông tin hồ sơ được Google cung cấp như email, tên, ảnh đại diện và các thông tin hồ sơ liên quan để quản lý tài khoản. Bạn có thể xem nội dung và mục đích sử dụng trong chính sách quyền riêng tư của ứng dụng.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-                    OutlinedTextField(
-                        value = pendingPreferredName,
-                        onValueChange = { pendingPreferredName = it },
-                        singleLine = true,
-                        label = { Text("Tên của bạn") },
-                        placeholder = { Text("Nhập tên muốn hiển thị") }
-                    )
-                    Text(googleAccount.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                }
-            },
-            confirmButton = {
-                Button(
-                    enabled = pendingPreferredName.trim().isNotEmpty(),
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        val name = pendingPreferredName.trim()
-                        scope.launch {
-                            AccountProfileStore.setPreferredName(context, googleAccount.email, name)
-                            AccountProfileStore.setActive(context, googleAccount.email)
-                            activeProfile = googleAccount.email
-                            selectedTab = 0
-                            pendingGoogleAccount = null
-                            snackbar.showSnackbar("Đã đăng nhập với tên " + name)
-                        }
-                    }
-                ) { Text("TIẾP TỤC") }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurface
-        )
     }
 
     importSummary?.let { summary ->
