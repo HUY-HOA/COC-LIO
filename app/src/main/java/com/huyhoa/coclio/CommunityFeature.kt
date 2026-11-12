@@ -59,6 +59,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import coil.compose.AsyncImage
 import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
@@ -75,6 +80,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -148,23 +154,44 @@ private suspend fun cleanupCommunityArchive(): Int {
     )
     var removed = 0
     for (collectionName in collections) {
-        val expired = firestore.collection(collectionName)
-            .whereLessThanOrEqualTo("expiresAt", Timestamp.now())
-            .limit(100)
-            .get()
-            .awaitCommunityResult()
-        for (document in expired.documents) {
-            val path = document.getString("storagePath").orEmpty()
-            if (path.isNotBlank()) {
-                runCatching {
-                    FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult()
+        while (true) {
+            val expired = firestore.collection(collectionName)
+                .whereLessThanOrEqualTo("expiresAt", Timestamp.now())
+                .limit(100)
+                .get()
+                .awaitCommunityResult()
+            if (expired.isEmpty) break
+            for (document in expired.documents) {
+                val path = document.getString("storagePath").orEmpty()
+                if (path.isNotBlank()) {
+                    runCatching {
+                        FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult()
+                    }
                 }
+                document.reference.delete().awaitCommunityResult()
+                removed++
             }
-            document.reference.delete().awaitCommunityResult()
-            removed++
         }
     }
     return removed
+}
+
+class CommunityArchiveCleanupWorker(
+    appContext: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(appContext, workerParams) {
+    override suspend fun doWork(): Result {
+        val user = FirebaseAuth.getInstance().currentUser ?: return Result.success()
+        if (!user.isEmailVerified || !user.email.equals("phunghuyhoahaikba@gmail.com", ignoreCase = true)) {
+            return Result.success()
+        }
+        return try {
+            cleanupCommunityArchive()
+            Result.success()
+        } catch (_: Exception) {
+            Result.retry()
+        }
+    }
 }
 
 private suspend fun updateCommunityArchiveRetention(keepForever: Boolean, value: Int, unit: String) {
@@ -556,6 +583,12 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                 archiveKeepForever = settings.getBoolean("keepForever") ?: true
                 archiveRetentionValue = (settings.getLong("retentionValue") ?: 30L).toString()
                 archiveRetentionUnit = settings.getString("retentionUnit") ?: "days"
+                val request = PeriodicWorkRequestBuilder<CommunityArchiveCleanupWorker>(1, TimeUnit.DAYS).build()
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    "community_archive_cleanup",
+                    ExistingPeriodicWorkPolicy.KEEP,
+                    request
+                )
                 val removed = cleanupCommunityArchive()
                 if (removed > 0) statusMessage = "Đã tự dọn $removed mục lưu trữ hết hạn."
             } catch (error: Exception) {
