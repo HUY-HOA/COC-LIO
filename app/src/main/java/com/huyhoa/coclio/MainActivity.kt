@@ -388,6 +388,7 @@ private fun CocLioApp(
     var notificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationsEnabled(context, activeProfile))
     }
+    var pendingPushPermission by remember { mutableStateOf<String?>(null) }
     var notificationStyle by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationStyle(context, activeProfile))
     }
@@ -424,7 +425,7 @@ private fun CocLioApp(
             savedLedSpeed.coerceIn(0, 100)
         )
     }
-    var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0.01f, 1f)) }
+    var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0f, 1f)) }
     val ledProgress = if (ledEnabled && ledSpeed > 0) {
         val ledTransition = rememberInfiniteTransition(label = "global-led-rgb")
         ledTransition.animateFloat(
@@ -460,6 +461,37 @@ private fun CocLioApp(
             AppPreferences.setNotificationsEnabled(context, activeProfile, false)
             notificationsEnabled = false
             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, false)
+            scope.launch { snackbar.showSnackbar("Bạn chưa cấp quyền thông báo cho COC-LIO.") }
+        }
+    }
+
+    val pushNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val target = pendingPushPermission
+        pendingPushPermission = null
+        if (granted) {
+            when (target) {
+                "community" -> {
+                    AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, true)
+                    communityNotificationsEnabled = true
+                }
+                "updates" -> {
+                    AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, true)
+                    updateNotificationsEnabled = true
+                }
+            }
+        } else {
+            when (target) {
+                "community" -> {
+                    AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, false)
+                    communityNotificationsEnabled = false
+                }
+                "updates" -> {
+                    AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, false)
+                    updateNotificationsEnabled = false
+                }
+            }
             scope.launch { snackbar.showSnackbar("Bạn chưa cấp quyền thông báo cho COC-LIO.") }
         }
     }
@@ -703,7 +735,7 @@ private fun CocLioApp(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "COC-LIO",
-                        brush = Brush.linearGradient(ledTheme.palette.map { it.copy(alpha = ledTheme.brightness) }),
+                        brush = Brush.linearGradient(ledTheme.palette),
                         fontSize = 23.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 2.sp
@@ -894,12 +926,26 @@ private fun CocLioApp(
                         communityNotificationsEnabled = communityNotificationsEnabled,
                         updateNotificationsEnabled = updateNotificationsEnabled,
                         onCommunityNotificationsChanged = { enabled ->
-                            AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, enabled)
-                            communityNotificationsEnabled = enabled
+                            if (enabled && Build.VERSION.SDK_INT >= 33 &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                pendingPushPermission = "community"
+                                pushNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, enabled)
+                                communityNotificationsEnabled = enabled
+                            }
                         },
                         onUpdateNotificationsChanged = { enabled ->
-                            AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, enabled)
-                            updateNotificationsEnabled = enabled
+                            if (enabled && Build.VERSION.SDK_INT >= 33 &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                pendingPushPermission = "updates"
+                                pushNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, enabled)
+                                updateNotificationsEnabled = enabled
+                            }
                         },
                         onGoogleSignIn = { signInWithGoogle() },
                         onGoogleSwitchAccount = {
