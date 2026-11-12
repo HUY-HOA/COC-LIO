@@ -332,13 +332,7 @@ private fun CocLioApp(
     val baseDensity = LocalDensity.current
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
     var displaySizeLevel by remember { mutableStateOf(AppPreferences.displaySizeLevel(context)) }
-    val appDisplayScale = when (displaySizeLevel.coerceIn(1, 5)) {
-        1 -> 0.82f
-        2 -> 0.89f
-        3 -> 0.96f
-        4 -> 1.03f
-        else -> 1.10f
-    }
+    val appDisplayScale = AppPreferences.displaySizeScale(context)
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -674,6 +668,7 @@ private fun CocLioApp(
                         onDisplaySizeLevelChanged = { level ->
                             displaySizeLevel = level.coerceIn(1, 5)
                             AppPreferences.setDisplaySizeLevel(context, displaySizeLevel)
+                            AppWidgetUpdater.updateAll(context)
                         },
                         notificationsEnabled = notificationsEnabled,
                         ledEnabled = ledEnabled,
@@ -1491,17 +1486,38 @@ private fun HelperCompactCard(item: VillageItem, modifier: Modifier = Modifier) 
     }
 }
 
+private fun extraEntryIcon(sectionKey: String): String = when (sectionKey) {
+    "decos", "decos2" -> "🌸"
+    "obstacles", "obstacles2" -> "🪨"
+    "house_parts" -> "🏠"
+    "skins", "skins2" -> "👑"
+    "sceneries", "sceneries2" -> "🏞️"
+    "boosts" -> "⚡"
+    else -> "✦"
+}
+
 @Composable
 private fun ExtraEntriesCard(entries: List<VillageExtraItem>) {
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet, innerPadding = 7.dp) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             entries.forEach { entry ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(entry.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        extraEntryIcon(entry.sectionKey),
+                        fontSize = 16.sp,
+                        modifier = Modifier.width(25.dp)
+                    )
+                    Text(
+                        entry.name,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 9.sp,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     val metadata = buildList {
-                        entry.dataId?.let { add("ID $it") }
-                        entry.level?.let { add("Cấp $it") }
-                        if (entry.count > 1) add("×${entry.count}")
+                        entry.level?.let { add("Cấp " + it) }
+                        if (entry.count > 1) add("×" + entry.count)
                     }.joinToString(" • ")
                     if (metadata.isNotBlank()) {
                         Text(metadata, color = MaterialTheme.colorScheme.tertiary, fontSize = 8.sp, fontWeight = FontWeight.Bold)
