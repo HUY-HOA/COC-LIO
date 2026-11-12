@@ -760,7 +760,10 @@ fun CommunityScreen(
             Text("CỘNG ĐỒNG COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
             Text("Trò chuyện, chia sẻ hình ảnh và cập nhật COC-LIO cùng mọi thành viên.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             FilterChip(
                 selected = selectedSection == 0,
                 onClick = { selectedSection = 0; statusMessage = null },
@@ -770,6 +773,11 @@ fun CommunityScreen(
                 selected = selectedSection == 1,
                 onClick = { selectedSection = 1; statusMessage = null },
                 label = { Text("CẬP NHẬT APK", fontSize = 10.sp) }
+            )
+            FilterChip(
+                selected = selectedSection == 3,
+                onClick = { selectedSection = 3; statusMessage = null },
+                label = { Text("JSON CHIA SẺ", fontSize = 10.sp) }
             )
             if (isOwner) {
                 FilterChip(
@@ -824,6 +832,7 @@ fun CommunityScreen(
                             currentUid = user.uid,
                             isOwner = isOwner,
                             onDownload = { url, name -> downloadCommunityFile(context, url, name) },
+                            onUseJson = { jsonId -> receiveSharedJson(jsonId) },
                             onDelete = { deleteMessage = message }
                         )
                     }
@@ -844,6 +853,12 @@ fun CommunityScreen(
                     ) {
                         OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
                             Text("🖼 ẢNH", fontSize = 10.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { showJsonPicker = true },
+                            enabled = !busy && availableJson.isNotEmpty()
+                        ) {
+                            Text("📄 JSON", fontSize = 10.sp)
                         }
                         if (isOwner) {
                             OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
@@ -1091,6 +1106,50 @@ fun CommunityScreen(
                                 item = item,
                                 onDownload = { url, name -> downloadCommunityFile(context, url, name) },
                                 onDelete = { deleteArchiveItem = item }
+                            )
+                        }
+                    }
+                }
+            }
+        } else if (selectedSection == 3) {
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "JSON DO CỘNG ĐỒNG CHIA SẺ",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Text(
+                    "Tất cả thành viên đã đăng nhập đều có thể nhận JSON và nhập vào tài khoản của mình.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp
+                )
+                if (loadingSharedJsons) {
+                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (sharedJsons.isEmpty()) {
+                            item {
+                                Text(
+                                    "Chưa có JSON nào được chia sẻ.",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                        items(sharedJsons, key = { it.id }) { sharedJson ->
+                            CommunitySharedJsonCard(
+                                item = sharedJson,
+                                enabled = !busy,
+                                onReceive = { receiveSharedJson(sharedJson.id) }
                             )
                         }
                     }
