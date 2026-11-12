@@ -587,6 +587,13 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                 onClick = { selectedSection = 1; statusMessage = null },
                 label = { Text("CẬP NHẬT APK", fontSize = 10.sp) }
             )
+            if (isOwner) {
+                FilterChip(
+                    selected = selectedSection == 2,
+                    onClick = { selectedSection = 2; statusMessage = null },
+                    label = { Text("KHO ĐÃ GỠ", fontSize = 10.sp) }
+                )
+            }
         }
         statusMessage?.let {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
@@ -713,6 +720,147 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                             Text("TỆP", fontSize = 9.sp)
                         }
                         if (busy) Text("Đang gửi…", modifier = Modifier.align(Alignment.CenterVertically), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    }
+                }
+            }
+        } else if (selectedSection == 2 && isOwner) {
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("THỜI HẠN LƯU KHO", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FilterChip(
+                                selected = archiveKeepForever,
+                                onClick = { archiveKeepForever = true },
+                                label = { Text("GIỮ MÃI", fontSize = 9.sp) }
+                            )
+                            FilterChip(
+                                selected = !archiveKeepForever,
+                                onClick = { archiveKeepForever = false },
+                                label = { Text("TỰ ĐỘNG XÓA", fontSize = 9.sp) }
+                            )
+                        }
+                        if (!archiveKeepForever) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                OutlinedTextField(
+                                    value = archiveRetentionValue,
+                                    onValueChange = { archiveRetentionValue = it.filter(Char::isDigit).take(4) },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    label = { Text("Số lượng") }
+                                )
+                                FilterChip(
+                                    selected = archiveRetentionUnit == "days",
+                                    onClick = { archiveRetentionUnit = "days" },
+                                    label = { Text("NGÀY", fontSize = 9.sp) }
+                                )
+                                FilterChip(
+                                    selected = archiveRetentionUnit == "months",
+                                    onClick = { archiveRetentionUnit = "months" },
+                                    label = { Text("THÁNG", fontSize = 9.sp) }
+                                )
+                            }
+                        }
+                        Text(
+                            if (archiveKeepForever) "Dữ liệu đã gỡ được giữ lại cho đến khi quản lý xóa vĩnh viễn."
+                            else "Áp dụng thời hạn này cho toàn bộ dữ liệu trong kho. Hệ thống kiểm tra và dọn mục hết hạn khi tài khoản quản lý mở Cộng đồng.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 9.sp
+                        )
+                        Button(
+                            onClick = {
+                                val value = archiveRetentionValue.toIntOrNull()
+                                if (!archiveKeepForever && (value == null || value !in 1..1200)) {
+                                    statusMessage = "Nhập thời hạn từ 1 đến 1200 ngày hoặc tháng."
+                                } else {
+                                    scope.launch {
+                                        busy = true
+                                        try {
+                                            FirebaseFirestore.getInstance()
+                                                .collection("admin")
+                                                .document("community_archive_settings")
+                                                .set(
+                                                    mapOf(
+                                                        "keepForever" to archiveKeepForever,
+                                                        "retentionValue" to (value ?: 0),
+                                                        "retentionUnit" to archiveRetentionUnit,
+                                                        "updatedAt" to FieldValue.serverTimestamp()
+                                                    )
+                                                )
+                                                .awaitCommunityResult()
+                                            updateCommunityArchiveRetention(
+                                                archiveKeepForever,
+                                                value ?: 0,
+                                                archiveRetentionUnit
+                                            )
+                                            val removed = cleanupCommunityArchive()
+                                            statusMessage = if (removed > 0) {
+                                                "Đã lưu thời hạn và dọn $removed mục hết hạn."
+                                            } else {
+                                                "Đã lưu chế độ lưu trữ."
+                                            }
+                                        } catch (error: Exception) {
+                                            statusMessage = error.message ?: "Không thể lưu thời hạn lưu trữ."
+                                        } finally {
+                                            busy = false
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = !busy,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("LƯU THIẾT LẬP LƯU TRỮ")
+                        }
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    listOf(
+                        "text" to "TIN NHẮN",
+                        "image" to "HÌNH ẢNH",
+                        "file" to "TỆP",
+                        "apk" to "APK CẬP NHẬT"
+                    ).forEach { (category, label) ->
+                        FilterChip(
+                            selected = archiveCategory == category,
+                            onClick = { archiveCategory = category },
+                            label = { Text(label, fontSize = 9.sp) }
+                        )
+                    }
+                }
+                if (loadingArchive) {
+                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    archiveError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
+                    }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (archiveItems.isEmpty()) {
+                            item {
+                                Text("Chưa có dữ liệu trong mục này.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                            }
+                        }
+                        items(archiveItems, key = { it.id }) { item ->
+                            CommunityArchiveCard(
+                                item = item,
+                                onDownload = { url, name -> downloadCommunityFile(context, url, name) },
+                                onDelete = { deleteArchiveItem = item }
+                            )
+                        }
                     }
                 }
             }
