@@ -7,6 +7,11 @@ import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -53,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -610,6 +616,17 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
         if (messages.isNotEmpty()) messageListState.animateScrollToItem(messages.lastIndex)
     }
 
+    val emojiTransition = rememberInfiniteTransition(label = "community-emoji-motion")
+    val emojiMotion by emojiTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "community-emoji-pulse"
+    )
+
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)
@@ -700,9 +717,19 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        listOf("😂", "🤣", "😅", "🥳", "❤️", "🔥", "👍", "😎", "🎉", "😭", "😁", "💪").forEach { emoji ->
+                        listOf("😂", "🤣", "😅", "🥳", "❤️", "🔥", "👍", "😎", "🎉", "😭", "😁", "💪", "😍", "🥰", "🤩", "🤗", "🙏", "👏", "💯", "✨").forEachIndexed { index, emoji ->
                             TextButton(onClick = { draft += emoji }) {
-                                Text(emoji, fontSize = 19.sp)
+                                Text(
+                                    emoji,
+                                    modifier = Modifier.graphicsLayer {
+                                        val motion = if (index % 2 == 0) emojiMotion else 1f - emojiMotion
+                                        val scale = 0.96f + motion * 0.08f
+                                        scaleX = scale
+                                        scaleY = scale
+                                        translationY = -2.5f * motion
+                                    },
+                                    fontSize = 20.sp
+                                )
                             }
                         }
                     }
