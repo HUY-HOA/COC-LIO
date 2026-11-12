@@ -506,12 +506,96 @@ fun CommunityScreen(
         }
     }
 
+    fun shareExistingJson(snapshot: VillageSnapshot) {
+        val signedInUser = FirebaseAuth.getInstance().currentUser
+        if (signedInUser == null) {
+            statusMessage = "Bạn cần đăng nhập Google để chia sẻ JSON."
+            return
+        }
+        val rawJson = snapshot.rawJson
+        val jsonSize = rawJson.toByteArray(Charsets.UTF_8).size
+        if (rawJson.isBlank() || jsonSize !in 1..700_000) {
+            statusMessage = "JSON trống hoặc quá lớn. Dung lượng tối đa là 700 KB."
+            return
+        }
+        scope.launch {
+            busy = true
+            statusMessage = null
+            try {
+                val firestore = FirebaseFirestore.getInstance()
+                val displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên"
+                val sharedJson = firestore.collection("community_shared_jsons").add(
+                    mapOf(
+                        "uid" to signedInUser.uid,
+                        "displayName" to displayName.take(80),
+                        "playerTag" to snapshot.tag,
+                        "villageName" to snapshot.villageName.orEmpty().take(100),
+                        "timestamp" to snapshot.timestamp,
+                        "rawJson" to rawJson,
+                        "createdAt" to FieldValue.serverTimestamp()
+                    )
+                ).awaitCommunityResult()
+                firestore.collection("community_messages").add(
+                    communityMessagePayload(
+                        uid = signedInUser.uid,
+                        displayName = displayName,
+                        senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
+                        photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
+                        type = "json",
+                        text = "Đã chia sẻ JSON ${snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag} • ${snapshot.tag}",
+                        fileName = "${snapshot.tag.removePrefix("#")}.json",
+                        storagePath = "",
+                        downloadUrl = "",
+                        contentType = "application/json",
+                        fileSize = jsonSize.toLong(),
+                        sharedJsonId = sharedJson.id
+                    )
+                ).awaitCommunityResult()
+                showJsonPicker = false
+                statusMessage = "Đã chia sẻ JSON. Mọi thành viên đã đăng nhập đều có thể nhận và sử dụng."
+            } catch (error: Exception) {
+                statusMessage = error.message ?: "Không thể chia sẻ JSON vào cộng đồng."
+            } finally {
+                busy = false
+            }
+        }
+    }
+
+    fun receiveSharedJson(jsonId: String) {
+        if (jsonId.isBlank()) {
+            statusMessage = "Không tìm thấy mã JSON được chia sẻ."
+            return
+        }
+        scope.launch {
+            busy = true
+            statusMessage = null
+            try {
+                val document = FirebaseFirestore.getInstance()
+                    .collection("community_shared_jsons")
+                    .document(jsonId)
+                    .get()
+                    .awaitCommunityResult()
+                val rawJson = document.getString("rawJson").orEmpty()
+                require(rawJson.isNotBlank()) { "JSON chia sẻ không còn dữ liệu." }
+                require(rawJson.toByteArray(Charsets.UTF_8).size <= 700_000) { "JSON chia sẻ vượt quá giới hạn cho phép." }
+                onImportJson(rawJson)
+                statusMessage = "Đã nhận JSON. COC-LIO đang nhập dữ liệu vào tài khoản của bạn."
+            } catch (error: Exception) {
+                statusMessage = error.message ?: "Không thể nhận JSON được chia sẻ."
+            } finally {
+                busy = false
+            }
+        }
+    }
+
     DisposableEffect(user?.uid, selectedSection, archiveCategory, isOwner) {
         if (user == null) {
             messages = emptyList()
+            sharedJsons = emptyList()
             releases = emptyList()
             archiveItems = emptyList()
             loadingMessages = false
+            loadingSharedJsons = false
             loadingReleases = false
             loadingArchive = false
             onDispose { }
@@ -540,11 +624,36 @@ fun CommunityScreen(
                                 downloadUrl = document.getString("downloadUrl").orEmpty(),
                                 contentType = document.getString("contentType").orEmpty(),
                                 fileSize = document.getLong("fileSize") ?: 0L,
-                                createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L
+                                createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
+                                sharedJsonId = document.getString("sharedJsonId").orEmpty()
                             )
                         }
                         messageError = null
                         loadingMessages = false
+                    }
+                }
+            val sharedJsonRegistration = firestore.collection("community_shared_jsons")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(100)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        statusMessage = error.message ?: "Không thể tải JSON cộng đồng."
+                        loadingSharedJsons = false
+                    } else {
+                        sharedJsons = snapshot?.documents.orEmpty().mapNotNull { document ->
+                            val rawJson = document.getString("rawJson") ?: return@mapNotNull null
+                            CommunitySharedJson(
+                                id = document.id,
+                                uid = document.getString("uid").orEmpty(),
+                                displayName = document.getString("displayName").orEmpty().ifBlank { "Thành viên" },
+                                playerTag = document.getString("playerTag").orEmpty(),
+                                villageName = document.getString("villageName").orEmpty(),
+                                timestamp = document.getLong("timestamp") ?: 0L,
+                                rawJson = rawJson,
+                                createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L
+                            )
+                        }
+                        loadingSharedJsons = false
                     }
                 }
             val releaseRegistration = firestore.collection("app_updates")
@@ -607,6 +716,7 @@ fun CommunityScreen(
             }
             onDispose {
                 messageRegistration.remove()
+                sharedJsonRegistration.remove()
                 releaseRegistration.remove()
                 archiveRegistration?.remove()
             }
