@@ -1288,7 +1288,7 @@ private fun formatAdminAccountTime(timestamp: Long): String =
     }
 
 @Composable
-private fun AdminAccountsPanel() {
+private fun AdminAccountsPanel(onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     var accounts by remember { mutableStateOf<List<AdminGoogleAccount>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -1315,12 +1315,15 @@ private fun AdminAccountsPanel() {
     FeaturePanel {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "QUẢN LÝ TÀI KHOẢN GOOGLE",
+                "DANH SÁCH QUẢN LÝ NGƯỜI DÙNG",
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
+            TextButton(onClick = onClose) {
+                Text("ĐÓNG", fontSize = 9.sp)
+            }
             TextButton(onClick = { refreshAccounts() }, enabled = !loading) {
                 Text("LÀM MỚI", fontSize = 9.sp)
             }
@@ -1416,6 +1419,7 @@ fun SettingsScreen(
     onTextScaleChanged: (Float) -> Unit
 ) {
     val context = LocalContext.current
+    var showAdminAccounts by remember(accountEmail, isAdmin) { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1489,13 +1493,18 @@ fun SettingsScreen(
                     ProfileDataRow("Ảnh đại diện", accountData?.profilePictureUri)
                     ProfileDataRow("Tên bạn đặt", preferredName)
                     if (lastUsedLabel != null) ProfileDataRow("Mở app lần gần nhất trên máy này", lastUsedLabel)
-                } else {
-                    Text(
-                        "Tài khoản người dùng chỉ hiển thị tên, Gmail và ảnh đại diện. Thông tin quản lý tài khoản được bảo vệ và chỉ tài khoản chủ sở hữu ứng dụng xem được.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.sp,
-                        lineHeight = 15.sp
-                    )
+                }
+                if (isAdmin) {
+                    Button(
+                        onClick = { showAdminAccounts = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color(0xFF04101D)
+                        )
+                    ) {
+                        Text("MỞ DANH SÁCH QUẢN LÝ NGƯỜI DÙNG", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(
@@ -1512,7 +1521,9 @@ fun SettingsScreen(
             }
         }
 
-        if (isAdmin) AdminAccountsPanel()
+        if (isAdmin && showAdminAccounts) {
+            AdminAccountsPanel(onClose = { showAdminAccounts = false })
+        }
 
         FeaturePanel {
             Text("GIAO DIỆN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
