@@ -1,6 +1,12 @@
 package com.huyhoa.coclio
 
 import android.app.Activity
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
+import android.graphics.drawable.Icon
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.core.graphics.drawable.IconCompat
 import com.huyhoa.coclio.data.CocAssets
 import java.security.MessageDigest
 import java.net.URL
@@ -2129,4 +2135,132 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
         verticalArrangement = Arrangement.spacedBy(7.dp),
         content = content
     )
+}
+
+object CocLioPushSubscriptions {
+    fun sync(communityEnabled: Boolean, updatesEnabled: Boolean) {
+        val messaging = FirebaseMessaging.getInstance()
+        if (communityEnabled) messaging.subscribeToTopic("coc_lio_community")
+        else messaging.unsubscribeFromTopic("coc_lio_community")
+        if (updatesEnabled) messaging.subscribeToTopic("coc_lio_updates")
+        else messaging.unsubscribeFromTopic("coc_lio_updates")
+    }
+}
+
+private const val COC_LIO_COMMUNITY_CHANNEL = "coc_lio_community_messages"
+private const val COC_LIO_UPDATE_CHANNEL = "coc_lio_app_updates"
+private const val COC_LIO_COMMUNITY_SHORTCUT = "coc_lio_community_conversation"
+
+private fun ensureCommunityBubbleShortcut(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+    runCatching {
+        val shortcutManager = context.getSystemService(ShortcutManager::class.java)
+        val bubbleIntent = Intent(context, CocLioBubbleActivity::class.java).setAction(Intent.ACTION_VIEW)
+        val shortcut = ShortcutInfo.Builder(context, COC_LIO_COMMUNITY_SHORTCUT)
+            .setShortLabel("Cộng đồng")
+            .setLongLabel("Cộng đồng COC-LIO")
+            .setIcon(Icon.createWithResource(context, android.R.drawable.sym_action_chat))
+            .setIntent(bubbleIntent)
+            .setLongLived(true)
+            .setCategories(setOf("android.shortcut.conversation"))
+            .setPerson(android.app.Person.Builder().setName("Cộng đồng COC-LIO").build())
+            .build()
+        shortcutManager.pushDynamicShortcut(shortcut)
+    }
+}
+
+class CocLioMessagingService : FirebaseMessagingService() {
+    override fun onMessageReceived(message: RemoteMessage) {
+        val data = message.data
+        val type = data["type"] ?: return
+        val isCommunity = type == "community_message"
+        val channelId = if (isCommunity) COC_LIO_COMMUNITY_CHANNEL else COC_LIO_UPDATE_CHANNEL
+        val title = data["title"] ?: if (isCommunity) "Cộng đồng COC-LIO" else "COC-LIO có bản cập nhật"
+        val body = data["body"] ?: if (isCommunity) "Có tin nhắn mới trong cộng đồng." else "Có phiên bản APK mới."
+        val manager = getSystemService(NotificationManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager.getNotificationChannel(channelId) == null) {
+            val channel = NotificationChannel(
+                channelId,
+                if (isCommunity) "Tin nhắn cộng đồng" else "Bản cập nhật COC-LIO",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            channel.description = if (isCommunity) "Thông báo tin nhắn mới trong cộng đồng COC-LIO" else "Thông báo khi quản lý chọn gửi tin bản cập nhật"
+            if (isCommunity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) channel.setAllowBubbles(true)
+            manager.createNotificationChannel(channel)
+        }
+        val notificationId = (type + data["messageId"].orEmpty() + data["version"].orEmpty()).hashCode()
+        val openIntent = Intent(this, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            notificationId,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setContentIntent(contentIntent)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        if (isCommunity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            ensureCommunityBubbleShortcut(this)
+            val bubbleIntent = Intent(this, CocLioBubbleActivity::class.java)
+                .setAction(Intent.ACTION_VIEW)
+                .putExtra("bubble_title", title)
+                .putExtra("bubble_body", body)
+            val bubblePendingIntent = PendingIntent.getActivity(
+                this,
+                notificationId xor 0x434F43,
+                bubbleIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            )
+            val bubble = NotificationCompat.BubbleMetadata.Builder(
+                bubblePendingIntent,
+                IconCompat.createWithResource(this, android.R.drawable.sym_action_chat)
+            ).setDesiredHeight(480).build()
+            builder.setShortcutId(COC_LIO_COMMUNITY_SHORTCUT).setBubbleMetadata(bubble)
+        }
+
+        runCatching {
+            NotificationManagerCompat.from(this).notify(notificationId, builder.build())
+        }
+    }
+}
+
+class CocLioBubbleActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val title = intent.getStringExtra("bubble_title") ?: "Cộng đồng COC-LIO"
+        val body = intent.getStringExtra("bubble_body") ?: "Thông báo mới trong cộng đồng."
+        setContent {
+            MaterialTheme {
+                androidx.compose.material3.Surface(
+                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Column(
+                        modifier = androidx.compose.ui.Modifier.fillMaxSize().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(title, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+                        Text(body, color = MaterialTheme.colorScheme.onSurface)
+                        Button(
+                            onClick = {
+                                startActivity(
+                                    Intent(this@CocLioBubbleActivity, MainActivity::class.java)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                )
+                            },
+                            modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+                        ) { Text("MỞ COC-LIO") }
+                    }
+                }
+            }
+        }
+    }
 }
