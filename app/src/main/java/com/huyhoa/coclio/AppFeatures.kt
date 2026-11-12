@@ -1280,7 +1280,14 @@ private class UpgradeWidgetListFactory(
         entries = if (snapshot == null) {
             emptyList()
         } else {
-            (snapshot.upgrades + snapshot.gearUps)
+            val expired = snapshot.expiredUpgradesAt(nowSeconds)
+            val active = snapshot.activeUpgradesAt(nowSeconds)
+            val completedOrdered = expired.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+            val homeRunning = active.filter { it.base == "home" }
+                .sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+            val builderRunning = active.filter { it.base == "builder" }
+                .sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+            (completedOrdered + homeRunning + builderRunning)
                 .mapNotNull { item ->
                     val seconds = item.timerSeconds ?: return@mapNotNull null
                     if (seconds <= 0L) return@mapNotNull null
@@ -1295,10 +1302,6 @@ private class UpgradeWidgetListFactory(
                         totalSeconds = seconds
                     )
                 }
-                .sortedWith(
-                    compareBy<WidgetUpgradeEntry> { if (it.endAt > nowSeconds) 0 else 1 }
-                        .thenBy { if (it.endAt > nowSeconds) it.endAt else -it.endAt }
-                )
         }
     }
 
@@ -1349,7 +1352,12 @@ private class UpgradeWidgetListFactory(
         views.setTextViewText(
             R.id.row_title,
             if (remaining > 0L) "$levelText • $progressPercent%"
-            else "$levelText • HOÀN THÀNH"
+            else levelText
+        )
+        views.setTextViewTextSize(
+            R.id.row_timer,
+            TypedValue.COMPLEX_UNIT_SP,
+            (if (remaining > 0L) 13f else 10f) * combinedScale
         )
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, progressPercent, false)
