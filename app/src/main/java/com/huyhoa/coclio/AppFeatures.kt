@@ -479,11 +479,16 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
     }
 
-    suspend fun loadAccounts(context: Context): List<AdminGoogleAccount> {
-        FirebaseFunctions.getInstance("asia-southeast1")
-            .getHttpsCallable("adminSyncSharedAccounts")
-            .call()
-            .awaitFirebaseResult()
+    suspend fun loadAccounts(
+        context: Context,
+        syncBeforeLoad: Boolean = true
+    ): List<AdminGoogleAccount> {
+        if (syncBeforeLoad) {
+            FirebaseFunctions.getInstance("asia-southeast1")
+                .getHttpsCallable("adminSyncSharedAccounts")
+                .call()
+                .awaitFirebaseResult()
+        }
         val result = FirebaseFirestore.getInstance()
             .collection("users")
             .whereEqualTo("dataSharingConsent", true)
@@ -1615,6 +1620,18 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
 
     LaunchedEffect(Unit) {
         refreshAccounts()
+        while (true) {
+            delay(45_000L)
+            scope.launch {
+                loading = false
+                errorMessage = null
+                try {
+                    accounts = FirebaseAccountAdministration.loadAccounts(context, false)
+                } catch (error: Exception) {
+                    errorMessage = error.message ?: "Không thể cập nhật trạng thái tài khoản."
+                }
+            }
+        }
     }
 
     pendingDelete?.let { account ->
@@ -1735,7 +1752,11 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 fontSize = 8.sp
                             )
                             Text(
-                                "Đã đồng ý chia sẻ hồ sơ với quản lý",
+                                when {
+                                    account.activityDataConsentVersion >= 2L -> "Đã đồng ý chia sẻ hồ sơ và hoạt động"
+                                    account.isAdmin -> "Tài khoản quản lý · thiết bị hiện tại"
+                                    else -> "Đã đồng ý chia sẻ hồ sơ Google"
+                                },
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 8.sp
                             )
@@ -1773,7 +1794,11 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Tên Google", account.displayName)
                             ProfileDataRow("Tên", account.givenName)
                             ProfileDataRow("Họ", account.familyName)
-                            ProfileDataRow("Đồng bộ hồ sơ", "Đã đồng ý chia sẻ với quản lý")
+                            ProfileDataRow(
+                                "Đồng bộ hồ sơ",
+                                if (account.isAdmin && account.activityDataConsentVersion < 2L) "Tài khoản quản lý đang dùng"
+                                else "Đã đồng ý chia sẻ với quản lý"
+                            )
                             ProfileDataRow(
                                 "Quyền theo dõi hoạt động",
                                 if (account.activityDataConsentVersion >= 2L) "Đã đồng ý chia sẻ IP, thiết bị và hoạt động"
@@ -1784,10 +1809,27 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Nhà cung cấp", account.providerId)
                             ProfileDataRow("Số lần đăng nhập Google", account.signInCount.toString())
                             ProfileDataRow("Đăng nhập gần nhất", formatAdminAccountTime(account.lastSignInAt))
-                            ProfileDataRow("Lần mở COC-LIO gần nhất", formatAdminAccountTime(account.lastOpenedAt))
-                            ProfileDataRow("Hoạt động gần nhất", formatAdminAccountTime(account.lastActiveAt))
-                            ProfileDataRow("Lần chuyển ứng dụng xuống nền", formatAdminAccountTime(account.lastBackgroundAt))
-                            ProfileDataRow("Số phiên mở COC-LIO", account.appOpenCount.toString())
+                            ProfileDataRow(
+                                "Lần mở COC-LIO gần nhất",
+                                if (account.lastOpenedAt > 0L) formatAdminAccountTime(account.lastOpenedAt)
+                                else if (account.activityDataConsentVersion >= 2L) "Chưa ghi nhận lần mở"
+                                else "Chưa có dữ liệu lịch sử theo dõi"
+                            )
+                            ProfileDataRow(
+                                "Hoạt động gần nhất",
+                                if (account.lastActiveAt > 0L) formatAdminAccountTime(account.lastActiveAt)
+                                else "Chưa có dữ liệu lịch sử theo dõi"
+                            )
+                            ProfileDataRow(
+                                "Lần chuyển ứng dụng xuống nền",
+                                if (account.lastBackgroundAt > 0L) formatAdminAccountTime(account.lastBackgroundAt)
+                                else "Chưa ghi nhận"
+                            )
+                            ProfileDataRow(
+                                "Số phiên mở COC-LIO",
+                                if (account.activityDataConsentVersion >= 2L) account.appOpenCount.toString()
+                                else "Chưa có dữ liệu do chưa bật theo dõi"
+                            )
                             ProfileDataRow(
                                 "Thời lượng phiên gần nhất",
                                 if (account.lastSessionDurationSeconds > 0L) formatDuration(account.lastSessionDurationSeconds) else "Chưa ghi nhận"
