@@ -387,8 +387,7 @@ data class AdminGoogleAccount(
     val signInCount: Long,
     val createdAt: Long,
     val lastSignInAt: Long,
-    val updatedAt: Long,
-    val dataSharingConsent: Boolean?
+    val updatedAt: Long
 )
 
 object FirebaseAccountAdministration {
@@ -416,37 +415,6 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
     }
 
-    suspend fun getDataSharingConsent(expectedEmail: String): Boolean? {
-        val user = FirebaseAuth.getInstance().currentUser ?: return null
-        if (!user.email.equals(expectedEmail, ignoreCase = true)) return null
-        val document = FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
-            .get()
-            .awaitFirebaseResult()
-        return document.getBoolean("dataSharingConsent")
-    }
-
-    suspend fun saveDataSharingConsent(google: GoogleAccountData, consented: Boolean) {
-        val user = FirebaseAuth.getInstance().currentUser
-            ?: throw IllegalStateException("Bạn cần đăng nhập Google để lưu lựa chọn chia sẻ dữ liệu.")
-        require(user.email.equals(google.email, ignoreCase = true)) {
-            "Tài khoản Google hiện tại không khớp."
-        }
-        FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
-            .update(
-                mapOf(
-                    "dataSharingConsent" to consented,
-                    "givenName" to if (consented) google.givenName.orEmpty() else "",
-                    "familyName" to if (consented) google.familyName.orEmpty() else "",
-                    "updatedAt" to FieldValue.serverTimestamp()
-                )
-            )
-            .awaitFirebaseResult()
-    }
-
     suspend fun loadAccounts(): List<AdminGoogleAccount> {
         val result = FirebaseFirestore.getInstance()
             .collection("users")
@@ -466,8 +434,7 @@ object FirebaseAccountAdministration {
                 signInCount = document.getLong("signInCount") ?: 0L,
                 createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
                 lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
-                updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L,
-                dataSharingConsent = document.getBoolean("dataSharingConsent")
+                updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L
             )
         }.sortedByDescending { it.lastSignInAt }
     }
@@ -605,14 +572,7 @@ object GoogleAccountAuth {
             profilePictureUri = google.profilePictureUri?.toString()
         )
 
-        runCatching { syncFirebaseUserProfile(firebaseUser, accountData) }
-            .onFailure {
-                android.util.Log.w(
-                    "COC-LIO",
-                    "Không thể đồng bộ hồ sơ Google lên Firestore. Cần kiểm tra Firestore và Security Rules.",
-                    it
-                )
-            }
+        syncFirebaseUserProfile(firebaseUser, accountData)
 
         return accountData
     }
@@ -1441,11 +1401,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             Text(
                                 "Tự động đồng bộ hồ sơ khi đăng nhập Google",
-                                color = when (account.dataSharingConsent) {
-                                    true -> Color(0xFF35D6A3)
-                                    false -> Color(0xFFFFB74D)
-                                    null -> MaterialTheme.colorScheme.onSurfaceVariant
-                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 8.sp
                             )
                         }
