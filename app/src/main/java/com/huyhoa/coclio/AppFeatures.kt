@@ -869,7 +869,25 @@ class UpgradeReminderWorker(
                 bubblePendingIntent,
                 IconCompat.createWithResource(applicationContext, android.R.drawable.sym_action_chat)
             ).setDesiredHeight(480).build()
-            notificationBuilder.setShortcutId(COC_LIO_COMMUNITY_SHORTCUT).setBubbleMetadata(bubble)
+            val bubblePerson = android.app.Person.Builder()
+                .setName("COC-LIO")
+                .setKey("coc-lio-upgrade")
+                .setImportant(true)
+                .build()
+            notificationBuilder
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setStyle(
+                    NotificationCompat.MessagingStyle(
+                        android.app.Person.Builder().setName("Bạn").setKey("coc-lio-current-user").build()
+                    ).addMessage(
+                        "$item • $villageName • $baseText • $section • $levelText",
+                        System.currentTimeMillis(),
+                        bubblePerson
+                    )
+                )
+                .addPerson(bubblePerson)
+                .setShortcutId(COC_LIO_COMMUNITY_SHORTCUT)
+                .setBubbleMetadata(bubble)
         }
         if (alarmStyle) notificationBuilder.setTimeoutAfter(alarmDurationSeconds * 1_000L)
         if (gameIntent != null) {
@@ -950,7 +968,21 @@ object UpgradeNotificationTester {
                 bubblePendingIntent,
                 IconCompat.createWithResource(context, android.R.drawable.sym_action_chat)
             ).setDesiredHeight(480).build()
-            notificationBuilder.setShortcutId(COC_LIO_COMMUNITY_SHORTCUT).setBubbleMetadata(bubble)
+            val bubblePerson = android.app.Person.Builder()
+                .setName("COC-LIO")
+                .setKey("coc-lio-upgrade")
+                .setImportant(true)
+                .build()
+            notificationBuilder
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setStyle(
+                    NotificationCompat.MessagingStyle(
+                        android.app.Person.Builder().setName("Bạn").setKey("coc-lio-current-user").build()
+                    ).addMessage(message, System.currentTimeMillis(), bubblePerson)
+                )
+                .addPerson(bubblePerson)
+                .setShortcutId(COC_LIO_COMMUNITY_SHORTCUT)
+                .setBubbleMetadata(bubble)
         }
         val gameIntent = context.packageManager
             .getLaunchIntentForPackage("com.supercell.clashofclans")
@@ -2201,7 +2233,13 @@ private fun ensureCommunityBubbleShortcut(context: Context) {
             .setIntent(bubbleIntent)
             .setLongLived(true)
             .setCategories(setOf("android.shortcut.conversation"))
-            .setPerson(android.app.Person.Builder().setName("Cộng đồng COC-LIO").build())
+            .setPerson(
+                android.app.Person.Builder()
+                    .setName("Cộng đồng COC-LIO")
+                    .setKey(COC_LIO_COMMUNITY_SHORTCUT)
+                    .setImportant(true)
+                    .build()
+            )
             .build()
         shortcutManager.pushDynamicShortcut(shortcut)
     }
@@ -2236,15 +2274,32 @@ class CocLioMessagingService : FirebaseMessagingService() {
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val senderPerson = android.app.Person.Builder()
+            .setName(data["senderName"] ?: "Thành viên")
+            .setKey(data["senderUid"] ?: "community")
+            .setImportant(true)
+            .build()
+        val currentPerson = android.app.Person.Builder()
+            .setName("Bạn")
+            .setKey("coc-lio-current-user")
+            .build()
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setStyle(
+                if (isCommunity) {
+                    NotificationCompat.MessagingStyle(currentPerson)
+                        .addMessage(body, System.currentTimeMillis(), senderPerson)
+                } else {
+                    NotificationCompat.BigTextStyle().bigText(body)
+                }
+            )
             .setContentIntent(contentIntent)
-            .setAutoCancel(true)
+            .setAutoCancel(!(isCommunity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R))
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+        if (isCommunity) builder.addPerson(senderPerson)
 
         if (isCommunity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             ensureCommunityBubbleShortcut(this)
