@@ -567,8 +567,8 @@ private fun CocLioApp(
         palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
         speedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
-            20000.0 - 19600.0 * ledSpeed.coerceIn(0, 100) / 100.0
-        ).toInt().coerceIn(400, 20000),
+            40000.0 / ledSpeed.coerceIn(1, 100)
+        ).toInt().coerceIn(400, 40000),
         brightness = ledBrightness.coerceIn(0f, 1f),
         progress = ledProgress
     )
@@ -1554,7 +1554,7 @@ private fun BaseSummaryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, color = glow, fontSize = 8.sp, fontWeight = FontWeight.Black, maxLines = 1)
                 Text("$levelLabel ${level ?: "—"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 19.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                Text("$itemCount mục • $upgradeCount nâng", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 1)
+                Text("$itemCount mục • $upgradeCount nâng", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp, maxLines = 1)
             }
             hallItem?.let { CategoryImage(it, if (levelLabel == "TH") 60 else 52) }
         }
@@ -1566,7 +1566,7 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
     NeonPanel(modifier = modifier, glow = valueColor.takeIf { it != Color.White } ?: CocMagenta) {
         Text(value, color = valueColor, fontSize = 24.sp, fontWeight = FontWeight.Black)
         Spacer(Modifier.height(3.dp))
-        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 0.4.sp)
+        Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, letterSpacing = 0.4.sp)
     }
 }
 
@@ -1579,7 +1579,7 @@ private fun SectionTitle(title: String, trailing: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(title, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
-        Text(trailing, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+        Text(trailing, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
     }
 }
 
@@ -1588,7 +1588,7 @@ private fun InfoCard(title: String, detail: String) {
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
         Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         Spacer(Modifier.height(6.dp))
-        Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, lineHeight = 17.sp)
+        Text(detail, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, lineHeight = 17.sp)
     }
 }
 
@@ -1636,9 +1636,9 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, showBase: Bo
                     item.name + if (showBase) {
                         if (item.base == "builder") " • LÀNG ĐÊM" else " • NHÀ CHÍNH"
                     } else "",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1701,9 +1701,34 @@ private fun BuildingsAndArmyScreen(snapshot: VillageSnapshot) {
     var selectedGroup by remember(snapshot.tag, snapshot.timestamp) {
         mutableStateOf("buildings")
     }
+    val availableBases = listOf("home", "builder").filter { base ->
+        snapshot.items.any { it.base == base }
+    }
+    var selectedBase by remember(snapshot.tag, snapshot.timestamp) {
+        mutableStateOf(availableBases.firstOrNull() ?: "home")
+    }
     Column(modifier = Modifier.fillMaxSize()) {
+        if (availableBases.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                availableBases.forEach { base ->
+                    FilterChip(
+                        selected = selectedBase == base,
+                        onClick = { selectedBase = base },
+                        modifier = Modifier.weight(1f),
+                        label = {
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Text(if (base == "home") "NHÀ CHÍNH" else "LÀNG ĐÊM", fontSize = 10.sp, maxLines = 1)
+                            }
+                        }
+                    )
+                }
+            }
+        }
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChip(
@@ -1730,6 +1755,7 @@ private fun BuildingsAndArmyScreen(snapshot: VillageSnapshot) {
         CategoryScreen(
             snapshot = snapshot,
             tab = selectedGroup,
+            selectedBase = selectedBase,
             modifier = Modifier.weight(1f)
         )
     }
@@ -1739,15 +1765,10 @@ private fun BuildingsAndArmyScreen(snapshot: VillageSnapshot) {
 private fun CategoryScreen(
     snapshot: VillageSnapshot,
     tab: String,
+    selectedBase: String,
     modifier: Modifier = Modifier
 ) {
-    val availableBases = listOf("home", "builder").filter { base ->
-        snapshot.items.any { it.base == base && it.tab == tab }
-    }
-    var selectedBase by remember(snapshot.tag, snapshot.timestamp, tab) {
-        mutableStateOf(availableBases.firstOrNull() ?: "home")
-    }
-    var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab) {
+    var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf("all")
     }
 
@@ -1817,23 +1838,7 @@ private fun CategoryScreen(
         horizontalArrangement = Arrangement.spacedBy(5.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        if (availableBases.size > 1) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    availableBases.forEach { base ->
-                        FilterChip(
-                            selected = selectedBase == base,
-                            onClick = { selectedBase = base; selectedFilter = "all" },
-                            label = {
-                                Text(if (base == "home") "Nhà chính" else "Làng đêm", fontSize = 11.sp)
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        if (availableBases.isNotEmpty()) {
+        if (baseItems.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -1850,7 +1855,7 @@ private fun CategoryScreen(
             }
         }
 
-        if (availableBases.isEmpty()) {
+        if (baseItems.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
             }
@@ -1936,7 +1941,7 @@ private fun VillageGridItemCard(item: VillageItem) {
             }
             val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" }).joinToString(" • ")
             if (detailText.isNotBlank()) {
-                Text(detailText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(detailText, color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -1955,8 +1960,8 @@ private fun HelperCompactCard(item: VillageItem, modifier: Modifier = Modifier) 
             Text("Cấp ${item.level ?: "—"}", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Black)
             Text(
                 item.helperCooldownSeconds?.let { "Hồi ${formatDuration(it)}" } ?: "Sẵn sàng",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 7.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 9.sp,
                 maxLines = 1
             )
         }
@@ -1974,8 +1979,8 @@ private fun ExtraEntriesCard(entries: List<VillageExtraItem>) {
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet, innerPadding = 7.dp) {
         Text(
             summary.ifBlank { "Chưa có dữ liệu phụ" },
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 9.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 10.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -1993,7 +1998,7 @@ private fun VillageItemCard(item: VillageItem) {
             Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.level?.let { "CẤP $it" } ?: "—", color = MaterialTheme.colorScheme.tertiary, fontSize = 16.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                if (item.count > 1) Text("×${item.count}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                if (item.count > 1) Text("×${item.count}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
             }
             if (item.gearUp) Text("⚙", color = CocGreen, fontSize = 18.sp)
             item.weaponLevel?.let { Text("V$it", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
