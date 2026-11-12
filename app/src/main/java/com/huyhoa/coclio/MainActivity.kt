@@ -333,7 +333,7 @@ private fun CocLioApp(
     val baseDensity = LocalDensity.current
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
     var displaySizeLevel by remember { mutableStateOf(AppPreferences.displaySizeLevel(context)) }
-    val appDisplayScale = AppPreferences.displaySizeScale(context)
+    val appDisplayScale = AppPreferences.displaySizeScale(displaySizeLevel)
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -758,10 +758,9 @@ private fun CocLioApp(
                             }
                         },
                         onTextScaleChanged = { value ->
-                            appFontScale = value.coerceIn(0.8f, 1.25f)
-                        },
-                        onTextScaleChangeFinished = {
-                            AppPreferences.setTextScale(context, appFontScale)
+                            val selectedScale = AppPreferences.textScaleForLevel(AppPreferences.textScaleLevel(value))
+                            appFontScale = selectedScale
+                            AppPreferences.setTextScale(context, selectedScale)
                             AppWidgetUpdater.updateAll(context)
                         }
                     )
