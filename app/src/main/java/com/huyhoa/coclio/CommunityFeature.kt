@@ -1301,6 +1301,67 @@ fun CommunityScreen(
         }
     }
 
+    if (showJsonPicker) {
+        AlertDialog(
+            onDismissRequest = { if (!busy) showJsonPicker = false },
+            title = { Text("CHỌN JSON ĐỂ CHIA SẺ") },
+            text = {
+                Column(
+                    modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (availableJson.isEmpty()) {
+                        Text(
+                            "Tài khoản này chưa có JSON đã nhập. Hãy nhập JSON trước rồi quay lại chia sẻ.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                    } else {
+                        Text(
+                            "Chọn một mốc JSON trong lịch sử của bạn. Thành viên khác có thể nhận và nhập mốc này vào tài khoản của họ.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 10.sp
+                        )
+                        availableJson.sortedByDescending { it.timestamp }.forEach { snapshot ->
+                            TextButton(
+                                onClick = { shareExistingJson(snapshot) },
+                                enabled = !busy,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        snapshot.tag + " • " + communityTime(snapshot.timestamp * 1000L),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 9.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showJsonPicker = false }, enabled = !busy) {
+                    Text("ĐÓNG")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
     deleteMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { deleteMessage = null },
@@ -1437,7 +1498,8 @@ private fun communityMessagePayload(
     storagePath: String,
     downloadUrl: String,
     contentType: String,
-    fileSize: Long
+    fileSize: Long,
+    sharedJsonId: String = ""
 ): Map<String, Any> = mapOf(
     "uid" to uid,
     "displayName" to displayName.take(80),
@@ -1450,6 +1512,7 @@ private fun communityMessagePayload(
     "downloadUrl" to downloadUrl,
     "contentType" to contentType,
     "fileSize" to fileSize,
+    "sharedJsonId" to sharedJsonId,
     "createdAt" to FieldValue.serverTimestamp()
 )
 
@@ -1459,6 +1522,7 @@ private fun CommunityMessageCard(
     currentUid: String,
     isOwner: Boolean,
     onDownload: (String, String) -> Unit,
+    onUseJson: (String) -> Unit,
     onDelete: () -> Unit
 ) {
     val mine = message.uid == currentUid
@@ -1524,6 +1588,37 @@ private fun CommunityMessageCard(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp).clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop
                     )
+                } else if (message.type == "json") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                message.fileName.ifBlank { "JSON COC-LIO" },
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                formatCommunitySize(message.fileSize),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 8.sp
+                            )
+                        }
+                        TextButton(
+                            onClick = { onUseJson(message.sharedJsonId) },
+                            enabled = message.sharedJsonId.isNotBlank()
+                        ) {
+                            Text("NHẬN JSON", fontSize = 9.sp)
+                        }
+                    }
                 } else if (message.type == "file" && message.downloadUrl.isNotBlank()) {
                     Row(
                         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)).padding(8.dp),
@@ -1542,6 +1637,53 @@ private fun CommunityMessageCard(
                         Text("GỠ TIN", fontSize = 8.sp)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommunitySharedJsonCard(
+    item: CommunitySharedJson,
+    enabled: Boolean,
+    onReceive: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(17.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                item.villageName.ifBlank { "JSON làng ${item.playerTag}" },
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                "Player Tag: ${item.playerTag}",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Chia sẻ bởi: ${item.displayName} • ${communityTime(item.createdAt)}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 9.sp
+            )
+            Text(
+                "Dữ liệu JSON: ${formatCommunitySize(item.rawJson.toByteArray(Charsets.UTF_8).size.toLong())}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 9.sp
+            )
+            Button(
+                onClick = onReceive,
+                enabled = enabled,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("NHẬN JSON VÀ SỬ DỤNG", fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
