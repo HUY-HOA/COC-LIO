@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -53,7 +54,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -430,7 +430,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                                 COMMUNITY_APK_MIME
                             )
                         ) { "Định dạng tệp này chưa được hỗ trợ trong cộng đồng." }
-                        require(mime != COMMUNITY_APK_MIME || isOwner) { "Chỉ tài khoản quản lý mới được gửi tệp APK." }
+                        require(mime != COMMUNITY_APK_MIME || isOwner) { "Định dạng APK không được hỗ trợ ở mục trò chuyện." }
                         val path = "community/${signedInUser.uid}/${UUID.randomUUID()}_${communitySafeFileName(fileName)}"
                         uploadedPath = path
                         val reference = FirebaseStorage.getInstance().reference.child(path)
@@ -729,7 +729,10 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                             "🚀", "💎", "🛡️", "⚔️", "🏰", "🐉", "👑", "💯", "✅", "❌",
                             "⭕", "❗", "❓", "💬", "📌", "🎁", "🍀", "🌈", "☀️"
                         )
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Column(
+                            modifier = Modifier.heightIn(max = 170.dp).verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
                             chatEmojis.chunked(10).forEach { emojiRow ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
