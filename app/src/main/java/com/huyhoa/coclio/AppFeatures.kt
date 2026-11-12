@@ -406,9 +406,6 @@ private suspend fun syncFirebaseUserProfile(
         "photoUrl" to (google.profilePictureUri ?: user.photoUrl?.toString().orEmpty()),
         "emailVerified" to user.isEmailVerified,
         "providerId" to "google.com",
-        "dataSharingConsent" to true,
-        "activityDataConsentVersion" to 2L,
-        "activityConsentAt" to FieldValue.serverTimestamp(),
         "updatedAt" to FieldValue.serverTimestamp()
     )
     if (!existing.exists()) {
@@ -499,7 +496,6 @@ object FirebaseAccountAdministration {
         }
         val result = FirebaseFirestore.getInstance()
             .collection("users")
-            .whereEqualTo("dataSharingConsent", true)
             .get()
             .awaitFirebaseResult()
         val accounts = result.documents.map { document ->
@@ -1789,9 +1785,9 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             Text(
                                 when {
-                                    account.activityDataConsentVersion >= 2L -> "Đã đồng ý chia sẻ hồ sơ và hoạt động"
+                                    account.activityDataConsentVersion >= 2L -> "Hồ sơ Google · đã bật theo dõi hoạt động"
                                     account.isAdmin -> "Tài khoản quản lý · thiết bị hiện tại"
-                                    else -> "Đã đồng ý chia sẻ hồ sơ Google"
+                                    else -> "Hồ sơ Google được đồng bộ"
                                 },
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 8.sp
@@ -1835,7 +1831,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow(
                                 "Đồng bộ hồ sơ",
                                 if (account.isAdmin && account.activityDataConsentVersion < 2L) "Tài khoản quản lý đang dùng"
-                                else "Đã đồng ý chia sẻ với quản lý"
+                                else "Được đồng bộ khi đăng nhập Google"
                             )
                             ProfileDataRow(
                                 "Quyền theo dõi hoạt động",
@@ -1904,7 +1900,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             }
         }
         if (!loading && errorMessage == null && accounts.isEmpty()) {
-            Text("Chưa có tài khoản nào đồng ý chia sẻ hồ sơ.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Chưa có tài khoản Google nào đăng nhập COC-LIO.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
     }
 }
