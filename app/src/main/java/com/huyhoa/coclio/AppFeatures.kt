@@ -452,41 +452,49 @@ object UpgradeReminderScheduler {
         val manager = WorkManager.getInstance(context)
         val tag = profileTag(profile)
         manager.cancelAllWorkByTag(tag)
-        if (!enabled) return
 
         val nowSeconds = System.currentTimeMillis() / 1000L
         snapshots.distinctBy { it.tag }.forEach { snapshot ->
             (snapshot.upgrades + snapshot.gearUps).forEachIndexed { itemIndex, item ->
                 val delay = item.remainingSecondsAt(snapshot.timestamp, nowSeconds)
-                if (delay > 0L) {
-                    val endAt = snapshot.timestamp + (item.timerSeconds ?: 0L)
-                    val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag +
-                        "_" + item.identity.hashCode() + "_" + endAt + "_" + itemIndex
-                    val data = Data.Builder()
-                        .putString("profile", profile)
-                        .putString("tag", snapshot.tag)
-                        .putString("village_name", snapshot.villageName ?: snapshot.tag)
-                        .putString("item", item.name)
-                        .putString("section", item.sectionLabel)
-                        .putString("base", item.base)
-                        .putInt("data_id", item.dataId)
-                        .putInt("level", item.level ?: -1)
-                        .putBoolean("gear_up", item.gearUp)
-                        .putString("icon_url", CocAssets.imageUrl(item))
-                        .putLong("end_at", endAt)
-                        .build()
-                    val request = OneTimeWorkRequestBuilder<UpgradeReminderWorker>()
-                        .setInitialDelay(delay, TimeUnit.SECONDS)
-                        .setInputData(data)
-                        .addTag(tag)
-                        .build()
-                    manager.enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, request)
-                }
+                if (delay <= 0L) return@forEachIndexed
+
+                val endAt = snapshot.timestamp + (item.timerSeconds ?: 0L)
+                val refreshName = "coc_lio_widget_finish_" + profile.hashCode() + "_" +
+                    snapshot.tag + "_" + item.identity.hashCode() + "_" + endAt + "_" + itemIndex
+                val refreshRequest = OneTimeWorkRequestBuilder<WidgetRefreshWorker>()
+                    .setInitialDelay(delay, TimeUnit.SECONDS)
+                    .addTag(tag)
+                    .build()
+                manager.enqueueUniqueWork(refreshName, ExistingWorkPolicy.REPLACE, refreshRequest)
+
+                if (!enabled) return@forEachIndexed
+
+                val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag +
+                    "_" + item.identity.hashCode() + "_" + endAt + "_" + itemIndex
+                val data = Data.Builder()
+                    .putString("profile", profile)
+                    .putString("tag", snapshot.tag)
+                    .putString("village_name", snapshot.villageName ?: snapshot.tag)
+                    .putString("item", item.name)
+                    .putString("section", item.sectionLabel)
+                    .putString("base", item.base)
+                    .putInt("data_id", item.dataId)
+                    .putInt("level", item.level ?: -1)
+                    .putBoolean("gear_up", item.gearUp)
+                    .putString("icon_url", CocAssets.imageUrl(item))
+                    .putLong("end_at", endAt)
+                    .build()
+                val request = OneTimeWorkRequestBuilder<UpgradeReminderWorker>()
+                    .setInitialDelay(delay, TimeUnit.SECONDS)
+                    .setInputData(data)
+                    .addTag(tag)
+                    .build()
+                manager.enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, request)
             }
         }
     }
 }
-
 class UpgradeReminderWorker(
     context: Context,
     parameters: WorkerParameters
@@ -804,7 +812,7 @@ private class UpgradeWidgetListFactory(
         views.setTextViewText(
             R.id.row_title,
             if (remaining > 0L) "$levelText • $progressPercent%"
-            else "$levelText • 100% • HOÀN THÀNH"
+            else "$levelText • HOÀN THÀNH"
         )
         views.setViewVisibility(R.id.row_subtitle, View.GONE)
         views.setProgressBar(R.id.row_progress, 100, progressPercent, false)
@@ -837,15 +845,17 @@ private class UpgradeWidgetListFactory(
         )
 
         if (remaining > 0L) {
+            views.setChronometerCountDown(R.id.row_timer, true)
             views.setChronometer(
                 R.id.row_timer,
                 SystemClock.elapsedRealtime() + remaining * 1000L,
                 "%s",
                 true
             )
-            views.setChronometerCountDown(R.id.row_timer, true)
         } else {
-            views.setTextViewText(R.id.row_timer, "ĐÃ HẾT GIỜ")
+            views.setChronometerCountDown(R.id.row_timer, false)
+            views.setChronometer(R.id.row_timer, SystemClock.elapsedRealtime(), "%s", false)
+            views.setTextViewText(R.id.row_timer, "HOÀN THÀNH")
         }
         return views
     }
@@ -935,9 +945,9 @@ object AppWidgetUpdater {
             when {
                 snapshot == null -> "Mở ứng dụng và nhập dữ liệu JSON"
                 activeCount == 0 && expiredCount == 0 -> "Không có mục nào đang nâng cấp"
-                activeCount > 0 && expiredCount > 0 -> "$activeCount đang nâng • $expiredCount đã hết giờ"
+                activeCount > 0 && expiredCount > 0 -> "$activeCount đang nâng • $expiredCount hoàn thành"
                 activeCount > 0 -> "$activeCount mục đang nâng cấp"
-                else -> "$expiredCount mục đã hết giờ • chờ JSON mới"
+                else -> "$expiredCount hoàn thành • chờ JSON mới"
             }
         )
 
