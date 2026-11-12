@@ -630,6 +630,7 @@ object AccountActivityTracker {
     fun stop(context: Context) {
         heartbeatJob?.cancel()
         heartbeatJob = null
+        val user = FirebaseAuth.getInstance().currentUser
         val duration = if (sessionStartedAt > 0L) {
             ((System.currentTimeMillis() - sessionStartedAt) / 1000L).coerceAtLeast(0L)
         } else {
@@ -637,9 +638,9 @@ object AccountActivityTracker {
         }
         sessionStartedAt = 0L
         scope.launch {
-            val user = FirebaseAuth.getInstance().currentUser ?: return@launch
-            if (hasConsent(user.uid)) {
-                record(context.applicationContext, "background", duration)
+            val uid = user?.uid ?: return@launch
+            if (hasConsent(uid)) {
+                record(context.applicationContext, uid, "background", duration)
             }
         }
     }
@@ -657,7 +658,21 @@ object AccountActivityTracker {
         }.getOrDefault(false)
     }
 
-    private suspend fun record(context: Context, event: String, durationSeconds: Long) {
+    private suspend fun record(
+        context: Context,
+        event: String,
+        durationSeconds: Long
+    ) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        record(context, uid, event, durationSeconds)
+    }
+
+    private suspend fun record(
+        context: Context,
+        uid: String,
+        event: String,
+        durationSeconds: Long
+    ) {
         runCatching {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             val versionCode = if (Build.VERSION.SDK_INT >= 28) {
@@ -680,7 +695,7 @@ object AccountActivityTracker {
             }
             FirebaseFunctions.getInstance("asia-southeast1")
                 .getHttpsCallable("recordAccountActivity")
-                .call(payload)
+                .call(payload + mapOf("uid" to uid))
                 .awaitFirebaseResult()
         }
     }
