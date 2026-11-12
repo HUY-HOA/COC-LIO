@@ -37,6 +37,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -50,6 +52,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -708,9 +712,6 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                                 Text("📎 TỆP", fontSize = 10.sp)
                             }
                         }
-                        OutlinedButton(onClick = { showEmojiPicker = !showEmojiPicker }, enabled = !busy) {
-                            Text(if (showEmojiPicker) "✖ ĐÓNG" else "😊 EMOJI", fontSize = 10.sp)
-                        }
                     }
                     if (showEmojiPicker) {
                         val chatEmojis = listOf(
@@ -752,7 +753,17 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                             }
                         }
                     }
-                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        IconButton(
+                            onClick = { showEmojiPicker = !showEmojiPicker },
+                            enabled = !busy
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.EmojiEmotions,
+                                contentDescription = if (showEmojiPicker) "Đóng bảng emoji" else "Mở bảng emoji",
+                                tint = if (showEmojiPicker) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         OutlinedTextField(
                             value = draft,
                             onValueChange = { if (it.length <= 2000) draft = it },
