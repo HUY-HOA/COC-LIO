@@ -350,6 +350,8 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
             val signedInUser = FirebaseAuth.getInstance().currentUser
             if (signedInUser == null) {
                 statusMessage = "Bạn cần đăng nhập Google để gửi ảnh."
+            } else if (!isOwner) {
+                statusMessage = "Chỉ tài khoản quản lý mới được gửi hình ảnh."
             } else {
                 scope.launch {
                     busy = true
@@ -402,6 +404,8 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
             val signedInUser = FirebaseAuth.getInstance().currentUser
             if (signedInUser == null) {
                 statusMessage = "Bạn cần đăng nhập Google để gửi tệp."
+            } else if (!isOwner) {
+                statusMessage = "Chỉ tài khoản quản lý mới được gửi tệp."
             } else {
                 scope.launch {
                     busy = true
@@ -751,11 +755,20 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
-                            Text("ẢNH", fontSize = 9.sp)
-                        }
-                        OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
-                            Text("TỆP", fontSize = 9.sp)
+                        if (isOwner) {
+                            OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
+                                Text("ẢNH", fontSize = 9.sp)
+                            }
+                            OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
+                                Text("TỆP", fontSize = 9.sp)
+                            }
+                        } else {
+                            Text(
+                                "Chỉ tài khoản quản lý được gửi ảnh và tệp.",
+                                modifier = Modifier.align(Alignment.CenterVertically),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp
+                            )
                         }
                         if (busy) Text("Đang gửi…", modifier = Modifier.align(Alignment.CenterVertically), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                     }
