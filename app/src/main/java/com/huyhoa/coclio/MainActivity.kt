@@ -182,15 +182,24 @@ private fun paletteForLed(preset: String): List<Color> = when (preset) {
 @Composable
 private fun animatedLedTextBrush(): Brush {
     val led = LocalLedTheme.current
+    val palette = led.palette.map { it.copy(alpha = led.brightness) }
     val phase = if (led.enabled && led.speedMillis > 0) {
         (led.progress.value * (20000f / led.speedMillis)).rem(1f)
     } else 0f
-    val offset = phase * 420f
-    return Brush.linearGradient(
-        colors = led.palette.map { it.copy(alpha = led.brightness) },
-        start = Offset(offset, 0f),
-        end = Offset(offset + 420f, 80f)
-    )
+    val movingColors = List(32) { index ->
+        val position = ((index / 32f + phase) % 1f) * (palette.size - 1)
+        val startIndex = position.toInt().coerceIn(0, palette.size - 2)
+        val fraction = position - startIndex
+        val first = palette[startIndex]
+        val second = palette[startIndex + 1]
+        Color(
+            red = first.red + (second.red - first.red) * fraction,
+            green = first.green + (second.green - first.green) * fraction,
+            blue = first.blue + (second.blue - first.blue) * fraction,
+            alpha = led.brightness
+        )
+    }
+    return Brush.linearGradient(movingColors)
 }
 
 @Composable
