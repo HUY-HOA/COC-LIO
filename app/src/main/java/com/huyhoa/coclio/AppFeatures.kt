@@ -535,43 +535,58 @@ object FirebaseAccountAdministration {
 
         val owner = FirebaseAuth.getInstance().currentUser
             ?.takeIf { isOwner(it.email) }
-        if (owner != null && accounts.none { it.uid == owner.uid }) {
+        if (owner != null) {
             val packageInfo = runCatching {
                 context.packageManager.getPackageInfo(context.packageName, 0)
             }.getOrNull()
+            val appVersionCode = if (Build.VERSION.SDK_INT >= 28) {
+                packageInfo?.longVersionCode ?: 0L
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo?.versionCode?.toLong() ?: 0L
+            }
             val now = System.currentTimeMillis()
-            accounts.add(
-                AdminGoogleAccount(
-                    uid = owner.uid,
-                    email = owner.email.orEmpty(),
-                    preferredName = "Tài khoản quản lý",
-                    displayName = owner.displayName.orEmpty(),
-                    givenName = "",
-                    familyName = "",
-                    photoUrl = owner.photoUrl?.toString().orEmpty(),
-                    emailVerified = owner.isEmailVerified,
-                    providerId = owner.providerData.firstOrNull { it.providerId == "google.com" }?.providerId.orEmpty(),
-                    signInCount = 0L,
-                    createdAt = owner.metadata?.creationTimestamp ?: 0L,
-                    lastSignInAt = owner.metadata?.lastSignInTimestamp ?: 0L,
-                    updatedAt = owner.metadata?.lastSignInTimestamp ?: 0L,
-                    isAdmin = true,
+            val ownerIndex = accounts.indexOfFirst { it.uid == owner.uid }
+            if (ownerIndex >= 0 && accounts[ownerIndex].activityDataConsentVersion < 2L) {
+                accounts[ownerIndex] = accounts[ownerIndex].copy(
                     isOnline = true,
                     lastActiveAt = now,
-                    lastOpenedAt = now,
                     deviceManufacturer = Build.MANUFACTURER.orEmpty(),
                     deviceModel = Build.MODEL.orEmpty(),
                     androidVersion = Build.VERSION.RELEASE.orEmpty(),
                     sdkInt = Build.VERSION.SDK_INT.toLong(),
                     appVersionName = packageInfo?.versionName.orEmpty(),
-                    appVersionCode = if (Build.VERSION.SDK_INT >= 28) {
-                        packageInfo?.longVersionCode ?: 0L
-                    } else {
-                        @Suppress("DEPRECATION")
-                        packageInfo?.versionCode?.toLong() ?: 0L
-                    }
+                    appVersionCode = appVersionCode
                 )
-            )
+            } else if (ownerIndex < 0) {
+                accounts.add(
+                    AdminGoogleAccount(
+                        uid = owner.uid,
+                        email = owner.email.orEmpty(),
+                        preferredName = "Tài khoản quản lý",
+                        displayName = owner.displayName.orEmpty(),
+                        givenName = "",
+                        familyName = "",
+                        photoUrl = owner.photoUrl?.toString().orEmpty(),
+                        emailVerified = owner.isEmailVerified,
+                        providerId = owner.providerData.firstOrNull { it.providerId == "google.com" }?.providerId.orEmpty(),
+                        signInCount = 0L,
+                        createdAt = owner.metadata?.creationTimestamp ?: 0L,
+                        lastSignInAt = owner.metadata?.lastSignInTimestamp ?: 0L,
+                        updatedAt = owner.metadata?.lastSignInTimestamp ?: 0L,
+                        isAdmin = true,
+                        isOnline = true,
+                        lastActiveAt = now,
+                        lastOpenedAt = now,
+                        deviceManufacturer = Build.MANUFACTURER.orEmpty(),
+                        deviceModel = Build.MODEL.orEmpty(),
+                        androidVersion = Build.VERSION.RELEASE.orEmpty(),
+                        sdkInt = Build.VERSION.SDK_INT.toLong(),
+                        appVersionName = packageInfo?.versionName.orEmpty(),
+                        appVersionCode = appVersionCode
+                    )
+                )
+            }
         }
         return accounts.sortedWith(
             compareByDescending<AdminGoogleAccount> { it.isAdmin }
@@ -1747,7 +1762,8 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Đăng nhập ${account.signInCount} lần · ${formatAdminAccountTime(account.lastSignInAt)}",
+                                if (account.signInCount > 0L) "Đăng nhập ${account.signInCount} lần · ${formatAdminAccountTime(account.lastSignInAt)}"
+                                else "Lần đăng nhập gần nhất · ${formatAdminAccountTime(account.lastSignInAt)}",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 8.sp
                             )
@@ -1780,11 +1796,13 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                         ) {
                             Text(if (expanded) "ẨN THÔNG TIN" else "XEM THÔNG TIN", fontSize = 9.sp)
                         }
-                        TextButton(
-                            onClick = { pendingDelete = account },
-                            enabled = !deleting
-                        ) {
-                            Text("XÓA TÀI KHOẢN", color = Color(0xFFFF5D91), fontSize = 9.sp)
+                        if (!account.isAdmin) {
+                            TextButton(
+                                onClick = { pendingDelete = account },
+                                enabled = !deleting
+                            ) {
+                                Text("XÓA TÀI KHOẢN", color = Color(0xFFFF5D91), fontSize = 9.sp)
+                            }
                         }
                     }
                     if (expanded) {
@@ -1807,7 +1825,10 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Ảnh đại diện", account.photoUrl)
                             ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
                             ProfileDataRow("Nhà cung cấp", account.providerId)
-                            ProfileDataRow("Số lần đăng nhập Google", account.signInCount.toString())
+                            ProfileDataRow(
+                                "Số lần đăng nhập Google",
+                                if (account.signInCount > 0L) account.signInCount.toString() else "Chưa có số liệu thống kê"
+                            )
                             ProfileDataRow("Đăng nhập gần nhất", formatAdminAccountTime(account.lastSignInAt))
                             ProfileDataRow(
                                 "Lần mở COC-LIO gần nhất",
