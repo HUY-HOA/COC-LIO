@@ -340,7 +340,7 @@ private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
     }
 
 private suspend fun syncFirebaseUserProfile(user: FirebaseUser, google: GoogleAccountData) {
-    val email = user.email?.trim()?.lowercase()
+    val email = user.email?.trim()?.takeIf { it.isNotBlank() }
         ?: throw IllegalStateException("Firebase không trả về email tài khoản.")
     val reference = FirebaseFirestore.getInstance()
         .collection("users")
@@ -1452,7 +1452,11 @@ fun SettingsScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(accountEmail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-                        Text("Đang dùng trên thiết bị này", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        if (isAdmin) {
+                            Text("CHỦ SỞ HỮU / QUẢN LÝ", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Text("Đang dùng trên thiết bị này", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                        }
                     }
                 }
                 if (isAdmin) {
