@@ -45,6 +45,7 @@ service cloud.firestore {
         || (
           isSelf(userId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'email',
             'displayName',
             'givenName',
             'familyName',
@@ -56,7 +57,7 @@ service cloud.firestore {
             'updatedAt'
           ])
           && request.resource.data.uid == resource.data.uid
-          && request.resource.data.email == resource.data.email
+          && request.resource.data.email == request.auth.token.email
           && request.resource.data.emailVerified == request.auth.token.email_verified
           && request.resource.data.providerId == 'google.com'
           && request.resource.data.createdAt == resource.data.createdAt
