@@ -457,8 +457,14 @@ private fun CocLioApp(
             if (!initialAuthStateHandled) {
                 initialAuthStateHandled = true
                 if (!interactiveGoogleSignIn && googleUser?.email?.isNotBlank() == true) {
-                    AccountProfileStore.setActive(context, googleUser.email)
-                    activeProfile = googleUser.email.orEmpty()
+                    val savedProfile = AccountProfileStore.active(context)
+                    if (savedProfile != "local" &&
+                        savedProfile.equals(googleUser.email, ignoreCase = true)
+                    ) {
+                        activeProfile = savedProfile
+                    } else {
+                        activeProfile = "local"
+                    }
                 } else if (!interactiveGoogleSignIn) {
                     activeProfile = "local"
                 }
