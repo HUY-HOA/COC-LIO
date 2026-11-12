@@ -494,7 +494,6 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
-    var pendingGoogleAccount by remember { mutableStateOf<GoogleAccountData?>(null) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var lastUsedAt by remember(activeProfile) {
         mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
@@ -743,7 +742,7 @@ private fun CocLioApp(
         }
     }
 
-    fun finishGoogleSignIn(googleAccount: GoogleAccountData, shareData: Boolean) {
+    fun finishGoogleSignIn(googleAccount: GoogleAccountData) {
         scope.launch {
             try {
                 val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
@@ -755,43 +754,21 @@ private fun CocLioApp(
                 if (savedName.isNullOrBlank()) {
                     AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
                 }
-                if (shareData) {
-                    GoogleAccountAuth.shareProfile(googleAccount)
-                    FirebaseAccountAdministration.savePreferredName(profileName)
-                    FirebaseTelemetry.logGoogleSignIn(context)
-                    AccountActivityTracker.start(context)
-                } else {
-                    GoogleAccountAuth.removeSharedProfile()
-                    AccountActivityTracker.stop(context)
-                }
+                GoogleAccountAuth.shareProfile(googleAccount)
+                FirebaseAccountAdministration.savePreferredName(profileName)
+                AccountActivityTracker.start(context)
                 AccountProfileStore.setActive(context, googleAccount.email)
                 activeProfile = googleAccount.email
                 interactiveGoogleSignIn = false
                 selectedTab = 0
-                pendingGoogleAccount = null
                 googleAuthError = null
-                snackbar.showSnackbar(
-                    if (shareData) "Đã đăng nhập và đồng ý chia sẻ hồ sơ với quản lý."
-                    else "Đã đăng nhập. Bạn không chia sẻ hồ sơ Google với quản lý."
-                )
+                snackbar.showSnackbar("Đã đăng nhập Google và đồng bộ hồ sơ tài khoản cơ bản.")
             } catch (error: Exception) {
                 snackbar.showSnackbar(
                     error.message?.takeIf { it.isNotBlank() }
-                        ?: "Không thể lưu lựa chọn chia sẻ dữ liệu. Hãy thử lại."
+                        ?: "Không thể lưu hồ sơ tài khoản. Hãy thử lại."
                 )
             }
-        }
-    }
-
-    fun cancelPendingGoogleSignIn() {
-        scope.launch {
-            pendingGoogleAccount = null
-            GoogleAccountAuth.signOut(context)
-            AccountProfileStore.setActive(context, null)
-            interactiveGoogleSignIn = false
-            activeProfile = "local"
-            selectedTab = 0
-            snackbar.showSnackbar("Bạn đã hủy đăng nhập Google.")
         }
     }
 
@@ -801,7 +778,6 @@ private fun CocLioApp(
             FirebaseTelemetry.logSignOut(context)
             GoogleAccountAuth.signOut(context)
             AccountProfileStore.setActive(context, null)
-            pendingGoogleAccount = null
             interactiveGoogleSignIn = false
             activeProfile = "local"
             selectedTab = 0
@@ -816,7 +792,7 @@ private fun CocLioApp(
                 AccountActivityTracker.stopAndWait(context)
                 val googleAccount = GoogleAccountAuth.signIn(context)
                 AccountProfileStore.saveGoogleData(context, googleAccount)
-                pendingGoogleAccount = googleAccount
+                finishGoogleSignIn(googleAccount)
                 googleAuthError = null
             } catch (error: Exception) {
                 interactiveGoogleSignIn = false
@@ -1155,64 +1131,6 @@ private fun CocLioApp(
         )
     }
 
-    pendingGoogleAccount?.let { googleAccount ->
-        AlertDialog(
-            onDismissRequest = { cancelPendingGoogleSignIn() },
-            title = { Text("Bạn có đồng ý chia sẻ dữ liệu không?") },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .heightIn(max = 340.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        "Tài khoản Google: " + googleAccount.email,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        "Nếu đồng ý, COC-LIO lưu email, tên Google, tên riêng, họ, ảnh đại diện, trạng thái xác minh, số lần và thời điểm đăng nhập. Ứng dụng cũng ghi nhận IP công khai mà máy chủ nhìn thấy, hãng/model thiết bị, phiên bản Android và COC-LIO, số lần mở ứng dụng, lần hoạt động gần nhất, trạng thái online/offline và thời lượng phiên để tài khoản quản lý xem.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-                    Text(
-                        "Nếu không đồng ý, bạn vẫn đăng nhập và sử dụng COC-LIO bình thường; ứng dụng không ghi IP, thiết bị và lịch sử hoạt động vào hồ sơ quản lý, tài khoản sẽ không có trong danh sách chi tiết. Khi bạn tự gửi tin nhắn hoặc ảnh trong cộng đồng, tên và ảnh đại diện vẫn hiển thị kèm nội dung bạn gửi.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-                    Text(
-                        "Google/Firebase vẫn xử lý dữ liệu kỹ thuật cần thiết để xác thực và bảo vệ đăng nhập. IP ghi trong hồ sơ COC-LIO là IP mà máy chủ nhận được, không phải vị trí GPS.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.sp,
-                        lineHeight = 14.sp
-                    )
-                }
-            },
-            confirmButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TextButton(onClick = { finishGoogleSignIn(googleAccount, false) }) {
-                        Text("KHÔNG CHIA SẺ", fontSize = 9.sp)
-                    }
-                    TextButton(onClick = { finishGoogleSignIn(googleAccount, true) }) {
-                        Text("ĐỒNG Ý", fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { cancelPendingGoogleSignIn() }) {
-                    Text("HỦY ĐĂNG NHẬP", fontSize = 9.sp)
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurface
-        )
-    }
-
     googleAuthError?.let { details ->
         AlertDialog(
             onDismissRequest = { googleAuthError = null },
@@ -1322,7 +1240,7 @@ private fun GoogleLoginStartScreen(
                     Text("ĐĂNG NHẬP VỚI GOOGLE")
                 }
                 Text(
-                    "Sau bước này, bạn sẽ chọn có chia sẻ hồ sơ Google với quản lý hay không.",
+                    "Khi đăng nhập, COC-LIO lưu UID, email, tên và ảnh đại diện Google để xác thực và quản lý tài khoản. IP, thiết bị và lịch sử hoạt động không tự động được ghi nhận nếu chưa có lựa chọn riêng.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
