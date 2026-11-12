@@ -494,6 +494,7 @@ private fun CocLioApp(
     }
     var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
     var selectedTab by remember { mutableStateOf(0) }
+    var communityInitialSection by remember { mutableStateOf(0) }
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
@@ -1015,10 +1016,16 @@ private fun CocLioApp(
                                 deletedReceivedSharedJsons = ReceivedSharedJsonStore.loadDeleted(context, activeProfile)
                                 scope.launch { snackbar.showSnackbar("Đã xóa vĩnh viễn JSON nhận được khỏi thiết bị.") }
                             }
+                        },
+                        onOpenSharedJsonFeed = {
+                            communityInitialSection = 3
+                            selectedTab = 3
                         }
                     )
                     3 -> CommunityScreen(
                         isGoogleSignedIn = isGoogleSignedIn,
+                        initialSection = communityInitialSection,
+                        onInitialSectionConsumed = { communityInitialSection = 0 },
                         onImportJson = { rawJson, senderUid, senderName, tag, timestamp, jsonId ->
                             val parsed = runCatching { VillageParser.parse(rawJson) }.getOrNull()
                             if (parsed != null) {
@@ -2025,6 +2032,8 @@ private fun CategoryImage(item: VillageItem, size: Int) {
 private fun HistoryScreen(
     history: List<VillageSnapshot>,
     deletedVillages: List<DeletedVillageRecord>,
+    receivedSharedJsons: List<ReceivedSharedJsonRecord>,
+    deletedReceivedSharedJsons: List<DeletedReceivedSharedJsonRecord>,
     pinnedTags: List<String>,
     activeTag: String,
     activeTimestamp: Long?,
@@ -2032,11 +2041,18 @@ private fun HistoryScreen(
     onTogglePin: (String) -> Unit,
     onDelete: (String) -> Unit,
     onRestore: (String) -> Unit,
-    onDeletePermanently: (String) -> Unit
+    onDeletePermanently: (String) -> Unit,
+    onShare: (VillageSnapshot) -> Unit,
+    onUseReceivedJson: (ReceivedSharedJsonRecord) -> Unit,
+    onDeleteReceivedJson: (String) -> Unit,
+    onRestoreReceivedJson: (String) -> Unit,
+    onDeleteReceivedJsonPermanently: (String) -> Unit,
+    onOpenSharedJsonFeed: () -> Unit
 ) {
     var selectedSection by remember { mutableStateOf("villages") }
     var pendingDelete by remember { mutableStateOf<VillageSnapshot?>(null) }
     var pendingPermanentDelete by remember { mutableStateOf<DeletedVillageRecord?>(null) }
+    var pendingPermanentReceivedDelete by remember { mutableStateOf<DeletedReceivedSharedJsonRecord?>(null) }
     val nowSeconds = System.currentTimeMillis() / 1000L
     val villages = history.distinctBy { it.tag }.sortedWith(
         compareBy<VillageSnapshot> { pinnedTags.indexOf(it.tag).let { index -> if (index < 0) Int.MAX_VALUE else index } }
@@ -2052,39 +2068,39 @@ private fun HistoryScreen(
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text("KHO DỮ LIỆU JSON", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.Black)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     FilterChip(
                         selected = selectedSection == "villages",
                         onClick = { selectedSection = "villages" },
-                        modifier = Modifier.weight(1f),
-                        label = {
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text("ĐANG LƯU", fontSize = 10.sp, maxLines = 1)
-                            }
-                        }
+                        label = { Text("ĐANG LƯU", fontSize = 9.sp, maxLines = 1) }
                     )
                     FilterChip(
                         selected = selectedSection == "history",
                         onClick = { selectedSection = "history" },
-                        modifier = Modifier.weight(1f),
-                        label = {
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text("LỊCH SỬ", fontSize = 10.sp, maxLines = 1)
-                            }
-                        }
+                        label = { Text("LỊCH SỬ", fontSize = 9.sp, maxLines = 1) }
+                    )
+                    FilterChip(
+                        selected = false,
+                        onClick = onOpenSharedJsonFeed,
+                        label = { Text("JSON CHIA SẺ", fontSize = 9.sp, maxLines = 1) }
+                    )
+                    FilterChip(
+                        selected = selectedSection == "received",
+                        onClick = { selectedSection = "received" },
+                        label = { Text("ĐÃ NHẬN", fontSize = 9.sp, maxLines = 1) }
                     )
                     FilterChip(
                         selected = selectedSection == "deleted",
                         onClick = { selectedSection = "deleted" },
-                        modifier = Modifier.weight(1f),
-                        label = {
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text("ĐÃ XÓA", fontSize = 10.sp, maxLines = 1)
-                            }
-                        }
+                        label = { Text("ĐÃ XÓA", fontSize = 9.sp, maxLines = 1) }
+                    )
+                    FilterChip(
+                        selected = selectedSection == "deletedReceived",
+                        onClick = { selectedSection = "deletedReceived" },
+                        label = { Text("JSON ĐÃ GỠ", fontSize = 9.sp, maxLines = 1) }
                     )
                 }
             }
@@ -2128,16 +2144,24 @@ private fun HistoryScreen(
                                 Icon(
                                     imageVector = Icons.Filled.Tag,
                                     contentDescription = "Mã người chơi",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(11.dp)
                                 )
                                 Text(
                                     "ID: ${snapshot.tag}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
-                                    color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurface,
                                     fontSize = 10.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { onShare(snapshot) }) {
+                                    Text("CHIA SẺ JSON", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
@@ -2173,15 +2197,67 @@ private fun HistoryScreen(
                     }
                 }
             }
+        } else if (selectedSection == "received") {
+            if (receivedSharedJsons.isEmpty()) {
+                item { InfoCard("Chưa có JSON nhận từ người khác", "JSON bạn nhận và nhập từ Cộng đồng sẽ được lưu riêng ở đây. JSON tự chia sẻ của chính bạn không được đưa vào danh sách này.") }
+            } else {
+                items(receivedSharedJsons, key = { it.id }) { received ->
+                    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
+                        Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(received.villageName.ifBlank { "JSON làng ${received.tag}" }, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Player Tag: ${received.tag}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("Chia sẻ bởi: ${received.senderName}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                            Text("Dữ liệu: ${formatTimestamp(received.timestamp)} • Nhận: ${formatTimestamp(received.receivedAt)}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { onUseReceivedJson(received) }) {
+                                    Text("NHẬP / SỬ DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
+                                TextButton(onClick = { onDeleteReceivedJson(received.id) }) {
+                                    Text("GỠ", color = CocRed, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (selectedSection == "deletedReceived") {
+            if (deletedReceivedSharedJsons.isEmpty()) {
+                item { InfoCard("Chưa có JSON đã gỡ", "JSON đã gỡ khỏi mục ĐÃ NHẬN sẽ được lưu riêng tại đây, không làm mất bản trong LỊCH SỬ.") }
+            } else {
+                items(deletedReceivedSharedJsons, key = { it.record.id }) { deleted ->
+                    val received = deleted.record
+                    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocRed) {
+                        Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(received.villageName.ifBlank { "JSON làng ${received.tag}" }, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Player Tag: ${received.tag} • ${received.senderName}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                            Text("Đã gỡ: ${formatTimestamp(deleted.deletedAt)}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { onRestoreReceivedJson(received.id) }) {
+                                    Text("KHÔI PHỤC", color = CocGreen, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
+                                TextButton(onClick = { pendingPermanentReceivedDelete = deleted }) {
+                                    Text("XÓA VĨNH VIỄN", color = CocRed, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         } else {
             if (deletedVillages.isEmpty()) {
-                item { InfoCard("Chưa có dữ liệu bị xóa", "Khi xóa một làng, dữ liệu sẽ được lưu tại đây để khôi phục.") }
+                item { InfoCard("Chưa có dữ liệu bị xóa", "Khi xóa một làng khỏi ĐANG LƯU, dữ liệu sẽ được lưu tại đây để khôi phục.") }
             } else {
                 items(deletedVillages, key = { it.id }) { deleted ->
                     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocRed) {
                         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(deleted.villageName ?: deleted.tag, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("${deleted.tag} • ${deleted.snapshots.size} mốc • ${formatTimestamp(deleted.deletedAt)}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                            Text("${deleted.tag} • ${deleted.snapshots.size} mốc • ${formatTimestamp(deleted.deletedAt)}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(onClick = { onRestore(deleted.id) }) {
                                     Text("KHÔI PHỤC JSON", color = CocGreen, fontWeight = FontWeight.Bold, fontSize = 10.sp)
@@ -2214,6 +2290,26 @@ private fun HistoryScreen(
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    pendingPermanentReceivedDelete?.let { deleted ->
+        AlertDialog(
+            onDismissRequest = { pendingPermanentReceivedDelete = null },
+            title = { Text("Xóa vĩnh viễn JSON đã nhận?") },
+            text = { Text("JSON từ ${deleted.record.senderName} sẽ bị xóa khỏi Kho JSON và không thể khôi phục. Bản nhập trong LỊCH SỬ vẫn được giữ.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteReceivedJsonPermanently(deleted.record.id)
+                    pendingPermanentReceivedDelete = null
+                }) { Text("XÓA VĨNH VIỄN", color = CocRed) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingPermanentReceivedDelete = null }) { Text("HỦY") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
         )
     }
 
