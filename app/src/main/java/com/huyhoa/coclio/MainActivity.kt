@@ -852,7 +852,7 @@ private fun CocLioApp(
                             ) {
                                 testNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             } else {
-                                val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle)
+                                val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle, alarmDurationSeconds)
                                 scope.launch {
                                     snackbar.showSnackbar(
                                         if (sent) "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem."
