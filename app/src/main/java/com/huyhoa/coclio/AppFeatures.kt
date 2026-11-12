@@ -33,7 +33,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.media.AudioAttributes
 import android.provider.Settings
-import android.app.AlertDialog
+import androidx.compose.material3.AlertDialog
 import android.widget.RemoteViews
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -1529,6 +1529,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
     FeaturePanel {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
+                "DANH SÁCH QUẢN LÝ NGƯỜI DÙNG",
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
