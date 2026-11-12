@@ -68,7 +68,11 @@ jobs:
               item.get("client_info", {}).get("android_client_info", {}).get("package_name") == package_name
               for item in clients
           )
-          web_client_id = os.environ.get("GOOGLE_WEB_CLIENT_ID", "").strip()
+          raw_web_client_id = os.environ.get("GOOGLE_WEB_CLIENT_ID", "")
+          web_client_id = raw_web_client_id.strip()
+
+          if raw_web_client_id != web_client_id:
+              sys.exit("::error::GOOGLE_WEB_CLIENT_ID contiene espacios al inicio o al final.")
 
           if project_id != "coc-lio-73de9" or project_number != "854984158580":
               sys.exit("::error::google-services.json không thuộc Firebase project COC-LIO.")
