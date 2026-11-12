@@ -884,7 +884,7 @@ private fun CocLioApp(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Bạn muốn COC-LIO gọi bạn là gì? Tên này chỉ lưu trên điện thoại và dùng để nhận biết hồ sơ.",
+                        "Bạn muốn COC-LIO gọi bạn là gì? Tên này được đồng bộ vào hồ sơ tài khoản để hiển thị trong COC-LIO và giúp quản lý nhận biết tài khoản.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     OutlinedTextField(
