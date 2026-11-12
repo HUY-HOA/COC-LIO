@@ -98,6 +98,16 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.gms.tasks.Task
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import com.huyhoa.coclio.data.VillageSnapshot
@@ -307,6 +317,84 @@ object AppPreferences {
     }
 }
 
+private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
+    suspendCancellableCoroutine { continuation ->
+        addOnCompleteListener { task ->
+            if (!continuation.isActive) return@addOnCompleteListener
+            if (task.isSuccessful) {
+                continuation.resume(task.result)
+            } else {
+                continuation.resumeWithException(
+                    task.exception ?: IllegalStateException("Firebase không trả về kết quả.")
+                )
+            }
+        }
+    }
+
+private suspend fun syncFirebaseUserProfile(user: FirebaseUser) {
+    val email = user.email ?: throw IllegalStateException("Firebase không trả về email tài khoản.")
+    val reference = FirebaseFirestore.getInstance()
+        .collection("users")
+        .document(user.uid)
+    val existing = reference.get().awaitFirebaseResult()
+    val displayName = user.displayName.orEmpty()
+    val photoUrl = user.photoUrl?.toString().orEmpty()
+
+    if (!existing.exists()) {
+        reference.set(
+            mapOf(
+                "uid" to user.uid,
+                "email" to email,
+                "displayName" to displayName,
+                "photoUrl" to photoUrl,
+                "createdAt" to FieldValue.serverTimestamp(),
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+        ).awaitFirebaseResult()
+    } else {
+        val updates = hashMapOf<String, Any>(
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        if (existing.getString("displayName") != displayName) {
+            updates["displayName"] = displayName
+        }
+        if (existing.getString("photoUrl") != photoUrl) {
+            updates["photoUrl"] = photoUrl
+        }
+        reference.update(updates).awaitFirebaseResult()
+    }
+}
+
+object FirebaseTelemetry {
+    fun logGoogleSignIn(context: Context) {
+        runCatching {
+            FirebaseAnalytics.getInstance(context).logEvent(
+                FirebaseAnalytics.Event.LOGIN,
+                Bundle().apply {
+                    putString(FirebaseAnalytics.Param.METHOD, "google")
+                }
+            )
+        }
+    }
+
+    fun logSignOut(context: Context) {
+        runCatching {
+            FirebaseAnalytics.getInstance(context).logEvent("logout", Bundle())
+        }
+    }
+
+    fun logVillageImport(context: Context, hasPreviousSnapshot: Boolean) {
+        runCatching {
+            FirebaseAnalytics.getInstance(context).logEvent(
+                "village_json_import",
+                Bundle().apply {
+                    putBoolean("has_previous_snapshot", hasPreviousSnapshot)
+                }
+            )
+        }
+    }
+}
+
 object GoogleAccountAuth {
     suspend fun signIn(context: Context): GoogleAccountData {
         val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
@@ -359,6 +447,22 @@ object GoogleAccountAuth {
         val google = GoogleIdTokenCredential.createFrom(credential.data)
         val email = google.email?.trim()?.takeIf { it.contains("@") }
             ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ.")
+        val firebaseCredential = GoogleAuthProvider.getCredential(google.idToken, null)
+        val authResult = FirebaseAuth.getInstance()
+            .signInWithCredential(firebaseCredential)
+            .awaitFirebaseResult()
+        val firebaseUser = authResult.user
+            ?: throw IllegalStateException("Firebase Authentication không trả về người dùng.")
+
+        runCatching { syncFirebaseUserProfile(firebaseUser) }
+            .onFailure {
+                android.util.Log.w(
+                    "COC-LIO",
+                    "Không thể đồng bộ hồ sơ Firebase. Cần kiểm tra Firestore và Security Rules.",
+                    it
+                )
+            }
+
         return GoogleAccountData(
             email = email.lowercase(),
             displayName = google.displayName?.trim()?.takeIf { it.isNotBlank() },
@@ -369,6 +473,7 @@ object GoogleAccountAuth {
     }
 
     suspend fun signOut(context: Context) {
+        FirebaseAuth.getInstance().signOut()
         runCatching {
             CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest())
         }
