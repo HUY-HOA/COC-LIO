@@ -59,6 +59,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tag
@@ -591,7 +592,8 @@ private fun CocLioApp(
                     Triple("buildings", "Công trình", 1),
                     Triple("army", "Quân đội", 2),
                     Triple("history", "Kho JSON", 3),
-                    Triple("settings", "Cài đặt", 4)
+                    Triple("community", "Cộng đồng", 4),
+                    Triple("settings", "Cài đặt", 5)
                 )
                 navItems.forEach { item ->
                     NavigationBarItem(
@@ -604,6 +606,7 @@ private fun CocLioApp(
                                     "buildings" -> Icons.Filled.Business
                                     "army" -> Icons.Filled.Groups
                                     "history" -> Icons.Filled.History
+                                    "community" -> Icons.Filled.Forum
                                     else -> Icons.Filled.Settings
                                 },
                                 contentDescription = item.second,
@@ -695,7 +698,8 @@ private fun CocLioApp(
                             }
                         }
                     )
-                    4 -> SettingsScreen(
+                    4 -> CommunityScreen(onOpenSettings = { selectedTab = 5 })
+                    5 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
                         isAdmin = FirebaseAccountAdministration.isOwner(activeProfile),
                         accountData = AccountProfileStore.googleData(context, activeProfile),
