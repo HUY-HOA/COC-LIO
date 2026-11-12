@@ -382,7 +382,7 @@ data class AdminGoogleAccount(
 )
 
 object FirebaseAccountAdministration {
-    private const val OWNER_EMAIL = "phunghuyhoahkb@gmail.com"
+    private const val OWNER_EMAIL = "phunghuyhoahaikba@gmail.com"
 
     fun isOwner(email: String?): Boolean =
         email?.trim()?.equals(OWNER_EMAIL, ignoreCase = true) == true
