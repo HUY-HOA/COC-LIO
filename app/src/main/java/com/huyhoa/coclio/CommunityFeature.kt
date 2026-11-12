@@ -1087,6 +1087,35 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
             dismissButton = { TextButton(onClick = { deleteRelease = null }) { Text("HỦY") } }
         )
     }
+
+    deleteArchiveItem?.let { item ->
+        AlertDialog(
+            onDismissRequest = { deleteArchiveItem = null },
+            title = { Text("Xóa vĩnh viễn khỏi kho?") },
+            text = { Text("Dữ liệu này và tệp đính kèm sẽ bị xóa hoàn toàn, không thể khôi phục.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    deleteArchiveItem = null
+                    scope.launch {
+                        try {
+                            if (item.storagePath.isNotBlank()) {
+                                FirebaseStorage.getInstance().reference.child(item.storagePath).delete().awaitCommunityResult()
+                            }
+                            FirebaseFirestore.getInstance()
+                                .collection(communityArchiveCollection(item.category))
+                                .document(item.id)
+                                .delete()
+                                .awaitCommunityResult()
+                            statusMessage = "Đã xóa vĩnh viễn khỏi kho."
+                        } catch (error: Exception) {
+                            statusMessage = error.message ?: "Không thể xóa vĩnh viễn."
+                        }
+                    }
+                }) { Text("XÓA VĨNH VIỄN") }
+            },
+            dismissButton = { TextButton(onClick = { deleteArchiveItem = null }) { Text("HỦY") } }
+        )
+    }
 }
 
 private fun communityMessagePayload(
@@ -1184,10 +1213,76 @@ private fun CommunityMessageCard(
                         TextButton(onClick = { onDownload(message.downloadUrl, message.fileName) }) { Text("TẢI", fontSize = 9.sp) }
                     }
                 }
-                if (mine || isOwner) {
+                if (isOwner) {
                     TextButton(onClick = onDelete, modifier = Modifier.align(Alignment.End)) {
                         Text("GỠ TIN", fontSize = 8.sp)
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommunityArchiveCard(
+    item: CommunityArchiveItem,
+    onDownload: (String, String) -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(17.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val title = when (item.category) {
+                "image" -> "HÌNH ẢNH ĐÃ GỠ"
+                "file" -> "TỆP ĐÃ GỠ"
+                "apk" -> "APK CẬP NHẬT ĐÃ GỠ"
+                else -> "TIN NHẮN ĐÃ GỠ"
+            }
+            Text(title, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            if (item.category == "apk") {
+                Text("COC-LIO " + item.versionName, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                if (item.notes.isNotBlank()) Text(item.notes, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+            } else {
+                if (item.displayName.isNotBlank()) {
+                    Text(item.displayName, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+                if (item.text.isNotBlank()) {
+                    Text(item.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+                }
+            }
+            if (item.category == "image" && item.downloadUrl.isNotBlank()) {
+                AsyncImage(
+                    model = item.downloadUrl,
+                    contentDescription = "Hình ảnh đã gỡ",
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp).clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            if (item.fileName.isNotBlank()) {
+                Text(
+                    item.fileName + " · " + formatCommunitySize(item.fileSize),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Text(
+                "Đã gửi: " + communityTime(item.createdAt) + "  •  Đã gỡ: " + communityTime(item.archivedAt),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 8.sp
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (item.downloadUrl.isNotBlank()) {
+                    TextButton(onClick = { onDownload(item.downloadUrl, item.fileName.ifBlank { "tep_tai_xuong" }) }) {
+                        Text("TẢI LẠI", fontSize = 9.sp)
+                    }
+                }
+                TextButton(onClick = onDelete) {
+                    Text("XÓA VĨNH VIỄN", color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
                 }
             }
         }
