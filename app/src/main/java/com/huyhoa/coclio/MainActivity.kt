@@ -614,7 +614,16 @@ private fun CocLioApp(
                             )
                         },
                         label = {
-                            Text(item.second, fontSize = 9.sp, maxLines = 1, color = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                item.second,
+                                fontSize = 9.sp,
+                                lineHeight = 10.sp,
+                                maxLines = 2,
+                                softWrap = true,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                overflow = TextOverflow.Clip,
+                                color = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     )
                 }
