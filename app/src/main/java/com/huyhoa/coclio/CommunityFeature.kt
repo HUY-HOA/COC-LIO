@@ -7,6 +7,7 @@ import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -98,6 +99,7 @@ private data class CommunityMessage(
     val id: String,
     val uid: String,
     val displayName: String,
+    val senderIsAdmin: Boolean,
     val photoUrl: String,
     val type: String,
     val text: String,
@@ -377,6 +379,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                             communityMessagePayload(
                                 uid = signedInUser.uid,
                                 displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên",
+senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
                                 photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
                                 type = "image",
                                 text = draft.trim(),
@@ -445,6 +448,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                             communityMessagePayload(
                                 uid = signedInUser.uid,
                                 displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên",
+senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
                                 photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
                                 type = "file",
                                 text = draft.trim(),
@@ -504,6 +508,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                                 id = document.id,
                                 uid = uid,
                                 displayName = document.getString("displayName").orEmpty().ifBlank { "Thành viên" },
+                                senderIsAdmin = document.getBoolean("senderIsAdmin") ?: false,
                                 photoUrl = document.getString("photoUrl").orEmpty(),
                                 type = document.getString("type").orEmpty(),
                                 text = document.getString("text").orEmpty(),
@@ -785,6 +790,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                                                 communityMessagePayload(
                                                     uid = signedInUser.uid,
                                                     displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên",
+senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
                                                     photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
                                                     type = "text",
                                                     text = text,
@@ -1212,6 +1218,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
 private fun communityMessagePayload(
     uid: String,
     displayName: String,
+    senderIsAdmin: Boolean,
     photoUrl: String,
     type: String,
     text: String,
@@ -1223,6 +1230,7 @@ private fun communityMessagePayload(
 ): Map<String, Any> = mapOf(
     "uid" to uid,
     "displayName" to displayName.take(80),
+    "senderIsAdmin" to senderIsAdmin,
     "photoUrl" to photoUrl.take(1000),
     "type" to type,
     "text" to text.take(2000),
@@ -1251,8 +1259,11 @@ private fun CommunityMessageCard(
             modifier = Modifier.widthIn(max = 330.dp),
             shape = RoundedCornerShape(17.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (mine) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-            )
+                containerColor = if (message.senderIsAdmin) Color(0xFF3A2A12)
+                else if (mine) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant
+            ),
+            border = if (message.senderIsAdmin) BorderStroke(1.8.dp, Color(0xFFFFD166)) else null
         ) {
             Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -1273,12 +1284,23 @@ private fun CommunityMessageCard(
                     }
                     Text(
                         if (mine) "Bạn" else message.displayName,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = if (message.senderIsAdmin) Color(0xFFFFD166) else MaterialTheme.colorScheme.onSurface,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    if (message.senderIsAdmin) {
+                        Text(
+                            "ADMIN",
+                            color = Color(0xFF261A00),
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier
+                                .background(Color(0xFFFFD166), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
+                    }
                     Text(communityTime(message.createdAt), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
                 if (message.text.isNotBlank()) {
