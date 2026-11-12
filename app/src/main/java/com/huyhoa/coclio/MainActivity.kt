@@ -452,14 +452,15 @@ private fun CocLioApp(
         val listener = FirebaseAuth.AuthStateListener { state ->
             val googleUser = state.currentUser
                 ?.takeIf { user -> user.providerData.any { it.providerId == "google.com" } }
-            firebaseGoogleEmail = googleUser?.email
+            val googleEmail = googleUser?.email?.takeIf { it.isNotBlank() }
+            firebaseGoogleEmail = googleEmail
 
             if (!initialAuthStateHandled) {
                 initialAuthStateHandled = true
-                if (!interactiveGoogleSignIn && googleUser?.email?.isNotBlank() == true) {
+                if (!interactiveGoogleSignIn && googleEmail != null) {
                     val savedProfile = AccountProfileStore.active(context)
                     if (savedProfile != "local" &&
-                        savedProfile.equals(googleUser.email, ignoreCase = true)
+                        savedProfile.equals(googleEmail, ignoreCase = true)
                     ) {
                         activeProfile = savedProfile
                     } else {
@@ -468,7 +469,7 @@ private fun CocLioApp(
                 } else if (!interactiveGoogleSignIn) {
                     activeProfile = "local"
                 }
-            } else if (googleUser == null && !interactiveGoogleSignIn) {
+            } else if (googleEmail == null && !interactiveGoogleSignIn) {
                 activeProfile = "local"
             }
         }
