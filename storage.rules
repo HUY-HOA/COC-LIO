@@ -16,26 +16,25 @@ service firebase.storage {
       allow read: if signedIn();
 
       allow create, update: if signedIn()
-        && isOwner()
         && request.auth.uid == userId
         && request.resource.size > 0
         && request.resource.size <= 15 * 1024 * 1024
         && (
           request.resource.contentType.matches('image/.*')
-          || request.resource.contentType in [
-            'application/pdf',
-            'text/plain',
-            'application/zip',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-          ]
           || (
             isOwner()
-            && request.resource.contentType == 'application/vnd.android.package-archive'
+            && request.resource.contentType in [
+              'application/pdf',
+              'text/plain',
+              'application/zip',
+              'application/msword',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/vnd.ms-powerpoint',
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              'application/vnd.ms-excel',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'application/vnd.android.package-archive'
+            ]
           )
         );
 
