@@ -1119,13 +1119,13 @@ private fun GoogleLoginStartScreen(
         modifier = modifier.padding(22.dp),
         contentAlignment = Alignment.Center
     ) {
-        Card(
+        NeonPanel(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            glow = CocCyan,
+            innerPadding = 20.dp
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(13.dp)
             ) {
@@ -1541,7 +1541,50 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, showBase: Bo
 }
 
 @Composable
-private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
+private fun BuildingsAndArmyScreen(snapshot: VillageSnapshot) {
+    var selectedGroup by remember(snapshot.tag, snapshot.timestamp) {
+        mutableStateOf("buildings")
+    }
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selectedGroup == "buildings",
+                onClick = { selectedGroup = "buildings" },
+                modifier = Modifier.weight(1f),
+                label = {
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("CÔNG TRÌNH", fontSize = 10.sp, maxLines = 1)
+                    }
+                }
+            )
+            FilterChip(
+                selected = selectedGroup == "army",
+                onClick = { selectedGroup = "army" },
+                modifier = Modifier.weight(1f),
+                label = {
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("QUÂN ĐỘI", fontSize = 10.sp, maxLines = 1)
+                    }
+                }
+            )
+        }
+        CategoryScreen(
+            snapshot = snapshot,
+            tab = selectedGroup,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun CategoryScreen(
+    snapshot: VillageSnapshot,
+    tab: String,
+    modifier: Modifier = Modifier
+) {
     val availableBases = listOf("home", "builder").filter { base ->
         snapshot.items.any { it.base == base && it.tab == tab }
     }
@@ -1613,7 +1656,7 @@ private fun CategoryScreen(snapshot: VillageSnapshot, tab: String) {
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 68.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(5.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp)
