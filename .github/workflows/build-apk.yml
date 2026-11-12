@@ -110,9 +110,16 @@ jobs:
           echo "Android package: com.huyhoa.coclio"
           FINGERPRINTS="$(keytool -list -v -keystore "$ANDROID_KEYSTORE_FILE" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" | awk '/SHA1:|SHA256:/ { print }')"
           if ! grep -q 'SHA1:' <<< "$FINGERPRINTS"; then
-            echo "::error::Could not read SHA-1 fingerprint from the release signing certificate."
+            echo "::error::Không đọc được SHA-1 từ chứng thư ký APK release."
             exit 1
           fi
+          ACTUAL_SHA1="$(awk '/SHA1:/ { print $2; exit }' <<< "$FINGERPRINTS" | tr '[:lower:]' '[:upper:]')"
+          EXPECTED_SHA1="4E:25:C8:2C:96:FF:B7:9E:83:72:AA:83:45:95:01:98:6E:70:C7:C3"
+          if [[ "$ACTUAL_SHA1" != "$EXPECTED_SHA1" ]]; then
+            echo "::error::SHA-1 keystore release không khớp OAuth đã đăng ký. Expected: $EXPECTED_SHA1 | Actual: $ACTUAL_SHA1"
+            exit 1
+          fi
+          echo "SHA-1 release khớp OAuth đã đăng ký."
           echo "$FINGERPRINTS"
 
       - name: Run unit tests
