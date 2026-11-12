@@ -84,15 +84,16 @@ Tệp `firestore.rules` ở thư mục gốc đã được chuẩn bị để th
 - `admin/{document}`: chỉ chủ sở hữu được đọc và ghi.
 - Email chủ sở hữu được đối chiếu trong Security Rules, không dựa vào cờ admin lưu trong APK.
 
-**Trạng thái mã nguồn:** Firebase Authentication đã được tích hợp. Sau khi đăng nhập, ứng dụng thử tạo hoặc cập nhật `users/{uid}` trong Firestore với UID, email, tên hiển thị và ảnh đại diện. Nếu Firestore chưa được tạo hoặc Security Rules chưa Publish, quá trình đăng nhập Firebase vẫn thành công nhưng thao tác ghi hồ sơ đám mây sẽ thất bại và được ghi log. Các quy tắc này hiện vẫn chỉ nằm trong repository, chưa được triển khai lên Firebase. Chưa có màn hình quản trị hoặc hệ thống cấp phép trực tuyến hoạt động. Không được coi việc nhận diện email trong giao diện là quyền admin an toàn.
+**Trạng thái mã nguồn:** Firebase Authentication và màn hình quản lý tài khoản Google đã được tích hợp. Sau khi đăng nhập, ứng dụng tạo hoặc cập nhật `users/{uid}` trong Firestore với UID, Gmail, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email, nhà cung cấp đăng nhập, số lần đăng nhập, thời điểm tạo hồ sơ và lần đăng nhập gần nhất. Tài khoản chủ sở hữu mới có quyền liệt kê toàn bộ hồ sơ; tài khoản thường chỉ được đọc hồ sơ của chính UID đó. Nếu Firestore Rules chưa được Publish, đăng nhập vẫn có thể thành công nhưng dữ liệu sẽ không đồng bộ. Không được coi việc nhận diện email trong giao diện là quyền admin an toàn.
 
 ### Việc cần có để bật quản lý trực tuyến
 
 1. Dự án Firebase `coc-lio-73de9` đã có Android app với package `com.huyhoa.coclio`; tệp `app/google-services.json` đã nằm trong repository.
 2. **Authentication → Google** đã được bật. Web OAuth Client ID được truyền qua GitHub Secret `GOOGLE_WEB_CLIENT_ID`.
 3. Tạo cơ sở dữ liệu **Cloud Firestore** ở chế độ Native nếu chưa có. Trong tab **Rules**, dán nội dung `firestore.rules` từ repository rồi nhấn **Publish**.
-4. Chạy thử đăng nhập Google trong APK. Sau khi đăng nhập, kiểm tra Authentication → Users để xác nhận tài khoản đã được tạo và Firestore → `users` để kiểm tra hồ sơ (chỉ xuất hiện khi Firestore đã tạo và Rules đã Publish).
-5. Muốn đồng bộ lịch sử JSON giữa nhiều điện thoại, quản lý giấy phép hoặc có trang Admin, cần triển khai thêm cấu trúc dữ liệu, đồng bộ hai chiều và giao diện quản trị; các phần này chưa được bật trong APK hiện tại.
+4. Chạy thử đăng nhập Google trong APK. Sau khi đăng nhập, kiểm tra Authentication → Users và Firestore → `users` để xác nhận hồ sơ được đồng bộ.
+5. Đăng nhập bằng tài khoản chủ sở hữu đã cấu hình trong Rules, mở **Cài đặt → Quản lý tài khoản Google** để xem danh sách và thông tin tài khoản. Người dùng thường không thấy khu vực này.
+6. Đồng bộ lịch sử JSON giữa nhiều điện thoại và hệ thống cấp phép trực tuyến vẫn là các phần riêng, chưa được bật trong APK hiện tại.
 
 Tài liệu Firebase:
 - https://firebase.google.com/docs/auth/android/google-signin
@@ -103,7 +104,7 @@ Không đưa khóa Admin SDK, service account private key hoặc bí mật quả
 ## Các dịch vụ Firebase đã thêm vào mã nguồn
 
 - **Authentication:** đăng nhập Google bằng Firebase Auth; đăng xuất cũng kết thúc phiên Firebase.
-- **Firestore:** tạo/cập nhật hồ sơ cơ bản tại `users/{uid}` khi database và Rules đã sẵn sàng. Lịch sử làng, hồ sơ cục bộ và giấy phép chưa đồng bộ lên đám mây.
+- **Firestore:** tạo/cập nhật hồ sơ Google tại `users/{uid}`, gồm thông tin tên/email/ảnh và metadata đăng nhập. Chỉ chủ sở hữu được liệt kê hồ sơ toàn bộ người dùng; mỗi người dùng chỉ đọc hồ sơ của chính mình. Lịch sử JSON, hồ sơ tên hiển thị cục bộ và giấy phép chưa đồng bộ lên đám mây.
 - **Analytics:** ghi các sự kiện `login`, `logout` và `village_json_import`; không gửi email, Player Tag hoặc nội dung JSON vào Analytics.
 - **Crashlytics:** SDK và Gradle plugin đã được thêm để thu thập sự cố của bản phát hành.
 - **Performance Monitoring:** SDK và Gradle plugin đã được thêm để thu thập hiệu năng tự động.
