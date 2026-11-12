@@ -853,42 +853,6 @@ class UpgradeReminderWorker(
             .setOngoing(alarmStyle)
             .setOnlyAlertOnce(false)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            ensureCommunityBubbleShortcut(applicationContext)
-            val bubbleIntent = Intent(applicationContext, CocLioBubbleActivity::class.java)
-                .setAction(Intent.ACTION_VIEW)
-                .putExtra("bubble_title", "Đến giờ hoàn thành • $item")
-                .putExtra("bubble_body", "$villageName • $baseText • $section • $levelText")
-            val bubblePendingIntent = PendingIntent.getActivity(
-                applicationContext,
-                notificationId xor 0x434F43,
-                bubbleIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            )
-            val bubble = NotificationCompat.BubbleMetadata.Builder(
-                bubblePendingIntent,
-                IconCompat.createWithResource(applicationContext, android.R.drawable.sym_action_chat)
-            ).setDesiredHeight(480).build()
-            val bubblePerson = android.app.Person.Builder()
-                .setName("COC-LIO")
-                .setKey("coc-lio-upgrade")
-                .setImportant(true)
-                .build()
-            notificationBuilder
-                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-                .setStyle(
-                    NotificationCompat.MessagingStyle(
-                        android.app.Person.Builder().setName("Bạn").setKey("coc-lio-current-user").build()
-                    ).addMessage(
-                        "$item • $villageName • $baseText • $section • $levelText",
-                        System.currentTimeMillis(),
-                        bubblePerson
-                    )
-                )
-                .addPerson(bubblePerson)
-                .setShortcutId(COC_LIO_COMMUNITY_SHORTCUT)
-                .setBubbleMetadata(bubble)
-        }
         if (alarmStyle) notificationBuilder.setTimeoutAfter(alarmDurationSeconds * 1_000L)
         if (gameIntent != null) {
             val gamePendingIntent = PendingIntent.getActivity(
@@ -952,38 +916,6 @@ object UpgradeNotificationTester {
             .setOngoing(alarmStyle)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
         val testNotificationId = ("coc_lio_test_" + profile).hashCode()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            ensureCommunityBubbleShortcut(context)
-            val bubbleIntent = Intent(context, CocLioBubbleActivity::class.java)
-                .setAction(Intent.ACTION_VIEW)
-                .putExtra("bubble_title", title)
-                .putExtra("bubble_body", message)
-            val bubblePendingIntent = PendingIntent.getActivity(
-                context,
-                testNotificationId xor 0x434F43,
-                bubbleIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            )
-            val bubble = NotificationCompat.BubbleMetadata.Builder(
-                bubblePendingIntent,
-                IconCompat.createWithResource(context, android.R.drawable.sym_action_chat)
-            ).setDesiredHeight(480).build()
-            val bubblePerson = android.app.Person.Builder()
-                .setName("COC-LIO")
-                .setKey("coc-lio-upgrade")
-                .setImportant(true)
-                .build()
-            notificationBuilder
-                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-                .setStyle(
-                    NotificationCompat.MessagingStyle(
-                        android.app.Person.Builder().setName("Bạn").setKey("coc-lio-current-user").build()
-                    ).addMessage(message, System.currentTimeMillis(), bubblePerson)
-                )
-                .addPerson(bubblePerson)
-                .setShortcutId(COC_LIO_COMMUNITY_SHORTCUT)
-                .setBubbleMetadata(bubble)
-        }
         val gameIntent = context.packageManager
             .getLaunchIntentForPackage("com.supercell.clashofclans")
             ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -2276,12 +2208,12 @@ class CocLioMessagingService : FirebaseMessagingService() {
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val senderPerson = android.app.Person.Builder()
+        val senderPerson = androidx.core.app.Person.Builder()
             .setName(data["senderName"] ?: "Thành viên")
             .setKey(data["senderUid"] ?: "community")
             .setImportant(true)
             .build()
-        val currentPerson = android.app.Person.Builder()
+        val currentPerson = androidx.core.app.Person.Builder()
             .setName("Bạn")
             .setKey("coc-lio-current-user")
             .build()
