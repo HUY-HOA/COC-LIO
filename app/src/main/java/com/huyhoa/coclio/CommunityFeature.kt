@@ -262,6 +262,47 @@ private suspend fun <T> Task<T>.awaitCommunityResult(): T =
         }
     }
 
+
+suspend fun shareVillageJsonToCommunity(snapshot: VillageSnapshot): String {
+    val signedInUser = FirebaseAuth.getInstance().currentUser
+        ?: throw IllegalStateException("Bạn cần đăng nhập Google để chia sẻ JSON.")
+    val rawJson = snapshot.rawJson
+    val jsonSize = rawJson.toByteArray(Charsets.UTF_8).size
+    require(rawJson.isNotBlank() && jsonSize in 1..700_000) {
+        "JSON trống hoặc quá lớn. Dung lượng tối đa là 700 KB."
+    }
+    val firestore = FirebaseFirestore.getInstance()
+    val displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên"
+    val sharedJson = firestore.collection("community_shared_jsons").add(
+        mapOf(
+            "uid" to signedInUser.uid,
+            "displayName" to displayName.take(80),
+            "playerTag" to snapshot.tag,
+            "villageName" to snapshot.villageName.orEmpty().take(100),
+            "timestamp" to snapshot.timestamp,
+            "rawJson" to rawJson,
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+    ).awaitCommunityResult()
+    firestore.collection("community_messages").add(
+        communityMessagePayload(
+            uid = signedInUser.uid,
+            displayName = displayName,
+            senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
+            photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
+            type = "json",
+            text = "Đã chia sẻ JSON ${snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag} • ${snapshot.tag}",
+            fileName = "${snapshot.tag.removePrefix("#")}.json",
+            storagePath = "",
+            downloadUrl = "",
+            contentType = "application/json",
+            fileSize = jsonSize.toLong(),
+            sharedJsonId = sharedJson.id
+        )
+    ).awaitCommunityResult()
+    return "Đã chia sẻ JSON vào Cộng đồng."
+}
+
 private fun communityFileName(context: Context, uri: Uri): String {
     var result: String? = null
     context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
@@ -337,8 +378,7 @@ private fun downloadCommunityFile(context: Context, url: String, fileName: Strin
 @Composable
 fun CommunityScreen(
     isGoogleSignedIn: Boolean,
-    availableJson: List<VillageSnapshot>,
-    onImportJson: (String) -> Unit,
+    onImportJson: (String, String, String, String, Long, String) -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
@@ -357,7 +397,6 @@ fun CommunityScreen(
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf("") }
     var showEmojiPicker by remember { mutableStateOf(false) }
-    var showJsonPicker by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var releaseVersion by remember { mutableStateOf("") }
     var releaseNotes by remember { mutableStateOf("") }
@@ -506,61 +545,6 @@ fun CommunityScreen(
         }
     }
 
-    fun shareExistingJson(snapshot: VillageSnapshot) {
-        val signedInUser = FirebaseAuth.getInstance().currentUser
-        if (signedInUser == null) {
-            statusMessage = "Bạn cần đăng nhập Google để chia sẻ JSON."
-            return
-        }
-        val rawJson = snapshot.rawJson
-        val jsonSize = rawJson.toByteArray(Charsets.UTF_8).size
-        if (rawJson.isBlank() || jsonSize !in 1..700_000) {
-            statusMessage = "JSON trống hoặc quá lớn. Dung lượng tối đa là 700 KB."
-            return
-        }
-        scope.launch {
-            busy = true
-            statusMessage = null
-            try {
-                val firestore = FirebaseFirestore.getInstance()
-                val displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên"
-                val sharedJson = firestore.collection("community_shared_jsons").add(
-                    mapOf(
-                        "uid" to signedInUser.uid,
-                        "displayName" to displayName.take(80),
-                        "playerTag" to snapshot.tag,
-                        "villageName" to snapshot.villageName.orEmpty().take(100),
-                        "timestamp" to snapshot.timestamp,
-                        "rawJson" to rawJson,
-                        "createdAt" to FieldValue.serverTimestamp()
-                    )
-                ).awaitCommunityResult()
-                firestore.collection("community_messages").add(
-                    communityMessagePayload(
-                        uid = signedInUser.uid,
-                        displayName = displayName,
-                        senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
-                        photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
-                        type = "json",
-                        text = "Đã chia sẻ JSON ${snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag} • ${snapshot.tag}",
-                        fileName = "${snapshot.tag.removePrefix("#")}.json",
-                        storagePath = "",
-                        downloadUrl = "",
-                        contentType = "application/json",
-                        fileSize = jsonSize.toLong(),
-                        sharedJsonId = sharedJson.id
-                    )
-                ).awaitCommunityResult()
-                showJsonPicker = false
-                statusMessage = "Đã chia sẻ JSON. Mọi thành viên đã đăng nhập đều có thể nhận và sử dụng."
-            } catch (error: Exception) {
-                statusMessage = error.message ?: "Không thể chia sẻ JSON vào cộng đồng."
-            } finally {
-                busy = false
-            }
-        }
-    }
-
     fun receiveSharedJson(jsonId: String) {
         if (jsonId.isBlank()) {
             statusMessage = "Không tìm thấy mã JSON được chia sẻ."
@@ -578,8 +562,15 @@ fun CommunityScreen(
                 val rawJson = document.getString("rawJson").orEmpty()
                 require(rawJson.isNotBlank()) { "JSON chia sẻ không còn dữ liệu." }
                 require(rawJson.toByteArray(Charsets.UTF_8).size <= 700_000) { "JSON chia sẻ vượt quá giới hạn cho phép." }
-                onImportJson(rawJson)
-                statusMessage = "Đã nhận JSON. COC-LIO đang nhập dữ liệu vào tài khoản của bạn."
+                onImportJson(
+                    rawJson,
+                    document.getString("uid").orEmpty(),
+                    document.getString("displayName").orEmpty(),
+                    document.getString("playerTag").orEmpty(),
+                    document.getLong("timestamp") ?: 0L,
+                    jsonId
+                )
+                statusMessage = "Đã nhận JSON. Bản nhận được đã được lưu riêng trong Kho JSON; bản nhập vẫn có trong lịch sử."
             } catch (error: Exception) {
                 statusMessage = error.message ?: "Không thể nhận JSON được chia sẻ."
             } finally {
@@ -853,12 +844,6 @@ fun CommunityScreen(
                     ) {
                         OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
                             Text("🖼 ẢNH", fontSize = 10.sp)
-                        }
-                        OutlinedButton(
-                            onClick = { showJsonPicker = true },
-                            enabled = !busy && availableJson.isNotEmpty()
-                        ) {
-                            Text("📄 JSON", fontSize = 10.sp)
                         }
                         if (isOwner) {
                             OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
@@ -1299,67 +1284,6 @@ fun CommunityScreen(
                 }
             }
         }
-    }
-
-    if (showJsonPicker) {
-        AlertDialog(
-            onDismissRequest = { if (!busy) showJsonPicker = false },
-            title = { Text("CHỌN JSON ĐỂ CHIA SẺ") },
-            text = {
-                Column(
-                    modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (availableJson.isEmpty()) {
-                        Text(
-                            "Tài khoản này chưa có JSON đã nhập. Hãy nhập JSON trước rồi quay lại chia sẻ.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp
-                        )
-                    } else {
-                        Text(
-                            "Chọn một mốc JSON trong lịch sử của bạn. Thành viên khác có thể nhận và nhập mốc này vào tài khoản của họ.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 10.sp
-                        )
-                        availableJson.sortedByDescending { it.timestamp }.forEach { snapshot ->
-                            TextButton(
-                                onClick = { shareExistingJson(snapshot) },
-                                enabled = !busy,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                                ) {
-                                    Text(
-                                        snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        snapshot.tag + " • " + communityTime(snapshot.timestamp * 1000L),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 9.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showJsonPicker = false }, enabled = !busy) {
-                    Text("ĐÓNG")
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurface
-        )
     }
 
     deleteMessage?.let { message ->
