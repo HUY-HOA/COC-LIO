@@ -628,6 +628,10 @@ object AccountActivityTracker {
     }
 
     fun stop(context: Context) {
+        scope.launch { stopAndWait(context) }
+    }
+
+    suspend fun stopAndWait(context: Context) {
         heartbeatJob?.cancel()
         heartbeatJob = null
         val user = FirebaseAuth.getInstance().currentUser
@@ -637,11 +641,9 @@ object AccountActivityTracker {
             0L
         }
         sessionStartedAt = 0L
-        scope.launch {
-            val uid = user?.uid ?: return@launch
-            if (hasConsent(uid)) {
-                record(context.applicationContext, uid, "background", duration)
-            }
+        val uid = user?.uid ?: return
+        if (hasConsent(uid)) {
+            record(context.applicationContext, "background", duration)
         }
     }
 
@@ -658,21 +660,7 @@ object AccountActivityTracker {
         }.getOrDefault(false)
     }
 
-    private suspend fun record(
-        context: Context,
-        event: String,
-        durationSeconds: Long
-    ) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        record(context, uid, event, durationSeconds)
-    }
-
-    private suspend fun record(
-        context: Context,
-        uid: String,
-        event: String,
-        durationSeconds: Long
-    ) {
+    private suspend fun record(context: Context, event: String, durationSeconds: Long) {
         runCatching {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             val versionCode = if (Build.VERSION.SDK_INT >= 28) {
@@ -695,12 +683,11 @@ object AccountActivityTracker {
             }
             FirebaseFunctions.getInstance("asia-southeast1")
                 .getHttpsCallable("recordAccountActivity")
-                .call(payload + mapOf("uid" to uid))
+                .call(payload)
                 .awaitFirebaseResult()
         }
     }
 }
-
 object FirebaseTelemetry {
     fun logGoogleSignIn(context: Context) {
         runCatching {
