@@ -9,7 +9,7 @@ service cloud.firestore {
 
     function isOwner() {
       return signedIn()
-        && request.auth.token.email == 'phunghuyhoahaikba@gmail.com';
+        && request.auth.token.email == 'phunghuyhoahkb@gmail.com';
     }
 
     function isSelf(userId) {
@@ -25,23 +25,40 @@ service cloud.firestore {
           'uid',
           'email',
           'displayName',
+          'givenName',
+          'familyName',
           'photoUrl',
+          'emailVerified',
+          'providerId',
+          'signInCount',
+          'lastSignInAt',
           'createdAt',
           'updatedAt'
         ])
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.email == request.auth.token.email;
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.emailVerified == request.auth.token.email_verified
+        && request.resource.data.providerId == 'google.com'
+        && request.resource.data.signInCount == 1;
 
       allow update: if isOwner()
         || (
           isSelf(userId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'displayName',
+            'givenName',
+            'familyName',
             'photoUrl',
+            'emailVerified',
+            'providerId',
+            'signInCount',
+            'lastSignInAt',
             'updatedAt'
           ])
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.email == resource.data.email
+          && request.resource.data.emailVerified == request.auth.token.email_verified
+          && request.resource.data.providerId == 'google.com'
           && request.resource.data.createdAt == resource.data.createdAt
         );
 
