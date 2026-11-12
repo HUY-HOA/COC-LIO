@@ -253,7 +253,7 @@ object AppPreferences {
 
     fun notificationsEnabled(context: Context, profile: String): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(key(profile, "notifications"), true)
+            .getBoolean(key(profile, "notifications"), false)
 
     fun setNotificationsEnabled(context: Context, profile: String, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -1978,7 +1978,8 @@ fun SettingsScreen(
                 value = ledSpeed.coerceIn(0, 100).toFloat(),
                 onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(0, 100)) },
                 valueRange = 0f..100f,
-                colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Color.Transparent)
+                colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Color.Transparent),
+                thumb = {}
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("ĐỨNG YÊN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
@@ -1990,7 +1991,8 @@ fun SettingsScreen(
                 value = (ledBrightness * 100f).roundToInt().coerceIn(0, 100).toFloat(),
                 onValueChange = { onLedBrightnessChanged(it.roundToInt().coerceIn(0, 100) / 100f) },
                 valueRange = 0f..100f,
-                colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Color.Transparent)
+                colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Color.Transparent),
+                thumb = {}
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Mờ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
