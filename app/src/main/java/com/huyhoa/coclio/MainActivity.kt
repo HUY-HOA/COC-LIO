@@ -430,20 +430,41 @@ private fun CocLioApp(
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    var activeProfile by remember { mutableStateOf("local") }
-    var firebaseGoogleEmail by remember {
+    val initialFirebaseGoogleEmail = remember {
+        FirebaseAuth.getInstance().currentUser
+            ?.takeIf { user -> user.providerData.any { it.providerId == "google.com" } }
+            ?.email
+    }
+    val savedActiveProfile = remember { AccountProfileStore.active(context) }
+    var activeProfile by remember {
         mutableStateOf(
-            FirebaseAuth.getInstance().currentUser
-                ?.takeIf { user -> user.providerData.any { it.providerId == "google.com" } }
-                ?.email
+            savedActiveProfile.takeIf { saved ->
+                saved != "local" &&
+                    initialFirebaseGoogleEmail?.equals(saved, ignoreCase = true) == true
+            } ?: "local"
         )
     }
+    var firebaseGoogleEmail by remember { mutableStateOf(initialFirebaseGoogleEmail) }
+    var initialAuthStateHandled by remember { mutableStateOf(false) }
+    var interactiveGoogleSignIn by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
         val listener = FirebaseAuth.AuthStateListener { state ->
-            firebaseGoogleEmail = state.currentUser
+            val googleUser = state.currentUser
                 ?.takeIf { user -> user.providerData.any { it.providerId == "google.com" } }
-                ?.email
+            firebaseGoogleEmail = googleUser?.email
+
+            if (!initialAuthStateHandled) {
+                initialAuthStateHandled = true
+                if (!interactiveGoogleSignIn && googleUser?.email?.isNotBlank() == true) {
+                    AccountProfileStore.setActive(context, googleUser.email)
+                    activeProfile = googleUser.email.orEmpty()
+                } else if (!interactiveGoogleSignIn) {
+                    activeProfile = "local"
+                }
+            } else if (googleUser == null && !interactiveGoogleSignIn) {
+                activeProfile = "local"
+            }
         }
         auth.addAuthStateListener(listener)
         onDispose { auth.removeAuthStateListener(listener) }
@@ -737,6 +758,7 @@ private fun CocLioApp(
                 }
                 AccountProfileStore.setActive(context, googleAccount.email)
                 activeProfile = googleAccount.email
+                interactiveGoogleSignIn = false
                 selectedTab = 0
                 pendingGoogleAccount = null
                 googleAuthError = null
@@ -758,6 +780,7 @@ private fun CocLioApp(
             pendingGoogleAccount = null
             GoogleAccountAuth.signOut(context)
             AccountProfileStore.setActive(context, null)
+            interactiveGoogleSignIn = false
             activeProfile = "local"
             selectedTab = 0
             snackbar.showSnackbar("Bạn đã hủy đăng nhập Google.")
@@ -771,6 +794,7 @@ private fun CocLioApp(
             GoogleAccountAuth.signOut(context)
             AccountProfileStore.setActive(context, null)
             pendingGoogleAccount = null
+            interactiveGoogleSignIn = false
             activeProfile = "local"
             selectedTab = 0
             snackbar.showSnackbar(message)
@@ -779,6 +803,7 @@ private fun CocLioApp(
 
     fun signInWithGoogle() {
         scope.launch {
+            interactiveGoogleSignIn = true
             try {
                 AccountActivityTracker.stopAndWait(context)
                 val googleAccount = GoogleAccountAuth.signIn(context)
@@ -786,6 +811,7 @@ private fun CocLioApp(
                 pendingGoogleAccount = googleAccount
                 googleAuthError = null
             } catch (error: Exception) {
+                interactiveGoogleSignIn = false
                 if (error is GetCredentialCancellationException) {
                     googleAuthError = null
                     snackbar.showSnackbar("Bạn đã hủy đăng nhập Google.")
