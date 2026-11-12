@@ -438,12 +438,14 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
         }
     }
 
-    DisposableEffect(user?.uid) {
+    DisposableEffect(user?.uid, selectedSection, archiveCategory, isOwner) {
         if (user == null) {
             messages = emptyList()
             releases = emptyList()
+            archiveItems = emptyList()
             loadingMessages = false
             loadingReleases = false
+            loadingArchive = false
             onDispose { }
         } else {
             val firestore = FirebaseFirestore.getInstance()
@@ -501,9 +503,63 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                         loadingReleases = false
                     }
                 }
+            val archiveRegistration = if (isOwner && selectedSection == 2) {
+                loadingArchive = true
+                firestore.collection(communityArchiveCollection(archiveCategory))
+                    .orderBy("archivedAt", Query.Direction.DESCENDING)
+                    .limit(100)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            archiveError = error.message ?: "Không thể tải kho đã gỡ."
+                            loadingArchive = false
+                        } else {
+                            archiveItems = snapshot?.documents.orEmpty().map { document ->
+                                CommunityArchiveItem(
+                                    id = document.id,
+                                    category = archiveCategory,
+                                    displayName = document.getString("displayName").orEmpty(),
+                                    text = document.getString("text").orEmpty(),
+                                    fileName = document.getString("fileName").orEmpty(),
+                                    storagePath = document.getString("storagePath").orEmpty(),
+                                    downloadUrl = document.getString("downloadUrl").orEmpty(),
+                                    fileSize = document.getLong("fileSize") ?: 0L,
+                                    createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
+                                    archivedAt = document.getTimestamp("archivedAt")?.toDate()?.time ?: 0L,
+                                    versionName = document.getString("versionName").orEmpty(),
+                                    notes = document.getString("notes").orEmpty()
+                                )
+                            }
+                            archiveError = null
+                            loadingArchive = false
+                        }
+                    }
+            } else {
+                archiveItems = emptyList()
+                null
+            }
             onDispose {
                 messageRegistration.remove()
                 releaseRegistration.remove()
+                archiveRegistration?.remove()
+            }
+        }
+    }
+
+    LaunchedEffect(user?.uid, isOwner) {
+        if (user != null && isOwner) {
+            try {
+                val settings = FirebaseFirestore.getInstance()
+                    .collection("admin")
+                    .document("community_archive_settings")
+                    .get()
+                    .awaitCommunityResult()
+                archiveKeepForever = settings.getBoolean("keepForever") ?: true
+                archiveRetentionValue = (settings.getLong("retentionValue") ?: 30L).toString()
+                archiveRetentionUnit = settings.getString("retentionUnit") ?: "days"
+                val removed = cleanupCommunityArchive()
+                if (removed > 0) statusMessage = "Đã tự dọn $removed mục lưu trữ hết hạn."
+            } catch (error: Exception) {
+                statusMessage = error.message ?: "Không thể kiểm tra thời hạn lưu trữ."
             }
         }
     }
