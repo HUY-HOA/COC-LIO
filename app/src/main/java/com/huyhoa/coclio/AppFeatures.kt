@@ -743,16 +743,15 @@ private class UpgradeWidgetListFactory(
         views.setTextViewTextSize(R.id.row_timer, TypedValue.COMPLEX_UNIT_SP, 13f * combinedScale)
         val rowPadding = (4f * displayScale * context.resources.displayMetrics.density).roundToInt()
         views.setViewPadding(R.id.row_root, rowPadding, rowPadding, rowPadding, rowPadding)
-        views.setInt(
-            R.id.row_root,
-            "setMinimumHeight",
-            (58f * displayScale * context.resources.displayMetrics.density).roundToInt()
-        )
         if (Build.VERSION.SDK_INT >= 31) {
             views.setViewLayoutWidth(R.id.row_icon, 40f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
             views.setViewLayoutHeight(R.id.row_icon, 40f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
+            views.setViewLayoutWidth(R.id.row_timer, 84f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
+            views.setViewLayoutHeight(R.id.row_timer, 24f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
             views.setViewLayoutHeight(R.id.row_progress_container, 30f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
             views.setViewLayoutHeight(R.id.row_progress, 17f * displayScale, TypedValue.COMPLEX_UNIT_DIP)
+            val timerPadding = (2f * displayScale * context.resources.displayMetrics.density).roundToInt()
+            views.setViewPadding(R.id.row_timer, timerPadding, 0, timerPadding, 0)
         }
         val now = System.currentTimeMillis() / 1000L
         val remaining = (entry.endAt - now).coerceIn(0L, entry.totalSeconds.coerceAtLeast(1L))
