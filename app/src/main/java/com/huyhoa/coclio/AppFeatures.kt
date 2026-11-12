@@ -33,7 +33,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.media.AudioAttributes
 import android.provider.Settings
-import androidx.compose.material3.AlertDialog
+import android.app.AlertDialog
 import android.widget.RemoteViews
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -1449,7 +1449,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
     }
 
     pendingDelete?.let { account ->
-        AlertDialog(
+        androidx.compose.material3.AlertDialog(
             onDismissRequest = { if (!deleting) pendingDelete = null },
             title = { Text("Xóa tài khoản Google?") },
             text = {
