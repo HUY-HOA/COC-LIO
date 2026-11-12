@@ -255,11 +255,12 @@ private fun NeonButton(
     val shape = RoundedCornerShape(14.dp)
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
+    val buttonFillPalette = led.palette.map { it.copy(alpha = 1f) }
     Box(
         modifier = modifier
             .shadow(5.dp, shape)
             .clip(shape)
-            .background(Brush.horizontalGradient(palette.take(3)))
+            .background(Brush.horizontalGradient(buttonFillPalette.take(3)))
             .border(
                 2.dp,
                 if (led.enabled) Brush.sweepGradient(palette) else SolidColor(palette.first()),
