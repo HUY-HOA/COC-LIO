@@ -1498,7 +1498,7 @@ fun SettingsScreen(
             if (accountEmail.isNullOrBlank()) {
                 Text("Chưa đăng nhập", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                 Text(
-                    "Google cung cấp hồ sơ cơ bản như email, tên và ảnh đại diện nếu có. Lần đầu đăng nhập, bạn cần đặt tên hiển thị riêng.",
+                    "Google cung cấp email, tên và ảnh đại diện nếu có. Tên hiển thị bạn tự đặt cũng được lưu trong hồ sơ tài khoản để quản lý nhận biết tài khoản.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     lineHeight = 16.sp
