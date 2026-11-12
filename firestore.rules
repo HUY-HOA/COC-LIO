@@ -31,6 +31,8 @@ service cloud.firestore {
           'emailVerified',
           'providerId',
           'dataSharingConsent',
+          'activityDataConsentVersion',
+          'activityConsentAt',
           'signInCount',
           'lastSignInAt',
           'createdAt',
@@ -56,6 +58,8 @@ service cloud.firestore {
             'providerId',
             'preferredName',
             'dataSharingConsent',
+            'activityDataConsentVersion',
+            'activityConsentAt',
             'signInCount',
             'lastSignInAt',
             'updatedAt'
