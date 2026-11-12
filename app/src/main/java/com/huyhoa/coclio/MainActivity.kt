@@ -158,6 +158,11 @@ data class LedThemeState(
     val progress: State<Float>
 )
 
+private data class ImportSummary(
+    val title: String,
+    val messages: List<String>
+)
+
 val LocalLedTheme = staticCompositionLocalOf {
     LedThemeState(DefaultLedPalette, true, 3000, 0.9f, mutableStateOf(0f))
 }
@@ -352,6 +357,7 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
+    var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var pendingGoogleAccount by remember { mutableStateOf<GoogleAccountData?>(null) }
     var pendingPreferredName by remember { mutableStateOf("") }
     var lastUsedAt by remember(activeProfile) {
@@ -484,11 +490,47 @@ private fun CocLioApp(
             val customName = nameOverride?.trim()?.takeIf { it.isNotBlank() }
             val parsed = if (customName == null) parsedFromJson
             else parsedFromJson.copy(villageName = customName)
-            val previous = history.firstOrNull {
-                it.tag == parsed.tag && it.timestamp < parsed.timestamp
+            val latestPrevious = history
+                .filter { it.tag == parsed.tag }
+                .maxByOrNull { it.timestamp }
+            val isOlderThanLatest = latestPrevious != null && parsed.timestamp < latestPrevious.timestamp
+            val comparisonEvents = latestPrevious
+                ?.takeIf { parsed.timestamp > it.timestamp }
+                ?.let { VillageParser.compare(it, parsed) }
+                .orEmpty()
+            val summary = when {
+                latestPrevious == null -> ImportSummary(
+                    "Đã tạo mốc dữ liệu đầu tiên",
+                    listOf(
+                        "Đã lưu dữ liệu cho " + (parsed.villageName ?: parsed.tag) + ".",
+                        "Từ lần xuất JSON tiếp theo, COC-LIO sẽ đối chiếu cấp độ và tiến trình nâng cấp."
+                    )
+                )
+                isOlderThanLatest -> ImportSummary(
+                    "Đã lưu JSON cũ vào kho",
+                    listOf(
+                        "JSON này có thời điểm cũ hơn dữ liệu mới nhất đã lưu cho " + parsed.tag + ".",
+                        "Bản mới nhất vẫn được giữ làm dữ liệu đang theo dõi."
+                    )
+                )
+                parsed.timestamp == latestPrevious?.timestamp -> ImportSummary(
+                    "Đã cập nhật mốc JSON hiện có",
+                    listOf("JSON có cùng timestamp với mốc đã lưu; ứng dụng đã thay nội dung tại mốc đó.")
+                )
+                comparisonEvents.isEmpty() -> ImportSummary(
+                    "Đã phân tích và lưu JSON",
+                    listOf(
+                        "Không phát hiện thay đổi trong các mục và cấp độ mà COC-LIO đang theo dõi.",
+                        "Dữ liệu mới đã được lưu làm mốc hiện tại."
+                    )
+                )
+                else -> ImportSummary(
+                    "Phát hiện " + comparisonEvents.size + " thay đổi",
+                    comparisonEvents.map { it.title + ": " + it.detail }
+                )
             }
             VillageStore.save(context, parsed, activeProfile, customName)
-            FirebaseTelemetry.logVillageImport(context, previous != null)
+            FirebaseTelemetry.logVillageImport(context, latestPrevious != null)
             history = VillageStore.loadAll(context, activeProfile)
             pinnedTags = VillageStore.pinnedTags(context, activeProfile)
             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
@@ -496,12 +538,7 @@ private fun CocLioApp(
             current = history.firstOrNull { it.tag == parsed.tag } ?: parsed
             importError = null
             showImportDialog = false
-            scope.launch {
-                snackbar.showSnackbar(
-                    if (previous == null) "Đã lưu dữ liệu đầu tiên cho " + (parsed.villageName ?: parsed.tag)
-                    else "Đã nhập JSON và so sánh với lần trước"
-                )
-            }
+            importSummary = summary
         } catch (error: Exception) {
             importError = error.message ?: "Không thể đọc JSON này."
         }
@@ -800,6 +837,36 @@ private fun CocLioApp(
                         scope.launch { snackbar.showSnackbar("Đã đăng nhập với tên " + name) }
                     }
                 ) { Text("XÁC NHẬN") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
+    importSummary?.let { summary ->
+        AlertDialog(
+            onDismissRequest = { importSummary = null },
+            title = { Text(summary.title) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 320.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    summary.messages.forEach { message ->
+                        Text(
+                            "• " + message,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { importSummary = null }) { Text("ĐÓNG") }
             },
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
