@@ -1469,15 +1469,14 @@ fun SettingsScreen(
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            preferredName?.takeIf { it.isNotBlank() } ?: accountData?.displayName ?: accountEmail,
+                            if (isAdmin) preferredName?.takeIf { it.isNotBlank() } ?: accountData?.displayName ?: accountEmail
+                            else accountData?.displayName ?: accountEmail,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold
                         )
                         Text(accountEmail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                         if (isAdmin) {
                             Text("CHỦ SỞ HỮU / QUẢN LÝ", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                        } else {
-                            Text("Đang dùng trên thiết bị này", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                         }
                     }
                 }
