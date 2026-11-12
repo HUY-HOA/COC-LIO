@@ -38,8 +38,7 @@ service firebase.storage {
           )
         );
 
-      allow delete: if signedIn()
-        && (isOwner() || request.auth.uid == userId);
+      allow delete: if isOwner();
     }
 
     match /updates/{fileName} {
