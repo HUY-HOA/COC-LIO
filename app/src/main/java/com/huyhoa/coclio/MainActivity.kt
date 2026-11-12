@@ -99,6 +99,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -852,7 +853,7 @@ private fun CocLioApp(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "COC-LIO",
-                        brush = animatedLedTextBrush(),
+                        style = TextStyle(brush = animatedLedTextBrush()),
                         fontSize = 23.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 2.sp
@@ -1295,7 +1296,7 @@ private fun GoogleLoginStartScreen(
             ) {
                 Text(
                     "COC-LIO",
-                    brush = animatedLedTextBrush(),
+                    style = TextStyle(brush = animatedLedTextBrush()),
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 2.sp
@@ -2377,7 +2378,7 @@ private fun formatCountdown(seconds: Long): String {
     return if (days > 0L) "$days ngày $clock" else clock
 }
 
-private fun formatDuration(seconds: Long): String {
+fun formatDuration(seconds: Long): String {
     val days = seconds / 86400L
     val hours = (seconds % 86400L) / 3600L
     val minutes = (seconds % 3600L) / 60L
