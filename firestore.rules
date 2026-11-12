@@ -124,7 +124,6 @@ service cloud.firestore {
           ||
           (
             request.resource.data.type == 'image'
-            && isOwner()
             && request.resource.data.contentType.matches('image/.*')
             && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
             && request.resource.data.downloadUrl.matches('https://.*')
