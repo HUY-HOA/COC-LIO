@@ -60,6 +60,23 @@ class VillageParserTest {
     }
 
     @Test
+    fun doesNotConfirmCompletionWhenUpgradeDisappearsWithoutNextLevel() {
+        val before = VillageParser.parse(
+            """{"tag":"#NO_FALSE_COMPLETE","timestamp":1794320000,"buildings":[{"data":1000008,"lvl":5,"timer":3600}]}"""
+        )
+        val after = VillageParser.parse(
+            """{"tag":"#NO_FALSE_COMPLETE","timestamp":1794324000,"buildings":[{"data":1000008,"lvl":5}]}"""
+        )
+
+        val events = VillageParser.compare(before, after)
+
+        assertTrue(events.any {
+            it.title == "Nâng cấp không còn trong bộ đếm" && !it.completed
+        })
+        assertTrue(events.none { it.title == "Đã hoàn thành nâng cấp" && it.completed })
+    }
+
+    @Test
     fun gearUpTimerDoesNotBecomeNormalLevelUpgrade() {
         val snapshot = VillageParser.parse(
             """{"tag":"#TEST123","timestamp":1794320000,"buildings":[{"data":1000008,"lvl":14,"gear_up":1,"timer":7200}]}"""
