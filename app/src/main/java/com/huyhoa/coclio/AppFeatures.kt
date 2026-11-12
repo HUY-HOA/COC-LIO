@@ -284,18 +284,30 @@ object GoogleAccountAuth {
         } catch (error: GetCredentialException) {
             val errorMessage = error.message.orEmpty()
             if (errorMessage.contains("[16] Account reauth failed", ignoreCase = true)) {
-                throw IllegalStateException(
-                    "Google trả về lỗi xác thực 16. Đây thường là lỗi cấu hình OAuth hoặc chữ ký ứng dụng, không phải lỗi JSON. Cần kiểm tra Web Client ID thuộc đúng dự án Google Cloud và Android OAuth Client có package com.huyhoa.coclio cùng SHA-1 của APK release.",
-                    error
-                )
-            }
-            if (error is NoCredentialException) {
+                runCatching {
+                    credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                }
+                try {
+                    credentialManager.getCredential(context, signInRequest)
+                } catch (retryError: NoCredentialException) {
+                    throw IllegalStateException(
+                        "Phiên Google trên điện thoại cần xác thực lại. Hãy kiểm tra tài khoản Google trên thiết bị rồi thử lại. Nếu vẫn lỗi, kiểm tra OAuth Android của COC-LIO.",
+                        retryError
+                    )
+                } catch (retryError: GetCredentialException) {
+                    throw IllegalStateException(
+                        "Google vẫn từ chối xác thực. Trong cùng dự án Google Cloud, Android OAuth Client phải có package com.huyhoa.coclio và SHA-1 4E:25:C8:2C:96:FF:B7:9E:83:72:AA:83:45:95:01:98:6E:70:C7:C3. Secret GOOGLE_WEB_CLIENT_ID phải là Web application Client ID của chính dự án đó.",
+                        retryError
+                    )
+                }
+            } else if (error is NoCredentialException) {
                 throw IllegalStateException(
                     "Không tìm thấy tài khoản Google có thể đăng nhập. Hãy kiểm tra tài khoản Google trên điện thoại rồi thử lại.",
                     error
                 )
+            } else {
+                throw error
             }
-            throw error
         }
 
         val credential = result.credential
@@ -1160,49 +1172,45 @@ fun SettingsScreen(
         }
 
         val currentFontLevel = (if (textScale <= 1f) {
-            (((textScale.coerceIn(0.8f, 1f) - 0.8f) / 0.2f) * 49f + 1f).roundToInt()
+            (((textScale.coerceIn(0.8f, 1f) - 0.8f) / 0.2f) * 40f + 10f).roundToInt()
         } else {
             (50f + ((textScale.coerceIn(1f, 1.25f) - 1f) / 0.25f) * 50f).roundToInt()
-        }).coerceIn(1, 100)
-        val fontSliderLevel = remember {
-            mutableFloatStateOf(currentFontLevel.toFloat())
-        }
-        fun fontScaleForLevel(level: Float): Float {
-            val safeLevel = level.coerceIn(1f, 100f)
-            return if (safeLevel <= 50f) {
-                0.8f + (safeLevel - 1f) * (0.2f / 49f)
+        }).coerceIn(10, 100)
+        val selectedFontLevel = (((currentFontLevel + 5) / 10) * 10).coerceIn(10, 100)
+        fun fontScaleForLevel(level: Int): Float {
+            val safeLevel = level.coerceIn(10, 100)
+            return if (safeLevel <= 50) {
+                0.8f + (safeLevel - 10) * (0.2f / 40f)
             } else {
-                1f + (safeLevel - 50f) * (0.25f / 50f)
+                1f + (safeLevel - 50) * (0.25f / 50f)
             }
         }
         FeaturePanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("CỠ CHỮ TOÀN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Text("MỨC ${fontSliderLevel.floatValue.roundToInt().coerceIn(1, 100)}/100", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                Text("MỨC $selectedFontLevel/100", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
             }
-            Slider(
-                value = fontSliderLevel.floatValue,
-                onValueChange = {
-                    fontSliderLevel.floatValue = it
-                    onTextScaleChanged(fontScaleForLevel(it))
-                },
-                valueRange = 1f..100f,
-                onValueChangeFinished = onTextScaleChangeFinished
-            )
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Nhỏ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = {
-                    fontSliderLevel.floatValue = 50f
-                    onTextScaleChanged(1f)
-                    onTextScaleChangeFinished()
-                }) {
-                    Text("Mức 50 · Mặc định", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                (10..100 step 10).toList().chunked(5).forEach { levels ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        levels.forEach { level ->
+                            FilterChip(
+                                selected = selectedFontLevel == level,
+                                onClick = {
+                                    onTextScaleChanged(fontScaleForLevel(level))
+                                    onTextScaleChangeFinished()
+                                },
+                                modifier = Modifier.weight(1f),
+                                label = { Text(level.toString(), fontSize = 10.sp) }
+                            )
+                        }
+                    }
                 }
-                Spacer(Modifier.weight(1f))
-                Text("Lớn", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Có 100 mức. Mức 50 là cỡ chữ mặc định. Kích thước thay đổi ngay khi kéo và được lưu khi thả tay.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Chọn mức từ 10 đến 100. Mức 50 là cỡ chữ mặc định. Thay đổi được áp dụng và lưu ngay khi chọn.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         FeaturePanel {
             Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -1230,23 +1238,27 @@ fun SettingsScreen(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Tốc độ chuyển màu", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, modifier = Modifier.weight(1f))
-                Text("$ledSpeed/100", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("${ledSpeed.coerceIn(0, 100)}%", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
             Slider(
-                value = ledSpeed.toFloat(),
-                onValueChange = { onLedSpeedChanged(it.toInt().coerceIn(0, 100)) },
-                valueRange = 0f..100f
+                value = ledSpeed.coerceIn(0, 100).toFloat(),
+                onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(0, 100)) },
+                valueRange = 0f..100f,
+                steps = 99,
+                thumb = {}
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("ĐỨNG YÊN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 Spacer(Modifier.weight(1f))
                 Text("CỰC NHANH", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Độ sáng: ${(ledBrightness * 100).toInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+            Text("Độ sáng: ${(ledBrightness * 100f).roundToInt().coerceIn(1, 100)}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
             Slider(
-                value = (ledBrightness * 100f).coerceIn(1f, 100f),
-                onValueChange = { onLedBrightnessChanged(it / 100f) },
-                valueRange = 1f..100f
+                value = (ledBrightness * 100f).roundToInt().coerceIn(1, 100).toFloat(),
+                onValueChange = { onLedBrightnessChanged(it.roundToInt().coerceIn(1, 100) / 100f) },
+                valueRange = 1f..100f,
+                steps = 98,
+                thumb = {}
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Mờ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
