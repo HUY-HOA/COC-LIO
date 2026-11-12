@@ -339,7 +339,11 @@ private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
         }
     }
 
-private suspend fun syncFirebaseUserProfile(user: FirebaseUser, google: GoogleAccountData) {
+private suspend fun syncFirebaseUserProfile(
+    user: FirebaseUser,
+    google: GoogleAccountData,
+    countAsSignIn: Boolean = true
+) {
     val email = user.email?.trim()?.takeIf { it.isNotBlank() }
         ?: throw IllegalStateException("Firebase không trả về email tài khoản.")
     val reference = FirebaseFirestore.getInstance()
@@ -356,12 +360,15 @@ private suspend fun syncFirebaseUserProfile(user: FirebaseUser, google: GoogleAc
         "photoUrl" to (google.profilePictureUri ?: user.photoUrl?.toString().orEmpty()),
         "emailVerified" to user.isEmailVerified,
         "providerId" to "google.com",
-        "signInCount" to signInCount,
-        "lastSignInAt" to FieldValue.serverTimestamp(),
         "updatedAt" to FieldValue.serverTimestamp()
     )
     if (!existing.exists()) {
         profile["createdAt"] = FieldValue.serverTimestamp()
+        profile["signInCount"] = 1L
+        profile["lastSignInAt"] = FieldValue.serverTimestamp()
+    } else if (countAsSignIn) {
+        profile["signInCount"] = signInCount
+        profile["lastSignInAt"] = FieldValue.serverTimestamp()
     }
     reference.set(profile, SetOptions.merge()).awaitFirebaseResult()
 }
@@ -553,6 +560,21 @@ object GoogleAccountAuth {
             }
 
         return accountData
+    }
+
+    suspend fun syncCurrentProfile(context: Context, expectedEmail: String) {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+        val email = user.email?.trim().orEmpty()
+        if (email.isBlank() || !email.equals(expectedEmail, ignoreCase = true)) return
+        val stored = AccountProfileStore.googleData(context, expectedEmail)
+        val google = stored ?: GoogleAccountData(
+            email = email,
+            displayName = user.displayName,
+            givenName = null,
+            familyName = null,
+            profilePictureUri = user.photoUrl?.toString()
+        )
+        syncFirebaseUserProfile(user, google, countAsSignIn = false)
     }
 
     suspend fun signOut(context: Context) {
