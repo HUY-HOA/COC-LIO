@@ -23,9 +23,7 @@ function requireOwner(request) {
 exports.adminSyncSharedAccounts = onCall({ region: REGION }, async (request) => {
   requireOwner(request);
 
-  const profiles = await db.collection("users")
-    .where("dataSharingConsent", "==", true)
-    .get();
+  const profiles = await db.collection("users").get();
 
   let removed = 0;
   let batch = db.batch();
@@ -154,8 +152,8 @@ exports.adminDeleteUser = onCall({ region: REGION }, async (request) => {
   const profileRef = db.collection("users").doc(uid);
   const profile = await profileRef.get();
 
-  if (!profile.exists || profile.get("dataSharingConsent") !== true) {
-    throw new HttpsError("not-found", "Không tìm thấy hồ sơ đã đồng ý chia sẻ của tài khoản này.");
+  if (!profile.exists) {
+    throw new HttpsError("not-found", "Không tìm thấy hồ sơ tài khoản này.");
   }
 
   const user = await auth.getUser(uid);
