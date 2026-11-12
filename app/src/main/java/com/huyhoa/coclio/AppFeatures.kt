@@ -377,6 +377,7 @@ private suspend fun syncFirebaseUserProfile(
 data class AdminGoogleAccount(
     val uid: String,
     val email: String,
+    val preferredName: String,
     val displayName: String,
     val givenName: String,
     val familyName: String,
@@ -395,6 +396,25 @@ object FirebaseAccountAdministration {
     fun isOwner(email: String?): Boolean =
         email?.trim()?.equals(OWNER_EMAIL, ignoreCase = true) == true
 
+    suspend fun savePreferredName(name: String) {
+        val user = FirebaseAuth.getInstance().currentUser
+            ?: throw IllegalStateException("Bạn cần đăng nhập Google để đồng bộ tên hiển thị.")
+        require(user.isEmailVerified) { "Email Google chưa được xác minh." }
+        require(name.trim().isNotEmpty() && name.trim().length <= 40) {
+            "Tên hiển thị phải có từ 1 đến 40 ký tự."
+        }
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .update(
+                mapOf(
+                    "preferredName" to name.trim(),
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+            )
+            .awaitFirebaseResult()
+    }
+
     suspend fun loadAccounts(): List<AdminGoogleAccount> {
         val result = FirebaseFirestore.getInstance()
             .collection("users")
@@ -404,6 +424,7 @@ object FirebaseAccountAdministration {
             AdminGoogleAccount(
                 uid = document.getString("uid") ?: document.id,
                 email = document.getString("email").orEmpty(),
+                preferredName = document.getString("preferredName").orEmpty(),
                 displayName = document.getString("displayName").orEmpty(),
                 givenName = document.getString("givenName").orEmpty(),
                 familyName = document.getString("familyName").orEmpty(),
@@ -1292,6 +1313,7 @@ private fun formatAdminAccountTime(timestamp: Long): String =
 private fun AdminAccountsPanel(onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     var accounts by remember { mutableStateOf<List<AdminGoogleAccount>>(emptyList()) }
+    var expandedAccounts by remember { mutableStateOf<Set<String>>(emptySet()) }
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -1336,7 +1358,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             fontSize = 12.sp
         )
         Text(
-            "Chỉ tài khoản quản lý mới xem được danh sách này. Dữ liệu gồm hồ sơ Google mà người dùng cấp khi đăng nhập và lịch sử đăng nhập COC-LIO; ứng dụng không đọc Gmail, Drive hoặc danh bạ.",
+            "Chỉ tài khoản quản lý mới xem được. Thông tin chi tiết chỉ mở khi bạn chọn từng tài khoản.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp,
             lineHeight = 15.sp
@@ -1348,38 +1370,77 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             Text(it, color = Color(0xFFFF5D91), fontSize = 10.sp)
         }
         accounts.forEach { account ->
+            val expanded = account.uid in expandedAccounts
             Spacer(Modifier.height(7.dp))
-            Row(
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(9.dp),
-                verticalAlignment = Alignment.CenterVertically
+                shape = RoundedCornerShape(13.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                if (account.photoUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = account.photoUrl,
-                        contentDescription = "Ảnh đại diện Google",
-                        modifier = Modifier.size(42.dp).clip(CircleShape)
-                    )
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        account.displayName.ifBlank { account.email },
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
-                    Text(account.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(9.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (account.photoUrl.isNotBlank()) {
+                            AsyncImage(
+                                model = account.photoUrl,
+                                contentDescription = "Ảnh đại diện Google",
+                                modifier = Modifier.size(42.dp).clip(CircleShape)
+                            )
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                account.preferredName.ifBlank { account.displayName.ifBlank { account.email } },
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                            Text(account.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                            Text(
+                                "Đăng nhập ${account.signInCount} lần · ${formatAdminAccountTime(account.lastSignInAt)}",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 8.sp
+                            )
+                        }
+                        Text(
+                            if (account.emailVerified) "✓" else "!",
+                            color = if (account.emailVerified) Color(0xFF35D6A3) else Color(0xFFFFB74D),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    TextButton(
+                        onClick = {
+                            expandedAccounts = if (expanded) expandedAccounts - account.uid
+                            else expandedAccounts + account.uid
+                        },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(if (expanded) "ẨN THÔNG TIN" else "XEM THÔNG TIN", fontSize = 9.sp)
+                    }
+                    if (expanded) {
+                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            ProfileDataRow("Tên người dùng đặt", account.preferredName)
+                            ProfileDataRow("Tên Google", account.displayName)
+                            ProfileDataRow("Tên", account.givenName)
+                            ProfileDataRow("Họ", account.familyName)
+                            ProfileDataRow("Ảnh đại diện", account.photoUrl)
+                            ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
+                            ProfileDataRow("Nhà cung cấp", account.providerId)
+                            ProfileDataRow("Số lần đăng nhập", account.signInCount.toString())
+                            ProfileDataRow("Đăng nhập gần nhất", formatAdminAccountTime(account.lastSignInAt))
+                            ProfileDataRow("Tạo hồ sơ", formatAdminAccountTime(account.createdAt))
+                            ProfileDataRow("Cập nhật hồ sơ", formatAdminAccountTime(account.updatedAt))
+                            ProfileDataRow("Firebase UID", account.uid)
+                        }
+                    }
                 }
             }
-            ProfileDataRow("Tên", account.givenName)
-            ProfileDataRow("Họ", account.familyName)
-            ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
-            ProfileDataRow("Nhà cung cấp", account.providerId)
-            ProfileDataRow("Số lần đăng nhập", account.signInCount.toString())
-            ProfileDataRow("Đăng nhập gần nhất", formatAdminAccountTime(account.lastSignInAt))
-            ProfileDataRow("Tạo tài khoản", formatAdminAccountTime(account.createdAt))
-            ProfileDataRow("Cập nhật hồ sơ", formatAdminAccountTime(account.updatedAt))
-            ProfileDataRow("Firebase UID", account.uid)
         }
         if (!loading && errorMessage == null && accounts.isEmpty()) {
             Text("Chưa có tài khoản nào được đồng bộ lên Firestore.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
