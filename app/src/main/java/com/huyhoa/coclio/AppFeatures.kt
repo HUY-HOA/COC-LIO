@@ -1313,9 +1313,7 @@ fun SettingsScreen(
             Slider(
                 value = ledSpeed.coerceIn(0, 100).toFloat(),
                 onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(0, 100)) },
-                valueRange = 0f..100f,
-                steps = 99,
-                thumb = {}
+                valueRange = 0f..100f
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("ĐỨNG YÊN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
@@ -1326,9 +1324,7 @@ fun SettingsScreen(
             Slider(
                 value = (ledBrightness * 100f).roundToInt().coerceIn(1, 100).toFloat(),
                 onValueChange = { onLedBrightnessChanged(it.roundToInt().coerceIn(1, 100) / 100f) },
-                valueRange = 1f..100f,
-                steps = 98,
-                thumb = {}
+                valueRange = 1f..100f
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Mờ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
