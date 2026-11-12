@@ -589,9 +589,11 @@ private fun CocLioApp(
         scope.launch {
             try {
                 val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
-                val profileName = savedName?.takeIf { it.isNotBlank() }
-                    ?: googleAccount.displayName?.takeIf { it.isNotBlank() }
-                    ?: googleAccount.email.substringBefore("@")
+                val profileName = (
+                    savedName?.takeIf { it.isNotBlank() }
+                        ?: googleAccount.displayName?.takeIf { it.isNotBlank() }
+                        ?: googleAccount.email.substringBefore("@")
+                    ).take(40)
                 if (savedName.isNullOrBlank()) {
                     AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
                 }
