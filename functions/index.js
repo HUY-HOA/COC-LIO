@@ -119,6 +119,9 @@ exports.recordAccountActivity = onCall({ region: REGION }, async (request) => {
   }
 
   if (event === "open") {
+    if (!profile.get("firstOpenedAt")) {
+      update.firstOpenedAt = admin.firestore.FieldValue.serverTimestamp();
+    }
     update.lastOpenedAt = admin.firestore.FieldValue.serverTimestamp();
     update.lastActiveAt = admin.firestore.FieldValue.serverTimestamp();
     update.sessionStartedAt = admin.firestore.FieldValue.serverTimestamp();
