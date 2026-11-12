@@ -72,6 +72,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.StorageMetadata
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -144,6 +145,15 @@ private fun communityArchiveExpiry(archivedAt: Long, value: Int, unit: String): 
     return Timestamp(calendar.time)
 }
 
+private suspend fun deleteCommunityStorageIfPresent(path: String) {
+    if (path.isBlank()) return
+    try {
+        FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult()
+    } catch (error: StorageException) {
+        if (error.errorCode != StorageException.ERROR_OBJECT_NOT_FOUND) throw error
+    }
+}
+
 private suspend fun cleanupCommunityArchive(): Int {
     val firestore = FirebaseFirestore.getInstance()
     val collections = listOf(
@@ -163,9 +173,7 @@ private suspend fun cleanupCommunityArchive(): Int {
             if (expired.isEmpty) break
             for (document in expired.documents) {
                 val path = document.getString("storagePath").orEmpty()
-                if (path.isNotBlank()) {
-                    FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult()
-                }
+                deleteCommunityStorageIfPresent(path)
                 document.reference.delete().awaitCommunityResult()
                 removed++
             }
@@ -1129,9 +1137,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                     deleteArchiveItem = null
                     scope.launch {
                         try {
-                            if (item.storagePath.isNotBlank()) {
-                                FirebaseStorage.getInstance().reference.child(item.storagePath).delete().awaitCommunityResult()
-                            }
+                            deleteCommunityStorageIfPresent(item.storagePath)
                             FirebaseFirestore.getInstance()
                                 .collection(communityArchiveCollection(item.category))
                                 .document(item.id)
