@@ -966,6 +966,8 @@ private fun CocLioApp(
                     )
                     3 -> CommunityScreen(
                         isGoogleSignedIn = isGoogleSignedIn,
+                        availableJson = history,
+                        onImportJson = { rawJson -> importJson(rawJson) },
                         onOpenSettings = { selectedTab = 4 }
                     )
                     4 -> SettingsScreen(
