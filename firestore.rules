@@ -104,8 +104,13 @@ service cloud.firestore {
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
         && request.resource.data.displayName.size() <= 80
-        && request.resource.data.senderIsAdmin is bool
-        && request.resource.data.senderIsAdmin == isOwner()
+        && (
+          !request.resource.data.keys().hasAny(['senderIsAdmin'])
+          || (
+            request.resource.data.senderIsAdmin is bool
+            && request.resource.data.senderIsAdmin == isOwner()
+          )
+        )
         && request.resource.data.photoUrl is string
         && request.resource.data.photoUrl.size() <= 1000
         && request.resource.data.type in ['text', 'image', 'file']
