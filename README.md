@@ -65,4 +65,4 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 
 ## Google và giấy phép
 
-Google Sign-In đã được nối với Firebase Authentication. Ứng dụng ghi nhận các sự kiện đăng nhập, đăng xuất và nhập JSON qua Firebase Analytics; SDK Crashlytics và Performance Monitoring cũng đã được thêm. Hệ thống cấp phép, giao diện quản trị, đồng bộ lịch sử JSON, Cloud Messaging và xuất BigQuery chưa được hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
+Google Sign-In đã được nối với Firebase Authentication. Ứng dụng ghi nhận các sự kiện đăng nhập, đăng xuất và nhập JSON qua Firebase Analytics; hồ sơ Google và lịch sử đăng nhập được đồng bộ vào Firestore. Tài khoản chủ sở hữu có màn hình quản lý danh sách hồ sơ; người dùng thường chỉ xem tên, Gmail và ảnh đại diện của mình. Hệ thống cấp phép trực tuyến, đồng bộ lịch sử JSON, Cloud Messaging và xuất BigQuery chưa được hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
