@@ -389,6 +389,9 @@ private fun CocLioApp(
     var notificationStyle by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationStyle(context, activeProfile))
     }
+    var alarmDurationSeconds by remember(activeProfile) {
+        mutableStateOf(AppPreferences.alarmDurationSeconds(context, activeProfile))
+    }
     var deletedVillages by remember(activeProfile) {
         mutableStateOf(VillageStore.loadDeleted(context, activeProfile))
     }
@@ -457,7 +460,7 @@ private fun CocLioApp(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle)
+            val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle, alarmDurationSeconds)
             scope.launch {
                 snackbar.showSnackbar(
                     if (sent) "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem."
@@ -787,6 +790,7 @@ private fun CocLioApp(
                             ledPrefs.edit().putFloat("brightness", ledBrightness).apply()
                         },
                         notificationStyle = notificationStyle,
+                        alarmDurationSeconds = alarmDurationSeconds,
                         onGoogleSignIn = {
                             scope.launch {
                                 try {
@@ -837,6 +841,10 @@ private fun CocLioApp(
                             AppPreferences.setNotificationStyle(context, activeProfile, style)
                             notificationStyle = style
                             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
+                        },
+                        onAlarmDurationChanged = { seconds ->
+                            AppPreferences.setAlarmDurationSeconds(context, activeProfile, seconds)
+                            alarmDurationSeconds = AppPreferences.alarmDurationSeconds(context, activeProfile)
                         },
                         onTestNotification = {
                             if (Build.VERSION.SDK_INT >= 33 &&
