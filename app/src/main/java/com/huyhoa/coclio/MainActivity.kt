@@ -458,6 +458,13 @@ private fun CocLioApp(
         notificationStyle = AppPreferences.notificationStyle(context, activeProfile)
         AccountProfileStore.markLastUsed(context, activeProfile)
         lastUsedAt = AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L
+        if (activeProfile != "local") {
+            runCatching {
+                GoogleAccountAuth.syncCurrentProfile(context, activeProfile)
+            }.onFailure {
+                android.util.Log.w("COC-LIO", "Không thể làm mới hồ sơ Google trên Firestore.", it)
+            }
+        }
         if (activeProfile != "local" &&
             AccountProfileStore.preferredName(context, activeProfile).isNullOrBlank() &&
             pendingGoogleAccount == null
