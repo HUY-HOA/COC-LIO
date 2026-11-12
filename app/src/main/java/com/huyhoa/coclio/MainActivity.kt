@@ -123,7 +123,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.huyhoa.coclio.data.DeletedVillageRecord
-import com.huyhoa.coclio.data.ChangeEvent
 import com.huyhoa.coclio.data.VillageItem
 import com.huyhoa.coclio.data.VillageExtraItem
 import com.huyhoa.coclio.data.VillageParser
@@ -609,7 +608,6 @@ private fun CocLioApp(
                         activeTimestamp = current?.timestamp,
                         onSelect = {
                             current = it
-                            events = emptyList()
                             selectedTab = 0
                         },
                         onTogglePin = { tag ->
@@ -624,7 +622,6 @@ private fun CocLioApp(
                                 deletedVillages = VillageStore.loadDeleted(context, activeProfile)
                                 pinnedTags = VillageStore.pinnedTags(context, activeProfile)
                                 if (current?.tag == tag) current = history.firstOrNull()
-                                events = emptyList()
                                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
                                 AppWidgetUpdater.updateAll(context)
                                 scope.launch { snackbar.showSnackbar("Đã chuyển $tag vào lịch sử xóa.") }
@@ -637,7 +634,6 @@ private fun CocLioApp(
                                 deletedVillages = VillageStore.loadDeleted(context, activeProfile)
                                 pinnedTags = VillageStore.pinnedTags(context, activeProfile)
                                 current = history.firstOrNull { it.tag == restoredTag } ?: history.firstOrNull()
-                                events = emptyList()
                                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
                                 AppWidgetUpdater.updateAll(context)
                                 scope.launch { snackbar.showSnackbar("Đã khôi phục dữ liệu làng.") }
@@ -1031,14 +1027,14 @@ private fun OverviewScreen(
             }
         }
 
-        if (homeExtras.isNotEmpty()) {
+        if (hasHomeBase || homeExtras.isNotEmpty()) {
             item {
                 SectionTitle("NHÀ CHÍNH", homeExtras.sumOf { it.count }.toString())
             }
             item { ExtraEntriesCard(homeExtras) }
         }
 
-        if (builderExtras.isNotEmpty()) {
+        if (hasBuilderBase || builderExtras.isNotEmpty()) {
             item {
                 SectionTitle("LÀNG ĐÊM", builderExtras.sumOf { it.count }.toString())
             }
@@ -1470,7 +1466,7 @@ private fun ExtraEntriesCard(entries: List<VillageExtraItem>) {
 
     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet, innerPadding = 7.dp) {
         Text(
-            summary,
+            summary.ifBlank { "Chưa có dữ liệu phụ" },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 9.sp,
             maxLines = 2,
