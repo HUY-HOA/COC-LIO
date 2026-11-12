@@ -487,6 +487,7 @@ private fun CocLioApp(
                 it.tag == parsed.tag && it.timestamp < parsed.timestamp
             }
             VillageStore.save(context, parsed, activeProfile, customName)
+            FirebaseTelemetry.logVillageImport(context, previous != null)
             history = VillageStore.loadAll(context, activeProfile)
             pinnedTags = VillageStore.pinnedTags(context, activeProfile)
             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
@@ -690,6 +691,7 @@ private fun CocLioApp(
                             scope.launch {
                                 try {
                                     val googleAccount = GoogleAccountAuth.signIn(context)
+                                    FirebaseTelemetry.logGoogleSignIn(context)
                                     AccountProfileStore.saveGoogleData(context, googleAccount)
                                     val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
                                     if (savedName.isNullOrBlank()) {
@@ -711,6 +713,7 @@ private fun CocLioApp(
                         },
                         onGoogleSignOut = {
                             scope.launch {
+                                FirebaseTelemetry.logSignOut(context)
                                 GoogleAccountAuth.signOut(context)
                                 AccountProfileStore.setActive(context, null)
                                 activeProfile = "local"
