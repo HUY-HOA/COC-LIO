@@ -540,7 +540,6 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                 loadingArchive = true
                 firestore.collection(communityArchiveCollection(archiveCategory))
                     .orderBy("archivedAt", Query.Direction.DESCENDING)
-                    .limit(100)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
                             archiveError = error.message ?: "Không thể tải kho đã gỡ."
