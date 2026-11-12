@@ -12,6 +12,16 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import java.util.concurrent.TimeUnit
 
 object CocAssetCache {
     private const val DIRECTORY = "coc-lio-assets"
@@ -82,6 +92,46 @@ object CocAssetCache {
         } finally {
             temporary.delete()
             connection?.disconnect()
+        }
+    }
+}
+
+
+class CocAssetPrefetchWorker(
+    appContext: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(appContext, workerParams) {
+    override suspend fun doWork(): Result {
+        val profile = inputData.getString("profile") ?: "local"
+        val urls = VillageStore.loadAll(applicationContext, profile)
+            .asSequence()
+            .flatMap { it.items.asSequence() }
+            .mapNotNull(CocAssets::imageUrl)
+            .distinct()
+            .toList()
+
+        val failedCount = CocAssetCache.prefetch(applicationContext, urls)
+        return if (failedCount > 0) Result.retry() else Result.success()
+    }
+
+    companion object {
+        fun enqueue(context: Context, profile: String, assetSignature: Int) {
+            val request = OneTimeWorkRequestBuilder<CocAssetPrefetchWorker>()
+                .setInputData(Data.Builder().putString("profile", profile).build())
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build()
+
+            val uniqueName = "coc_lio_assets_" +
+                profile.hashCode().toUInt().toString(16) + "_" +
+                assetSignature.toUInt().toString(16)
+
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(uniqueName, ExistingWorkPolicy.KEEP, request)
         }
     }
 }
