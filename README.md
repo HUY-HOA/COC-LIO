@@ -48,7 +48,7 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 ## Cài đặt, nhắc nâng cấp và tiện ích
 
 - Có tab **Cài đặt** thứ năm để chọn hồ sơ Google, quyền thông báo và kiểu nhắc tin nhắn hoặc báo thức.
-- Hồ sơ Google tách lịch sử JSON trên cùng thiết bị; dữ liệu chưa tự đồng bộ lên đám mây.
+- Đăng nhập Google được xác thực bằng Firebase Authentication. Hồ sơ cơ bản được ghi vào Firestore khi cơ sở dữ liệu và Security Rules đã được triển khai; lịch sử JSON vẫn lưu cục bộ và chưa đồng bộ đám mây.
 - Nhắc nâng cấp được lập lịch từ timer trong JSON. Android có thể trì hoãn tác vụ do chế độ tiết kiệm pin hoặc chính sách hệ thống.
 - Có tiện ích màn hình chính theo từng hồ sơ và từng làng; bố cục dọc mặc định 2 × 6 ô, danh sách tất cả công trình đang nâng cấp có thể cuộn, mỗi mục có đồng hồ đếm ngược và thanh tiến trình riêng.
 - Trong app, các thẻ công trình có dải LED neon chuyển động quanh viền; ảnh công trình giữ nguyên, không phủ hiệu ứng lên artwork. Các thẻ đang nâng có thanh tiến trình cập nhật theo đồng hồ.
@@ -65,4 +65,4 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 
 ## Google và giấy phép
 
-Google trong bản hiện tại chỉ chọn hồ sơ cục bộ. Cấp phép sử dụng và quyền admin cần máy chủ xác minh Google ID token. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
+Google Sign-In đã được nối với Firebase Authentication. Ứng dụng ghi nhận các sự kiện đăng nhập, đăng xuất và nhập JSON qua Firebase Analytics; SDK Crashlytics và Performance Monitoring cũng đã được thêm. Hệ thống cấp phép, giao diện quản trị, đồng bộ lịch sử JSON, Cloud Messaging và xuất BigQuery chưa được hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
