@@ -1012,6 +1012,8 @@ fun SettingsScreen(
     themeMode: String,
     onThemeModeChanged: (String) -> Unit,
     textScale: Float,
+    displaySizeLevel: Int,
+    onDisplaySizeLevelChanged: (Int) -> Unit,
     notificationsEnabled: Boolean,
     ledEnabled: Boolean,
     ledPreset: String,
@@ -1170,6 +1172,32 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
+
+        FeaturePanel {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("KÍCH THƯỚC HIỂN THỊ", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("MỨC $displaySizeLevel/5", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Black)
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                (1..5).forEach { level ->
+                    FilterChip(
+                        selected = displaySizeLevel == level,
+                        onClick = { onDisplaySizeLevelChanged(level) },
+                        modifier = Modifier.weight(1f).height(30.dp),
+                        label = { Text(level.toString(), fontSize = 9.sp) }
+                    )
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("RẤT GỌN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Spacer(Modifier.weight(1f))
+                Text("LỚN", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+            }
+            Text("Điều chỉnh kích thước nút và khoảng cách giao diện. Mức 3 là mặc định.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
 
         val currentFontLevel = (if (textScale <= 1f) {
