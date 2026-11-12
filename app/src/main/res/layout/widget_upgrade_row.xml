@@ -80,7 +80,10 @@
                 android:includeFontPadding="false"
                 android:shadowColor="#CC000000"
                 android:shadowRadius="2"
-                android:format="%s" />
+                android:format="%s"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:ellipsize="end" />
         </FrameLayout>
     </LinearLayout>
 </LinearLayout>
