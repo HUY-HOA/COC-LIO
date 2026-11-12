@@ -439,12 +439,14 @@ data class AdminGoogleAccount(
     val isAdmin: Boolean = false,
     val isOnline: Boolean = false,
     val lastActiveAt: Long = 0L,
+    val firstOpenedAt: Long = 0L,
     val lastOpenedAt: Long = 0L,
     val lastBackgroundAt: Long = 0L,
     val appOpenCount: Long = 0L,
     val lastSessionDurationSeconds: Long = 0L,
     val totalForegroundSeconds: Long = 0L,
     val lastIp: String = "",
+    val lastIpCapturedAt: Long = 0L,
     val deviceManufacturer: String = "",
     val deviceModel: String = "",
     val androidVersion: String = "",
@@ -517,12 +519,14 @@ object FirebaseAccountAdministration {
                     lastActiveAt > 0L &&
                     System.currentTimeMillis() - lastActiveAt <= 120_000L,
                 lastActiveAt = lastActiveAt,
+                firstOpenedAt = document.getTimestamp("firstOpenedAt")?.toDate()?.time ?: 0L,
                 lastOpenedAt = document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L,
                 lastBackgroundAt = lastBackgroundAt,
                 appOpenCount = document.getLong("appOpenCount") ?: 0L,
                 lastSessionDurationSeconds = document.getLong("lastSessionDurationSeconds") ?: 0L,
                 totalForegroundSeconds = document.getLong("totalForegroundSeconds") ?: 0L,
                 lastIp = document.getString("lastIp").orEmpty(),
+                lastIpCapturedAt = document.getTimestamp("lastIpCapturedAt")?.toDate()?.time ?: 0L,
                 deviceManufacturer = document.getString("deviceManufacturer").orEmpty(),
                 deviceModel = document.getString("deviceModel").orEmpty(),
                 androidVersion = document.getString("androidVersion").orEmpty(),
@@ -1655,7 +1659,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             title = { Text("Xóa tài khoản Google?") },
             text = {
                 Text(
-                    "Tài khoản ${account.email} sẽ bị xóa khỏi Firebase Authentication và hồ sơ chia sẻ của tài khoản này sẽ bị xóa khỏi Firestore. Người dùng sẽ không thể đăng nhập lại bằng tài khoản này vào COC-LIO.",
+                    "Tài khoản Firebase hiện tại của ${account.email} và hồ sơ chia sẻ sẽ bị xóa. Họ vẫn có thể đăng nhập lại bằng Google; Firebase có thể tạo tài khoản mới với UID mới. Thao tác này không khóa vĩnh viễn tài khoản Google.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -1831,6 +1835,12 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             ProfileDataRow("Đăng nhập gần nhất", formatAdminAccountTime(account.lastSignInAt))
                             ProfileDataRow(
+                                "Mở COC-LIO lần đầu",
+                                if (account.firstOpenedAt > 0L) formatAdminAccountTime(account.firstOpenedAt)
+                                else if (account.activityDataConsentVersion >= 2L) "Chưa ghi nhận lần mở"
+                                else "Chưa có dữ liệu lịch sử theo dõi"
+                            )
+                            ProfileDataRow(
                                 "Lần mở COC-LIO gần nhất",
                                 if (account.lastOpenedAt > 0L) formatAdminAccountTime(account.lastOpenedAt)
                                 else if (account.activityDataConsentVersion >= 2L) "Chưa ghi nhận lần mở"
@@ -1860,6 +1870,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 if (account.totalForegroundSeconds > 0L) formatDuration(account.totalForegroundSeconds) else "Chưa ghi nhận"
                             )
                             ProfileDataRow("IP gần nhất", account.lastIp.ifBlank { "Chưa ghi nhận hoặc chưa được đồng ý" })
+                            ProfileDataRow("Thời điểm ghi nhận IP", formatAdminAccountTime(account.lastIpCapturedAt))
                             ProfileDataRow(
                                 "Thiết bị",
                                 listOf(account.deviceManufacturer, account.deviceModel).filter { it.isNotBlank() }.joinToString(" ").ifBlank { "Chưa ghi nhận" }
