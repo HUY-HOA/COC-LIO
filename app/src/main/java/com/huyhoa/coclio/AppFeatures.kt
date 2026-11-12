@@ -1541,11 +1541,13 @@ fun SettingsScreen(
     onLedSpeedChanged: (Int) -> Unit,
     onLedBrightnessChanged: (Float) -> Unit,
     notificationStyle: String,
+    alarmDurationSeconds: Int,
     onGoogleSignIn: () -> Unit,
     onGoogleSignOut: () -> Unit,
     onOpenGame: () -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
     onNotificationStyleChanged: (String) -> Unit,
+    onAlarmDurationChanged: (Int) -> Unit,
     onTestNotification: () -> Unit,
     onTextScaleChanged: (Float) -> Unit
 ) {
@@ -1839,6 +1841,32 @@ fun SettingsScreen(
                     selected = notificationStyle == "alarm",
                     onClick = { onNotificationStyleChanged("alarm") },
                     label = { Text("Báo thức") }
+                )
+            }
+            if (notificationStyle == "alarm") {
+                Text(
+                    "Thời gian hiển thị báo thức",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                )
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(5, 10, 15, 20, 25).forEach { seconds ->
+                        FilterChip(
+                            selected = alarmDurationSeconds == seconds,
+                            onClick = { onAlarmDurationChanged(seconds) },
+                            label = { Text("${seconds}s", fontSize = 10.sp) }
+                        )
+                    }
+                }
+                Text(
+                    "Thông báo sẽ tự đóng sau ${alarmDurationSeconds} giây. Trong thời gian đó, bạn có thể nhấn MỞ GAME để vào Clash of Clans.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp
                 )
             }
             Button(
