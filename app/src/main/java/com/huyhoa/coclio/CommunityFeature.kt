@@ -800,7 +800,7 @@ fun CommunityScreen(isGoogleSignedIn: Boolean, onOpenSettings: () -> Unit) {
                         }
                         Text(
                             if (archiveKeepForever) "Dữ liệu đã gỡ được giữ lại cho đến khi quản lý xóa vĩnh viễn."
-                            else "Áp dụng thời hạn này cho toàn bộ dữ liệu trong kho. Hệ thống kiểm tra và dọn mục hết hạn khi tài khoản quản lý mở Cộng đồng.",
+                            else "Áp dụng thời hạn cho toàn bộ dữ liệu trong kho. Ứng dụng sẽ kiểm tra khi mở Cộng đồng và tự dọn theo lịch nền hằng ngày.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 9.sp
                         )
