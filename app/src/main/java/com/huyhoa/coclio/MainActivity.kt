@@ -128,6 +128,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.huyhoa.coclio.data.DeletedVillageRecord
+import com.huyhoa.coclio.data.ReceivedSharedJsonRecord
+import com.huyhoa.coclio.data.DeletedReceivedSharedJsonRecord
+import com.huyhoa.coclio.data.ReceivedSharedJsonStore
 import com.huyhoa.coclio.data.VillageItem
 import com.huyhoa.coclio.data.VillageExtraItem
 import com.huyhoa.coclio.data.VillageParser
@@ -520,6 +523,12 @@ private fun CocLioApp(
     var pinnedTags by remember(activeProfile) {
         mutableStateOf(VillageStore.pinnedTags(context, activeProfile))
     }
+    var receivedSharedJsons by remember(activeProfile) {
+        mutableStateOf(ReceivedSharedJsonStore.loadReceived(context, activeProfile))
+    }
+    var deletedReceivedSharedJsons by remember(activeProfile) {
+        mutableStateOf(ReceivedSharedJsonStore.loadDeleted(context, activeProfile))
+    }
     val ledPrefs = remember {
         context.getSharedPreferences("coc_lio_led", android.content.Context.MODE_PRIVATE).also { prefs ->
             if (prefs.getInt("settings_version", 0) < 1) {
@@ -630,6 +639,8 @@ private fun CocLioApp(
         current = history.firstOrNull()
         deletedVillages = VillageStore.loadDeleted(context, activeProfile)
         pinnedTags = VillageStore.pinnedTags(context, activeProfile)
+        receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
+        deletedReceivedSharedJsons = ReceivedSharedJsonStore.loadDeleted(context, activeProfile)
         notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
         notificationStyle = AppPreferences.notificationStyle(context, activeProfile)
         AccountProfileStore.markLastUsed(context, activeProfile)
@@ -931,6 +942,8 @@ private fun CocLioApp(
                     2 -> HistoryScreen(
                         history = history,
                         deletedVillages = deletedVillages,
+                        receivedSharedJsons = receivedSharedJsons,
+                        deletedReceivedSharedJsons = deletedReceivedSharedJsons,
                         pinnedTags = pinnedTags,
                         activeTag = current?.tag.orEmpty(),
                         activeTimestamp = current?.timestamp,
@@ -952,7 +965,7 @@ private fun CocLioApp(
                                 if (current?.tag == tag) current = history.firstOrNull()
                                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
                                 AppWidgetUpdater.updateAll(context)
-                                scope.launch { snackbar.showSnackbar("Đã chuyển $tag vào lịch sử xóa.") }
+                                scope.launch { snackbar.showSnackbar("Đã chuyển $tag vào mục ĐÃ GỠ.") }
                             }
                         },
                         onRestore = { recordId ->
@@ -972,12 +985,59 @@ private fun CocLioApp(
                                 deletedVillages = VillageStore.loadDeleted(context, activeProfile)
                                 scope.launch { snackbar.showSnackbar("Đã xóa vĩnh viễn dữ liệu JSON.") }
                             }
+                        },
+                        onShare = { snapshot ->
+                            scope.launch {
+                                runCatching { shareVillageJsonToCommunity(snapshot) }
+                                    .onSuccess { snackbar.showSnackbar(it) }
+                                    .onFailure { error ->
+                                        snackbar.showSnackbar(error.message ?: "Không thể chia sẻ JSON.")
+                                    }
+                            }
+                        },
+                        onUseReceivedJson = { record -> importJson(record.rawJson) },
+                        onDeleteReceivedJson = { jsonId ->
+                            if (ReceivedSharedJsonStore.moveToDeleted(context, jsonId, activeProfile)) {
+                                receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
+                                deletedReceivedSharedJsons = ReceivedSharedJsonStore.loadDeleted(context, activeProfile)
+                                scope.launch { snackbar.showSnackbar("Đã chuyển JSON nhận được vào mục ĐÃ GỠ. Bản trong lịch sử vẫn được giữ.") }
+                            }
+                        },
+                        onRestoreReceivedJson = { jsonId ->
+                            if (ReceivedSharedJsonStore.restore(context, jsonId, activeProfile)) {
+                                receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
+                                deletedReceivedSharedJsons = ReceivedSharedJsonStore.loadDeleted(context, activeProfile)
+                                scope.launch { snackbar.showSnackbar("Đã khôi phục JSON đã nhận.") }
+                            }
+                        },
+                        onDeleteReceivedJsonPermanently = { jsonId ->
+                            if (ReceivedSharedJsonStore.permanentlyDelete(context, jsonId, activeProfile)) {
+                                deletedReceivedSharedJsons = ReceivedSharedJsonStore.loadDeleted(context, activeProfile)
+                                scope.launch { snackbar.showSnackbar("Đã xóa vĩnh viễn JSON nhận được khỏi thiết bị.") }
+                            }
                         }
                     )
                     3 -> CommunityScreen(
                         isGoogleSignedIn = isGoogleSignedIn,
-                        availableJson = history,
-                        onImportJson = { rawJson -> importJson(rawJson) },
+                        onImportJson = { rawJson, senderUid, senderName, tag, timestamp, jsonId ->
+                            val parsed = runCatching { VillageParser.parse(rawJson) }.getOrNull()
+                            if (parsed != null) {
+                                ReceivedSharedJsonStore.saveReceived(
+                                    context = context,
+                                    receiverUid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
+                                    senderUid = senderUid,
+                                    senderName = senderName,
+                                    tag = tag.ifBlank { parsed.tag },
+                                    villageName = parsed.villageName ?: tag,
+                                    timestamp = timestamp.takeIf { it > 0L } ?: parsed.timestamp,
+                                    jsonId = jsonId,
+                                    rawJson = rawJson,
+                                    profile = activeProfile
+                                )
+                            }
+                            importJson(rawJson)
+                            receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
+                        },
                         onOpenSettings = { selectedTab = 4 }
                     )
                     4 -> SettingsScreen(
