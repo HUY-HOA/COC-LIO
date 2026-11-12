@@ -74,8 +74,12 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -107,7 +111,9 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import androidx.credentials.exceptions.GetCredentialException
@@ -333,37 +339,75 @@ private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
         }
     }
 
-private suspend fun syncFirebaseUserProfile(user: FirebaseUser) {
-    val email = user.email ?: throw IllegalStateException("Firebase không trả về email tài khoản.")
+private suspend fun syncFirebaseUserProfile(user: FirebaseUser, google: GoogleAccountData) {
+    val email = user.email?.trim()?.lowercase()
+        ?: throw IllegalStateException("Firebase không trả về email tài khoản.")
     val reference = FirebaseFirestore.getInstance()
         .collection("users")
         .document(user.uid)
     val existing = reference.get().awaitFirebaseResult()
-    val displayName = user.displayName.orEmpty()
-    val photoUrl = user.photoUrl?.toString().orEmpty()
-
+    val signInCount = (existing.getLong("signInCount") ?: 0L) + 1L
+    val profile = hashMapOf<String, Any>(
+        "uid" to user.uid,
+        "email" to email,
+        "displayName" to (google.displayName ?: user.displayName.orEmpty()),
+        "givenName" to google.givenName.orEmpty(),
+        "familyName" to google.familyName.orEmpty(),
+        "photoUrl" to (google.profilePictureUri ?: user.photoUrl?.toString().orEmpty()),
+        "emailVerified" to user.isEmailVerified,
+        "providerId" to "google.com",
+        "signInCount" to signInCount,
+        "lastSignInAt" to FieldValue.serverTimestamp(),
+        "updatedAt" to FieldValue.serverTimestamp()
+    )
     if (!existing.exists()) {
-        reference.set(
-            mapOf(
-                "uid" to user.uid,
-                "email" to email,
-                "displayName" to displayName,
-                "photoUrl" to photoUrl,
-                "createdAt" to FieldValue.serverTimestamp(),
-                "updatedAt" to FieldValue.serverTimestamp()
+        profile["createdAt"] = FieldValue.serverTimestamp()
+    }
+    reference.set(profile, SetOptions.merge()).awaitFirebaseResult()
+}
+
+data class AdminGoogleAccount(
+    val uid: String,
+    val email: String,
+    val displayName: String,
+    val givenName: String,
+    val familyName: String,
+    val photoUrl: String,
+    val emailVerified: Boolean,
+    val providerId: String,
+    val signInCount: Long,
+    val createdAt: Long,
+    val lastSignInAt: Long,
+    val updatedAt: Long
+)
+
+object FirebaseAccountAdministration {
+    private const val OWNER_EMAIL = "phunghuyhoahkb@gmail.com"
+
+    fun isOwner(email: String?): Boolean =
+        email?.trim()?.equals(OWNER_EMAIL, ignoreCase = true) == true
+
+    suspend fun loadAccounts(): List<AdminGoogleAccount> {
+        val result = FirebaseFirestore.getInstance()
+            .collection("users")
+            .get()
+            .awaitFirebaseResult()
+        return result.documents.map { document ->
+            AdminGoogleAccount(
+                uid = document.getString("uid") ?: document.id,
+                email = document.getString("email").orEmpty(),
+                displayName = document.getString("displayName").orEmpty(),
+                givenName = document.getString("givenName").orEmpty(),
+                familyName = document.getString("familyName").orEmpty(),
+                photoUrl = document.getString("photoUrl").orEmpty(),
+                emailVerified = document.getBoolean("emailVerified") ?: false,
+                providerId = document.getString("providerId").orEmpty(),
+                signInCount = document.getLong("signInCount") ?: 0L,
+                createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
+                lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
+                updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L
             )
-        ).awaitFirebaseResult()
-    } else {
-        val updates = hashMapOf<String, Any>(
-            "updatedAt" to FieldValue.serverTimestamp()
-        )
-        if (existing.getString("displayName") != displayName) {
-            updates["displayName"] = displayName
-        }
-        if (existing.getString("photoUrl") != photoUrl) {
-            updates["photoUrl"] = photoUrl
-        }
-        reference.update(updates).awaitFirebaseResult()
+        }.sortedByDescending { it.lastSignInAt }
     }
 }
 
@@ -491,22 +535,24 @@ object GoogleAccountAuth {
         val firebaseUser = authResult.user
             ?: throw IllegalStateException("Firebase Authentication không trả về người dùng.")
 
-        runCatching { syncFirebaseUserProfile(firebaseUser) }
-            .onFailure {
-                android.util.Log.w(
-                    "COC-LIO",
-                    "Không thể đồng bộ hồ sơ Firebase. Cần kiểm tra Firestore và Security Rules.",
-                    it
-                )
-            }
-
-        return GoogleAccountData(
+        val accountData = GoogleAccountData(
             email = email.lowercase(),
             displayName = google.displayName?.trim()?.takeIf { it.isNotBlank() },
             givenName = google.givenName?.trim()?.takeIf { it.isNotBlank() },
             familyName = google.familyName?.trim()?.takeIf { it.isNotBlank() },
             profilePictureUri = google.profilePictureUri?.toString()
         )
+
+        runCatching { syncFirebaseUserProfile(firebaseUser, accountData) }
+            .onFailure {
+                android.util.Log.w(
+                    "COC-LIO",
+                    "Không thể đồng bộ hồ sơ Google lên Firestore. Cần kiểm tra Firestore và Security Rules.",
+                    it
+                )
+            }
+
+        return accountData
     }
 
     suspend fun signOut(context: Context) {
@@ -1210,10 +1256,116 @@ private fun ProfileDataRow(label: String, value: String?) {
     }
 }
 
+private fun formatAdminAccountTime(timestamp: Long): String =
+    if (timestamp <= 0L) {
+        "Chưa ghi nhận"
+    } else {
+        java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            .withZone(java.time.ZoneId.systemDefault())
+            .format(java.time.Instant.ofEpochMilli(timestamp))
+    }
+
+@Composable
+private fun AdminAccountsPanel() {
+    val scope = rememberCoroutineScope()
+    var accounts by remember { mutableStateOf<List<AdminGoogleAccount>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    fun refreshAccounts() {
+        scope.launch {
+            loading = true
+            errorMessage = null
+            try {
+                accounts = FirebaseAccountAdministration.loadAccounts()
+            } catch (error: Exception) {
+                errorMessage = error.message ?: "Không thể tải danh sách tài khoản."
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshAccounts()
+    }
+
+    FeaturePanel {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "QUẢN LÝ TÀI KHOẢN GOOGLE",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = { refreshAccounts() }, enabled = !loading) {
+                Text("LÀM MỚI", fontSize = 9.sp)
+            }
+        }
+        Text(
+            "Tổng số tài khoản: ${accounts.size}",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp
+        )
+        Text(
+            "Chỉ tài khoản quản lý mới xem được danh sách này. Dữ liệu gồm hồ sơ Google mà người dùng cấp khi đăng nhập và lịch sử đăng nhập COC-LIO; ứng dụng không đọc Gmail, Drive hoặc danh bạ.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp,
+            lineHeight = 15.sp
+        )
+        if (loading) {
+            Text("Đang tải dữ liệu tài khoản…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+        }
+        errorMessage?.let {
+            Text(it, color = Color(0xFFFF5D91), fontSize = 10.sp)
+        }
+        accounts.forEach { account ->
+            Spacer(Modifier.height(7.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (account.photoUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = account.photoUrl,
+                        contentDescription = "Ảnh đại diện Google",
+                        modifier = Modifier.size(42.dp).clip(CircleShape)
+                    )
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        account.displayName.ifBlank { account.email },
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    )
+                    Text(account.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                }
+            }
+            ProfileDataRow("Tên", account.givenName)
+            ProfileDataRow("Họ", account.familyName)
+            ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
+            ProfileDataRow("Nhà cung cấp", account.providerId)
+            ProfileDataRow("Số lần đăng nhập", account.signInCount.toString())
+            ProfileDataRow("Đăng nhập gần nhất", formatAdminAccountTime(account.lastSignInAt))
+            ProfileDataRow("Tạo tài khoản", formatAdminAccountTime(account.createdAt))
+            ProfileDataRow("Cập nhật hồ sơ", formatAdminAccountTime(account.updatedAt))
+            ProfileDataRow("Firebase UID", account.uid)
+        }
+        if (!loading && errorMessage == null && accounts.isEmpty()) {
+            Text("Chưa có tài khoản nào được đồng bộ lên Firestore.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     accountEmail: String?,
+    isAdmin: Boolean,
     accountData: GoogleAccountData?,
     preferredName: String?,
     lastUsedLabel: String?,
@@ -1267,7 +1419,7 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF04101D))
                 ) { Text("ĐĂNG NHẬP GOOGLE", fontWeight = FontWeight.Black) }
-                if (knownProfiles.isNotEmpty()) {
+                if (isAdmin && knownProfiles.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     Text("CÁC HỒ SƠ ĐÃ ĐĂNG NHẬP TRÊN MÁY NÀY", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     knownProfiles.forEach { profile ->
@@ -1303,57 +1455,23 @@ fun SettingsScreen(
                         Text("Đang dùng trên thiết bị này", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-                Text("THÔNG TIN GOOGLE TRẢ VỀ", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                ProfileDataRow("Tên Google", accountData?.displayName)
-                ProfileDataRow("Tên", accountData?.givenName)
-                ProfileDataRow("Họ", accountData?.familyName)
-                ProfileDataRow("Email", accountData?.email ?: accountEmail)
-                ProfileDataRow("Ảnh đại diện", accountData?.profilePictureUri)
-                ProfileDataRow("Tên bạn đặt", preferredName)
-                if (lastUsedLabel != null) ProfileDataRow("Mở app lần gần nhất", lastUsedLabel)
-                Text(
-                    "Thông tin hồ sơ chỉ lưu trên điện thoại này, không đồng bộ hoặc sao lưu lên đám mây. Ứng dụng không nhận mật khẩu Google và không lưu ID token.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
-                Text("CÁC TÀI KHOẢN TỪNG DÙNG TRÊN MÁY NÀY", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                if (knownProfiles.isEmpty()) {
-                    Text("Chưa có hồ sơ nào khác.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                if (isAdmin) {
+                    Text("THÔNG TIN GOOGLE QUẢN LÝ", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    ProfileDataRow("Tên Google", accountData?.displayName)
+                    ProfileDataRow("Tên", accountData?.givenName)
+                    ProfileDataRow("Họ", accountData?.familyName)
+                    ProfileDataRow("Email", accountData?.email ?: accountEmail)
+                    ProfileDataRow("Ảnh đại diện", accountData?.profilePictureUri)
+                    ProfileDataRow("Tên bạn đặt", preferredName)
+                    if (lastUsedLabel != null) ProfileDataRow("Mở app lần gần nhất trên máy này", lastUsedLabel)
                 } else {
-                    knownProfiles.forEach { profile ->
-                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    profile.preferredName?.takeIf { it.isNotBlank() } ?: profile.displayName ?: profile.email,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    if (profile.isCurrent) "ĐANG DÙNG" else "KHÔNG ĐANG DÙNG",
-                                    color = if (profile.isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Text(profile.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                            Text(
-                                if (profile.lastUsedAt > 0L) "Mở lần cuối: " + java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.ofEpochMilli(profile.lastUsedAt))
-                                else "Chưa ghi nhận lần mở gần nhất",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp
-                            )
-                        }
-                    }
+                    Text(
+                        "Tài khoản người dùng chỉ hiển thị tên, Gmail và ảnh đại diện. Thông tin quản lý tài khoản được bảo vệ và chỉ tài khoản chủ sở hữu ứng dụng xem được.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp,
+                        lineHeight = 15.sp
+                    )
                 }
-                Text(
-                    "Trạng thái trên đây chỉ tính các hồ sơ đã đăng nhập trên điện thoại này. Không thể biết người dùng ở điện thoại khác đang online nếu chưa có máy chủ.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(
                         onClick = onGoogleSignIn,
@@ -1368,6 +1486,8 @@ fun SettingsScreen(
                 }
             }
         }
+
+        if (isAdmin) AdminAccountsPanel()
 
         FeaturePanel {
             Text("GIAO DIỆN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
