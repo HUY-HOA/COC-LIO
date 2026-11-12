@@ -422,7 +422,7 @@ private fun installedSigningSha1(context: Context): String = runCatching {
                 (byte.toInt() and 0xFF).toString(16).uppercase().padStart(2, '0')
             }
     }.distinct().joinToString(", ").ifBlank { "không đọc được" }
-}.getOrElse { "không đọc được (\${it.javaClass.simpleName})" }
+}.getOrElse { "không đọc được (" + it.javaClass.simpleName + ")" }
 
 object GoogleAccountAuth {
     suspend fun signIn(context: Context): GoogleAccountData {
@@ -443,10 +443,10 @@ object GoogleAccountAuth {
             val errorMessage = error.message.orEmpty()
             if (errorMessage.contains("28444", ignoreCase = true)) {
                 val signingSha1 = installedSigningSha1(context)
-                val diagnostic = "packageName=\${context.packageName}; APK SHA-1=\${signingSha1}; GOOGLE_WEB_CLIENT_ID=\${clientId}"
+                val diagnostic = "packageName=" + context.packageName + "; APK SHA-1=" + signingSha1 + "; GOOGLE_WEB_CLIENT_ID=" + clientId
                 android.util.Log.e("COC-LIO_AUTH", diagnostic, error)
                 throw IllegalStateException(
-                    "Google từ chối cấu hình OAuth [28444]. Web Client ID đang nhúng trong APK: \${clientId}. Package APK: \${context.packageName}. SHA-1 thực tế của APK: \${signingSha1}. Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud.",
+                    "Google từ chối cấu hình OAuth [28444]. Web Client ID đang nhúng trong APK: " + clientId + ". Package APK: " + context.packageName + ". SHA-1 thực tế của APK: " + signingSha1 + ". Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud.",
                     error
                 )
             } else if (errorMessage.contains("[16] Account reauth failed", ignoreCase = true)) {
@@ -462,7 +462,7 @@ object GoogleAccountAuth {
                     )
                 } catch (retryError: GetCredentialException) {
                     throw IllegalStateException(
-                        "Google vẫn từ chối xác thực. Trong cùng dự án Google Cloud, Android OAuth Client phải có package com.huyhoa.coclio và SHA-1 4E:25:C8:2C:96:FF:B7:9E:83:72:AA:83:45:95:01:98:6E:70:C7:C3. Secret GOOGLE_WEB_CLIENT_ID phải là Web application Client ID của chính dự án đó.",
+                        "Google vẫn từ chối xác thực sau khi làm mới phiên. Web Client ID đang nhúng trong APK: " + clientId + ". Package APK: " + context.packageName + ". SHA-1 thực tế: " + installedSigningSha1(context) + ". Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án.",
                         retryError
                     )
                 }
