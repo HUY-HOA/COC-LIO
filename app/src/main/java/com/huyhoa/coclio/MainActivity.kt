@@ -985,9 +985,9 @@ private fun OverviewScreen(
         }
 
         if (completedUpgrades.isNotEmpty()) {
-            item { SectionTitle("ĐÃ HẾT GIỜ • CHỜ JSON XÁC NHẬN", completedUpgrades.size.toString()) }
+            item { SectionTitle("HOÀN THÀNH • CHỜ JSON MỚI", completedUpgrades.size.toString()) }
             items(completedUpgrades, key = { "completed_" + it.base + "_" + it.identity + "_" + it.timerSeconds }) {
-                UpgradeCard(it, snapshot.timestamp)
+                UpgradeCard(it, snapshot.timestamp, showBase = true)
             }
         }
 
@@ -1044,21 +1044,6 @@ private fun OverviewScreen(
             item { ExtraEntriesCard(builderExtras) }
         }
 
-        if (snapshot.extraFields.isNotEmpty()) {
-            item { SectionTitle("TRƯỜNG JSON KHÁC", snapshot.extraFields.size.toString()) }
-            item {
-                NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocViolet) {
-                    Column(Modifier.padding(7.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        snapshot.extraFields.forEach { (key, value) ->
-                            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                                Text(key, color = MaterialTheme.colorScheme.tertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -1117,7 +1102,7 @@ private fun InfoCard(title: String, detail: String) {
 }
 
 @Composable
-private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
+private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, showBase: Boolean = false) {
     var nowEpoch by remember(item.identity, snapshotTimestamp) {
         mutableLongStateOf(System.currentTimeMillis() / 1000L)
     }
@@ -1127,7 +1112,6 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
             nowEpoch = System.currentTimeMillis() / 1000L
         }
     }
-    val endAt = snapshotTimestamp + (item.timerSeconds ?: 0L)
     val remaining = item.remainingSecondsAt(snapshotTimestamp, nowEpoch)
     val levelText = when {
         item.gearUp -> item.level?.let { "CẤP $it • GEAR-UP" } ?: "GEAR-UP"
@@ -1158,7 +1142,9 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
             Spacer(Modifier.width(9.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    item.name + " • ID " + item.dataId + if (item.base == "builder") " • LÀNG ĐÊM" else " • NHÀ CHÍNH",
+                    item.name + if (showBase) {
+                        if (item.base == "builder") " • LÀNG ĐÊM" else " • NHÀ CHÍNH"
+                    } else "",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
                     fontSize = 10.sp,
@@ -1207,23 +1193,11 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long) {
                     )
                     Text(
                         if (remaining > 0L) "${formatCountdown(remaining)} • $progressPercent%"
-                        else "HOÀN THÀNH • 100%",
+                        else "HOÀN THÀNH • CHỜ JSON MỚI",
                         color = if (remaining == 0L) CocGreen else MaterialTheme.colorScheme.onSurface,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Black,
                         maxLines = 1
-                    )
-                }
-                val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" }).joinToString(" • ")
-                if (detailText.isNotBlank()) {
-                    Text(detailText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-                if (remaining == 0L) {
-                    Text(
-                        "CHỜ JSON XÁC NHẬN CẤP ĐỘ",
-                        color = CocGreen,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black
                     )
                 }
             }
@@ -1451,10 +1425,6 @@ private fun HelperCompactCard(item: VillageItem, modifier: Modifier = Modifier) 
                 fontSize = 7.sp,
                 maxLines = 1
             )
-            val helperDetails = (item.details + item.properties.map { (key, value) -> "$key: $value" }).joinToString(" • ")
-            if (helperDetails.isNotBlank()) {
-                Text(helperDetails, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 7.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, overflow = TextOverflow.Ellipsis)
-            }
         }
     }
 }
