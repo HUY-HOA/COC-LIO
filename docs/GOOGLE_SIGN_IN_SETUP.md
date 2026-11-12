@@ -1,18 +1,18 @@
 # Cấu hình Google và chuẩn bị cấp phép COC-LIO
 
-## Việc cần làm ngay: tạo Web Client ID
+## Google Sign-In và cho phép mọi tài khoản
 
-1. Mở [Google Cloud Console](https://console.cloud.google.com/).
-2. Chọn hoặc tạo một dự án.
-3. Mở Google Auth Platform, hoàn tất màn hình đồng ý và thêm email quản trị.
-4. Vào Clients → Create Client → chọn **Web application**.
-5. Đặt tên, tạo OAuth Client ID và sao chép giá trị có đuôi `.apps.googleusercontent.com`.
+COC-LIO dùng Credential Manager để đăng nhập bằng Google ID token. Mã ứng dụng hiện không giới hạn email theo danh sách cho phép; tài khoản Google khác có thể đăng nhập khi dự án OAuth được cấu hình cho người dùng bên ngoài.
 
-Không sao chép Client Secret vào ứng dụng Android. Ứng dụng chỉ cần Web Client ID để yêu cầu Google ID token.
+1. Mở [Google Cloud Console](https://console.cloud.google.com/) và chọn đúng dự án đang chứa hai OAuth Client của COC-LIO.
+2. Vào **Google Auth Platform → Audience**.
+3. Chọn **External** nếu ứng dụng phục vụ người dùng ngoài tổ chức Google Workspace.
+4. Để bất kỳ tài khoản Google nào cũng đăng nhập được, chuyển **Publishing status** sang **In production** bằng **Publish app**. Ở trạng thái **Testing**, quyền truy cập bị giới hạn theo chính sách người thử nghiệm của Google.
+5. Hoàn thiện phần Branding và các thông tin liên hệ của ứng dụng.
 
-Tài liệu chính thức: https://developer.android.com/identity/sign-in/credential-manager-siwg-implementation
+Tài liệu Google: https://support.google.com/cloud/answer/15549945
 
-## OAuth Android và chữ ký APK
+## OAuth Client và chữ ký APK
 
 COC-LIO dùng hai loại OAuth Client trong **cùng một dự án Google Cloud**:
 
@@ -35,10 +35,9 @@ Nếu sau này phân phối qua Google Play với Play App Signing, cần thêm 
 
 Mã lỗi xác thực 16 không đủ để kết luận Dịch vụ Google Play đã cũ. Hãy kiểm tra Web Client ID, dự án OAuth, package và SHA-1 của đúng chứng thư trước. Nếu cấu hình ngoài ứng dụng chưa khớp, chỉ sửa mã APK sẽ không giải quyết được lỗi.
 
-
 ## Thêm Secret vào GitHub
 
-Mở repository [Huy-hoa/COC-LIO](https://github.com/Huy-hoa/COC-LIO):
+Mở repository [HUY-HOA-1/COC-LIO](https://github.com/HUY-HOA-1/COC-LIO):
 
 1. Chọn **Settings** → **Secrets and variables** → **Actions**.
 2. Nhấn **New repository secret**.
@@ -51,25 +50,44 @@ Mở repository [Huy-hoa/COC-LIO](https://github.com/Huy-hoa/COC-LIO):
 
 4. Nhấn **Add secret**.
 
-Sau khi lưu, báo lại rằng đã thêm Secret. Không gửi Client Secret hoặc mật khẩu Google vào cuộc trò chuyện.
+Không gửi Client Secret hoặc mật khẩu Google vào cuộc trò chuyện.
 
-## Cấp phép người dùng (chưa được bật trong bản hiện tại)
+## Tài khoản chủ sở hữu và quyền quản trị
 
-Mục tiêu của COC-LIO là đăng nhập Google để nhận diện người dùng, sau đó máy chủ kiểm tra giấy phép:
-- Email quản trị của chủ ứng dụng có quyền quản lý danh sách cấp phép.
-- Người dùng khác chỉ sử dụng khi được cấp quyền và giấy phép còn hiệu lực.
-- Có thể cấp, thu hồi và đặt hạn sử dụng từ màn hình quản trị.
-- Không dùng Google để sao lưu JSON hoặc lịch sử làng.
+Email chủ sở hữu COC-LIO đã được xác định là:
 
-Đăng nhập Google trong mã hiện tại mới chỉ đổi hồ sơ lưu cục bộ trên điện thoại; nó **chưa kiểm tra giấy phép**. Cần triển khai API và cơ sở dữ liệu riêng trước khi có thể bật quyền quản trị/cấp phép. Không được nhúng khóa quản trị hoặc khóa ký token vào APK.
+`phunghuyhoahaikba@gmail.com`
 
-Sau khi bạn thêm `GOOGLE_WEB_CLIENT_ID`, cần cung cấp thêm **địa chỉ email Google muốn đặt làm chủ ứng dụng/admin**. Email này sẽ được cấu hình ở phía máy chủ, không đưa vào APK.
+Mô hình quyền dự kiến:
 
-## Các khóa máy chủ sẽ bổ sung sau
+- Tất cả tài khoản Google đã xác thực được phép đăng nhập.
+- Tài khoản chủ sở hữu có quyền xem và quản lý người dùng, trạng thái cấp phép và dữ liệu quản trị.
+- Người dùng thường chỉ được xem hồ sơ và giấy phép của chính mình; không thể tự cấp quyền admin, tự bật giấy phép hoặc chỉnh sửa hồ sơ người khác.
 
-Các giá trị này không cần tạo trong GitHub Actions ở bước hiện tại:
-- `COCLIO_LICENSE_API_URL`: địa chỉ API cấp phép; sẽ cung cấp sau khi máy chủ được triển khai.
-- `COCLIO_ADMIN_EMAIL`: email Google của chủ ứng dụng; lưu ở môi trường máy chủ.
-- `COCLIO_LICENSE_SIGNING_SECRET`: khóa ký phiên cấp phép; tạo ngẫu nhiên ở máy chủ, không gửi trong chat và không đóng gói vào APK.
+### Quy tắc Firestore
 
-Không tự đặt giá trị giả cho ba biến trên. Cần tạo backend, rồi mới có giá trị chính xác để cấu hình.
+Tệp `firestore.rules` ở thư mục gốc đã được chuẩn bị để thực thi nguyên tắc trên ở phía máy chủ:
+
+- `users/{uid}`: người dùng chỉ được đọc hồ sơ của chính mình; chỉ chủ sở hữu được liệt kê hoặc xóa hồ sơ của người dùng.
+- `licenses/{uid}`: người dùng chỉ được đọc giấy phép của chính mình; chỉ chủ sở hữu được tạo, sửa hoặc xóa giấy phép.
+- `admin/{document}`: chỉ chủ sở hữu được đọc và ghi.
+- Email chủ sở hữu được đối chiếu trong Security Rules, không dựa vào cờ admin lưu trong APK.
+
+**Quan trọng:** các quy tắc này mới nằm trong repository, chưa được triển khai lên Firebase. Bản APK hiện tại cũng chưa tích hợp Firebase Authentication/Cloud Firestore; phần Google Sign-In vẫn chỉ lưu hồ sơ cục bộ trên điện thoại. Vì vậy, chưa có màn hình quản trị hoặc hệ thống cấp phép trực tuyến hoạt động. Không được coi việc nhận diện email trong giao diện là quyền admin an toàn.
+
+### Việc cần có để bật quản lý trực tuyến
+
+1. Tạo/chọn dự án Firebase và đăng ký Android app với package `com.huyhoa.coclio`.
+2. Bật **Authentication → Google** và liên kết đúng dự án Google Cloud/OAuth đang dùng.
+3. Tạo Cloud Firestore, triển khai nội dung tệp `firestore.rules` trong tab **Rules**, sau đó Publish.
+4. Cung cấp tệp cấu hình Firebase Android `google-services.json` để tích hợp Firebase Authentication, Firestore và màn hình quản trị vào APK.
+
+Tài liệu Firebase:
+- https://firebase.google.com/docs/auth/android/google-signin
+- https://firebase.google.com/docs/firestore/security/get-started
+
+Không đưa khóa Admin SDK, service account private key hoặc bí mật quản trị vào APK hay GitHub repository.
+
+## Giới hạn hiện tại
+
+Đăng nhập Google trong mã hiện tại mới chỉ đổi hồ sơ lưu cục bộ trên điện thoại; nó chưa kiểm tra giấy phép. Tệp Firestore Rules là bước chuẩn bị bảo mật, không tự tạo máy chủ hoặc tự bật chức năng quản trị. Cần hoàn tất cấu hình Firebase và tích hợp Firebase vào ứng dụng trước khi quyền chủ sở hữu và quản lý giấy phép hoạt động thực tế.
