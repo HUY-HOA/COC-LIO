@@ -78,9 +78,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.StorageException
-import com.google.firebase.storage.StorageMetadata
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.text.SimpleDateFormat
@@ -166,15 +163,6 @@ private fun communityArchiveExpiry(archivedAt: Long, value: Int, unit: String): 
     return Timestamp(calendar.time)
 }
 
-private suspend fun deleteCommunityStorageIfPresent(path: String) {
-    if (path.isBlank()) return
-    try {
-        FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult()
-    } catch (error: StorageException) {
-        if (error.errorCode != StorageException.ERROR_OBJECT_NOT_FOUND) throw error
-    }
-}
-
 private suspend fun cleanupCommunityArchive(): Int {
     val firestore = FirebaseFirestore.getInstance()
     val collections = listOf(
@@ -193,8 +181,6 @@ private suspend fun cleanupCommunityArchive(): Int {
                 .awaitCommunityResult()
             if (expired.isEmpty) break
             for (document in expired.documents) {
-                val path = document.getString("storagePath").orEmpty()
-                deleteCommunityStorageIfPresent(path)
                 document.reference.delete().awaitCommunityResult()
                 removed++
             }
@@ -425,131 +411,19 @@ fun CommunityScreen(
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            val signedInUser = FirebaseAuth.getInstance().currentUser
-            if (signedInUser == null) {
-                statusMessage = "Bạn cần đăng nhập Google để gửi ảnh."
-            } else {
-                scope.launch {
-                    busy = true
-                    statusMessage = null
-                    var uploadedPath: String? = null
-                    try {
-                        val fileName = communityFileName(context, uri)
-                        val size = communityFileSize(context, uri)
-                        val mime = communityMimeType(context, uri, fileName)
-                        require(mime.startsWith("image/")) { "Tệp đã chọn không phải hình ảnh." }
-                        require(size in 1..COMMUNITY_MAX_FILE_BYTES) { "Ảnh phải có dung lượng không quá 15 MB." }
-                        val path = "community/${signedInUser.uid}/${UUID.randomUUID()}_${communitySafeFileName(fileName)}"
-                        uploadedPath = path
-                        val reference = FirebaseStorage.getInstance().reference.child(path)
-                        val metadata = StorageMetadata.Builder().setContentType(mime).build()
-                        reference.putFile(uri, metadata).awaitCommunityResult()
-                        val downloadUrl = reference.downloadUrl.awaitCommunityResult().toString()
-                        FirebaseFirestore.getInstance().collection("community_messages").add(
-                            communityMessagePayload(
-                                uid = signedInUser.uid,
-                                displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên",
-                                senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
-                                photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
-                                type = "image",
-                                text = draft.trim(),
-                                fileName = fileName,
-                                storagePath = path,
-                                downloadUrl = downloadUrl,
-                                contentType = mime,
-                                fileSize = size
-                            )
-                        ).awaitCommunityResult()
-                        draft = ""
-                        statusMessage = "Đã gửi ảnh."
-                    } catch (error: Exception) {
-                        uploadedPath?.let { path ->
-                            runCatching { FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult() }
-                        }
-                        statusMessage = error.message?.takeIf { it.isNotBlank() }
-                            ?: "Không thể gửi ảnh. Hãy kiểm tra Cloud Storage và quyền truy cập."
-                    } finally {
-                        busy = false
-                    }
-                }
-            }
+            statusMessage = "Trên Firebase Spark, gửi ảnh qua Cloud Storage đang tạm dừng. Bạn vẫn có thể gửi tin nhắn văn bản và chia sẻ JSON."
         }
     }
 
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            val signedInUser = FirebaseAuth.getInstance().currentUser
-            if (signedInUser == null) {
-                statusMessage = "Bạn cần đăng nhập Google để gửi tệp."
-            } else if (!isOwner) {
-                statusMessage = "Không thể gửi tệp bằng tài khoản hiện tại."
-            } else {
-                scope.launch {
-                    busy = true
-                    statusMessage = null
-                    var uploadedPath: String? = null
-                    try {
-                        val fileName = communityFileName(context, uri)
-                        val size = communityFileSize(context, uri)
-                        val mime = communityMimeType(context, uri, fileName)
-                        require(size in 1..COMMUNITY_MAX_FILE_BYTES) { "Tệp đính kèm phải có dung lượng không quá 15 MB." }
-                        require(
-                            mime.startsWith("image/") || mime in setOf(
-                                "application/pdf",
-                                "text/plain",
-                                "application/zip",
-                                "application/msword",
-                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                "application/vnd.ms-powerpoint",
-                                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                                "application/vnd.ms-excel",
-                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                COMMUNITY_APK_MIME
-                            )
-                        ) { "Định dạng tệp này chưa được hỗ trợ trong cộng đồng." }
-                        require(mime != COMMUNITY_APK_MIME || isOwner) { "Định dạng APK không được hỗ trợ ở mục trò chuyện." }
-                        val path = "community/${signedInUser.uid}/${UUID.randomUUID()}_${communitySafeFileName(fileName)}"
-                        uploadedPath = path
-                        val reference = FirebaseStorage.getInstance().reference.child(path)
-                        val metadata = StorageMetadata.Builder().setContentType(mime).build()
-                        reference.putFile(uri, metadata).awaitCommunityResult()
-                        val downloadUrl = reference.downloadUrl.awaitCommunityResult().toString()
-                        FirebaseFirestore.getInstance().collection("community_messages").add(
-                            communityMessagePayload(
-                                uid = signedInUser.uid,
-                                displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên",
-                                senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
-                                photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
-                                type = "file",
-                                text = draft.trim(),
-                                fileName = fileName,
-                                storagePath = path,
-                                downloadUrl = downloadUrl,
-                                contentType = mime,
-                                fileSize = size
-                            )
-                        ).awaitCommunityResult()
-                        draft = ""
-                        statusMessage = "Đã gửi tệp."
-                    } catch (error: Exception) {
-                        uploadedPath?.let { path ->
-                            runCatching { FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult() }
-                        }
-                        statusMessage = error.message?.takeIf { it.isNotBlank() }
-                            ?: "Không thể gửi tệp. Hãy kiểm tra Cloud Storage và quyền truy cập."
-                    } finally {
-                        busy = false
-                    }
-                }
-            }
+            statusMessage = "Trên Firebase Spark, gửi tệp đính kèm qua Cloud Storage đang tạm dừng."
         }
     }
 
     val apkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            selectedApkUri = uri
-            selectedApkName = communityFileName(context, uri)
-            statusMessage = null
+            statusMessage = "Đăng APK trong ứng dụng đang tạm dừng trên Firebase Spark vì tệp APK cần Cloud Storage."
         }
     }
 
@@ -1005,7 +879,7 @@ fun CommunityScreen(
                         }
                         Text(
                             if (archiveKeepForever) "Dữ liệu đã gỡ được giữ lại cho đến khi quản lý xóa vĩnh viễn."
-                            else "Áp dụng thời hạn cho toàn bộ dữ liệu trong kho. Ứng dụng sẽ kiểm tra khi mở Cộng đồng và tự dọn theo lịch nền hằng ngày.",
+                            else "Áp dụng thời hạn cho các bản ghi Firestore trong kho. Tệp đính kèm cũ trên Cloud Storage không thể truy cập hoặc dọn dẹp khi dự án ở gói Spark.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 9.sp
                         )
@@ -1196,67 +1070,12 @@ fun CommunityScreen(
                         }
                         Button(
                             onClick = {
-                                val signedInUser = FirebaseAuth.getInstance().currentUser
-                                val uri = selectedApkUri
-                                if (signedInUser == null || !isOwner) {
-                                    statusMessage = "Không có quyền đăng bản cập nhật."
-                                } else if (releaseVersion.isBlank() || releaseNotes.isBlank() || uri == null) {
-                                    statusMessage = "Hãy nhập phiên bản, nội dung cập nhật và chọn file APK."
-                                } else {
-                                    scope.launch {
-                                        busy = true
-                                        statusMessage = null
-                                        var uploadedPath: String? = null
-                                        try {
-                                            val fileName = communityFileName(context, uri)
-                                            val size = communityFileSize(context, uri)
-                                            require(fileName.lowercase(Locale.ROOT).endsWith(".apk")) { "Chỉ chấp nhận file có đuôi .apk." }
-                                            require(size in 1..COMMUNITY_MAX_APK_BYTES) { "APK phải có dung lượng không quá 150 MB." }
-                                            val path = "updates/${UUID.randomUUID()}_${communitySafeFileName(fileName)}"
-                                            uploadedPath = path
-                                            val reference = FirebaseStorage.getInstance().reference.child(path)
-                                            val metadata = StorageMetadata.Builder().setContentType(COMMUNITY_APK_MIME).build()
-                                            reference.putFile(uri, metadata).awaitCommunityResult()
-                                            val downloadUrl = reference.downloadUrl.awaitCommunityResult().toString()
-                                            FirebaseFirestore.getInstance().collection("app_updates").add(
-                                                mapOf(
-                                                    "versionName" to releaseVersion.trim(),
-                                                    "notes" to releaseNotes.trim(),
-                                                    "fileName" to fileName,
-                                                    "storagePath" to path,
-                                                    "downloadUrl" to downloadUrl,
-                                                    "fileSize" to size,
-                                                    "createdBy" to signedInUser.uid,
-                                                    "notifyUsers" to notifyUsersForRelease,
-                                                    "createdAt" to FieldValue.serverTimestamp()
-                                                )
-                                            ).awaitCommunityResult()
-                                            releaseVersion = ""
-                                            releaseNotes = ""
-                                            selectedApkUri = null
-                                            selectedApkName = null
-                                            statusMessage = if (notifyUsersForRelease) {
-                                                "Đã đăng APK và yêu cầu gửi thông báo tới người dùng đã bật nhận thông báo."
-                                            } else {
-                                                "Đã đăng APK. Không gửi thông báo tới người dùng."
-                                            }
-                                            notifyUsersForRelease = false
-                                        } catch (error: Exception) {
-                                            uploadedPath?.let { path ->
-                                                runCatching { FirebaseStorage.getInstance().reference.child(path).delete().awaitCommunityResult() }
-                                            }
-                                            statusMessage = error.message ?: "Không thể đăng APK. Hãy kiểm tra Cloud Storage và quyền quản lý."
-                                        } finally {
-                                            busy = false
-                                        }
-                                    }
-                                }
+                                statusMessage = "Đăng và phân phối APK qua Cloud Storage cần gói Blaze. Trên Spark, hãy chia sẻ hướng dẫn bằng tin nhắn văn bản."
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !busy && isOwner
+                            enabled = false
                         ) {
-                            if (busy) CircularProgressIndicator(Modifier.size(15.dp), strokeWidth = 2.dp)
-                            else Text("ĐĂNG BẢN CẬP NHẬT", fontWeight = FontWeight.Bold)
+                            Text("ĐĂNG APK TẠM DỪNG TRÊN SPARK", fontWeight = FontWeight.Bold)
                         }
                         Text("Bản cập nhật APK được chia sẻ tại đây. Người dùng cần tự xác nhận cài đặt trên Android.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                     }
@@ -1294,7 +1113,7 @@ fun CommunityScreen(
         AlertDialog(
             onDismissRequest = { deleteMessage = null },
             title = { Text("Gỡ tin nhắn vào kho?") },
-            text = { Text("Tin nhắn và tệp đính kèm sẽ được chuyển vào Kho đã gỡ, không bị xóa khỏi bộ nhớ.") },
+            text = { Text("Bản ghi tin nhắn/JSON sẽ được chuyển vào Kho đã gỡ. Tệp đính kèm cũ trên Cloud Storage có thể không truy cập được ở gói Spark.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteMessage = null
@@ -1397,7 +1216,6 @@ fun CommunityScreen(
                     deleteArchiveItem = null
                     scope.launch {
                         try {
-                            deleteCommunityStorageIfPresent(item.storagePath)
                             FirebaseFirestore.getInstance()
                                 .collection(communityArchiveCollection(item.category))
                                 .document(item.id)
@@ -1509,13 +1327,8 @@ private fun CommunityMessageCard(
                 if (message.text.isNotBlank()) {
                     Text(message.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                 }
-                if (message.type == "image" && message.downloadUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = message.downloadUrl,
-                        contentDescription = "Ảnh được chia sẻ trong cộng đồng",
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp).clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
-                    )
+                if (message.type == "image") {
+                    Text("Ảnh đính kèm cần Cloud Storage (Blaze); hiện không thể xem trên gói Spark.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 } else if (message.type == "json") {
                     Row(
                         modifier = Modifier.fillMaxWidth()
@@ -1547,18 +1360,12 @@ private fun CommunityMessageCard(
                             Text("NHẬN JSON", fontSize = 9.sp)
                         }
                     }
-                } else if (message.type == "file" && message.downloadUrl.isNotBlank()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)).padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(message.fileName, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text(formatCommunitySize(message.fileSize), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
-                        }
-                        TextButton(onClick = { onDownload(message.downloadUrl, message.fileName) }) { Text("TẢI", fontSize = 9.sp) }
-                    }
+                } else if (message.type == "file") {
+                    Text(
+                        "${message.fileName} · ${formatCommunitySize(message.fileSize)} · Tải tệp cần Cloud Storage (Blaze), hiện tạm ngừng trên Spark.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 9.sp
+                    )
                 }
                 if (isOwner) {
                     TextButton(onClick = onDelete, modifier = Modifier.align(Alignment.End)) {
@@ -1647,13 +1454,8 @@ private fun CommunityArchiveCard(
                     Text(item.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
                 }
             }
-            if (item.category == "image" && item.downloadUrl.isNotBlank()) {
-                AsyncImage(
-                    model = item.downloadUrl,
-                    contentDescription = "Hình ảnh đã gỡ",
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp).clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
+            if (item.category == "image") {
+                Text("Ảnh lưu trữ cần Cloud Storage (Blaze); không thể xem trên Spark.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
             if (item.fileName.isNotBlank()) {
                 Text(
@@ -1671,9 +1473,7 @@ private fun CommunityArchiveCard(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (item.downloadUrl.isNotBlank()) {
-                    TextButton(onClick = { onDownload(item.downloadUrl, item.fileName.ifBlank { "tep_tai_xuong" }) }) {
-                        Text("TẢI LẠI", fontSize = 9.sp)
-                    }
+                    Text("Tệp đính kèm không tải được trên Spark", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
                 TextButton(onClick = onDelete) {
                     Text("XÓA VĨNH VIỄN", color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
@@ -1709,12 +1509,11 @@ private fun CommunityReleaseCard(
                 fontSize = 9.sp
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(
-                    onClick = { onDownload(release.downloadUrl, release.fileName) },
-                    enabled = release.downloadUrl.isNotBlank()
-                ) {
-                    Text("TẢI BẢN CẬP NHẬT", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
+                Text(
+                    "Tải APK qua Cloud Storage cần Blaze; tính năng này tạm dừng trên Spark.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp
+                )
                 Spacer(Modifier.width(6.dp))
                 if (isOwner) {
                     TextButton(onClick = onDelete) { Text("GỠ VÀO KHO", fontSize = 9.sp) }
