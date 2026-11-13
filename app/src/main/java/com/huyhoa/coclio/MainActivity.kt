@@ -1787,9 +1787,9 @@ private fun OverviewScreen(
         }
 
         if (hasHomeBase) {
-            item { SectionTitle("NHÀ CHÍNH • ĐANG NÂNG", homeRunning.size.toString()) }
+            item { SectionTitle("LÀNG CHÍNH • ĐANG NÂNG", homeRunning.size.toString()) }
             if (homeRunning.isEmpty()) {
-                item { InfoCard("Không có tiến trình", "Các mục đang nâng của Nhà chính sẽ xuất hiện ở đây.") }
+                item { InfoCard("Không có tiến trình", "Các mục đang nâng của Làng chính sẽ xuất hiện ở đây.") }
             } else {
                 items(homeRunning, key = { "home_" + it.identity + "_" + it.timerSeconds }) { UpgradeCard(it, snapshot.timestamp) }
             }
