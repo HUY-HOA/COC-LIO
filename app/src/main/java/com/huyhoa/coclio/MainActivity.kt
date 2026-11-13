@@ -1459,7 +1459,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Lịch sử làng, JSON đã nhập, tên làng, mục ghim, lịch sử đã xóa, JSON nhận từ cộng đồng và các tùy chỉnh giao diện/thông báo/nhắc nhở có thể được lưu trong bộ nhớ riêng của ứng dụng trên điện thoại để bạn xem lại. Việc nhập hoặc mở JSON không tự động tải nội dung đó lên máy chủ; JSON chỉ được gửi lên Firebase khi bạn chủ động chọn chia sẻ vào cộng đồng. Dữ liệu cục bộ không tự mất khi xóa hồ sơ Firebase; bạn cần xóa dữ liệu ứng dụng hoặc gỡ ứng dụng để xóa bản lưu trên máy.",
+                        "Lịch sử làng, JSON đã nhập, tên làng, mục ghim, lịch sử đã xóa, JSON nhận từ cộng đồng và các tùy chỉnh giao diện/thông báo/nhắc nhở có thể được lưu trong bộ nhớ riêng của ứng dụng trên điện thoại để bạn xem lại. JSON chỉ được đồng bộ lên Firestore nếu bạn bật riêng lựa chọn đồng bộ dữ liệu Clash of Clans; nếu tắt, JSON chỉ lưu trên thiết bị. Chia sẻ JSON vào cộng đồng là thao tác riêng và nội dung sẽ hiển thị cho thành viên theo quy tắc cộng đồng. Dữ liệu cục bộ không tự mất khi xóa hồ sơ Firebase; bạn cần xóa dữ liệu ứng dụng hoặc gỡ ứng dụng để xóa bản lưu trên máy.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1483,7 +1483,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý. Bản JSON làng đồng bộ theo lựa chọn chỉ người dùng sở hữu và chủ sở hữu ứng dụng được đọc qua quy tắc Firestore; người có quyền quản trị dự án Firebase vẫn có thể có quyền truy cập kỹ thuật theo phân quyền dự án. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Analytics, Crashlytics và Performance được xử lý trong bảng điều khiển Firebase tương ứng."",
+                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý. Bản JSON làng đồng bộ theo lựa chọn chỉ người dùng sở hữu và chủ sở hữu ứng dụng được đọc qua quy tắc Firestore; người có quyền quản trị dự án Firebase vẫn có thể có quyền truy cập kỹ thuật theo phân quyền dự án. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Analytics, Crashlytics và Performance được xử lý trong bảng điều khiển Firebase tương ứng.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
