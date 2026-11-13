@@ -11,7 +11,7 @@ COC-LIO is configured to run without Firebase Blaze billing.
 - The owner account list, profile details, and consent-based activity/device fields written directly by the app.
 - Local village data and other on-device features.
 
-Firestore activity/device fields are client-reported. They are not server-verified audit records. IP addresses are not collected in Spark mode. Activity reporting runs only after the user has opted in.
+Firestore activity/device fields are client-reported. They are not server-verified audit records. New IP addresses are not collected in Spark mode; IP values recorded before the transition may remain in existing Firestore profiles until deleted. Activity reporting runs only after the user has opted in.
 
 ## Features paused on Spark
 
