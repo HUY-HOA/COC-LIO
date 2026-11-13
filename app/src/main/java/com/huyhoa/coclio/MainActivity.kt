@@ -675,6 +675,21 @@ private fun CocLioApp(
         }
     }
 
+    val firstLaunchNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        AppPreferences.setNotificationsEnabled(context, activeProfile, granted)
+        AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, granted)
+        AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, granted)
+        notificationsEnabled = granted
+        communityNotificationsEnabled = granted
+        updateNotificationsEnabled = granted
+        UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, granted)
+        if (!granted) {
+            scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
+        }
+    }
+
     val pushNotificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -719,6 +734,27 @@ private fun CocLioApp(
             }
         } else {
             scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val permissionPrefs = context.getSharedPreferences("coc_lio_permission_state", android.content.Context.MODE_PRIVATE)
+        if (!permissionPrefs.getBoolean("notification_permission_requested_v1", false)) {
+            permissionPrefs.edit().putBoolean("notification_permission_requested_v1", true).apply()
+            if (Build.VERSION.SDK_INT >= 33 &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                delay(800)
+                firstLaunchNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                AppPreferences.setNotificationsEnabled(context, activeProfile, true)
+                AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, true)
+                AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, true)
+                notificationsEnabled = true
+                communityNotificationsEnabled = true
+                updateNotificationsEnabled = true
+                UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, true)
+            }
         }
     }
 
@@ -2141,7 +2177,7 @@ private fun CategoryScreen(
             "all" to "Tất cả",
             "troops" to "Quân",
             "heroes" to "Anh hùng",
-            "spells" to "Phép",
+            "spells" to "Thần chú",
             "pets" to "Thú cưng",
             "equipment" to "Trang bị",
             "other" to "Khác"
@@ -2199,13 +2235,17 @@ private fun CategoryScreen(
                     compareBy<VillageItem> { it.count > 1 }
                         .thenBy { it.level ?: Int.MIN_VALUE }
                 ) + rows.filter { it.timerSeconds != null }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+                val keyedRows = orderedRows.mapIndexed { index, row -> index to row }
                 gridItems(
-                    items = orderedRows,
-                    key = { it.identity + "_" + (it.timerSeconds ?: -1L) + "_" + it.count },
-                    span = { item ->
-                        if (item.timerSeconds != null) GridItemSpan(maxLineSpan) else GridItemSpan(1)
+                    items = keyedRows,
+                    key = { entry ->
+                        entry.second.identity + "_" + (entry.second.timerSeconds ?: -1L) + "_" + entry.second.count + "_" + entry.first
+                    },
+                    span = { entry ->
+                        if (entry.second.timerSeconds != null) GridItemSpan(maxLineSpan) else GridItemSpan(1)
                     }
-                ) { item ->
+                ) { entry ->
+                    val item = entry.second
                     if (item.timerSeconds != null) {
                         UpgradeCard(item, snapshot.timestamp)
                     } else {
