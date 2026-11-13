@@ -1339,7 +1339,7 @@ class UpgradeReminderWorker(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
-            return Result.success()
+            return@withContext Result.success()
         }
         val posted = runCatching {
             NotificationManagerCompat.from(applicationContext)
