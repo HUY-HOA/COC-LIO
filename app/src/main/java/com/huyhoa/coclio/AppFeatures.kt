@@ -1992,7 +1992,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             val expanded = account.uid in expandedAccounts
             Spacer(Modifier.height(7.dp))
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 13f, strokeWidthDp = 2.2f),
                 shape = RoundedCornerShape(13.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
