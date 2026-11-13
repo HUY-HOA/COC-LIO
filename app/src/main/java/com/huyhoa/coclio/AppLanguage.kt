@@ -1042,6 +1042,15 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^(.+) · (.+) · Tải tệp hiện tạm ngừng trên gói miễn phí\\.$").matchEntire(source)!!.let {
                 "${it.groupValues[1]} · ${it.groupValues[2]} · File downloads are currently paused on the free plan."
             }
+        Regex("^(.+): (.+)$").matchEntire(source)?.takeIf { it.groupValues[1] in englishTranslations } != null ->
+            Regex("^(.+): (.+)$").matchEntire(source)!!.let { match ->
+                val detail = match.groupValues[2].split(", ").joinToString(", ") { module ->
+                    val levelMatch = Regex("^(.+) cấp (\\d+)$").matchEntire(module)
+                    if (levelMatch == null) translateAppText(module, AppUiLanguage.ENGLISH)
+                    else (englishTranslations[levelMatch.groupValues[1]] ?: levelMatch.groupValues[1]) + " level " + levelMatch.groupValues[2]
+                }
+                (englishTranslations[match.groupValues[1]] ?: match.groupValues[1]) + ": " + detail
+            }
         Regex("^(.+) cấp (\\d+)$").matchEntire(source) != null ->
             Regex("^(.+) cấp (\\d+)$").matchEntire(source)!!.let { match ->
                 (englishTranslations[match.groupValues[1]] ?: match.groupValues[1]) + " level " + match.groupValues[2]
