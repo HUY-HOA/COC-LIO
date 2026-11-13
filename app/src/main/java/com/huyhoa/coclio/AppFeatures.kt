@@ -605,18 +605,18 @@ object FirebaseAccountAdministration {
         )
     }
 
-    suspend fun disableAccount(uid: String) {
-        require(uid.isNotBlank()) { "Thiếu mã tài khoản cần vô hiệu hóa." }
+    suspend fun setAccountDisabled(uid: String, disabled: Boolean) {
+        require(uid.isNotBlank()) { "Thiếu mã tài khoản cần cập nhật." }
         val owner = FirebaseAuth.getInstance().currentUser
             ?: throw IllegalStateException("Bạn cần đăng nhập tài khoản quản lý.")
-        require(isOwner(owner.email)) { "Chỉ chủ sở hữu COC-LIO mới được vô hiệu hóa tài khoản." }
+        require(isOwner(owner.email)) { "Chỉ chủ sở hữu COC-LIO mới được quản lý tài khoản." }
         require(uid != owner.uid) { "Không thể tự vô hiệu hóa tài khoản quản lý đang sử dụng." }
         FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
             .update(
                 mapOf(
-                    "accountDisabled" to true,
+                    "accountDisabled" to disabled,
                     "accountDisabledAt" to FieldValue.serverTimestamp(),
                     "accountDisabledBy" to owner.uid
                 )
@@ -1776,10 +1776,10 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
     pendingDelete?.let { account ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { if (!deleting) pendingDelete = null },
-            title = { Text("Vô hiệu hóa tài khoản COC-LIO?") },
+            title = { Text(if (account.accountDisabled) "Kích hoạt lại tài khoản COC-LIO?" else "Vô hiệu hóa tài khoản COC-LIO?") },
             text = {
                 Text(
-                    "Tài khoản Google vẫn tồn tại trong Firebase Authentication. COC-LIO sẽ đánh dấu hồ sơ này bị vô hiệu hóa để chặn đọc/ghi dữ liệu Firestore. Dữ liệu cũ không tự động bị xóa; chủ ứng dụng cần xử lý riêng trong Firebase Console nếu muốn xóa hẳn.",
+                    if (account.accountDisabled) "Tài khoản Google vẫn tồn tại. Kích hoạt lại sẽ cho phép tài khoản này truy cập COC-LIO và dữ liệu Firestore theo quyền bình thường." else "Tài khoản Google vẫn tồn tại trong Firebase Authentication. COC-LIO sẽ đánh dấu hồ sơ này bị vô hiệu hóa để chặn truy cập dữ liệu Firestore. Dữ liệu cũ không bị xóa.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -1792,7 +1792,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             deleting = true
                             errorMessage = null
                             try {
-                                FirebaseAccountAdministration.disableAccount(account.uid)
+                                FirebaseAccountAdministration.setAccountDisabled(account.uid, !account.accountDisabled)
                                 pendingDelete = null
                                 expandedAccounts = expandedAccounts - account.uid
                                 accounts = FirebaseAccountAdministration.loadAccounts(context)
@@ -1804,7 +1804,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                         }
                     }
                 ) {
-                    Text(if (deleting) "ĐANG XỬ LÝ…" else "VÔ HIỆU HÓA")
+                    Text(if (deleting) "ĐANG XỬ LÝ…" else if (account.accountDisabled) "KÍCH HOẠT LẠI" else "VÔ HIỆU HÓA")
                 }
             },
             dismissButton = {
@@ -1920,12 +1920,12 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                         ) {
                             Text(if (expanded) "ẨN THÔNG TIN" else "XEM THÔNG TIN", fontSize = 9.sp)
                         }
-                        if (!account.isAdmin && !account.accountDisabled) {
+                        if (!account.isAdmin) {
                             TextButton(
                                 onClick = { pendingDelete = account },
                                 enabled = !deleting
                             ) {
-                                Text("VÔ HIỆU HÓA", color = Color(0xFFFF5D91), fontSize = 9.sp)
+                                Text(if (account.accountDisabled) "KÍCH HOẠT LẠI" else "VÔ HIỆU HÓA", color = if (account.accountDisabled) MaterialTheme.colorScheme.primary else Color(0xFFFF5D91), fontSize = 9.sp)
                             }
                         }
                     }
