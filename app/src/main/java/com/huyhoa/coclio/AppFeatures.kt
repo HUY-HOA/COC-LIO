@@ -2571,17 +2571,23 @@ fun SettingsScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("TIN NHẮN CỘNG ĐỒNG", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Tự động gửi tin nhắn đang tạm dừng trên gói Spark.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                    Text("Kiểm tra tin nhắn mới khi có mạng, khoảng 15 phút một lần.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                 }
-                Switch(checked = false, onCheckedChange = {}, enabled = false)
+                Switch(checked = communityNotificationsEnabled, onCheckedChange = onCommunityNotificationsChanged)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("THÔNG BÁO BẢN CẬP NHẬT APK", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Thông báo APK tự động đang tạm dừng trên gói Spark.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                    Text("Báo khi có phiên bản mới được đăng trong mục Cộng đồng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                 }
-                Switch(checked = false, onCheckedChange = {}, enabled = false)
+                Switch(checked = updateNotificationsEnabled, onCheckedChange = onUpdateNotificationsChanged)
             }
+            Text(
+                "Thông báo được kiểm tra định kỳ bằng kết nối mạng. Android có thể trì hoãn lâu hơn 15 phút khi tiết kiệm pin hoặc hạn chế chạy nền.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 9.sp,
+                lineHeight = 13.sp
+            )
             Text("Kiểu thông báo", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 FilterChip(
