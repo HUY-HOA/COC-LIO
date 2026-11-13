@@ -1581,7 +1581,7 @@ private fun GoogleLoginStartScreen(
                     Text("ĐĂNG NHẬP VỚI GOOGLE")
                 }
                 Text(
-                    "Khi đăng nhập, COC-LIO lưu UID, email, tên và ảnh đại diện Google để xác thực và quản lý tài khoản. Thiết bị và lịch sử hoạt động chỉ được ghi nhận khi bạn đồng ý; trên gói Spark, ứng dụng không ghi nhận IP kết nối.",
+                    "Khi đăng nhập, COC-LIO lưu UID, email, tên và ảnh đại diện Google để xác thực và quản lý tài khoản. Thiết bị và lịch sử hoạt động chỉ được ghi nhận khi bạn đồng ý; trên gói Spark, ứng dụng không ghi nhận IP mới. IP đã ghi nhận trước khi chuyển sang Spark có thể vẫn còn trong hồ sơ lịch sử Firestore cho đến khi được xóa.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
