@@ -24,6 +24,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      statuses: write
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     env:
@@ -34,6 +35,7 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Initialize APK progress display
         shell: bash
@@ -53,6 +55,15 @@ jobs:
           bar="$(printf '%*s' "$filled" '' | tr ' ' '#')$(printf '%*s' "$empty" '' | tr ' ' '-')"
           printf '[COC-LIO APK] %s%% hoàn thành | còn %s%% | %s | [%s]\n' "$percent" "$remaining" "$stage" "$bar"
           echo "::notice title=Build APK ${percent}%::Còn ${remaining}% — ${stage}"
+          status_state="${3:-pending}"
+          description="Build APK: ${percent}% | còn ${remaining}% | ${stage}"
+          description="${description:0:140}"
+          target="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          if command -v gh >/dev/null 2>&1 && [[ -n "${GH_TOKEN:-}" ]]; then
+            if ! gh api "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" --method POST -f state="$status_state" -f context="COC-LIO APK build progress" -f description="$description" -f target_url="$target" >/dev/null; then
+              echo "::warning::Không cập nhật được phần trăm lên trạng thái commit; tiến độ vẫn có trong log."
+            fi
+          fi
           if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
             if ! grep -Fq '## Tiến độ Build APK' "$GITHUB_STEP_SUMMARY" 2>/dev/null; then
               printf '## Tiến độ Build APK\n\n| Hoàn thành | Còn lại | Công đoạn | Thanh tiến độ |\n|---:|---:|---|---|\n' >> "$GITHUB_STEP_SUMMARY"
@@ -159,7 +170,11 @@ jobs:
         shell: bash
         run: |
           set +e
-          gradle --no-daemon --build-cache --parallel --console=plain lintDebug testDebugUnitTest compileReleaseKotlin processReleaseResources
+          python3 .github/scripts/coclio-gradle-progress.py \
+            --start 36 \
+            --end 64 \
+            --stage "Rà soát mã nguồn" \
+            -- lintDebug testDebugUnitTest compileReleaseKotlin processReleaseResources
           result=$?
           if (( result != 0 )); then
             report="app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt"
@@ -219,7 +234,12 @@ jobs:
         run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 76 "Đang biên dịch và ký APK release"
 
       - name: Build signed release APK
-        run: gradle --no-daemon --build-cache assembleRelease
+        run: |
+          python3 .github/scripts/coclio-gradle-progress.py \
+            --start 76 \
+            --end 93 \
+            --stage "Biên dịch và ký APK release" \
+            -- assembleRelease
 
       - name: APK progress — release APK built
         run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 93 "APK release đã biên dịch và ký xong"
@@ -288,3 +308,21 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --method PATCH -f state=closed -f state_reason=completed
+
+      - name: Publish final APK build status
+        if: always()
+        shell: bash
+        run: |
+          percent="${COCLIO_PROGRESS_PERCENT:-0}"
+          stage="${COCLIO_PROGRESS_STAGE:-Chưa xác định công đoạn}"
+          case "${{ job.status }}" in
+            success)
+              bash "$RUNNER_TEMP/coclio-apk-progress.sh" 100 "Hoàn tất — APK đã được tải lên" success
+              ;;
+            cancelled)
+              bash "$RUNNER_TEMP/coclio-apk-progress.sh" "$percent" "Build APK đã bị hủy tại: $stage" error
+              ;;
+            *)
+              bash "$RUNNER_TEMP/coclio-apk-progress.sh" "$percent" "Build APK thất bại tại: $stage" failure
+              ;;
+          esac
