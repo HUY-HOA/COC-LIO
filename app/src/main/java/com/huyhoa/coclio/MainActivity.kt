@@ -176,8 +176,8 @@ val LocalLedTheme = staticCompositionLocalOf {
 
 private fun paletteForLed(preset: String): List<Color> = when (preset) {
     "ice" -> listOf(Color(0xFFB9F8FF), Color(0xFF36F4FF), Color(0xFF168BFF), Color(0xFFB9F8FF))
-    "violet" -> listOf(Color(0xFFFFA5F5), Color(0xFFB33CFF), Color(0xFF6548FF), Color(0xFFFF35B8))
-    "fire" -> listOf(Color(0xFFFFE082), Color(0xFFFFA43A), Color(0xFFFF4A35), Color(0xFFFF35B8))
+    "violet" -> listOf(Color(0xFFFFA5F5), Color(0xFFB33CFF), Color(0xFF6548FF), Color(0xFFFF35B8), Color(0xFFFFA5F5))
+    "fire" -> listOf(Color(0xFFFFE082), Color(0xFFFFA43A), Color(0xFFFF4A35), Color(0xFFFF35B8), Color(0xFFFFE082))
     "mint" -> listOf(Color(0xFFB7F34A), Color(0xFF35E6A2), Color(0xFF00CFA8), Color(0xFFB7F34A))
     else -> DefaultLedPalette
 }
@@ -635,8 +635,8 @@ private fun CocLioApp(
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0f, 1f)) }
     val normalizedLedSpeed = ledSpeed.coerceIn(1, 100) / 100f
     val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
-        40000f / (1f + 49f * normalizedLedSpeed * normalizedLedSpeed)
-    ).roundToInt().coerceIn(800, 40000)
+        30000f / (1f + 19f * normalizedLedSpeed * normalizedLedSpeed)
+    ).roundToInt().coerceIn(1500, 30000)
     val ledProgress = remember { mutableStateOf(0f) }
     val currentLedSpeedMillis by rememberUpdatedState(ledSpeedMillis)
     LaunchedEffect(ledSpeedMillis > 0) {
@@ -646,7 +646,7 @@ private fun CocLioApp(
                 withFrameNanos { frameTimeNanos ->
                     val speedForFrame = currentLedSpeedMillis
                     if (lastFrameNanos != 0L && speedForFrame > 0) {
-                        val elapsedMillis = ((frameTimeNanos - lastFrameNanos) / 1_000_000f).coerceAtLeast(0f)
+                        val elapsedMillis = ((frameTimeNanos - lastFrameNanos) / 1_000_000f).coerceIn(0f, 50f)
                         ledProgress.value = (ledProgress.value + elapsedMillis / speedForFrame.toFloat()).rem(1f)
                     }
                     lastFrameNanos = frameTimeNanos
