@@ -755,6 +755,7 @@ private fun clashLookupActions(data: ClashLookupResponse): List<ClashLookupActio
     val tag = URLEncoder.encode(data.profile.optString("tag"), "UTF-8")
     return if (data.kind == ClashLookupKind.PLAYER) {
         listOf(
+            ClashLookupAction("Hoạt động 30 ngày", "/v2/player/$tag/activity-summary"),
             ClashLookupAction("Lịch sử trận đánh", "/v2/player/$tag/battlelog/history"),
             ClashLookupAction("Thống kê kiếm tài nguyên", "/v2/player/$tag/farming"),
             ClashLookupAction("Thống kê chiến tranh", "/v2/player/$tag/war/stats"),
