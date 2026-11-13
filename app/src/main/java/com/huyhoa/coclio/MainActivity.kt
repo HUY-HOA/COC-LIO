@@ -9,17 +9,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -119,6 +114,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -189,7 +185,7 @@ private fun animatedLedTextBrush(): Brush {
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
     val phase = if (led.enabled && led.speedMillis > 0) {
-        (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+        (led.progress.value).rem(1f)
     } else 0f
     val movingColors = List(32) { index ->
         val position = ((index / 32f - phase + 1f) % 1f) * (palette.size - 1)
@@ -215,7 +211,7 @@ private fun LedFrameBox(
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
     val phase = if (led.enabled && led.speedMillis > 0) {
-        (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+        (led.progress.value).rem(1f)
     } else 0f
     val movingColors = List(48) { index ->
         val position = ((index / 48f - phase + 1f) % 1f) * (palette.size - 1)
@@ -269,7 +265,7 @@ fun Modifier.ledRgbBorder(
         val palette = led.palette.map { it.copy(alpha = led.brightness.coerceIn(0f, 1f)) }
         val active = led.enabled && palette.size >= 2 && strokeWidthDp > 0f
         val phase = if (active && led.speedMillis > 0) {
-            (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+            (led.progress.value).rem(1f)
         } else {
             0f
         }
@@ -356,7 +352,7 @@ private fun NeonPanel(
                 }
                 onDrawBehind {
                     val brush = if (led.enabled && led.speedMillis > 0) {
-                        val ledProgress = (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+                        val ledProgress = (led.progress.value).rem(1f)
                         val intervals = palette.size - 1
                         val movingColors = List(32) { index ->
                             val position = ((index / 32f - ledProgress + 1f) % 1f) * intervals
@@ -621,26 +617,28 @@ private fun CocLioApp(
         )
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0f, 1f)) }
-    val ledProgress = if (ledEnabled && ledSpeed > 0) {
-        val ledTransition = rememberInfiniteTransition(label = "global-led-rgb")
-        ledTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(20000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "global-led-progress"
-        )
-    } else {
-        remember { mutableStateOf(0f) }
+    val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
+        40000.0 / ledSpeed.coerceIn(1, 100)
+    ).toInt().coerceIn(400, 40000)
+    val ledProgress = remember { mutableStateOf(0f) }
+    LaunchedEffect(ledSpeedMillis) {
+        if (ledSpeedMillis > 0) {
+            var lastFrameNanos = 0L
+            while (true) {
+                withFrameNanos { frameTimeNanos ->
+                    if (lastFrameNanos != 0L) {
+                        val elapsedMillis = ((frameTimeNanos - lastFrameNanos) / 1_000_000f).coerceAtLeast(0f)
+                        ledProgress.value = (ledProgress.value + elapsedMillis / ledSpeedMillis.toFloat()).rem(1f)
+                    }
+                    lastFrameNanos = frameTimeNanos
+                }
+            }
+        }
     }
     val ledTheme = LedThemeState(
         palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
-        speedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
-            40000.0 / ledSpeed.coerceIn(1, 100)
-        ).toInt().coerceIn(400, 40000),
+        speedMillis = ledSpeedMillis,
         brightness = ledBrightness.coerceIn(0f, 1f),
         progress = ledProgress
     )
