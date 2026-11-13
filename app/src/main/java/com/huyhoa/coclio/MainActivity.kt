@@ -379,7 +379,6 @@ private fun NeonButton(
             .shadow(5.dp, shape)
             .clip(shape)
             .background(Brush.horizontalGradient(buttonFillPalette.take(3)))
-            .border(2.dp, SolidColor(palette.first()), shape)
             .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
