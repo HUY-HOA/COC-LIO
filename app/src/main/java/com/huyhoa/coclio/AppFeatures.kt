@@ -2240,11 +2240,6 @@ fun SettingsScreen(
     accountData: GoogleAccountData?,
     preferredName: String?,
     lastUsedLabel: String?,
-    securityTelemetryConsent: Boolean,
-    analyticsConsent: Boolean,
-    diagnosticsConsent: Boolean,
-    privacyChoiceConfigured: Boolean,
-    onManagePrivacy: () -> Unit,
     knownProfiles: List<LocalProfileSummary>,
     themeMode: String,
     onThemeModeChanged: (String) -> Unit,
@@ -2366,12 +2361,6 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
                     ) { Text("ĐĂNG XUẤT", fontSize = 10.sp) }
-                }
-                TextButton(
-                    onClick = onManagePrivacy,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("QUẢN LÝ LỰA CHỌN DỮ LIỆU", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
