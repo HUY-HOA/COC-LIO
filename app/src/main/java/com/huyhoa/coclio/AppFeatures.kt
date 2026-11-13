@@ -393,7 +393,7 @@ private suspend fun syncFirebaseUserProfile(
     google: GoogleAccountData,
     countAsSignIn: Boolean = true
 ) {
-    val email = user.email?.trim()?.takeIf { it.isNotBlank() }
+    val email = user.email?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
         ?: throw IllegalStateException("Không nhận được email từ tài khoản Google.")
     val reference = FirebaseFirestore.getInstance()
         .collection("users")
@@ -1082,6 +1082,8 @@ object GoogleAccountAuth {
             .awaitFirebaseResult()
         val firebaseUser = authResult.user
             ?: throw IllegalStateException("Không nhận được tài khoản Google sau khi xác thực.")
+        firebaseUser.reload().awaitFirebaseResult()
+        firebaseUser.getIdToken(true).awaitFirebaseResult()
 
         val accountData = GoogleAccountData(
             email = email.lowercase(),
