@@ -759,6 +759,12 @@ private fun CocLioApp(
     }
 
     LaunchedEffect(activeProfile) {
+        val notificationPermissionGranted = Build.VERSION.SDK_INT < 33 ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        AppPreferences.ensureNotificationPreferences(context, activeProfile, notificationPermissionGranted)
+        notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
+        communityNotificationsEnabled = AppPreferences.communityNotificationsEnabled(context, activeProfile)
+        updateNotificationsEnabled = AppPreferences.updateNotificationsEnabled(context, activeProfile)
         history = VillageStore.loadAll(context, activeProfile)
         current = history.firstOrNull()
         deletedVillages = VillageStore.loadDeleted(context, activeProfile)
