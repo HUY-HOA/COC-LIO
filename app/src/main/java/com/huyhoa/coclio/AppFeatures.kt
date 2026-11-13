@@ -1700,7 +1700,7 @@ private class UpgradeWidgetListFactory(
         }
         views.setTextColor(
             R.id.row_timer,
-            if (remaining > 0L) android.graphics.Color.WHITE else android.graphics.Color.rgb(37, 211, 102)
+            if (remaining > 0L) android.graphics.Color.WHITE else android.graphics.Color.rgb(255, 213, 79)
         )
 
         if (remaining > 0L) {
