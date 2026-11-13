@@ -81,7 +81,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import androidx.compose.material3.Text as MaterialText
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -2222,6 +2222,8 @@ fun SettingsScreen(
     knownProfiles: List<LocalProfileSummary>,
     themeMode: String,
     onThemeModeChanged: (String) -> Unit,
+    languagePreference: String,
+    onLanguagePreferenceChanged: (String) -> Unit,
     textScale: Float,
     displaySizeLevel: Int,
     onDisplaySizeLevelChanged: (Int) -> Unit,
@@ -2359,6 +2361,50 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
+
+        FeaturePanel {
+            Text("NGÔN NGỮ", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Tự động dùng ngôn ngữ thiết bị. Có thể chọn Tiếng Việt hoặc English bên dưới.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                lineHeight = 15.sp
+            )
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf(
+                    "system" to "Theo hệ thống",
+                    "vi" to "Tiếng Việt",
+                    "en" to "English"
+                ).forEach { (preference, label) ->
+                    FilterChip(
+                        selected = languagePreference == preference,
+                        onClick = { onLanguagePreferenceChanged(preference) },
+                        label = { Text(label, fontSize = 10.sp) }
+                    )
+                }
+            }
+            Text(
+                when (languagePreference) {
+                    "system" -> if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
+                        "Đang dùng ngôn ngữ hệ thống: English"
+                    } else {
+                        "Đang dùng ngôn ngữ hệ thống: Tiếng Việt"
+                    }
+                    "en" -> "Ngôn ngữ đang dùng: English"
+                    else -> "Ngôn ngữ đang dùng: Tiếng Việt"
+                },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp
+            )
+            Text(
+                "Lựa chọn ngôn ngữ được lưu trên thiết bị này.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 9.sp
+            )
         }
 
         val currentFontLevel = AppPreferences.textScaleLevel(textScale)
