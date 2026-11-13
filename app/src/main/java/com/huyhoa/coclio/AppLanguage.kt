@@ -527,12 +527,17 @@ private val englishTranslations = mapOf(
     "Thần chú Thu quân" to "Recall Spell",
     "Thần chú Siêu tăng trưởng" to "Overgrowth Spell",
     "Thần chú Hồi sinh" to "Revive Spell",
-    "Thần chú Khiên chắn băng" to "Ice Spell",
+    "Thần chú Khiên chắn băng" to "Ice Block Spell",
     "Thần chú Vật tổ" to "Totem Spell",
     "Thần chú Giận dữ" to "Angry Spell",
     "Bản dịch tự động" to "Automatic translation",
     "Bản gốc" to "Original",
     "Đang dịch tự động…" to "Translating automatically…",
+    "CĂN CỨ THỢ XÂY" to "BUILDER BASE",
+    "Quân đội" to "Troops",
+    "Linh thú" to "Pets",
+    "Trang bị anh hùng" to "Hero Equipment",
+    "Tin nhắn và ghi chú cập nhật được tự động dịch theo ngôn ngữ ứng dụng khi có thể; bản gốc vẫn được giữ." to "Messages and update notes are automatically translated into the app language when available; the original text is preserved.",
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
