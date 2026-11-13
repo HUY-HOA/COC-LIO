@@ -158,7 +158,18 @@ jobs:
       - name: Pre-build source validation
         shell: bash
         run: |
+          set +e
           gradle --no-daemon --build-cache --parallel --console=plain lintDebug testDebugUnitTest compileReleaseKotlin processReleaseResources
+          result=$?
+          if (( result != 0 )); then
+            report="app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt"
+            if [[ -f "$report" ]]; then
+              echo "::group::Full Android Lint report"
+              cat "$report"
+              echo "::endgroup::"
+            fi
+            exit "$result"
+          fi
 
       - name: APK progress — source validation passed
         run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 64 "Mã nguồn, Android Lint, unit test và tài nguyên release đã đạt"
