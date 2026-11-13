@@ -579,13 +579,33 @@ fun CommunityScreen(
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            statusMessage = "Hiện tại, gửi ảnh đang tạm dừng trên gói miễn phí. Bạn vẫn có thể gửi tin nhắn văn bản và chia sẻ JSON."
+            scope.launch {
+                busy = true
+                statusMessage = null
+                try {
+                    statusMessage = sendCommunityAttachment(context, uri, true)
+                } catch (error: Exception) {
+                    statusMessage = error.message ?: "Không thể gửi ảnh."
+                } finally {
+                    busy = false
+                }
+            }
         }
     }
 
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            statusMessage = "Hiện tại, gửi tệp đính kèm đang tạm dừng trên gói miễn phí."
+            scope.launch {
+                busy = true
+                statusMessage = null
+                try {
+                    statusMessage = sendCommunityAttachment(context, uri, false)
+                } catch (error: Exception) {
+                    statusMessage = error.message ?: "Không thể gửi tệp."
+                } finally {
+                    busy = false
+                }
+            }
         }
     }
 
