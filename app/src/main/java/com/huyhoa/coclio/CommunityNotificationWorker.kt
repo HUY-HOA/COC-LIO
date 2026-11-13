@@ -268,11 +268,12 @@ private suspend fun checkCommunityMessages(
             else -> ""
         }
         if (messageText.isNotBlank()) {
-            postCommunityNotification(
+            postCommunityChatBubbleNotification(
                 context = context,
                 notificationId = ("community_" + document.id).hashCode(),
-                title = AppLanguageSettings.translate(context, "Tin nhắn cộng đồng"),
-                body = (sender + ": " + messageText).take(420)
+                senderUid = senderUid,
+                senderName = sender,
+                messageText = messageText
             )
         }
     }
