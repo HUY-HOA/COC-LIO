@@ -34,7 +34,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 private const val COC_LIO_NOTIFICATION_WORK = "coc_lio_background_notification_poll"
-private const val COC_LIO_NOTIFICATION_CHANNEL_COMMUNITY = "coc_lio_community_messages"
 private const val COC_LIO_NOTIFICATION_CHANNEL_UPDATES = "coc_lio_app_updates"
 
 object CommunityNotificationScheduler {
@@ -364,22 +363,6 @@ private fun isNewerAppVersion(candidate: String, installed: String): Boolean {
         if (comparison != 0) return comparison > 0
     }
     return false
-}
-
-private fun postCommunityNotification(
-    context: Context,
-    notificationId: Int,
-    title: String,
-    body: String
-) {
-    postLocalCommunityNotification(
-        context,
-        COC_LIO_NOTIFICATION_CHANNEL_COMMUNITY,
-        AppLanguageSettings.translate(context, "Tin nhắn cộng đồng"),
-        notificationId,
-        title,
-        body
-    )
 }
 
 private fun postUpdateNotification(
