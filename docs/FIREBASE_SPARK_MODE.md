@@ -16,7 +16,7 @@ Firestore activity/device fields are client-reported. They are not server-verifi
 ## Features paused on Spark
 
 - Cloud Functions are not deployed or called by the Android app.
-- Automatic push notifications for community messages and app releases are paused. Firebase Cloud Messaging auto-initialization is disabled in the Android manifest, so new APK installs do not automatically register an FCM token while this feature is unavailable. This does not erase a token that an older APK may already have registered.
+- Server-pushed notifications through Firebase Cloud Messaging remain paused because Cloud Functions are not deployed and FCM auto-initialization is disabled. When users enable the community or app-update switches in COC-LIO settings, the Android app checks the signed-in user's readable Firestore collections with WorkManager in the background. The scheduled interval is 15 minutes, but Android battery optimization, Doze, connectivity, or manufacturer background limits can delay checks. This is periodic polling, not instant push delivery, and it does not register or store FCM tokens.
 - Uploading or downloading community images, attachments, and APK releases through Firebase Storage is paused.
 - The owner cannot delete another user's Firebase Authentication account from the Android app. The app can mark that user's COC-LIO Firestore profile as disabled. This blocks access to Firestore-protected COC-LIO features, but does not delete the Authentication account or automatically erase the user's other data.
 - The owner account list is based on Firestore profile documents. Without the server-side Auth user-list sync, stale profiles can remain after an Auth account is deleted separately.
