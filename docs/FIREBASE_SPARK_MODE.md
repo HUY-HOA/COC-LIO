@@ -19,6 +19,7 @@ Firestore activity/device fields are client-reported. They are not server-verifi
 - Automatic push notifications for community messages and app releases are paused. Firebase Cloud Messaging itself remains in the project, but the server-side notification triggers are not available.
 - Uploading or downloading community images, attachments, and APK releases through Firebase Storage is paused.
 - The owner cannot delete another user's Firebase Authentication account from the Android app. The app can mark that user's COC-LIO Firestore profile as disabled. This blocks access to Firestore-protected COC-LIO features, but does not delete the Authentication account or automatically erase the user's other data.
+- The owner account list is based on Firestore profile documents. Without the server-side Auth user-list sync, stale profiles can remain after an Auth account is deleted separately.
 
 ## Existing Cloud Storage data
 
