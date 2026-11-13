@@ -81,7 +81,7 @@ def main() -> int:
                 if percent > last_percent:
                     stage = (
                         f"{args.stage}: {completed_tasks}/{total_tasks} "
-                        "tác vụ đã hoàn tất"
+                        "tác vụ đã xử lý"
                     )
                     subprocess.run(
                         ["bash", progress_script, str(percent), stage],
