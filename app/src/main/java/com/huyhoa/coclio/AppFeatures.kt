@@ -633,7 +633,7 @@ data class AccountPrivacyChoice(
 )
 
 object AccountPrivacyConsent {
-    const val CURRENT_VERSION = 4L
+    const val CURRENT_VERSION = 5L
 
     suspend fun load(): AccountPrivacyChoice {
         val user = FirebaseAuth.getInstance().currentUser ?: return AccountPrivacyChoice()
