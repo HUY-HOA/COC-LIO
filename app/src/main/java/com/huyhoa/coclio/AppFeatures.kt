@@ -932,7 +932,14 @@ object GoogleAccountAuth {
         if (!user.email.equals(google.email, ignoreCase = true)) {
             throw IllegalStateException("Tài khoản Google hiện tại không khớp với hồ sơ vừa chọn.")
         }
-        syncFirebaseUserProfile(user, google)
+        try {
+            syncFirebaseUserProfile(user, google)
+        } catch (error: Exception) {
+            if (error.message?.contains("đã bị quản lý vô hiệu hóa", ignoreCase = true) == true) {
+                FirebaseAuth.getInstance().signOut()
+            }
+            throw error
+        }
     }
 
     suspend fun removeSharedProfile() {
