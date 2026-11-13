@@ -760,7 +760,8 @@ fun CommunityScreen(
                                     createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
                                     archivedAt = document.getTimestamp("archivedAt")?.toDate()?.time ?: 0L,
                                     versionName = document.getString("versionName").orEmpty(),
-                                    notes = document.getString("notes").orEmpty()
+                                    notes = document.getString("notes").orEmpty(),
+                                    contentData = document.getString("contentData").orEmpty()
                                 )
                             }
                             archiveError = null
@@ -1361,6 +1362,7 @@ fun CommunityScreen(
                                 "downloadUrl" to message.downloadUrl,
                                 "contentType" to message.contentType,
                                 "fileSize" to message.fileSize,
+                                "contentData" to message.contentData,
                                 "createdAt" to Timestamp(Date(message.createdAt)),
                                 "archivedBy" to FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
                                 "archivedAt" to FieldValue.serverTimestamp()
@@ -1792,7 +1794,28 @@ private fun CommunityArchiveCard(
                 }
             }
             if (item.category == "image") {
-                Text("Ảnh lưu trữ hiện chưa thể xem trên gói miễn phí.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                val archivedImage = remember(item.contentData) {
+                    if (item.contentData.isBlank()) null else runCatching {
+                        val bytes = Base64.decode(item.contentData, Base64.DEFAULT)
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                    }.getOrNull()
+                }
+                if (archivedImage != null) {
+                    Image(
+                        bitmap = archivedImage,
+                        contentDescription = item.fileName,
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp).clip(RoundedCornerShape(10.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text("Ảnh không còn dữ liệu xem trước.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                }
+                CommunitySaveAttachmentButton(
+                    fileName = item.fileName.ifBlank { "anh.jpg" },
+                    contentType = "image/jpeg",
+                    contentData = item.contentData,
+                    label = "LƯU ẢNH"
+                )
             }
             if (item.fileName.isNotBlank()) {
                 Text(
@@ -1802,6 +1825,14 @@ private fun CommunityArchiveCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (item.category == "file" && item.contentData.isNotBlank()) {
+                    CommunitySaveAttachmentButton(
+                        fileName = item.fileName,
+                        contentType = "application/octet-stream",
+                        contentData = item.contentData,
+                        label = "TẢI TỆP"
+                    )
+                }
             }
             Text(
                 "Đã gửi: " + communityTime(item.createdAt) + "  •  Đã gỡ: " + communityTime(item.archivedAt),
