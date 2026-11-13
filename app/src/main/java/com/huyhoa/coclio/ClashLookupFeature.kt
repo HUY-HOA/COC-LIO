@@ -351,7 +351,7 @@ fun ClashLookupScreen() {
             )
             OutlinedTextField(
                 value = townHallInput,
-                onValueChange = { townHallInput = it.filter(Char::isDigit).take(2) },
+                onValueChange = { townHallInput = it.filter { character -> character.isDigit() }.take(2) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Cấp Nhà chính (1–20)") },
                 singleLine = true
@@ -422,6 +422,15 @@ fun ClashLookupScreen() {
                     enabled = !detailLoading && location != null && location > 0
                 ) { Text("TOP CHIẾN THẮNG", fontSize = 9.sp) }
             }
+            OutlinedButton(
+                onClick = {
+                    location?.let {
+                        loadAction(ClashLookupAction("Top vàng Thủ đô Clan", "/v2/leaderboard/$it/clan/capital-gold?limit=50"))
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !detailLoading && location != null && location > 0
+            ) { Text("TOP VÀNG THỦ ĐÔ") }
         }
 
         LookupCard {
@@ -487,6 +496,9 @@ private fun clashLookupActions(data: ClashLookupResponse): List<ClashLookupActio
             ClashLookupAction("Lịch sử quyên góp", "/v2/player/$tag/history/stats?type=donated&limit=30"),
             ClashLookupAction("Các mốc chiến tranh", "/v2/player/$tag/timers"),
             ClashLookupAction("Thành tích Legend", "/v2/player/$tag/legend-history"),
+            ClashLookupAction("Mùa Legend hiện tại", "/v2/player/$tag/legend/season"),
+            ClashLookupAction("Diễn biến cúp Legend", "/v2/player/$tag/legend/series"),
+            ClashLookupAction("So sánh thành tích Legend", "/v2/player/$tag/legend/comparisons"),
             ClashLookupAction("Lịch sử Ranked", "/v2/player/$tag/ranked/history")
         )
     } else {
