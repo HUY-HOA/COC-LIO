@@ -1581,12 +1581,12 @@ private fun GoogleLoginStartScreen(
                 Button(
                     onClick = onGoogleSignIn,
                     enabled = consentChecked && !isBusy,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .then(
                             if (consentChecked) {
-                                Modifier.ledRgbBorder(cornerRadiusDp = 10f, strokeWidthDp = 2.4f)
+                                Modifier.ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.4f)
                             } else {
                                 Modifier
                             }
@@ -1594,9 +1594,9 @@ private fun GoogleLoginStartScreen(
                 ) {
                     Text(
                         when {
-                            isBusy -> "ĐANG XÁC NHẬN..."
-                            hasAuthenticatedGoogleAccount -> "ĐỒNG Ý & TIẾP TỤC"
-                            else -> "ĐỒNG Ý & ĐĂNG NHẬP GOOGLE"
+                            isBusy -> "ĐANG ĐĂNG NHẬP..."
+                            hasAuthenticatedGoogleAccount -> "TIẾP TỤC"
+                            else -> "ĐĂNG NHẬP GOOGLE"
                         }
                     )
                 }
@@ -1618,59 +1618,6 @@ private fun GoogleLoginStartScreen(
             }
         }
     }
-}
-
-@Composable
-private fun RequiredAccountDataDetailsDialog(
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("CHI TIẾT DỮ LIỆU TÀI KHOẢN", fontWeight = FontWeight.Black) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .heightIn(max = 480.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("1. LOẠI DỮ LIỆU ĐƯỢC XỬ LÝ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                Text(
-                    "Mã tài khoản Google (UID); email; tên hiển thị, tên, họ và tên hiển thị do bạn đặt (nếu có); ảnh đại diện; trạng thái xác minh email; nhà cung cấp đăng nhập; số lần, thời điểm đăng nhập; thời điểm tạo, cập nhật hồ sơ; phiên bản và thời điểm xác nhận đồng ý.",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
-                Text("2. MỤC ĐÍCH XỬ LÝ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                Text(
-                    "Xác thực đăng nhập Google; tạo và duy trì tài khoản COC-LIO; quản lý trạng thái, bảo mật tài khoản; hiển thị tên và ảnh đại diện khi bạn đăng nội dung trong cộng đồng.",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
-                Text("3. BÊN KIỂM SOÁT VÀ DỊCH VỤ XỬ LÝ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                Text(
-                    "Bên kiểm soát và xử lý dữ liệu: cá nhân vận hành ứng dụng COC-LIO. Dịch vụ tham gia xử lý kỹ thuật: Google Sign-In, Firebase Authentication và Cloud Firestore của Google. Liên hệ về dữ liệu cá nhân: phunghuyhoahaikba@gmail.com.",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
-                Text("4. QUYỀN VÀ NGHĨA VỤ CỦA BẠN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                Text(
-                    "Quyền: được biết; đồng ý hoặc không đồng ý, yêu cầu rút lại đồng ý; xem, chỉnh sửa hoặc yêu cầu chỉnh sửa; yêu cầu cung cấp, xóa, hạn chế hoặc phản đối xử lý; khiếu nại, tố cáo, khởi kiện, yêu cầu bồi thường và yêu cầu áp dụng biện pháp bảo vệ dữ liệu. Nghĩa vụ: cung cấp thông tin chính xác; tự bảo vệ dữ liệu của mình; tôn trọng, bảo vệ dữ liệu của người khác; tuân thủ pháp luật và tham gia phòng, chống hành vi xâm phạm dữ liệu cá nhân.",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text("ĐÓNG") }
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-        titleContentColor = MaterialTheme.colorScheme.onSurface,
-        textContentColor = MaterialTheme.colorScheme.onSurface
-    )
 }
 
 @Composable
