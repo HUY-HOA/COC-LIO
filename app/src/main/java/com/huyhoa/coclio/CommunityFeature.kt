@@ -655,7 +655,7 @@ fun CommunityScreen(
         }
         if (user == null) {
             Card(
-                modifier = Modifier.fillMaxWidth().ledRgbBorder(),
+                modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 12f),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(
@@ -831,7 +831,7 @@ fun CommunityScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth().ledRgbBorder(),
+                    modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 12f),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
