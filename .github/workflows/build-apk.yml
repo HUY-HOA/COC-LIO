@@ -136,6 +136,17 @@ jobs:
       - name: APK progress — configuration valid
         run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 34 "Cấu hình Firebase và OAuth hợp lệ"
 
+      - name: APK progress — source validation started
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 36 "Bắt đầu rà soát mã nguồn trước khi build"
+
+      - name: Pre-build source validation
+        shell: bash
+        run: |
+          gradle --no-daemon --build-cache --parallel --console=plain lintDebug testDebugUnitTest compileReleaseKotlin processReleaseResources
+
+      - name: APK progress — source validation passed
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 64 "Mã nguồn, Android Lint, unit test và tài nguyên release đã đạt"
+
       - name: Prepare Android signing key
         id: signing
         shell: bash
@@ -153,7 +164,7 @@ jobs:
           fi
 
       - name: APK progress — signing key ready
-        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 39 "Khóa ký APK đã được chuẩn bị"
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 68 "Khóa ký APK đã được chuẩn bị"
 
       - name: Print release signing certificate fingerprints
         if: steps.signing.outputs.enabled == 'true'
@@ -175,25 +186,16 @@ jobs:
           echo "$FINGERPRINTS"
 
       - name: APK progress — certificate verified
-        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 43 "Chứng thư ký APK đã được xác minh"
-
-      - name: APK progress — unit tests started
-        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 45 "Đang chạy kiểm thử"
-
-      - name: Run unit tests
-        run: gradle --no-daemon --build-cache --parallel testDebugUnitTest
-
-      - name: APK progress — unit tests passed
-        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 63 "Kiểm thử đã hoàn tất"
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 73 "Chứng thư ký APK đã được xác minh"
 
       - name: APK progress — release build started
-        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 66 "Đang biên dịch và ký APK release"
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 76 "Đang biên dịch và ký APK release"
 
       - name: Build signed release APK
         run: gradle --no-daemon --build-cache assembleRelease
 
       - name: APK progress — release APK built
-        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 91 "APK release đã biên dịch và ký xong"
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 93 "APK release đã biên dịch và ký xong"
 
       - name: Prepare APK artifact
         shell: bash
