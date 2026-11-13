@@ -284,20 +284,16 @@ jobs:
             echo "Xem log của bước bị lỗi để biết nguyên nhân cụ thể."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Notify build result on GitHub
-        if: always() && github.event_name == 'issues'
+      - name: Notify successful APK build on GitHub
+        if: success() && github.event_name == 'issues'
+        continue-on-error: true
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-          BUILD_STATUS: ${{ job.status }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if [[ "$BUILD_STATUS" == "success" ]]; then
-            MESSAGE="✅ BUILD APK THÀNH CÔNG — APK đã được tạo. Mở workflow để xem và tải tệp APK: $RUN_URL"
-          else
-            MESSAGE="❌ BUILD APK THẤT BẠI — Hãy mở workflow để xem bước lỗi và log chi tiết: $RUN_URL"
-          fi
+          MESSAGE="✅ BUILD APK THÀNH CÔNG — APK đã được tạo. Mở workflow để xem và tải tệp APK: $RUN_URL"
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" --method POST -f body="$MESSAGE"
 
       - name: Close build request issue
