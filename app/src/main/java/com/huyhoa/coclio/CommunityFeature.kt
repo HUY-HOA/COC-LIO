@@ -1354,7 +1354,15 @@ private fun CommunityMessageCard(
                     Text(communityTime(message.createdAt), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
                 if (message.text.isNotBlank()) {
-                    Text(message.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+                    if (message.type == "text") {
+                        CommunityAutoTranslatedText(
+                            sourceText = message.text,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 12.sp
+                        )
+                    } else {
+                        Text(message.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+                    }
                 }
                 if (message.type == "image") {
                     Text("Ảnh đính kèm hiện chưa thể xem trên gói miễn phí.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
@@ -1474,13 +1482,27 @@ private fun CommunityArchiveCard(
             Text(title, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
             if (item.category == "apk") {
                 Text("COC-LIO " + item.versionName, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                if (item.notes.isNotBlank()) Text(item.notes, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                if (item.notes.isNotBlank()) {
+                    CommunityAutoTranslatedText(
+                        sourceText = item.notes,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 10.sp
+                    )
+                }
             } else {
                 if (item.displayName.isNotBlank()) {
                     Text(item.displayName, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 if (item.text.isNotBlank()) {
-                    Text(item.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+                    if (item.category == "text") {
+                        CommunityAutoTranslatedText(
+                            sourceText = item.text,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 11.sp
+                        )
+                    } else {
+                        Text(item.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+                    }
                 }
             }
             if (item.category == "image") {
@@ -1530,7 +1552,11 @@ private fun CommunityReleaseCard(
                 Text("APK", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             }
             if (release.notes.isNotBlank()) {
-                Text(release.notes, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+                CommunityAutoTranslatedText(
+                    sourceText = release.notes,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 11.sp
+                )
             }
             Text(
                 "${release.fileName} · ${formatCommunitySize(release.fileSize)} · ${communityTime(release.createdAt)}",
