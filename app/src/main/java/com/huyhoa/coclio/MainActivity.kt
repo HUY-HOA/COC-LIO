@@ -745,30 +745,37 @@ private fun CocLioApp(
         AppWidgetUpdater.ensureRefresh(context)
     }
 
-    LaunchedEffect(firebaseGoogleEmail) {
+    LaunchedEffect(firebaseGoogleEmail, requiredAccountConsentSubmitting) {
         val email = firebaseGoogleEmail
+        if (email.isNullOrBlank()) {
+            requiredAccountConsentAccepted = false
+            requiredAccountConsentLoadedForEmail = ""
+            requiredAccountConsentChecked = false
+            requiredAccountConsentReadError = null
+            return@LaunchedEffect
+        }
+        if (requiredAccountConsentSubmitting) return@LaunchedEffect
+        if (
+            requiredAccountConsentAccepted &&
+            requiredAccountConsentLoadedForEmail?.equals(email, ignoreCase = true) == true
+        ) return@LaunchedEffect
         requiredAccountConsentAccepted = false
         requiredAccountConsentLoadedForEmail = null
         requiredAccountConsentReadError = null
-        if (email.isNullOrBlank()) {
-            requiredAccountConsentLoadedForEmail = ""
-            requiredAccountConsentChecked = false
-        } else if (!requiredAccountConsentSubmitting) {
-            runCatching { AccountPrivacyConsent.hasRequiredAccountDataConsent() }
-                .onSuccess { accepted ->
-                    requiredAccountConsentAccepted = accepted
-                    requiredAccountConsentLoadedForEmail = email
-                    if (accepted) requiredAccountConsentChecked = false
-                }
-                .onFailure { error ->
-                    requiredAccountConsentAccepted = false
-                    requiredAccountConsentLoadedForEmail = email
-                    requiredAccountConsentChecked = false
-                    requiredAccountConsentReadError = error.message
-                        ?.takeIf { it.isNotBlank() }
-                        ?: "Không thể kiểm tra xác nhận dữ liệu tài khoản."
-                }
-        }
+        runCatching { AccountPrivacyConsent.hasRequiredAccountDataConsent() }
+            .onSuccess { accepted ->
+                requiredAccountConsentAccepted = accepted
+                requiredAccountConsentLoadedForEmail = email
+                if (accepted) requiredAccountConsentChecked = false
+            }
+            .onFailure { error ->
+                requiredAccountConsentAccepted = false
+                requiredAccountConsentLoadedForEmail = email
+                requiredAccountConsentChecked = false
+                requiredAccountConsentReadError = error.message
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Không thể kiểm tra xác nhận dữ liệu tài khoản."
+            }
     }
 
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
