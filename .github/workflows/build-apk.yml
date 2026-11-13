@@ -268,22 +268,6 @@ jobs:
       - name: APK progress — completed
         run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 100 "Hoàn tất — APK đã được tải lên"
 
-      - name: Report APK build failure
-        if: failure()
-        shell: bash
-        run: |
-          percent="${COCLIO_PROGRESS_PERCENT:-0}"
-          remaining=$((100 - percent))
-          stage="${COCLIO_PROGRESS_STAGE:-Chưa xác định công đoạn}"
-          echo "::error title=Build APK thất bại::Dừng tại mốc ${percent}%, còn ${remaining}% — ${stage}"
-          {
-            echo
-            echo "### Build APK chưa hoàn tất"
-            echo "**Mốc gần nhất:** ${percent}% hoàn thành · còn ${remaining}%"
-            echo "**Công đoạn:** ${stage}"
-            echo "Xem log của bước bị lỗi để biết nguyên nhân cụ thể."
-          } >> "$GITHUB_STEP_SUMMARY"
-
       - name: Notify successful APK build on GitHub
         if: success() && github.event_name == 'issues'
         continue-on-error: true
@@ -293,7 +277,7 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          MESSAGE="✅ BUILD APK THÀNH CÔNG — APK đã được tạo. Mở workflow để xem và tải tệp APK: $RUN_URL"
+          MESSAGE="✅ BUILD APK THÀNH CÔNG"
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" --method POST -f body="$MESSAGE"
 
       - name: Close build request issue
@@ -305,20 +289,3 @@ jobs:
         run: |
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --method PATCH -f state=closed -f state_reason=completed
 
-      - name: Publish final APK build status
-        if: always()
-        shell: bash
-        run: |
-          percent="${COCLIO_PROGRESS_PERCENT:-0}"
-          stage="${COCLIO_PROGRESS_STAGE:-Chưa xác định công đoạn}"
-          case "${{ job.status }}" in
-            success)
-              bash "$RUNNER_TEMP/coclio-apk-progress.sh" 100 "Hoàn tất — APK đã được tải lên" success
-              ;;
-            cancelled)
-              bash "$RUNNER_TEMP/coclio-apk-progress.sh" "$percent" "Build APK đã bị hủy tại: $stage" error
-              ;;
-            *)
-              bash "$RUNNER_TEMP/coclio-apk-progress.sh" "$percent" "Build APK thất bại tại: $stage" failure
-              ;;
-          esac
