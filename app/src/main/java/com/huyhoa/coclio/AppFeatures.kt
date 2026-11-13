@@ -78,6 +78,19 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.Icon as ComposeIcon
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -2340,7 +2353,7 @@ fun SettingsScreen(
         Text("CÀI ĐẶT", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
 
         FeaturePanel {
-            Text("TÀI KHOẢN GOOGLE", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.AccountCircle, "TÀI KHOẢN GOOGLE")
             Spacer(Modifier.height(8.dp))
             if (accountEmail.isNullOrBlank()) {
                 Text("Chưa đăng nhập", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
@@ -2426,7 +2439,7 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text("GIAO DIỆN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.Palette, "GIAO DIỆN ỨNG DỤNG")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
                     Triple("system", "Theo thiết bị", "System"),
@@ -2448,7 +2461,7 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text("NGÔN NGỮ", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.Language, "NGÔN NGỮ")
             Text(
                 "Tự động dùng ngôn ngữ thiết bị. Có thể chọn Tiếng Việt hoặc English bên dưới.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2499,7 +2512,7 @@ fun SettingsScreen(
             (AppPreferences.textScaleForLevel(currentFontLevel) * 100f).roundToInt()
         }
         FeaturePanel {
-            Text("KÍCH THƯỚC GIAO DIỆN & CỠ CHỮ", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.TextFields, "KÍCH THƯỚC GIAO DIỆN & CỠ CHỮ")
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -2598,7 +2611,7 @@ fun SettingsScreen(
             inactiveTickColor = Color.Transparent
         )
         FeaturePanel {
-            Text("LED RGB TÙY CHỈNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.Lightbulb, "LED RGB TÙY CHỈNH")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Bật hiệu ứng chuyển động", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, modifier = Modifier.weight(1f))
                 Switch(checked = ledEnabled, onCheckedChange = onLedEnabledChanged)
@@ -2685,12 +2698,7 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text(
-                "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
+            FeaturePanelTitle(Icons.Filled.Notifications, "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("THÔNG BÁO NÂNG CẤP", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -2788,7 +2796,7 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text("TIỆN ÍCH MÀN HÌNH CHÍNH", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.Widgets, "TIỆN ÍCH MÀN HÌNH CHÍNH")
             Text(
                 "Nhấn giữ màn hình chính → chọn Tiện ích → COC-LIO → Theo dõi nâng cấp. Mỗi tiện ích gắn với tài khoản đang đăng nhập và một làng đã chọn. Muốn thêm tiện ích cho tài khoản khác, hãy đổi tài khoản trong COC-LIO rồi thêm một tiện ích mới.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2804,7 +2812,7 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text("CÁCH LẤY JSON", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.Code, "CÁCH LẤY JSON")
             Text(
                 "Mở Clash of Clans → Cài đặt (bánh răng) → Cài đặt khác → kéo xuống mục Xuất dữ liệu → chọn Xuất dữ liệu làng dưới dạng JSON → Sao chép. Trở lại COC-LIO và dán nội dung JSON.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2819,7 +2827,7 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text("LIÊN HỆ NHÀ PHÁT TRIỂN", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.Phone, "LIÊN HỆ NHÀ PHÁT TRIỂN")
             Text("Mở Zalo để liên hệ nhà phát triển COC-LIO.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
             Button(
                 onClick = {
@@ -2833,7 +2841,7 @@ fun SettingsScreen(
         }
 
         FeaturePanel {
-            Text("THÔNG TIN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            FeaturePanelTitle(Icons.Filled.Info, "THÔNG TIN ỨNG DỤNG")
             Text(
                 "COC-LIO là ứng dụng cộng đồng không chính thức, không được Supercell chứng thực. Hình ảnh game thuộc quyền sở hữu của Supercell.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2847,6 +2855,23 @@ fun SettingsScreen(
                 lineHeight = 14.sp
             )
         }
+    }
+}
+
+@Composable
+@Composable
+private fun FeaturePanelTitle(icon: ImageVector, title: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        ComposeIcon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(17.dp)
+        )
+        Text(title, color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }
 
