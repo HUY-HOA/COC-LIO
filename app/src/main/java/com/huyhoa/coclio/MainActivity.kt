@@ -1774,7 +1774,7 @@ private fun OverviewScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Tag,
-                            contentDescription = "Mã người chơi",
+                            contentDescription = AppLanguageSettings.translate(context, "Mã người chơi"),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(10.dp)
                         )
@@ -2521,7 +2521,7 @@ private fun HistoryScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Filled.Tag,
-                                    contentDescription = "Mã người chơi",
+                                    contentDescription = AppLanguageSettings.translate(context, "Mã người chơi"),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(11.dp)
                                 )
