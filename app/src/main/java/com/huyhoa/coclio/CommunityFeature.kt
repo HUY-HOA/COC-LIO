@@ -646,13 +646,16 @@ fun CommunityScreen(
             }
         }
         statusMessage?.let {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+            Card(
+                modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 12f),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+            ) {
                 Text(it, modifier = Modifier.padding(10.dp), color = MaterialTheme.colorScheme.onSecondaryContainer, fontSize = 10.sp)
             }
         }
         if (user == null) {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().ledRgbBorder(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(
@@ -697,7 +700,7 @@ fun CommunityScreen(
                 }
             }
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().ledRgbBorder(),
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
@@ -828,7 +831,7 @@ fun CommunityScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().ledRgbBorder(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -1010,7 +1013,7 @@ fun CommunityScreen(
         } else {
             if (isOwner) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().ledRgbBorder(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     shape = RoundedCornerShape(18.dp)
                 ) {
@@ -1220,7 +1223,7 @@ private fun CommunityMessageCard(
         horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start
     ) {
         Card(
-            modifier = Modifier.widthIn(max = 330.dp),
+            modifier = Modifier.widthIn(max = 330.dp).ledRgbBorder(cornerRadiusDp = 17f, strokeWidthDp = 2.0f),
             shape = RoundedCornerShape(17.dp),
             colors = CardDefaults.cardColors(
                 containerColor = if (message.senderIsAdmin) Color(0xFF3A2A12)
@@ -1327,7 +1330,7 @@ private fun CommunitySharedJsonCard(
     onReceive: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 17f),
         shape = RoundedCornerShape(17.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -1374,7 +1377,7 @@ private fun CommunityArchiveCard(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 17f),
         shape = RoundedCornerShape(17.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -1434,7 +1437,7 @@ private fun CommunityReleaseCard(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 17f),
         shape = RoundedCornerShape(17.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
