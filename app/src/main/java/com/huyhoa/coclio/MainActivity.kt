@@ -1176,6 +1176,7 @@ private fun CocLioApp(
                     )
                     3 -> CommunityScreen(
                         isGoogleSignedIn = isGoogleSignedIn,
+                        availableJsons = history,
                         initialSection = communityInitialSection,
                         onInitialSectionConsumed = { communityInitialSection = 0 },
                         onImportJson = { rawJson, senderUid, senderName, tag, villageName, timestamp, jsonId ->
