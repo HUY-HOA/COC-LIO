@@ -579,6 +579,15 @@ private fun CocLioApp(
     var updateNotificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.updateNotificationsEnabled(context, activeProfile))
     }
+    LaunchedEffect(activeProfile, isGoogleSignedIn, communityNotificationsEnabled, updateNotificationsEnabled) {
+        CommunityNotificationScheduler.update(
+            context,
+            activeProfile,
+            isGoogleSignedIn,
+            communityNotificationsEnabled,
+            updateNotificationsEnabled
+        )
+    }
     var deletedVillages by remember(activeProfile) {
         mutableStateOf(VillageStore.loadDeleted(context, activeProfile))
     }
