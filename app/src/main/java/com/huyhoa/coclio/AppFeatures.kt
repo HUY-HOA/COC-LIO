@@ -113,6 +113,8 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.gms.tasks.Task
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.perf.FirebasePerformance
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -450,7 +452,11 @@ data class AdminGoogleAccount(
     val sdkInt: Long = 0L,
     val appVersionName: String = "",
     val appVersionCode: Long = 0L,
-    val activityDataConsentVersion: Long = 0L
+    val activityDataConsentVersion: Long = 0L,
+    val dataSharingConsent: Boolean = false,
+    val analyticsConsent: Boolean = false,
+    val diagnosticsConsent: Boolean = false,
+    val activityConsentAt: Long = 0L
 )
 
 object FirebaseAccountAdministration {
@@ -535,7 +541,11 @@ object FirebaseAccountAdministration {
                 sdkInt = document.getLong("sdkInt") ?: 0L,
                 appVersionName = document.getString("appVersionName").orEmpty(),
                 appVersionCode = document.getLong("appVersionCode") ?: 0L,
-                activityDataConsentVersion = document.getLong("activityDataConsentVersion") ?: 0L
+                activityDataConsentVersion = document.getLong("activityDataConsentVersion") ?: 0L,
+                dataSharingConsent = document.getBoolean("dataSharingConsent") ?: false,
+                analyticsConsent = document.getBoolean("analyticsConsent") ?: false,
+                diagnosticsConsent = document.getBoolean("diagnosticsConsent") ?: false,
+                activityConsentAt = document.getTimestamp("activityConsentAt")?.toDate()?.time ?: 0L
             )
         }.toMutableList()
 
@@ -553,7 +563,7 @@ object FirebaseAccountAdministration {
             }
             val now = System.currentTimeMillis()
             val ownerIndex = accounts.indexOfFirst { it.uid == owner.uid }
-            if (ownerIndex >= 0 && accounts[ownerIndex].activityDataConsentVersion < 2L) {
+            if (ownerIndex >= 0 && accounts[ownerIndex].activityDataConsentVersion < AccountPrivacyConsent.CURRENT_VERSION) {
                 accounts[ownerIndex] = accounts[ownerIndex].copy(
                     isOnline = true,
                     lastActiveAt = now,
@@ -609,6 +619,63 @@ object FirebaseAccountAdministration {
     }
 }
 
+data class AccountPrivacyChoice(
+    val securityTelemetry: Boolean = false,
+    val analytics: Boolean = false,
+    val diagnostics: Boolean = false,
+    val version: Long = 0L
+)
+
+object AccountPrivacyConsent {
+    const val CURRENT_VERSION = 3L
+
+    suspend fun load(): AccountPrivacyChoice {
+        val user = FirebaseAuth.getInstance().currentUser ?: return AccountPrivacyChoice()
+        val profile = FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .get()
+            .awaitFirebaseResult()
+        val version = profile.getLong("activityDataConsentVersion") ?: 0L
+        if (version != CURRENT_VERSION) return AccountPrivacyChoice(version = version)
+        return AccountPrivacyChoice(
+            securityTelemetry = profile.getBoolean("dataSharingConsent") == true,
+            analytics = profile.getBoolean("analyticsConsent") == true,
+            diagnostics = profile.getBoolean("diagnosticsConsent") == true,
+            version = version
+        )
+    }
+
+    suspend fun save(choice: AccountPrivacyChoice) {
+        val user = FirebaseAuth.getInstance().currentUser
+            ?: throw IllegalStateException("Bạn cần đăng nhập Google để lưu lựa chọn quyền riêng tư.")
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .set(
+                mapOf(
+                    "dataSharingConsent" to choice.securityTelemetry,
+                    "analyticsConsent" to choice.analytics,
+                    "diagnosticsConsent" to choice.diagnostics,
+                    "activityDataConsentVersion" to CURRENT_VERSION,
+                    "activityConsentAt" to FieldValue.serverTimestamp(),
+                    "updatedAt" to FieldValue.serverTimestamp()
+                ),
+                SetOptions.merge()
+            )
+            .awaitFirebaseResult()
+    }
+
+    fun applyCollectionSettings(context: Context, choice: AccountPrivacyChoice) {
+        FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(choice.analytics)
+        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(choice.diagnostics)
+        FirebasePerformance.getInstance().setPerformanceCollectionEnabled(choice.diagnostics)
+        if (!choice.diagnostics) {
+            FirebaseCrashlytics.getInstance().deleteUnsentReports()
+        }
+    }
+}
+
 object AccountActivityTracker {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var heartbeatJob: Job? = null
@@ -658,7 +725,7 @@ object AccountActivityTracker {
                 .awaitFirebaseResult()
             profile.exists() &&
                 profile.getBoolean("dataSharingConsent") == true &&
-                profile.getLong("activityDataConsentVersion") == 2L
+                profile.getLong("activityDataConsentVersion") == AccountPrivacyConsent.CURRENT_VERSION
         }.getOrDefault(false)
     }
 
@@ -1785,7 +1852,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             Text(
                                 when {
-                                    account.activityDataConsentVersion >= 2L -> "Hồ sơ Google · đã bật theo dõi hoạt động"
+                                    account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent -> "Đã cho phép ghi nhận hoạt động/thiết bị/IP"
                                     account.isAdmin -> "Tài khoản quản lý · thiết bị hiện tại"
                                     else -> "Hồ sơ Google được đồng bộ"
                                 },
@@ -1830,12 +1897,12 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Họ", account.familyName)
                             ProfileDataRow(
                                 "Đồng bộ hồ sơ",
-                                if (account.isAdmin && account.activityDataConsentVersion < 2L) "Tài khoản quản lý đang dùng"
+                                if (account.isAdmin && account.activityDataConsentVersion < AccountPrivacyConsent.CURRENT_VERSION) "Tài khoản quản lý đang dùng"
                                 else "Được đồng bộ khi đăng nhập Google"
                             )
                             ProfileDataRow(
                                 "Quyền theo dõi hoạt động",
-                                if (account.activityDataConsentVersion >= 2L) "Đã đồng ý chia sẻ IP, thiết bị và hoạt động"
+                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Đã cho phép IP, thiết bị và hoạt động" else "Chưa cho phép IP, thiết bị và hoạt động"
                                 else "Chưa đồng ý ghi nhận IP, thiết bị và hoạt động"
                             )
                             ProfileDataRow("Ảnh đại diện", account.photoUrl)
@@ -1849,13 +1916,13 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow(
                                 "Mở COC-LIO lần đầu",
                                 if (account.firstOpenedAt > 0L) formatAdminAccountTime(account.firstOpenedAt)
-                                else if (account.activityDataConsentVersion >= 2L) "Chưa ghi nhận lần mở"
+                                else if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Chưa ghi nhận lần mở"
                                 else "Chưa có dữ liệu lịch sử theo dõi"
                             )
                             ProfileDataRow(
                                 "Lần mở COC-LIO gần nhất",
                                 if (account.lastOpenedAt > 0L) formatAdminAccountTime(account.lastOpenedAt)
-                                else if (account.activityDataConsentVersion >= 2L) "Chưa ghi nhận lần mở"
+                                else if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Chưa ghi nhận lần mở"
                                 else "Chưa có dữ liệu lịch sử theo dõi"
                             )
                             ProfileDataRow(
@@ -1870,7 +1937,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             ProfileDataRow(
                                 "Số phiên mở COC-LIO",
-                                if (account.activityDataConsentVersion >= 2L) account.appOpenCount.toString()
+                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) account.appOpenCount.toString()
                                 else "Chưa có dữ liệu do chưa bật theo dõi"
                             )
                             ProfileDataRow(
@@ -1913,6 +1980,11 @@ fun SettingsScreen(
     accountData: GoogleAccountData?,
     preferredName: String?,
     lastUsedLabel: String?,
+    securityTelemetryConsent: Boolean,
+    analyticsConsent: Boolean,
+    diagnosticsConsent: Boolean,
+    privacyChoiceConfigured: Boolean,
+    onManagePrivacy: () -> Unit,
     knownProfiles: List<LocalProfileSummary>,
     themeMode: String,
     onThemeModeChanged: (String) -> Unit,
@@ -2050,6 +2122,27 @@ fun SettingsScreen(
 
         if (isAdmin && showAdminAccounts) {
             AdminAccountsPanel(onClose = { showAdminAccounts = false })
+        }
+
+        FeaturePanel {
+            Text("QUYỀN RIÊNG TƯ & DỮ LIỆU", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (!privacyChoiceConfigured) "Bạn chưa lưu lựa chọn dữ liệu bổ sung. Mặc định các mục thu thập tùy chọn đang tắt."
+                else "Bạn có thể thay đổi hoặc rút lại từng lựa chọn bất cứ lúc nào.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                lineHeight = 15.sp
+            )
+            ProfileDataRow("Hoạt động, thiết bị và IP", if (securityTelemetryConsent) "Đang cho phép" else "Đang tắt")
+            ProfileDataRow("Phân tích mức sử dụng", if (analyticsConsent) "Đang cho phép" else "Đang tắt")
+            ProfileDataRow("Báo cáo lỗi và hiệu năng", if (diagnosticsConsent) "Đang cho phép" else "Đang tắt")
+            Button(
+                onClick = onManagePrivacy,
+                enabled = !accountEmail.isNullOrBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("XEM / THAY ĐỔI LỰA CHỌN DỮ LIỆU", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
         }
 
         FeaturePanel {
