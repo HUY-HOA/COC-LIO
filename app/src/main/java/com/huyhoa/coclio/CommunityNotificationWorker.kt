@@ -102,10 +102,10 @@ class CommunityNotificationWorker(
             )
             val firestore = FirebaseFirestore.getInstance()
             if (communityEnabled) {
-                checkCommunityMessages(firestore, preferences, profile, user.uid)
+                checkCommunityMessages(applicationContext, firestore, preferences, profile, user.uid)
             }
             if (updatesEnabled) {
-                checkAppUpdates(firestore, preferences, profile)
+                checkAppUpdates(applicationContext, firestore, preferences, profile)
             }
             Result.success()
         } catch (error: CancellationException) {
@@ -129,14 +129,8 @@ private fun compareNotificationTimestamps(first: Timestamp, second: Timestamp): 
     return if (seconds != 0) seconds else first.nanoseconds.compareTo(second.nanoseconds)
 }
 
-private fun loadNotificationDocuments(
-    firestore: FirebaseFirestore,
-    collection: String
-): List<NotificationDocument> {
-    return emptyList()
-}
-
 private suspend fun checkCommunityMessages(
+    context: Context,
     firestore: FirebaseFirestore,
     preferences: android.content.SharedPreferences,
     profile: String,
@@ -161,7 +155,7 @@ private suspend fun checkCommunityMessages(
     val hasCursor = preferences.contains(secondsKey)
     val lastSeconds = preferences.getLong(secondsKey, Long.MIN_VALUE)
     val lastNanos = preferences.getInt(nanosKey, 0)
-    val lastIds = preferences.getStringSet(idsKey, emptySet()).orEmpty()
+    val lastIds = preferences.getStringSet(idsKey, mutableSetOf()).orEmpty()
 
     if (hasCursor) {
         val fresh = documents.filter { item ->
@@ -190,7 +184,7 @@ private suspend fun checkCommunityMessages(
             }
             if (messageText.isNotBlank()) {
                 postCommunityNotification(
-                    applicationContext = preferencesContext(firestore),
+                    context = context,
                     notificationId = ("community_" + document.id).hashCode(),
                     title = "Tin nhắn cộng đồng",
                     body = (sender + ": " + messageText).take(420)
@@ -203,6 +197,7 @@ private suspend fun checkCommunityMessages(
 }
 
 private suspend fun checkAppUpdates(
+    context: Context,
     firestore: FirebaseFirestore,
     preferences: android.content.SharedPreferences,
     profile: String
@@ -226,7 +221,7 @@ private suspend fun checkAppUpdates(
     val hasCursor = preferences.contains(secondsKey)
     val lastSeconds = preferences.getLong(secondsKey, Long.MIN_VALUE)
     val lastNanos = preferences.getInt(nanosKey, 0)
-    val lastIds = preferences.getStringSet(idsKey, emptySet()).orEmpty()
+    val lastIds = preferences.getStringSet(idsKey, mutableSetOf()).orEmpty()
 
     val fresh = if (hasCursor) {
         documents.filter { item ->
@@ -246,7 +241,7 @@ private suspend fun checkAppUpdates(
     }
 
     val installedVersion = runCatching {
-        applicationVersionName(applicationContext)
+        applicationVersionName(context)
     }.getOrDefault("")
 
     fresh.takeLast(5).forEach { item ->
@@ -261,7 +256,7 @@ private suspend fun checkAppUpdates(
             ": " + notes
         }).take(420)
         postUpdateNotification(
-            applicationContext,
+            context,
             ("update_" + document.id).hashCode(),
             "COC-LIO có bản cập nhật mới",
             body
@@ -312,13 +307,13 @@ private fun isNewerAppVersion(candidate: String, installed: String): Boolean {
 }
 
 private fun postCommunityNotification(
-    applicationContext: Context,
+    context: Context,
     notificationId: Int,
     title: String,
     body: String
 ) {
     postLocalCommunityNotification(
-        applicationContext,
+        context,
         COC_LIO_NOTIFICATION_CHANNEL_COMMUNITY,
         "Tin nhắn cộng đồng",
         notificationId,
