@@ -131,8 +131,27 @@ fun ClashLookupScreen() {
     var detailTitle by remember { mutableStateOf<String?>(null) }
     var detailText by remember { mutableStateOf<String?>(null) }
     var detailError by remember { mutableStateOf<String?>(null) }
+    var townHallInput by remember { mutableStateOf("") }
+    var leagueTierInput by remember { mutableStateOf("") }
+    var locationInput by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+
+    fun loadAction(action: ClashLookupAction) {
+        scope.launch {
+            detailLoading = true
+            detailTitle = action.title
+            detailText = null
+            detailError = null
+            runCatching { loadClashKingDetail(action.path) }
+                .onSuccess { detailText = it }
+                .onFailure {
+                    detailError = it.message?.takeIf(String::isNotBlank)
+                        ?: "Không thể tải dữ liệu này."
+                }
+            detailLoading = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -252,21 +271,7 @@ fun ClashLookupScreen() {
                 ) {
                     rowActions.forEach { action ->
                         OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    detailLoading = true
-                                    detailTitle = action.title
-                                    detailText = null
-                                    detailError = null
-                                    runCatching { loadClashKingDetail(action.path) }
-                                        .onSuccess { detailText = it }
-                                        .onFailure {
-                                            detailError = it.message?.takeIf(String::isNotBlank)
-                                                ?: "Không thể tải dữ liệu này."
-                                        }
-                                    detailLoading = false
-                                }
-                            },
+                            onClick = { loadAction(action) },
                             modifier = Modifier.weight(1f),
                             enabled = !detailLoading
                         ) {
@@ -309,6 +314,116 @@ fun ClashLookupScreen() {
             }
         }
 
+        Text(
+            "TOÀN CẢNH CLASH OF CLANS",
+            color = MaterialTheme.colorScheme.primary,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            "Thống kê cộng đồng, lịch mùa giải và bảng xếp hạng công khai.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp
+        )
+        globalClashActions().chunked(2).forEach { rowActions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowActions.forEach { action ->
+                    OutlinedButton(
+                        onClick = { loadAction(action) },
+                        modifier = Modifier.weight(1f),
+                        enabled = !detailLoading
+                    ) {
+                        Text(action.title, fontSize = 9.sp, lineHeight = 12.sp)
+                    }
+                }
+                if (rowActions.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+        LookupCard {
+            Text(
+                "BẢNG XẾP HẠNG THEO ĐIỀU KIỆN",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp
+            )
+            OutlinedTextField(
+                value = townHallInput,
+                onValueChange = { townHallInput = it.filter(Char::isDigit).take(2) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Cấp Nhà chính (1–20)") },
+                singleLine = true
+            )
+            val townHall = townHallInput.toIntOrNull()
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        townHall?.let {
+                            loadAction(ClashLookupAction("Bảng xếp hạng Nhà chính $it", "/v2/leaderboard/townhalls/$it?limit=50"))
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !detailLoading && townHall != null && townHall in 1..20
+                ) { Text("TOP NHÀ CHÍNH", fontSize = 9.sp) }
+                OutlinedButton(
+                    onClick = {
+                        townHall?.let {
+                            loadAction(ClashLookupAction("Chuỗi 3 sao Nhà chính $it", "/v2/leaderboard/war-triples/$it?limit=50"))
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !detailLoading && townHall != null && townHall in 1..20
+                ) { Text("TOP 3 SAO", fontSize = 9.sp) }
+            }
+            OutlinedTextField(
+                value = leagueTierInput,
+                onValueChange = { leagueTierInput = it.filter(Char::isDigit).take(10) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Mã cấp giải đấu (League Tier ID)") },
+                singleLine = true
+            )
+            val leagueTier = leagueTierInput.toIntOrNull()
+            OutlinedButton(
+                onClick = {
+                    leagueTier?.let {
+                        loadAction(ClashLookupAction("Bảng xếp hạng giải $it", "/v2/leaderboard/league/$it?limit=50"))
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !detailLoading && leagueTier != null && leagueTier > 0
+            ) { Text("TOP GIẢI ĐẤU") }
+            OutlinedTextField(
+                value = locationInput,
+                onValueChange = { locationInput = it.filter(Char::isDigit).take(10) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Mã khu vực / quốc gia (Location ID)") },
+                singleLine = true
+            )
+            val location = locationInput.toIntOrNull()
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        location?.let {
+                            loadAction(ClashLookupAction("Top quyên góp Clan", "/v2/leaderboard/$it/clan/donations?limit=50"))
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !detailLoading && location != null && location > 0
+                ) { Text("TOP QUYÊN GÓP", fontSize = 9.sp) }
+                OutlinedButton(
+                    onClick = {
+                        location?.let {
+                            loadAction(ClashLookupAction("Top thắng chiến tranh Clan", "/v2/leaderboard/$it/clan/war-wins?limit=50"))
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !detailLoading && location != null && location > 0
+                ) { Text("TOP CHIẾN THẮNG", fontSize = 9.sp) }
+            }
+        }
+
         LookupCard {
             Text(
                 "Nguồn dữ liệu: ClashKing",
@@ -337,6 +452,24 @@ fun ClashLookupScreen() {
 
 
 private data class ClashLookupAction(val title: String, val path: String)
+
+private fun globalClashActions(): List<ClashLookupAction> = listOf(
+    ClashLookupAction("Số liệu toàn cầu", "/v2/counts"),
+    ClashLookupAction("Số lượng Nhà chính", "/v2/counts/players/town-halls"),
+    ClashLookupAction("Số lượng giải đấu", "/v2/counts/players/league-tiers"),
+    ClashLookupAction("Số lượng Clan theo khu vực", "/v2/counts/clans/locations"),
+    ClashLookupAction("Số lượng Clan theo CWL", "/v2/counts/clans/cwl-leagues"),
+    ClashLookupAction("Số lượng Clan theo giải thủ đô", "/v2/counts/clans/capital-leagues"),
+    ClashLookupAction("Phân bố quy mô Clan", "/v2/counts/clans/member-bins"),
+    ClashLookupAction("Phân bố cúp Legend", "/v2/legends/trophy-buckets"),
+    ClashLookupAction("Lịch mùa giải hiện tại", "/v2/dates/current"),
+    ClashLookupAction("Lịch cuối tuần đột kích", "/v2/dates/raid-weekends"),
+    ClashLookupAction("Lịch các mùa giải", "/v2/dates/seasons"),
+    ClashLookupAction("Top chuỗi thắng Clan", "/v2/leaderboard/clan/win-streak?limit=50"),
+    ClashLookupAction("Tỷ lệ sao chiến tranh", "/v2/stats/wars/hitrates?interval=month"),
+    ClashLookupAction("Tổng kết chiến tranh", "/v2/stats/wars/summary?interval=month"),
+    ClashLookupAction("Đội hình được dùng nhiều", "/v2/stats/army-setups?limit=20&sort=usage")
+)
 
 private fun clashLookupActions(data: ClashLookupResponse): List<ClashLookupAction> {
     val tag = URLEncoder.encode(data.profile.optString("tag"), "UTF-8")
