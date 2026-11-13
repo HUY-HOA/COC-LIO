@@ -23,6 +23,10 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
+      - name: Identify authenticated Google Cloud service account
+        run: |
+          node -e 'const fs = require("fs"); const path = process.env.GOOGLE_APPLICATION_CREDENTIALS; const credentials = JSON.parse(fs.readFileSync(path, "utf8")); console.log("Authenticated service account:", credentials.client_email || "not a service-account key"); console.log("Credential project:", credentials.project_id || "not set");'
+
       - name: Install Firebase CLI
         run: npm install --global firebase-tools
 
