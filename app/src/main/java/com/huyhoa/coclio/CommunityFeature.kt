@@ -460,8 +460,8 @@ private fun compressCommunityImage(source: ByteArray): ByteArray {
             } else {
                 val resized = Bitmap.createScaledBitmap(
                     bitmap,
-                    (bitmap.width * 0.8f).toInt().coerceAtLeast(240),
-                    (bitmap.height * 0.8f).toInt().coerceAtLeast(240),
+                    (bitmap.width * 0.8f).toInt().coerceAtLeast(1),
+                    (bitmap.height * 0.8f).toInt().coerceAtLeast(1),
                     true
                 )
                 if (resized === bitmap) return@repeat
