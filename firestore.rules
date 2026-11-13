@@ -103,6 +103,23 @@ service cloud.firestore {
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['diagnosticsConsent'])
             || request.resource.data.diagnosticsConsent is bool
           )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['activityConsentAt'])
+            || request.resource.data.activityConsentAt is timestamp
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'dataSharingConsent',
+              'analyticsConsent',
+              'diagnosticsConsent',
+              'activityDataConsentVersion',
+              'activityConsentAt'
+            ])
+            || (
+              request.resource.data.activityDataConsentVersion == 3
+              && request.resource.data.activityConsentAt is timestamp
+            )
+          )
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.email == request.auth.token.email
           && request.resource.data.emailVerified == request.auth.token.email_verified
