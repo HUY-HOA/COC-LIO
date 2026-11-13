@@ -1164,7 +1164,7 @@ fun CommunityScreen(
         AlertDialog(
             onDismissRequest = { deleteRelease = null },
             title = { Text("Gỡ bản cập nhật vào kho?") },
-            text = { Text("Bản ${release.versionName} sẽ được chuyển vào mục APK cập nhật đã gỡ, tệp APK vẫn được giữ.") },
+            text = { Text("Bản ghi ${release.versionName} sẽ được chuyển vào kho đã gỡ. Tệp APK cũ vẫn nằm trong Cloud Storage nhưng không thể truy cập trên gói Spark.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteRelease = null
@@ -1210,7 +1210,7 @@ fun CommunityScreen(
         AlertDialog(
             onDismissRequest = { deleteArchiveItem = null },
             title = { Text("Xóa vĩnh viễn khỏi kho?") },
-            text = { Text("Dữ liệu này và tệp đính kèm sẽ bị xóa hoàn toàn, không thể khôi phục.") },
+            text = { Text("Bản ghi Firestore này sẽ bị xóa vĩnh viễn. Tệp đính kèm cũ trong Cloud Storage không bị xóa và vẫn không thể truy cập trên gói Spark.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteArchiveItem = null
