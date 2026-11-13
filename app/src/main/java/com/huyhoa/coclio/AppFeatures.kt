@@ -627,7 +627,7 @@ data class AccountPrivacyChoice(
 )
 
 object AccountPrivacyConsent {
-    const val CURRENT_VERSION = 3L
+    const val CURRENT_VERSION = 4L
 
     suspend fun load(): AccountPrivacyChoice {
         val user = FirebaseAuth.getInstance().currentUser ?: return AccountPrivacyChoice()
@@ -1738,7 +1738,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             title = { Text("Xóa tài khoản Google?") },
             text = {
                 Text(
-                    "Tài khoản Firebase hiện tại của ${account.email} và hồ sơ chia sẻ sẽ bị xóa. Họ vẫn có thể đăng nhập lại bằng Google; Firebase có thể tạo tài khoản mới với UID mới. Thao tác này không khóa vĩnh viễn tài khoản Google.",
+                    "Tài khoản Firebase của ${account.email}, hồ sơ và dữ liệu hoạt động, bài đăng/JSON cộng đồng do tài khoản tạo, mục lưu trữ tương ứng, tệp đã tải lên và hồ sơ giấy phép gắn UID sẽ bị xóa. Dữ liệu lưu cục bộ trên điện thoại không bị xóa. Người này vẫn có thể đăng nhập lại bằng Google và được tạo UID mới.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
