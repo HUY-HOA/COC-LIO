@@ -2853,7 +2853,7 @@ class CocLioMessagingService : FirebaseMessagingService() {
         val title = data["title"] ?: AppLanguageSettings.translate(this, if (isCommunity) "Cộng đồng COC-LIO" else "COC-LIO có bản cập nhật")
         val body = data["body"] ?: AppLanguageSettings.translate(this, if (isCommunity) "Có tin nhắn mới trong cộng đồng." else "Có phiên bản APK mới.")
         val manager = getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager.getNotificationChannel(channelId) == null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
                 AppLanguageSettings.translate(this, if (isCommunity) "Tin nhắn cộng đồng" else "Bản cập nhật COC-LIO"),
@@ -2937,25 +2937,25 @@ class CocLioBubbleActivity : ComponentActivity() {
             CompositionLocalProvider(LocalAppLanguage provides language) {
                 MaterialTheme {
                     androidx.compose.material3.Surface(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    Column(
-                        modifier = androidx.compose.ui.Modifier.fillMaxSize().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.surface
                     ) {
-                        Text(title, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-                        Text(body, color = MaterialTheme.colorScheme.onSurface)
-                        Button(
-                            onClick = {
-                                startActivity(
-                                    Intent(this@CocLioBubbleActivity, MainActivity::class.java)
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                )
-                            },
-                            modifier = androidx.compose.ui.Modifier.fillMaxWidth()
-                        ) { Text("MỞ COC-LIO") }
-                    }
+                        Column(
+                            modifier = androidx.compose.ui.Modifier.fillMaxSize().padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(title, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+                            Text(body, color = MaterialTheme.colorScheme.onSurface)
+                            Button(
+                                onClick = {
+                                    startActivity(
+                                        Intent(this@CocLioBubbleActivity, MainActivity::class.java)
+                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                    )
+                                },
+                                modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+                            ) { Text("MỞ COC-LIO") }
+                        }
                     }
                 }
             }
