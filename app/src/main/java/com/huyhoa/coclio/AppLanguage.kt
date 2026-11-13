@@ -1141,6 +1141,8 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^(\\d+) nâng$").matchEntire(source)!!.let { "${it.groupValues[1]} upgrades" }
         Regex("^(\\d+) mốc$").matchEntire(source) != null ->
             Regex("^(\\d+) mốc$").matchEntire(source)!!.let { "${it.groupValues[1]} snapshots" }
+        Regex("^cấp (\\d+)$").matchEntire(source) != null ->
+            Regex("^cấp (\\d+)$").matchEntire(source)!!.let { "level ${it.groupValues[1]}" }
         Regex("^Cấp (\\d+)$").matchEntire(source) != null ->
             Regex("^Cấp (\\d+)$").matchEntire(source)!!.let { "Level ${it.groupValues[1]}" }
         Regex("^(\\d+) mục dữ liệu\\.$").matchEntire(source) != null ->
