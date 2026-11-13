@@ -1903,7 +1903,18 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow(
                                 "Quyền theo dõi hoạt động",
                                 if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Đã cho phép IP, thiết bị và hoạt động" else "Chưa cho phép IP, thiết bị và hoạt động"
-                                else "Chưa đồng ý ghi nhận IP, thiết bị và hoạt động"
+                            )
+                            ProfileDataRow(
+                                "Đồng ý phân tích mức sử dụng",
+                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.analyticsConsent) "Đã cho phép" else "Chưa cho phép"
+                            )
+                            ProfileDataRow(
+                                "Đồng ý báo lỗi và hiệu năng",
+                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.diagnosticsConsent) "Đã cho phép" else "Chưa cho phép"
+                            )
+                            ProfileDataRow(
+                                "Thời điểm lưu lựa chọn dữ liệu",
+                                if (account.activityConsentAt > 0L) formatAdminAccountTime(account.activityConsentAt) else "Chưa lưu lựa chọn"
                             )
                             ProfileDataRow("Ảnh đại diện", account.photoUrl)
                             ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
