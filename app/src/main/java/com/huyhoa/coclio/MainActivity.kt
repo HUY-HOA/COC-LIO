@@ -1487,8 +1487,14 @@ private fun GoogleLoginStartScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
-                            .ledRgbBorder(cornerRadiusDp = 7f, strokeWidthDp = 2f),
+                            .size(34.dp)
+                            .then(
+                                if (!consentChecked) {
+                                    Modifier.ledRgbBorder(cornerRadiusDp = 7f, strokeWidthDp = 2f)
+                                } else {
+                                    Modifier
+                                }
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Checkbox(
@@ -1525,7 +1531,13 @@ private fun GoogleLoginStartScreen(
                     enabled = consentChecked && !isBusy,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.4f)
+                        .then(
+                            if (consentChecked) {
+                                Modifier.ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.4f)
+                            } else {
+                                Modifier
+                            }
+                        )
                 ) {
                     Text(
                         when {
@@ -1569,37 +1581,30 @@ private fun RequiredAccountDataDetailsDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("1. DỮ LIỆU CẦN THIẾT KHI ĐĂNG NHẬP", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("1. LOẠI DỮ LIỆU ĐƯỢC XỬ LÝ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "COC-LIO xử lý mã tài khoản, email Google, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email, nhà cung cấp đăng nhập, số lần và thời điểm đăng nhập. Mục đích là xác thực, tạo và duy trì tài khoản, quản lý hồ sơ và hiển thị danh tính người gửi trong cộng đồng.",
+                    "Mã tài khoản Google (UID); email; tên hiển thị, tên và họ; ảnh đại diện; trạng thái xác minh email; nhà cung cấp đăng nhập; số lần, thời điểm đăng nhập; thời điểm tạo và cập nhật hồ sơ; phiên bản và thời điểm xác nhận đồng ý.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
                 )
-                Text("2. NƠI LƯU VÀ NGƯỜI CÓ THỂ XEM", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("2. MỤC ĐÍCH XỬ LÝ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Thông tin xác thực được xử lý qua dịch vụ đăng nhập Google; hồ sơ tài khoản được lưu trong hệ thống lưu trữ bảo mật phục vụ COC-LIO. Bạn có thể xem hồ sơ của mình. Chủ sở hữu COC-LIO có quyền quản lý hồ sơ người dùng trong ứng dụng. Tên và ảnh đại diện có thể xuất hiện cạnh nội dung bạn gửi trong cộng đồng.",
+                    "Xác thực đăng nhập Google; tạo và duy trì tài khoản COC-LIO; quản lý trạng thái, bảo mật tài khoản; hiển thị tên và ảnh đại diện khi bạn đăng nội dung trong cộng đồng.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
                 )
-                Text("3. DỮ LIỆU KHÔNG BẮT BUỘC", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("3. BÊN KIỂM SOÁT VÀ DỊCH VỤ XỬ LÝ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Thông tin thiết bị và hoạt động, phân tích mức sử dụng, báo cáo lỗi/hiệu năng và đồng bộ JSON Clash of Clans lên tài khoản là các mục riêng, mặc định tắt. Nếu bạn đã chủ động cho phép một mục từ trước, lựa chọn đã lưu tiếp tục được áp dụng. Ô xác nhận dữ liệu tài khoản bắt buộc trên màn hình đăng nhập không bật các mục tùy chọn này.",
+                    "Bên kiểm soát và xử lý dữ liệu: cá nhân vận hành ứng dụng COC-LIO. Dịch vụ tham gia xử lý kỹ thuật: Google Sign-In, Firebase Authentication và Cloud Firestore của Google. Liên hệ về dữ liệu cá nhân: phunghuyhoahaikba@gmail.com.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
                 )
-                Text("4. JSON VÀ NỘI DUNG CỘNG ĐỒNG", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("4. QUYỀN VÀ NGHĨA VỤ CỦA BẠN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "JSON bạn nhập được lưu trên điện thoại. Với tài khoản đã bật đồng bộ từ trước, lựa chọn đó tiếp tục được áp dụng; tài khoản chưa bật đồng bộ chỉ lưu JSON trên thiết bị. Tin nhắn và JSON bạn chủ động chia sẻ trong cộng đồng có thể được thành viên đã đăng nhập xem theo quy tắc cộng đồng.",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
-                Text("5. THỜI HẠN, QUYỀN VÀ LIÊN HỆ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                Text(
-                    "Hồ sơ tài khoản trực tuyến được giữ cho đến khi được xóa theo quy trình quản lý hoặc yêu cầu hợp lệ; dữ liệu trên điện thoại vẫn còn cho đến khi bạn xóa dữ liệu ứng dụng hoặc gỡ ứng dụng. Bạn có quyền yêu cầu xem, chỉnh sửa, hạn chế xử lý hoặc xóa dữ liệu, hoặc yêu cầu rút lại lựa chọn tùy chọn qua email phunghuyhoahaikba@gmail.com. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước đó. Đơn vị vận hành: COC-LIO. Dịch vụ kỹ thuật hỗ trợ xác thực và lưu trữ: các nhà cung cấp hạ tầng trực tuyến.",
+                    "Quyền: được biết; đồng ý hoặc từ chối, yêu cầu rút lại đồng ý; xem, chỉnh sửa hoặc yêu cầu chỉnh sửa; yêu cầu cung cấp, xóa, hạn chế xử lý hoặc phản đối xử lý; khiếu nại, tố cáo, khởi kiện và yêu cầu bồi thường theo luật. Nghĩa vụ: cung cấp thông tin chính xác; tự bảo vệ dữ liệu của mình; tôn trọng, bảo vệ dữ liệu của người khác và tuân thủ pháp luật.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
