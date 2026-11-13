@@ -1,4 +1,5 @@
 const admin = require("firebase-admin");
+const { getStorage } = require("firebase-admin/storage");
 const functionsV1 = require("firebase-functions/v1");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
@@ -10,6 +11,54 @@ const db = admin.firestore();
 const messaging = admin.messaging();
 const REGION = "asia-southeast1";
 const OWNER_EMAIL = "phunghuyhoahaikba@gmail.com";
+
+async function deleteDocumentsByUid(collectionName, uid) {
+  let deleted = 0;
+
+  while (true) {
+    const snapshot = await db.collection(collectionName)
+      .where("uid", "==", uid)
+      .limit(400)
+      .get();
+
+    if (snapshot.empty) break;
+
+    const batch = db.batch();
+    for (const document of snapshot.docs) {
+      batch.delete(document.ref);
+    }
+    await batch.commit();
+    deleted += snapshot.size;
+  }
+
+  return deleted;
+}
+
+async function deleteUserOwnedData(uid) {
+  const bucket = getStorage().bucket();
+  await bucket.deleteFiles({
+    prefix: `community/${uid}/`,
+    force: true
+  });
+
+  const ownedCollections = [
+    "community_messages",
+    "community_shared_jsons",
+    "community_deleted_messages",
+    "community_deleted_images",
+    "community_deleted_files"
+  ];
+
+  let deletedDocuments = 0;
+  for (const collectionName of ownedCollections) {
+    deletedDocuments += await deleteDocumentsByUid(collectionName, uid);
+  }
+
+  await db.collection("licenses").doc(uid).delete();
+  await db.collection("users").doc(uid).delete();
+
+  return { deletedDocuments };
+}
 
 function requireOwner(request) {
   const email = String(request.auth?.token?.email || "").trim().toLowerCase();
@@ -24,33 +73,19 @@ exports.adminSyncSharedAccounts = onCall({ region: REGION }, async (request) => 
   requireOwner(request);
 
   const profiles = await db.collection("users").get();
-
   let removed = 0;
-  let batch = db.batch();
-  let pending = 0;
 
   for (const profile of profiles.docs) {
     try {
       await auth.getUser(profile.id);
     } catch (error) {
       if (error.code === "auth/user-not-found") {
-        batch.delete(profile.ref);
+        await deleteUserOwnedData(profile.id);
         removed += 1;
-        pending += 1;
       } else {
         throw error;
       }
     }
-
-    if (pending >= 400) {
-      await batch.commit();
-      batch = db.batch();
-      pending = 0;
-    }
-  }
-
-  if (pending > 0) {
-    await batch.commit();
   }
 
   return { removed };
@@ -68,7 +103,7 @@ exports.recordAccountActivity = onCall({ region: REGION }, async (request) => {
   if (
     !profile.exists ||
     profile.get("dataSharingConsent") !== true ||
-    Number(profile.get("activityDataConsentVersion") || 0) !== 3
+    Number(profile.get("activityDataConsentVersion") || 0) !== 4
   ) {
     return { recorded: false, reason: "consent-required" };
   }
@@ -161,14 +196,14 @@ exports.adminDeleteUser = onCall({ region: REGION }, async (request) => {
     throw new HttpsError("failed-precondition", "Không thể xóa tài khoản chủ sở hữu COC-LIO.");
   }
 
+  await deleteUserOwnedData(uid);
   await auth.deleteUser(uid);
-  await profileRef.delete();
 
   return { success: true, uid, email: user.email || "" };
 });
 
 exports.cleanupDeletedAuthUser = functionsV1.auth.user().onDelete(async (user) => {
-  await db.collection("users").doc(user.uid).delete();
+  await deleteUserOwnedData(user.uid);
 });
 
 exports.notifyCommunityMessage = onDocumentCreated(
