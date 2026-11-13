@@ -891,7 +891,6 @@ private fun PlayerLookupCard(data: ClashLookupResponse) {
 }
 
 @Composable
-@Composable
 private fun ClanRankingCategory(label: String, category: JSONObject?) {
     if (category == null) return
     Text(label, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
