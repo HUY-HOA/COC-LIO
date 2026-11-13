@@ -499,7 +499,15 @@ private val englishTranslations = mapOf(
     "Lịch sử Legend của Clan" to "Clan Legend history",
     "Top Legend của Clan" to "Top Clan Legend",
     "Kỷ lục Clan" to "Clan records",
-    "Bảng xếp hạng Clan" to "Clan leaderboard"
+    "Bảng xếp hạng Clan" to "Clan leaderboard",
+    "Trò chuyện cộng đồng" to "Community chat",
+    "Mở ứng dụng" to "Open app",
+    "Đăng nhập Google để trò chuyện và gửi tin nhắn." to "Sign in with Google to chat and send messages.",
+    "Đang tải tin nhắn…" to "Loading messages…",
+    "Không thể tải tin nhắn." to "Unable to load messages.",
+    "Không gửi được tin nhắn." to "Unable to send the message.",
+    "Bong bóng chat cộng đồng" to "Community chat bubbles",
+    "Để hiện bong bóng, hãy bật Bong bóng trong cài đặt thông báo Android hoặc nhấn giữ thông báo tin nhắn cộng đồng rồi chọn hiển thị dạng bong bóng." to "To show chat bubbles, enable Bubbles in Android notification settings or long-press a community message notification and choose to show it as a bubble."
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
