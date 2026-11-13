@@ -19,6 +19,38 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
+      - name: Initialize APK progress display
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/coclio-apk-progress.sh" <<'BASH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          percent="${1:?}"
+          stage="${2:?}"
+          if ! [[ "$percent" =~ ^[0-9]{1,3}$ ]] || (( percent < 0 || percent > 100 )); then
+            echo "::error::Invalid APK progress percentage."
+            exit 2
+          fi
+          remaining=$((100 - percent))
+          filled=$((percent / 5))
+          empty=$((20 - filled))
+          bar="$(printf '%*s' "$filled" '' | tr ' ' '#')$(printf '%*s' "$empty" '' | tr ' ' '-')"
+          printf '[COC-LIO APK] %s%% hoàn thành | còn %s%% | %s | [%s]\n' "$percent" "$remaining" "$stage" "$bar"
+          echo "::notice title=Build APK ${percent}%::Còn ${remaining}% — ${stage}"
+          if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+            if ! grep -Fq '## Tiến độ Build APK' "$GITHUB_STEP_SUMMARY" 2>/dev/null; then
+              printf '## Tiến độ Build APK\n\n| Hoàn thành | Còn lại | Công đoạn | Thanh tiến độ |\n|---:|---:|---|---|\n' >> "$GITHUB_STEP_SUMMARY"
+            fi
+            printf '| **%s%%** | **%s%%** | %s | `%s` |\n' "$percent" "$remaining" "$stage" "$bar" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ -n "${GITHUB_ENV:-}" ]]; then
+            printf 'COCLIO_PROGRESS_PERCENT=%s\n' "$percent" >> "$GITHUB_ENV"
+            printf 'COCLIO_PROGRESS_STAGE=%s\n' "$stage" >> "$GITHUB_ENV"
+          fi
+          BASH
+          bash "$RUNNER_TEMP/coclio-apk-progress.sh" 0 "Bắt đầu quy trình Build APK"
+
+      - name: Verify GitHub runner
       - name: Verify GitHub runner
         shell: bash
         run: |
@@ -26,6 +58,9 @@ jobs:
           uname -a
           df -h .
           java -version || true
+
+      - name: APK progress — runner ready
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 3 "Runner đã sẵn sàng"
 
       - name: Checkout source
         uses: actions/checkout@v4
@@ -37,15 +72,24 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: APK progress — Java ready
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 14 "Java 17 đã sẵn sàng"
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: "platforms;android-35 build-tools;35.0.0"
 
+      - name: APK progress — Android SDK ready
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 21 "Android SDK đã sẵn sàng"
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
+
+      - name: APK progress — Gradle ready
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 27 "Gradle đã sẵn sàng"
 
       - name: Verify Firebase and Google OAuth configuration
         shell: bash
@@ -87,6 +131,9 @@ jobs:
           print("Lưu ý: cần xác nhận thủ công OAuth Client ID này có loại Web application trong Google Cloud Console.")
           PY
 
+      - name: APK progress — configuration valid
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 34 "Cấu hình Firebase và OAuth hợp lệ"
+
       - name: Prepare Android signing key
         id: signing
         shell: bash
@@ -102,6 +149,9 @@ jobs:
             echo "::error::Release signing secrets are incomplete. Add all Android signing secrets before building."
             exit 1
           fi
+
+      - name: APK progress — signing key ready
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 39 "Khóa ký APK đã được chuẩn bị"
 
       - name: Print release signing certificate fingerprints
         if: steps.signing.outputs.enabled == 'true'
@@ -122,17 +172,38 @@ jobs:
           echo "SHA-1 release khớp OAuth đã đăng ký."
           echo "$FINGERPRINTS"
 
+      - name: APK progress — certificate verified
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 43 "Chứng thư ký APK đã được xác minh"
+
+      - name: APK progress — unit tests started
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 45 "Đang chạy kiểm thử"
+
       - name: Run unit tests
         run: gradle --no-daemon --build-cache --parallel testDebugUnitTest
 
+      - name: APK progress — unit tests passed
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 63 "Kiểm thử đã hoàn tất"
+
+      - name: APK progress — release build started
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 66 "Đang biên dịch và ký APK release"
+
       - name: Build signed release APK
         run: gradle --no-daemon --build-cache assembleRelease
+
+      - name: APK progress — release APK built
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 91 "APK release đã biên dịch và ký xong"
 
       - name: Prepare APK artifact
         shell: bash
         run: |
           mkdir -p artifacts
           cp app/build/outputs/apk/release/app-release.apk "artifacts/COC-LIO-v${VERSION_NAME}.apk"
+
+      - name: APK progress — artifact prepared
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 96 "Tệp APK đã được chuẩn bị để tải lên"
+
+      - name: APK progress — upload started
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 98 "Đang tải APK lên GitHub Actions"
 
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
@@ -142,3 +213,22 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
+
+      - name: APK progress — completed
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 100 "Hoàn tất — APK đã được tải lên"
+
+      - name: Report APK build failure
+        if: failure()
+        shell: bash
+        run: |
+          percent="${COCLIO_PROGRESS_PERCENT:-0}"
+          remaining=$((100 - percent))
+          stage="${COCLIO_PROGRESS_STAGE:-Chưa xác định công đoạn}"
+          echo "::error title=Build APK thất bại::Dừng tại mốc ${percent}%, còn ${remaining}% — ${stage}"
+          {
+            echo
+            echo "### Build APK chưa hoàn tất"
+            echo "**Mốc gần nhất:** ${percent}% hoàn thành · còn ${remaining}%"
+            echo "**Công đoạn:** ${stage}"
+            echo "Xem log của bước bị lỗi để biết nguyên nhân cụ thể."
+          } >> "$GITHUB_STEP_SUMMARY"
