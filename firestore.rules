@@ -31,6 +31,8 @@ service cloud.firestore {
           'emailVerified',
           'providerId',
           'dataSharingConsent',
+          'analyticsConsent',
+          'diagnosticsConsent',
           'activityDataConsentVersion',
           'activityConsentAt',
           'signInCount',
@@ -46,6 +48,14 @@ service cloud.firestore {
         && (
           !request.resource.data.keys().hasAny(['dataSharingConsent'])
           || request.resource.data.dataSharingConsent is bool
+        )
+        && (
+          !request.resource.data.keys().hasAny(['analyticsConsent'])
+          || request.resource.data.analyticsConsent is bool
+        )
+        && (
+          !request.resource.data.keys().hasAny(['diagnosticsConsent'])
+          || request.resource.data.diagnosticsConsent is bool
         )
         && (
           !request.resource.data.keys().hasAny(['activityDataConsentVersion'])
@@ -65,6 +75,8 @@ service cloud.firestore {
             'providerId',
             'preferredName',
             'dataSharingConsent',
+            'analyticsConsent',
+            'diagnosticsConsent',
             'activityDataConsentVersion',
             'activityConsentAt',
             'signInCount',
@@ -82,6 +94,14 @@ service cloud.firestore {
           && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['dataSharingConsent'])
             || request.resource.data.dataSharingConsent is bool
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['analyticsConsent'])
+            || request.resource.data.analyticsConsent is bool
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['diagnosticsConsent'])
+            || request.resource.data.diagnosticsConsent is bool
           )
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.email == request.auth.token.email
