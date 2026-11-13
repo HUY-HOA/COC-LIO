@@ -364,6 +364,7 @@ private fun downloadCommunityFile(context: Context, url: String, fileName: Strin
 @Composable
 fun CommunityScreen(
     isGoogleSignedIn: Boolean,
+    availableJsons: List<VillageSnapshot>,
     initialSection: Int = 0,
     onInitialSectionConsumed: () -> Unit = {},
     onImportJson: (String, String, String, String, String, Long, String) -> Unit,
@@ -391,7 +392,11 @@ fun CommunityScreen(
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf("") }
     var showEmojiPicker by remember { mutableStateOf(false) }
+    var showJsonPicker by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
+    val jsonOptions = remember(availableJsons) {
+        availableJsons.distinctBy { it.tag to it.timestamp }.sortedByDescending { it.timestamp }
+    }
     var deleteMessage by remember { mutableStateOf<CommunityMessage?>(null) }
     var deleteRelease by remember { mutableStateOf<CommunityRelease?>(null) }
     var deleteArchiveItem by remember { mutableStateOf<CommunityArchiveItem?>(null) }
@@ -714,6 +719,18 @@ fun CommunityScreen(
                     ) {
                         OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
                             Text("🖼 ẢNH", fontSize = 10.sp)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                if (jsonOptions.isEmpty()) {
+                                    statusMessage = "Kho JSON chưa có dữ liệu. Hãy nhập JSON trước khi chia sẻ."
+                                } else {
+                                    showJsonPicker = true
+                                }
+                            },
+                            enabled = !busy
+                        ) {
+                            Text("📦 GỬI JSON", fontSize = 10.sp)
                         }
                         if (isOwner) {
                             OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
@@ -1053,6 +1070,72 @@ fun CommunityScreen(
                 }
             }
         }
+    }
+
+    if (showJsonPicker) {
+        AlertDialog(
+            onDismissRequest = { if (!busy) showJsonPicker = false },
+            title = { Text("CHỌN JSON ĐỂ GỬI") },
+            text = {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 360.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    items(jsonOptions, key = { "${it.tag}_${it.timestamp}" }) { snapshot ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(9.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(
+                                        snapshot.villageName?.takeIf { it.isNotBlank() } ?: "Làng ${snapshot.tag}",
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        "Player Tag: ${snapshot.tag} · ${communityTime(snapshot.timestamp * 1000L)}",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 9.sp
+                                    )
+                                }
+                                TextButton(
+                                    onClick = {
+                                        showJsonPicker = false
+                                        scope.launch {
+                                            busy = true
+                                            statusMessage = null
+                                            try {
+                                                statusMessage = shareVillageJsonToCommunity(snapshot)
+                                            } catch (error: Exception) {
+                                                statusMessage = error.message ?: "Không thể chia sẻ JSON."
+                                            } finally {
+                                                busy = false
+                                            }
+                                        }
+                                    },
+                                    enabled = !busy
+                                ) {
+                                    Text("GỬI", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showJsonPicker = false }, enabled = !busy) {
+                    Text("ĐÓNG")
+                }
+            }
+        )
     }
 
     deleteMessage?.let { message ->
