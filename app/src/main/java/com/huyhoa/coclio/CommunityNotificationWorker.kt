@@ -264,14 +264,14 @@ private suspend fun checkCommunityMessages(
         val type = document.getString("type").orEmpty()
         val messageText = when (type) {
             "text" -> document.getString("text").orEmpty().trim()
-            "json" -> "Đã chia sẻ dữ liệu JSON."
+            "json" -> AppLanguageSettings.translate(context, "Đã chia sẻ dữ liệu JSON.")
             else -> ""
         }
         if (messageText.isNotBlank()) {
             postCommunityNotification(
                 context = context,
                 notificationId = ("community_" + document.id).hashCode(),
-                title = "Tin nhắn cộng đồng",
+                title = AppLanguageSettings.translate(context, "Tin nhắn cộng đồng"),
                 body = (sender + ": " + messageText).take(420)
             )
         }
@@ -310,8 +310,8 @@ private suspend fun checkAppUpdates(
         postUpdateNotification(
             context,
             ("update_" + document.id).hashCode(),
-            "COC-LIO có bản cập nhật mới",
-            body
+            AppLanguageSettings.translate(context, "COC-LIO có bản cập nhật mới"),
+            AppLanguageSettings.translate(context, body)
         )
     }
 }
@@ -374,7 +374,7 @@ private fun postCommunityNotification(
     postLocalCommunityNotification(
         context,
         COC_LIO_NOTIFICATION_CHANNEL_COMMUNITY,
-        "Tin nhắn cộng đồng",
+        AppLanguageSettings.translate(context, "Tin nhắn cộng đồng"),
         notificationId,
         title,
         body
@@ -390,7 +390,7 @@ private fun postUpdateNotification(
     postLocalCommunityNotification(
         context,
         COC_LIO_NOTIFICATION_CHANNEL_UPDATES,
-        "Bản cập nhật COC-LIO",
+        AppLanguageSettings.translate(context, "Bản cập nhật COC-LIO"),
         notificationId,
         title,
         body
