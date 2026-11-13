@@ -353,6 +353,158 @@ private fun communityMimeType(context: Context, uri: Uri, fileName: String): Str
     }
 }
 
+private data class CommunityAttachmentUpload(
+    val fileName: String,
+    val contentType: String,
+    val bytes: ByteArray,
+    val encoded: String
+)
+
+private suspend fun prepareCommunityAttachment(
+    context: Context,
+    uri: Uri,
+    isImage: Boolean
+): CommunityAttachmentUpload = withContext(Dispatchers.IO) {
+    val originalName = communityFileName(context, uri)
+    val originalBytes = context.contentResolver.openInputStream(uri)?.use { input ->
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        var total = 0
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            total += count
+            require(total <= COMMUNITY_MAX_INPUT_BYTES) {
+                "Tệp gốc vượt quá giới hạn xử lý 25 MB."
+            }
+            output.write(buffer, 0, count)
+        }
+        output.toByteArray()
+    } ?: throw IllegalStateException("Không thể đọc tệp đã chọn.")
+    require(originalBytes.isNotEmpty()) { "Tệp đang trống." }
+
+    val finalBytes: ByteArray
+    val finalName: String
+    val finalType: String
+    if (isImage) {
+        finalBytes = compressCommunityImage(originalBytes)
+        finalName = originalName.substringBeforeLast('.', originalName).ifBlank { "anh" } + ".jpg"
+        finalType = "image/jpeg"
+    } else {
+        val detectedType = communityMimeType(context, uri, originalName)
+        require(detectedType in setOf(
+            "application/pdf",
+            "text/plain",
+            "application/zip",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            COMMUNITY_APK_MIME
+        )) { "Định dạng tệp này chưa được hỗ trợ." }
+        require(originalBytes.size <= COMMUNITY_MAX_EMBEDDED_BYTES) {
+            "Tệp quá lớn. Trên gói miễn phí, mỗi tệp tối đa 350 KB."
+        }
+        finalBytes = originalBytes
+        finalName = originalName
+        finalType = detectedType
+    }
+
+    require(finalBytes.size in 1..COMMUNITY_MAX_EMBEDDED_BYTES) {
+        "Không thể nén tệp xuống giới hạn 350 KB. Hãy chọn tệp nhỏ hơn."
+    }
+    CommunityAttachmentUpload(
+        fileName = finalName.take(180),
+        contentType = finalType,
+        bytes = finalBytes,
+        encoded = Base64.encodeToString(finalBytes, Base64.NO_WRAP)
+    )
+}
+
+private fun compressCommunityImage(source: ByteArray): ByteArray {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(source, 0, source.size, bounds)
+    require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Ảnh không hợp lệ." }
+    var sampleSize = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / sampleSize > 1600) sampleSize *= 2
+    var bitmap = BitmapFactory.decodeByteArray(
+        source,
+        0,
+        source.size,
+        BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    ) ?: throw IllegalArgumentException("Không thể đọc ảnh này.")
+    try {
+        val largestSide = maxOf(bitmap.width, bitmap.height)
+        if (largestSide > 1280) {
+            val scale = 1280f / largestSide.toFloat()
+            val resized = Bitmap.createScaledBitmap(
+                bitmap,
+                (bitmap.width * scale).toInt().coerceAtLeast(1),
+                (bitmap.height * scale).toInt().coerceAtLeast(1),
+                true
+            )
+            if (resized !== bitmap) bitmap.recycle()
+            bitmap = resized
+        }
+        val output = ByteArrayOutputStream()
+        var quality = 85
+        repeat(12) {
+            output.reset()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, output)
+            if (output.size() <= COMMUNITY_MAX_EMBEDDED_BYTES) return output.toByteArray()
+            if (quality > 50) {
+                quality -= 10
+            } else {
+                val resized = Bitmap.createScaledBitmap(
+                    bitmap,
+                    (bitmap.width * 0.8f).toInt().coerceAtLeast(240),
+                    (bitmap.height * 0.8f).toInt().coerceAtLeast(240),
+                    true
+                )
+                if (resized === bitmap) return@repeat
+                bitmap.recycle()
+                bitmap = resized
+                quality = 75
+            }
+        }
+        throw IllegalArgumentException("Ảnh quá lớn sau khi nén. Hãy chọn ảnh nhỏ hơn.")
+    } finally {
+        if (!bitmap.isRecycled) bitmap.recycle()
+    }
+}
+
+private suspend fun sendCommunityAttachment(
+    context: Context,
+    uri: Uri,
+    isImage: Boolean
+): String {
+    val signedInUser = FirebaseAuth.getInstance().currentUser
+        ?: throw IllegalStateException("Bạn cần đăng nhập Google để gửi tệp.")
+    if (!isImage && !FirebaseAccountAdministration.isOwner(signedInUser.email)) {
+        throw IllegalStateException("Chỉ tài khoản quản lý mới được gửi tệp.")
+    }
+    val attachment = prepareCommunityAttachment(context, uri, isImage)
+    FirebaseFirestore.getInstance().collection("community_messages").add(
+        communityMessagePayload(
+            uid = signedInUser.uid,
+            displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên",
+            senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
+            photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
+            type = if (isImage) "image" else "file",
+            text = "",
+            fileName = attachment.fileName,
+            storagePath = "",
+            downloadUrl = "",
+            contentType = attachment.contentType,
+            fileSize = attachment.bytes.size.toLong(),
+            contentData = attachment.encoded
+        )
+    ).awaitCommunityResult()
+    return if (isImage) "Đã gửi ảnh." else "Đã gửi tệp."
+}
+
 private fun communityTime(timestamp: Long): String =
     if (timestamp <= 0L) "Vừa gửi" else
         SimpleDateFormat("dd/MM · HH:mm", Locale("vi", "VN")).format(Date(timestamp))
