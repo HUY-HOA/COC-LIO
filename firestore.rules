@@ -98,6 +98,8 @@ service cloud.firestore {
             'villageDataConsent',
             'activityDataConsentVersion',
             'activityConsentAt',
+            'requiredAccountDataConsentVersion',
+            'requiredAccountDataConsentAt',
             'signInCount',
             'lastSignInAt',
             'updatedAt',
@@ -163,6 +165,27 @@ service cloud.firestore {
           && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['activityConsentAt'])
             || request.resource.data.activityConsentAt is timestamp
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['requiredAccountDataConsentVersion'])
+            || (
+              request.resource.data.requiredAccountDataConsentVersion is int
+              && request.resource.data.requiredAccountDataConsentVersion == 1
+            )
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['requiredAccountDataConsentAt'])
+            || request.resource.data.requiredAccountDataConsentAt is timestamp
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'requiredAccountDataConsentVersion',
+              'requiredAccountDataConsentAt'
+            ])
+            || (
+              request.resource.data.requiredAccountDataConsentVersion == 1
+              && request.resource.data.requiredAccountDataConsentAt is timestamp
+            )
           )
           && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny([
