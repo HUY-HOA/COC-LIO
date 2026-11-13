@@ -1586,7 +1586,7 @@ private fun GoogleLoginStartScreen(
                         .fillMaxWidth()
                         .then(
                             if (consentChecked) {
-                                Modifier.ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.4f)
+                                Modifier.ledRgbBorder(cornerRadiusDp = 8f, strokeWidthDp = 2.4f)
                             } else {
                                 Modifier
                             }
@@ -2362,6 +2362,7 @@ private fun HistoryScreen(
     onDeleteReceivedJsonPermanently: (String) -> Unit,
     onOpenSharedJsonFeed: () -> Unit
 ) {
+    val context = LocalContext.current
     var selectedSection by remember { mutableStateOf("villages") }
     var pendingDelete by remember { mutableStateOf<VillageSnapshot?>(null) }
     var pendingPermanentDelete by remember { mutableStateOf<DeletedVillageRecord?>(null) }
