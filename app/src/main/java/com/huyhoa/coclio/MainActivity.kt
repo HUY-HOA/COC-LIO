@@ -141,7 +141,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private val CocBackground = Color(0xFF050817)
+private val CocBackground = Color(0xFF000000)
 private val CocSurface = Color(0xFF0D152B)
 private val CocSurfaceAlt = Color(0xFF14203B)
 private val CocGold = Color(0xFFFFD166)
@@ -317,11 +317,7 @@ private fun NeonBackdrop() {
     Box(
         Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(MaterialTheme.colorScheme.background, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.background)
-                )
-            )
+            .background(MaterialTheme.colorScheme.background)
     )
 }
 
@@ -453,7 +449,7 @@ class MainActivity : ComponentActivity() {
                     onPrimary = Color.White,
                     secondary = Color(0xFF8B3B85),
                     tertiary = Color(0xFF8A5A00),
-                    background = Color(0xFFF3F6FB),
+                    background = Color(0xFFFFFFFF),
                     surface = Color.White,
                     surfaceVariant = Color(0xFFE8EEF6),
                     onBackground = Color(0xFF172235),
