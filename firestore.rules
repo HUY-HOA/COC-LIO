@@ -435,6 +435,7 @@ service cloud.firestore {
           'downloadUrl',
           'contentType',
           'fileSize',
+          'contentData',
           'sharedJsonId',
           'createdAt'
         ])
@@ -451,7 +452,7 @@ service cloud.firestore {
         )
         && request.resource.data.photoUrl is string
         && request.resource.data.photoUrl.size() <= 1000
-        && request.resource.data.type in ['text', 'json']
+        && request.resource.data.type in ['text', 'json', 'image', 'file']
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 2000
         && request.resource.data.fileName is string
@@ -459,6 +460,8 @@ service cloud.firestore {
         && request.resource.data.downloadUrl is string
         && request.resource.data.contentType is string
         && request.resource.data.fileSize is int
+        && request.resource.data.contentData is string
+        && request.resource.data.contentData.size() <= 480000
         && (
           !request.resource.data.keys().hasAny(['sharedJsonId'])
           || (
@@ -475,6 +478,7 @@ service cloud.firestore {
             && request.resource.data.downloadUrl == ''
             && request.resource.data.contentType == ''
             && request.resource.data.fileSize == 0
+            && request.resource.data.contentData == ''
             && (
               !request.resource.data.keys().hasAny(['sharedJsonId'])
               || request.resource.data.sharedJsonId == ''
@@ -483,12 +487,14 @@ service cloud.firestore {
           ||
           (
             request.resource.data.type == 'image'
-            && request.resource.data.contentType.matches('image/.*')
-            && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
-            && request.resource.data.downloadUrl.matches('https://.*')
+            && request.resource.data.contentType == 'image/jpeg'
+            && request.resource.data.storagePath == ''
+            && request.resource.data.downloadUrl == ''
+            && request.resource.data.contentData.size() > 0
+            && request.resource.data.contentData.size() <= 480000
             && request.resource.data.fileName.size() > 0
             && request.resource.data.fileSize > 0
-            && request.resource.data.fileSize <= 15 * 1024 * 1024
+            && request.resource.data.fileSize <= 358400
             && (
               !request.resource.data.keys().hasAny(['sharedJsonId'])
               || request.resource.data.sharedJsonId == ''
@@ -514,11 +520,13 @@ service cloud.firestore {
               request.resource.data.contentType != 'application/vnd.android.package-archive'
               || isOwner()
             )
-            && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
-            && request.resource.data.downloadUrl.matches('https://.*')
+            && request.resource.data.storagePath == ''
+            && request.resource.data.downloadUrl == ''
+            && request.resource.data.contentData.size() > 0
+            && request.resource.data.contentData.size() <= 480000
             && request.resource.data.fileName.size() > 0
             && request.resource.data.fileSize > 0
-            && request.resource.data.fileSize <= 15 * 1024 * 1024
+            && request.resource.data.fileSize <= 358400
             && (
               !request.resource.data.keys().hasAny(['sharedJsonId'])
               || request.resource.data.sharedJsonId == ''
@@ -532,6 +540,7 @@ service cloud.firestore {
             && request.resource.data.storagePath == ''
             && request.resource.data.downloadUrl == ''
             && request.resource.data.contentType == 'application/json'
+            && request.resource.data.contentData == ''
             && request.resource.data.fileSize > 0
             && request.resource.data.fileSize <= 700000
             && request.resource.data.keys().hasAny(['sharedJsonId'])
