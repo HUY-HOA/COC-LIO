@@ -1021,7 +1021,7 @@ private fun CocLioApp(
             ) {
                 val navItems = listOf(
                     Triple("home", "Tổng quan", 0),
-                    Triple("buildings", "Công trình & Quân đội", 1),
+                    Triple("buildings", "Công trình Quân đội", 1),
                     Triple("history", "Kho JSON", 2),
                     Triple("community", "Cộng đồng", 3),
                     Triple("settings", "Cài đặt", 4)
