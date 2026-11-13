@@ -339,7 +339,7 @@ private val englishTranslations = mapOf(
     "Không thể mở vị trí lưu." to "Unable to open the save location.",
     "Không thể hiển thị ảnh này." to "Unable to display this image.",
     "Ảnh không còn dữ liệu xem trước." to "The image preview data is no longer available.",
-    "Không thể lưu tệp." to "Unable to save the file."
+    "Không thể lưu tệp." to "Unable to save the file.",
     "APK CẬP NHẬT" to "APK UPDATES",
     "ĐANG XÁC NHẬN..." to "VERIFYING...",
     "ĐỒNG Ý & TIẾP TỤC" to "AGREE & CONTINUE",
