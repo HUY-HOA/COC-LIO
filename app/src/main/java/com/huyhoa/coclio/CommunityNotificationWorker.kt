@@ -22,7 +22,6 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.CancellationException
@@ -138,7 +137,6 @@ private suspend fun checkCommunityMessages(
 ) {
     val documents = firestore.collection("community_messages")
         .orderBy("createdAt", Query.Direction.DESCENDING)
-        .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
         .limit(50)
         .get()
         .awaitNotificationResult()
@@ -204,7 +202,6 @@ private suspend fun checkAppUpdates(
 ) {
     val documents = firestore.collection("app_updates")
         .orderBy("createdAt", Query.Direction.DESCENDING)
-        .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
         .limit(20)
         .get()
         .awaitNotificationResult()
