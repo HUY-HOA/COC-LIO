@@ -2092,7 +2092,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                         if (account.photoUrl.isNotBlank()) {
                             AsyncImage(
                                 model = account.photoUrl,
-                                contentDescription = "Ảnh đại diện Google",
+                                contentDescription = AppLanguageSettings.translate(context, "Ảnh đại diện Google"),
                                 modifier = Modifier.size(42.dp).clip(CircleShape)
                             )
                         }
@@ -2378,7 +2378,7 @@ fun SettingsScreen(
                     if (!accountData?.profilePictureUri.isNullOrBlank()) {
                         AsyncImage(
                             model = accountData?.profilePictureUri,
-                            contentDescription = "Ảnh hồ sơ Google",
+                            contentDescription = AppLanguageSettings.translate(context, "Ảnh hồ sơ Google"),
                             modifier = Modifier.size(52.dp).clip(CircleShape)
                         )
                     }
