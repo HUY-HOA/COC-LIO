@@ -680,6 +680,7 @@ fun CommunityScreen(
                                 downloadUrl = document.getString("downloadUrl").orEmpty(),
                                 contentType = document.getString("contentType").orEmpty(),
                                 fileSize = document.getLong("fileSize") ?: 0L,
+                                contentData = document.getString("contentData").orEmpty(),
                                 createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
                                 sharedJsonId = document.getString("sharedJsonId").orEmpty()
                             )
@@ -1472,6 +1473,7 @@ private fun communityMessagePayload(
     downloadUrl: String,
     contentType: String,
     fileSize: Long,
+    contentData: String = "",
     sharedJsonId: String = ""
 ): Map<String, Any> = mapOf(
     "uid" to uid,
@@ -1485,6 +1487,7 @@ private fun communityMessagePayload(
     "downloadUrl" to downloadUrl,
     "contentType" to contentType,
     "fileSize" to fileSize,
+    "contentData" to contentData,
     "sharedJsonId" to sharedJsonId,
     "createdAt" to FieldValue.serverTimestamp()
 )
