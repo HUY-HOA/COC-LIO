@@ -2571,14 +2571,14 @@ fun SettingsScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("TIN NHẮN CỘNG ĐỒNG", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Kiểm tra tin nhắn mới khi có mạng, khoảng 15 phút một lần.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                    Text("Cần đăng nhập Google; kiểm tra tin mới khi có mạng, khoảng 15 phút/lần.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                 }
                 Switch(checked = communityNotificationsEnabled, onCheckedChange = onCommunityNotificationsChanged)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("THÔNG BÁO BẢN CẬP NHẬT APK", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Báo khi có phiên bản mới được đăng trong mục Cộng đồng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                    Text("Cần đăng nhập Google; báo khi có phiên bản mới trong mục Cộng đồng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                 }
                 Switch(checked = updateNotificationsEnabled, onCheckedChange = onUpdateNotificationsChanged)
             }
@@ -2588,7 +2588,7 @@ fun SettingsScreen(
                 fontSize = 9.sp,
                 lineHeight = 13.sp
             )
-            Text("Kiểu thông báo", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text("Kiểu nhắc nâng cấp", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 FilterChip(
                     selected = notificationStyle == "message",
