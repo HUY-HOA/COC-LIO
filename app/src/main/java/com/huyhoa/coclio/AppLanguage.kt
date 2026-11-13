@@ -42,6 +42,11 @@ object AppLanguageSettings {
             .apply()
     }
 
+    fun translate(context: Context, source: String): String {
+        val systemLanguage = context.resources.configuration.locales[0].language
+        return translateAppText(source, resolve(load(context), systemLanguage))
+    }
+
     fun resolve(preference: String, systemLanguage: String): AppUiLanguage =
         when (preference) {
             "en" -> AppUiLanguage.ENGLISH
@@ -280,6 +285,11 @@ private val englishTranslations = mapOf(
     "Ngôn ngữ đang dùng: Tiếng Việt" to "Current language: Vietnamese",
     "Ngôn ngữ đang dùng: English" to "Current language: English",
     "Lựa chọn ngôn ngữ được lưu trên thiết bị này." to "Your language preference is saved on this device.",
+    "Tin nhắn cộng đồng" to "Community messages",
+    "Bản cập nhật COC-LIO" to "COC-LIO updates",
+    "Tin nhắn cộng đồng mới" to "New community message",
+    "COC-LIO có bản cập nhật mới" to "COC-LIO update available",
+    "Đã chia sẻ dữ liệu JSON." to "Shared JSON data.",
     "MỞ COC-LIO" to "OPEN COC-LIO",
     "NHẬN JSON VÀ SỬ DỤNG" to "RECEIVE AND USE JSON",
     "XÓA" to "DELETE",
@@ -502,6 +512,7 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Cập nhật ") -> "Updated " + source.removePrefix("Cập nhật ")
         source.startsWith("Độ sáng: ") -> "Brightness: " + source.removePrefix("Độ sáng: ")
         source.startsWith("Player Tag: ") -> source
+        source.startsWith("COC-LIO ") && source.endsWith(" đã có bản cập nhật mới.") -> source.removeSuffix(" đã có bản cập nhật mới.") + " has a new update."
         source.startsWith("ID: ") -> source
         else -> source
     }
