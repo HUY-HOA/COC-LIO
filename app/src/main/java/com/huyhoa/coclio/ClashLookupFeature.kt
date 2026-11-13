@@ -689,7 +689,8 @@ private fun clashLookupActions(data: ClashLookupResponse): List<ClashLookupActio
         listOf(
             ClashLookupAction("Lịch sử trận đánh", "/v2/player/$tag/battlelog/history"),
             ClashLookupAction("Thống kê kiếm tài nguyên", "/v2/player/$tag/farming"),
-            ClashLookupAction("Thống kê chiến tranh và lượt đánh", "/v2/player/$tag/war/stats"),
+            ClashLookupAction("Thống kê chiến tranh", "/v2/player/$tag/war/stats"),
+            ClashLookupAction("Chi tiết từng lượt đánh chiến tranh", "/v2/player/$tag/war/attacks"),
             ClashLookupAction("Lịch sử CWL", "/v2/player/$tag/cwl/history?limit=15"),
             ClashLookupAction("Lịch sử vào/rời Clan", "/v2/player/$tag/join-leave?limit=40"),
             ClashLookupAction("Thống kê thời gian ở Clan", "/v2/player/$tag/join-leave/totals"),
@@ -712,6 +713,7 @@ private fun clashLookupActions(data: ClashLookupResponse): List<ClashLookupActio
         listOf(
             ClashLookupAction("Tổng kết quyên góp", "/v2/clan/$tag/donations/summary"),
             ClashLookupAction("Lịch sử chiến tranh", "/v2/clan/$tag/wars?limit=20"),
+            ClashLookupAction("Nhật ký chiến tranh công khai", "/v2/clan/$tag/warlog"),
             ClashLookupAction("Cuộc chiến hiện tại", "/v2/war/$tag/basic"),
             ClashLookupAction("Các mùa CWL", "/v2/cwl/$tag/seasons?limit=15"),
             ClashLookupAction("Nhóm CWL", "/v2/cwl/$tag/group"),
