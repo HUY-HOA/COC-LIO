@@ -692,6 +692,11 @@ private fun CocLioApp(
                     privacyChoiceVersion = choice.version
                     AccountPrivacyConsent.applyCollectionSettings(context, choice)
                     if (choice.version < AccountPrivacyConsent.CURRENT_VERSION) {
+                        AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+                        AccountActivityTracker.stopAndWait(context)
+                        securityTelemetryConsent = false
+                        analyticsConsent = false
+                        diagnosticsConsent = false
                         openPrivacyDialog()
                     } else if (choice.securityTelemetry) {
                         AccountActivityTracker.start(context)
@@ -705,6 +710,7 @@ private fun CocLioApp(
                     diagnosticsConsent = false
                     privacyChoiceVersion = 0L
                     AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+                    AccountActivityTracker.stopAndWait(context)
                     snackbar.showSnackbar("Không tải được lựa chọn quyền riêng tư. Dữ liệu tùy chọn vẫn đang tắt.")
                 }
         }
