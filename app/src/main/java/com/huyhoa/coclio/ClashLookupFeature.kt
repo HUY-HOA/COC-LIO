@@ -61,6 +61,11 @@ private data class ClashLookupCandidate(
     val profile: JSONObject
 )
 
+private data class ClashLookupSearchPage(
+    val candidates: List<ClashLookupCandidate>,
+    val nextCursor: String?
+)
+
 private const val CLASHKING_API = "https://api.clashk.ing"
 
 private fun normalizeClashTag(value: String): String {
@@ -98,24 +103,30 @@ private fun readClashKingJson(path: String): Any = run {
     }
 }
 
-private suspend fun searchClashKing(kind: ClashLookupKind, query: String): List<ClashLookupCandidate> =
-    withContext(Dispatchers.IO) {
-        val term = query.trim()
-        require(term.length in 2..40) {
-            "Hãy nhập ít nhất 2 ký tự, tên hoặc mã tag cần tìm."
-        }
-        val encodedQuery = URLEncoder.encode(term, "UTF-8")
-        val path = when (kind) {
-            ClashLookupKind.PLAYER -> "/v2/player/search?query=$encodedQuery&limit=10"
-            ClashLookupKind.CLAN -> "/v2/clan/search?query=$encodedQuery&limit=10"
-        }
-        val search = readClashKingJson(path) as? JSONObject
-            ?: throw IllegalStateException("Dữ liệu tìm kiếm không đúng định dạng.")
-        val items = search.optJSONArray("items") ?: JSONArray()
-        (0 until items.length()).mapNotNull { index ->
-            items.optJSONObject(index)?.let { ClashLookupCandidate(kind, it) }
-        }
+private suspend fun searchClashKing(
+    kind: ClashLookupKind,
+    query: String,
+    cursor: String? = null
+): ClashLookupSearchPage = withContext(Dispatchers.IO) {
+    val term = query.trim()
+    require(term.length in 2..40) {
+        "Hãy nhập ít nhất 2 ký tự, tên hoặc mã tag cần tìm."
     }
+    val encodedQuery = URLEncoder.encode(term, "UTF-8")
+    val encodedCursor = cursor?.let { "&cursor=" + URLEncoder.encode(it, "UTF-8") }.orEmpty()
+    val path = when (kind) {
+        ClashLookupKind.PLAYER -> "/v2/player/search?query=$encodedQuery&limit=10$encodedCursor"
+        ClashLookupKind.CLAN -> "/v2/clan/search?query=$encodedQuery&limit=10$encodedCursor"
+    }
+    val search = readClashKingJson(path) as? JSONObject
+        ?: throw IllegalStateException("Dữ liệu tìm kiếm không đúng định dạng.")
+    val items = search.optJSONArray("items") ?: JSONArray()
+    val candidates = (0 until items.length()).mapNotNull { index ->
+        items.optJSONObject(index)?.let { ClashLookupCandidate(kind, it) }
+    }
+    val nextCursor = search.optJSONObject("pagination")?.opt("nextCursor") as? String
+    ClashLookupSearchPage(candidates, nextCursor?.takeIf { it.isNotBlank() })
+}
 
 private suspend fun loadClashKingProfile(candidate: ClashLookupCandidate): ClashLookupResponse =
     withContext(Dispatchers.IO) {
@@ -145,6 +156,7 @@ fun ClashLookupScreen() {
     var tagInput by remember { mutableStateOf("") }
     var result by remember { mutableStateOf<ClashLookupResponse?>(null) }
     var searchResults by remember { mutableStateOf<List<ClashLookupCandidate>>(emptyList()) }
+    var searchNextCursor by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     var detailLoading by remember { mutableStateOf(false) }
@@ -188,7 +200,7 @@ fun ClashLookupScreen() {
             fontWeight = FontWeight.Black
         )
         Text(
-            "Nhập mã tag trong game để xem hồ sơ người chơi hoặc Clan.",
+            "Tìm hồ sơ người chơi hoặc Clan bằng tên hoặc mã tag trong game.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 12.sp
         )
@@ -199,6 +211,7 @@ fun ClashLookupScreen() {
                     kind = ClashLookupKind.PLAYER
                     result = null
                     searchResults = emptyList()
+                    searchNextCursor = null
                     error = null
                 },
                 label = { Text("NGƯỜI CHƠI") }
@@ -209,6 +222,7 @@ fun ClashLookupScreen() {
                     kind = ClashLookupKind.CLAN
                     result = null
                     searchResults = emptyList()
+                    searchNextCursor = null
                     error = null
                 },
                 label = { Text("CLAN") }
@@ -218,7 +232,9 @@ fun ClashLookupScreen() {
             value = tagInput,
             onValueChange = {
                 tagInput = it
+                result = null
                 searchResults = emptyList()
+                searchNextCursor = null
                 error = null
             },
             modifier = Modifier.fillMaxWidth(),
@@ -234,12 +250,14 @@ fun ClashLookupScreen() {
                     error = null
                     result = null
                     searchResults = emptyList()
+                    searchNextCursor = null
                     runCatching { searchClashKing(kind, tagInput) }
-                        .onSuccess { matches ->
-                            if (matches.isEmpty()) {
+                        .onSuccess { page ->
+                            if (page.candidates.isEmpty()) {
                                 error = "Không tìm thấy kết quả phù hợp. Hãy kiểm tra tên hoặc mã tag."
                             } else {
-                                searchResults = matches
+                                searchResults = page.candidates
+                                searchNextCursor = page.nextCursor
                             }
                         }
                         .onFailure {
@@ -326,6 +344,7 @@ fun ClashLookupScreen() {
                                         result = it
                                         tagInput = candidate.profile.optString("tag")
                                         searchResults = emptyList()
+                                        searchNextCursor = null
                                     }
                                     .onFailure {
                                         error = it.message?.takeIf(String::isNotBlank)
@@ -339,6 +358,30 @@ fun ClashLookupScreen() {
                     ) {
                         Text("MỞ HỒ SƠ")
                     }
+                }
+            }
+            searchNextCursor?.let { cursor ->
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            loading = true
+                            error = null
+                            runCatching { searchClashKing(kind, tagInput, cursor) }
+                                .onSuccess { page ->
+                                    searchResults = searchResults + page.candidates
+                                    searchNextCursor = page.nextCursor
+                                }
+                                .onFailure {
+                                    error = it.message?.takeIf(String::isNotBlank)
+                                        ?: "Không thể tải thêm kết quả."
+                                }
+                            loading = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !loading
+                ) {
+                    Text(if (loading) "ĐANG TẢI..." else "TẢI THÊM KẾT QUẢ")
                 }
             }
         }
@@ -528,6 +571,15 @@ fun ClashLookupScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !detailLoading && leagueTier != null && leagueTier > 0
             ) { Text("TOP GIẢI ĐẤU") }
+            OutlinedButton(
+                onClick = {
+                    leagueTier?.let {
+                        loadAction(ClashLookupAction("Phân bố cúp giải đấu $it", "/v2/leaderboard/$it/trophy-buckets"))
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !detailLoading && leagueTier != null && leagueTier > 0
+            ) { Text("PHÂN BỐ CÚP GIẢI ĐẤU") }
             OutlinedTextField(
                 value = locationInput,
                 onValueChange = { locationInput = it.filter(Char::isDigit).take(10) },
@@ -729,12 +781,13 @@ private fun lookupScalarText(value: Any?, key: String): String = when (value) {
 private fun LookupJsonViewer(value: Any, depth: Int = 0) {
     when (value) {
         is JSONObject -> {
+            var visibleFields by remember(value) { mutableStateOf(40) }
             val keys = value.keys().asSequence().toList()
             if (keys.isEmpty()) {
                 Text("Không có dữ liệu chi tiết.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    keys.take(40).forEach { key ->
+                    keys.take(visibleFields).forEach { key ->
                         val child = value.opt(key)
                         when (child) {
                             is JSONObject -> {
@@ -756,14 +809,18 @@ private fun LookupJsonViewer(value: Any, depth: Int = 0) {
                             else -> LookupValue(lookupFieldLabel(key), lookupScalarText(child, key))
                         }
                     }
-                    if (keys.size > 40) {
-                        Text("Đã rút gọn còn 40 trường để dễ theo dõi.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    if (keys.size > visibleFields) {
+                        OutlinedButton(
+                            onClick = { visibleFields = (visibleFields + 40).coerceAtMost(keys.size) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("XEM THÊM TRƯỜNG") }
                     }
                 }
             }
         }
         is JSONArray -> {
-            val count = minOf(value.length(), 15)
+            var visibleItems by remember(value) { mutableStateOf(15) }
+            val count = minOf(value.length(), visibleItems)
             if (count == 0) {
                 Text("Chưa có dữ liệu trong mục này.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
             } else {
@@ -788,10 +845,14 @@ private fun LookupJsonViewer(value: Any, depth: Int = 0) {
                     }
                     if (value.length() > count) {
                         Text(
-                            "Đang hiển thị " + count + " / " + value.length() + " mục đầu tiên.",
+                            "Đang hiển thị " + count + " / " + value.length() + " mục.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 9.sp
                         )
+                        OutlinedButton(
+                            onClick = { visibleItems = (visibleItems + 15).coerceAtMost(value.length()) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("XEM THÊM DỮ LIỆU") }
                     }
                 }
             }
