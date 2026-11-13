@@ -1121,6 +1121,16 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Cấp Clan (\\d+)  •  (\\d+) thành viên$").matchEntire(source)!!.let { "Clan Level ${it.groupValues[1]}  •  ${it.groupValues[2]} members" }
         Regex("^(\\d+) thành viên$").matchEntire(source) != null ->
             Regex("^(\\d+) thành viên$").matchEntire(source)!!.let { "${it.groupValues[1]} members" }
+        Regex("^Có (\\d+) mục dữ liệu\\.$").matchEntire(source) != null ->
+            Regex("^Có (\\d+) mục dữ liệu\\.$").matchEntire(source)!!.let { "Contains ${it.groupValues[1]} data items." }
+        Regex("^Đang hiển thị (\\d+) / (\\d+) mục\\.$").matchEntire(source) != null ->
+            Regex("^Đang hiển thị (\\d+) / (\\d+) mục\\.$").matchEntire(source)!!.let {
+                "Showing ${it.groupValues[1]} / ${it.groupValues[2]} items."
+            }
+        Regex("^CẤP (\\d+) → (\\d+) • CÒN (\\d+)%$").matchEntire(source) != null ->
+            Regex("^CẤP (\\d+) → (\\d+) • CÒN (\\d+)%$").matchEntire(source)!!.let {
+                "LEVEL ${it.groupValues[1]} → ${it.groupValues[2]} • ${it.groupValues[3]}% LEFT"
+            }
         Regex("^(\\d+) mục dữ liệu\\.$").matchEntire(source) != null ->
             Regex("^(\\d+) mục dữ liệu\\.$").matchEntire(source)!!.let { "${it.groupValues[1]} data items." }
         Regex("^(\\d+) mục\\.$").matchEntire(source) != null ->
@@ -1213,7 +1223,17 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Player Tag: ") -> source
         source.startsWith("COC-LIO ") && source.endsWith(" đã có bản cập nhật mới.") -> source.removeSuffix(" đã có bản cập nhật mới.") + " has a new update."
         source.startsWith("ID: ") -> source
-        else -> source
+        else -> {
+            val separator = when {
+                source.contains(" • ") -> " • "
+                source.contains(" · ") -> " · "
+                else -> null
+            }
+            if (separator == null) source
+            else source.split(separator).joinToString(separator) {
+                translateAppText(it, AppUiLanguage.ENGLISH)
+            }
+        }
     }
 }
 
