@@ -2417,16 +2417,16 @@ fun SettingsScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("TIN NHẮN CỘNG ĐỒNG", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Nhận thông báo khi có tin nhắn mới.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                    Text("Tự động gửi tin nhắn đang tạm dừng trên gói Spark.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                 }
-                Switch(checked = communityNotificationsEnabled, onCheckedChange = onCommunityNotificationsChanged)
+                Switch(checked = false, onCheckedChange = {}, enabled = false)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("THÔNG BÁO BẢN CẬP NHẬT APK", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Chỉ nhận khi quản lý chọn gửi thông báo.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                    Text("Thông báo APK tự động đang tạm dừng trên gói Spark.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                 }
-                Switch(checked = updateNotificationsEnabled, onCheckedChange = onUpdateNotificationsChanged)
+                Switch(checked = false, onCheckedChange = {}, enabled = false)
             }
             Text("Kiểu thông báo", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -2611,10 +2611,8 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
 object CocLioPushSubscriptions {
     fun sync(communityEnabled: Boolean, updatesEnabled: Boolean) {
         val messaging = FirebaseMessaging.getInstance()
-        if (communityEnabled) messaging.subscribeToTopic("coc_lio_community")
-        else messaging.unsubscribeFromTopic("coc_lio_community")
-        if (updatesEnabled) messaging.subscribeToTopic("coc_lio_updates")
-        else messaging.unsubscribeFromTopic("coc_lio_updates")
+        messaging.unsubscribeFromTopic("coc_lio_community")
+        messaging.unsubscribeFromTopic("coc_lio_updates")
     }
 }
 
