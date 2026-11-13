@@ -730,27 +730,6 @@ object AccountPrivacyConsent {
         )
     }
 
-    suspend fun save(choice: AccountPrivacyChoice) {
-        val user = FirebaseAuth.getInstance().currentUser
-            ?: throw IllegalStateException("Bạn cần đăng nhập Google để lưu lựa chọn quyền riêng tư.")
-        FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
-            .set(
-                mapOf(
-                    "dataSharingConsent" to choice.securityTelemetry,
-                    "analyticsConsent" to choice.analytics,
-                    "diagnosticsConsent" to choice.diagnostics,
-                    "villageDataConsent" to choice.villageDataSync,
-                    "activityDataConsentVersion" to CURRENT_VERSION,
-                    "activityConsentAt" to FieldValue.serverTimestamp(),
-                    "updatedAt" to FieldValue.serverTimestamp()
-                ),
-                SetOptions.merge()
-            )
-            .awaitFirebaseResult()
-    }
-
     fun applyCollectionSettings(context: Context, choice: AccountPrivacyChoice) {
         FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(choice.analytics)
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(choice.diagnostics)
