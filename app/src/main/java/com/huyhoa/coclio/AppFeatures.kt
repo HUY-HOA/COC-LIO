@@ -1159,17 +1159,23 @@ private fun ensureUpgradeNotificationChannel(
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val manager = context.getSystemService(NotificationManager::class.java)
-    if (manager.getNotificationChannel(channelId) != null) return
+    val channelName = AppLanguageSettings.translate(
+        context,
+        if (alarmStyle) "Nhắc nâng cấp kiểu báo thức • ${alarmDurationSeconds}s" else "Tin nhắn nâng cấp"
+    )
     val channel = NotificationChannel(
         channelId,
-        if (alarmStyle) "Nhắc nâng cấp kiểu báo thức • ${alarmDurationSeconds}s" else "Tin nhắn nâng cấp",
+        channelName,
         if (alarmStyle) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
     )
-    channel.description = if (alarmStyle) {
-        "Thông báo báo thức tự đóng sau ${alarmDurationSeconds} giây"
-    } else {
-        "Nhắc khi bộ đếm nâng cấp trong JSON đã hết thời gian"
-    }
+    channel.description = AppLanguageSettings.translate(
+        context,
+        if (alarmStyle) {
+            "Thông báo báo thức tự đóng sau ${alarmDurationSeconds} giây"
+        } else {
+            "Nhắc khi bộ đếm nâng cấp trong JSON đã hết thời gian"
+        }
+    )
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) channel.setAllowBubbles(true)
     channel.enableVibration(true)
     if (alarmStyle) {
