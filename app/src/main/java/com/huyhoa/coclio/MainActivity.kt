@@ -79,6 +79,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -498,6 +499,15 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
+    var securityTelemetryConsent by remember { mutableStateOf(false) }
+    var analyticsConsent by remember { mutableStateOf(false) }
+    var diagnosticsConsent by remember { mutableStateOf(false) }
+    var privacyChoiceVersion by remember { mutableLongStateOf(0L) }
+    var showPrivacyConsentDialog by remember { mutableStateOf(false) }
+    var privacyDialogSecurity by remember { mutableStateOf(false) }
+    var privacyDialogAnalytics by remember { mutableStateOf(false) }
+    var privacyDialogDiagnostics by remember { mutableStateOf(false) }
+    var privacySaving by remember { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var lastUsedAt by remember(activeProfile) {
         mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
@@ -530,6 +540,13 @@ private fun CocLioApp(
     var deletedReceivedSharedJsons by remember(activeProfile) {
         mutableStateOf(ReceivedSharedJsonStore.loadDeleted(context, activeProfile))
     }
+    fun openPrivacyDialog() {
+        privacyDialogSecurity = securityTelemetryConsent
+        privacyDialogAnalytics = analyticsConsent
+        privacyDialogDiagnostics = diagnosticsConsent
+        showPrivacyConsentDialog = true
+    }
+
     val ledPrefs = remember {
         context.getSharedPreferences("coc_lio_led", android.content.Context.MODE_PRIVATE).also { prefs ->
             if (prefs.getInt("settings_version", 0) < 1) {
@@ -659,6 +676,40 @@ private fun CocLioApp(
         AppWidgetUpdater.ensureRefresh(context)
     }
 
+    LaunchedEffect(isGoogleSignedIn, activeProfile) {
+        if (!isGoogleSignedIn) {
+            securityTelemetryConsent = false
+            analyticsConsent = false
+            diagnosticsConsent = false
+            privacyChoiceVersion = 0L
+            AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+        } else {
+            runCatching { AccountPrivacyConsent.load() }
+                .onSuccess { choice ->
+                    securityTelemetryConsent = choice.securityTelemetry
+                    analyticsConsent = choice.analytics
+                    diagnosticsConsent = choice.diagnostics
+                    privacyChoiceVersion = choice.version
+                    AccountPrivacyConsent.applyCollectionSettings(context, choice)
+                    if (choice.version < AccountPrivacyConsent.CURRENT_VERSION) {
+                        openPrivacyDialog()
+                    } else if (choice.securityTelemetry) {
+                        AccountActivityTracker.start(context)
+                    } else {
+                        AccountActivityTracker.stopAndWait(context)
+                    }
+                }
+                .onFailure {
+                    securityTelemetryConsent = false
+                    analyticsConsent = false
+                    diagnosticsConsent = false
+                    privacyChoiceVersion = 0L
+                    AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+                    snackbar.showSnackbar("Không tải được lựa chọn quyền riêng tư. Dữ liệu tùy chọn vẫn đang tắt.")
+                }
+        }
+    }
+
     LaunchedEffect(isGoogleSignedIn) {
         if (!isGoogleSignedIn) {
             showImportDialog = false
@@ -768,7 +819,6 @@ private fun CocLioApp(
                 }
                 GoogleAccountAuth.shareProfile(googleAccount)
                 FirebaseAccountAdministration.savePreferredName(profileName)
-                AccountActivityTracker.start(context)
                 AccountProfileStore.setActive(context, googleAccount.email)
                 activeProfile = googleAccount.email
                 interactiveGoogleSignIn = false
@@ -788,12 +838,42 @@ private fun CocLioApp(
         scope.launch {
             AccountActivityTracker.stopAndWait(context)
             FirebaseTelemetry.logSignOut(context)
+            AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
             GoogleAccountAuth.signOut(context)
             AccountProfileStore.setActive(context, null)
             interactiveGoogleSignIn = false
             activeProfile = "local"
             selectedTab = 0
             snackbar.showSnackbar(message)
+        }
+    }
+
+    fun savePrivacyChoice(choice: AccountPrivacyChoice) {
+        if (privacySaving) return
+        privacySaving = true
+        scope.launch {
+            try {
+                AccountPrivacyConsent.save(choice)
+                securityTelemetryConsent = choice.securityTelemetry
+                analyticsConsent = choice.analytics
+                diagnosticsConsent = choice.diagnostics
+                privacyChoiceVersion = AccountPrivacyConsent.CURRENT_VERSION
+                AccountPrivacyConsent.applyCollectionSettings(context, choice)
+                if (choice.securityTelemetry) {
+                    AccountActivityTracker.start(context)
+                } else {
+                    AccountActivityTracker.stopAndWait(context)
+                }
+                showPrivacyConsentDialog = false
+                snackbar.showSnackbar("Đã lưu lựa chọn quyền riêng tư của bạn.")
+            } catch (error: Exception) {
+                snackbar.showSnackbar(
+                    error.message?.takeIf { it.isNotBlank() }
+                        ?: "Không thể lưu lựa chọn quyền riêng tư. Hãy thử lại."
+                )
+            } finally {
+                privacySaving = false
+            }
         }
     }
 
@@ -1053,6 +1133,11 @@ private fun CocLioApp(
                         accountData = AccountProfileStore.googleData(context, activeProfile),
                         preferredName = AccountProfileStore.preferredName(context, activeProfile),
                         lastUsedLabel = lastUsedAt.takeIf { it > 0L }?.let { formatTimestamp(it / 1000L) },
+                        securityTelemetryConsent = securityTelemetryConsent,
+                        analyticsConsent = analyticsConsent,
+                        diagnosticsConsent = diagnosticsConsent,
+                        privacyChoiceConfigured = privacyChoiceVersion >= AccountPrivacyConsent.CURRENT_VERSION,
+                        onManagePrivacy = { openPrivacyDialog() },
                         knownProfiles = AccountProfileStore.knownProfiles(context, activeProfile),
                         themeMode = themeMode,
                         onThemeModeChanged = onThemeModeChanged,
@@ -1232,6 +1317,159 @@ private fun CocLioApp(
             },
             dismissButton = {
                 TextButton(onClick = { googleAuthError = null }) { Text("ĐÓNG") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
+    if (showPrivacyConsentDialog && isGoogleSignedIn) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyConsentDialog = false },
+            title = {
+                Text("QUYỀN RIÊNG TƯ & DỮ LIỆU COC-LIO", fontWeight = FontWeight.Black)
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 440.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "THÔNG TIN TÀI KHOẢN CẦN THIẾT",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        "Khi bạn đăng nhập Google và dùng tính năng tài khoản, COC-LIO lưu Firebase UID, email, tên và ảnh hồ sơ Google, trạng thái xác minh email, tên hiển thị bạn đặt, nhà cung cấp đăng nhập, số lần và thời điểm đăng nhập. Mục đích là xác thực, duy trì tài khoản, đồng bộ hồ sơ và hiển thị danh tính trong cộng đồng. Hồ sơ được lưu trong Firebase Authentication và Cloud Firestore.",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 10.sp,
+                        lineHeight = 15.sp
+                    )
+                    Text(
+                        "CÁC MỤC THU THẬP BỔ SUNG — TỰ CHỌN",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        "Các mục dưới đây mặc định tắt. Bạn vẫn có thể dùng ứng dụng và các chức năng chính khi không bật.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = privacyDialogSecurity,
+                            onCheckedChange = { privacyDialogSecurity = it },
+                            enabled = !privacySaving
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text("Bảo mật tài khoản và hoạt động", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text(
+                                "Cho phép ghi nhận IP kết nối; hãng và mẫu thiết bị; phiên bản Android/API; phiên bản ứng dụng; thời điểm mở, hoạt động, chuyển nền; số phiên và thời lượng sử dụng. Mục đích: bảo vệ tài khoản, phát hiện lạm dụng và hỗ trợ kỹ thuật.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp,
+                                lineHeight = 13.sp
+                            )
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = privacyDialogAnalytics,
+                            onCheckedChange = { privacyDialogAnalytics = it },
+                            enabled = !privacySaving
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text("Phân tích mức sử dụng", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text(
+                                "Cho phép Firebase Analytics ghi nhận sự kiện như đăng nhập, đăng xuất, nhập JSON và một số thông tin sử dụng/thiết bị tự động của SDK. Mục đích: hiểu tính năng được dùng ra sao để cải thiện ứng dụng.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp,
+                                lineHeight = 13.sp
+                            )
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = privacyDialogDiagnostics,
+                            onCheckedChange = { privacyDialogDiagnostics = it },
+                            enabled = !privacySaving
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text("Báo cáo lỗi và hiệu năng", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text(
+                                "Cho phép Firebase Crashlytics gửi thông tin sự cố, dấu vết lỗi và trạng thái thiết bị/ứng dụng; Firebase Performance ghi nhận số liệu hiệu năng và thời gian mạng. Mục đích: tìm lỗi, cải thiện độ ổn định và tốc độ.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp,
+                                lineHeight = 13.sp
+                            )
+                        }
+                    }
+                    Text(
+                        "KHI BẠN TỰ GỬI NỘI DUNG",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        "Tin nhắn cộng đồng, JSON, hình ảnh hoặc tệp bạn chủ động gửi sẽ được lưu để cung cấp đúng chức năng chia sẻ. Nếu bật thông báo, Firebase Messaging xử lý mã thông báo thiết bị để gửi thông báo bạn đã chọn.",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 10.sp,
+                        lineHeight = 15.sp
+                    )
+                    Text(
+                        "Lựa chọn được lưu cùng tài khoản, thời điểm máy chủ ghi nhận và phiên bản thông báo. Bạn có thể đổi hoặc rút lại bất cứ lúc nào trong Cài đặt. Khi rút lại, COC-LIO dừng thu thập mới cho mục đó; yêu cầu xem, sửa hoặc xóa dữ liệu đã lưu có thể gửi đến phunghuyhoahaikba@gmail.com. Dữ liệu bổ sung đã thu thập trước khi rút lại không tự động bị xóa.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 9.sp,
+                        lineHeight = 13.sp
+                    )
+                    Text(
+                        "Đơn vị quản lý ứng dụng: COC-LIO. Dịch vụ xử lý/lưu trữ sử dụng Google Firebase. Chính sách áp dụng theo quy định bảo vệ dữ liệu cá nhân hiện hành.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 9.sp,
+                        lineHeight = 13.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !privacySaving,
+                    onClick = {
+                        savePrivacyChoice(
+                            AccountPrivacyChoice(
+                                securityTelemetry = privacyDialogSecurity,
+                                analytics = privacyDialogAnalytics,
+                                diagnostics = privacyDialogDiagnostics
+                            )
+                        )
+                    }
+                ) {
+                    Text(if (privacySaving) "ĐANG LƯU..." else "LƯU LỰA CHỌN")
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    TextButton(
+                        enabled = !privacySaving,
+                        onClick = {
+                            privacyDialogSecurity = false
+                            privacyDialogAnalytics = false
+                            privacyDialogDiagnostics = false
+                            savePrivacyChoice(AccountPrivacyChoice())
+                        }
+                    ) {
+                        Text("TỪ CHỐI TẤT CẢ", color = MaterialTheme.colorScheme.error)
+                    }
+                    TextButton(
+                        enabled = !privacySaving,
+                        onClick = { showPrivacyConsentDialog = false }
+                    ) {
+                        Text("ĐỂ SAU")
+                    }
+                }
             },
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
