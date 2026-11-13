@@ -112,6 +112,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -621,14 +622,16 @@ private fun CocLioApp(
         40000.0 / ledSpeed.coerceIn(1, 100)
     ).toInt().coerceIn(400, 40000)
     val ledProgress = remember { mutableStateOf(0f) }
-    LaunchedEffect(ledSpeedMillis) {
+    val currentLedSpeedMillis by rememberUpdatedState(ledSpeedMillis)
+    LaunchedEffect(ledSpeedMillis > 0) {
         if (ledSpeedMillis > 0) {
             var lastFrameNanos = 0L
             while (true) {
                 withFrameNanos { frameTimeNanos ->
-                    if (lastFrameNanos != 0L) {
+                    val speedForFrame = currentLedSpeedMillis
+                    if (lastFrameNanos != 0L && speedForFrame > 0) {
                         val elapsedMillis = ((frameTimeNanos - lastFrameNanos) / 1_000_000f).coerceAtLeast(0f)
-                        ledProgress.value = (ledProgress.value + elapsedMillis / ledSpeedMillis.toFloat()).rem(1f)
+                        ledProgress.value = (ledProgress.value + elapsedMillis / speedForFrame.toFloat()).rem(1f)
                     }
                     lastFrameNanos = frameTimeNanos
                 }
