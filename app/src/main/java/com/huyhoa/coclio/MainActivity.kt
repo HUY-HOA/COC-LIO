@@ -1573,7 +1573,7 @@ private fun RequiredAccountDataDetailsDialog(
                 )
                 Text("3. DỮ LIỆU KHÔNG BẮT BUỘC", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Thông tin thiết bị và hoạt động, phân tích mức sử dụng, báo cáo lỗi/hiệu năng và đồng bộ JSON Clash of Clans lên tài khoản là các mục riêng, mặc định tắt. Ô xác nhận dữ liệu tài khoản bắt buộc trên màn hình đăng nhập không bật các mục tùy chọn này.",
+                    "Thông tin thiết bị và hoạt động, phân tích mức sử dụng, báo cáo lỗi/hiệu năng và đồng bộ JSON Clash of Clans lên tài khoản là các mục riêng, mặc định tắt. Nếu bạn đã chủ động cho phép một mục từ trước, lựa chọn đã lưu tiếp tục được áp dụng. Ô xác nhận dữ liệu tài khoản bắt buộc trên màn hình đăng nhập không bật các mục tùy chọn này.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
