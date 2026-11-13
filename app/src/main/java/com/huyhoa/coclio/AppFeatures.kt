@@ -41,6 +41,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Slider
@@ -84,6 +85,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text as MaterialText
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -123,6 +125,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -2943,38 +2946,336 @@ class CocLioMessagingService : FirebaseMessagingService() {
     }
 }
 
+internal fun postCommunityChatBubbleNotification(
+    context: Context,
+    notificationId: Int,
+    senderUid: String,
+    senderName: String,
+    messageText: String
+) {
+    val notificationManager = NotificationManagerCompat.from(context)
+    if (!notificationManager.areNotificationsEnabled()) return
+    val channelId = COC_LIO_COMMUNITY_CHANNEL
+    val title = AppLanguageSettings.translate(context, "Tin nhắn cộng đồng")
+    val channelName = AppLanguageSettings.translate(context, "Tin nhắn cộng đồng")
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
+        channel.description = AppLanguageSettings.translate(context, "Thông báo tin nhắn mới trong cộng đồng COC-LIO")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) channel.setAllowBubbles(true)
+        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+    val openIntent = Intent(context, MainActivity::class.java)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+    val contentIntent = PendingIntent.getActivity(
+        context,
+        notificationId,
+        openIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    val sender = androidx.core.app.Person.Builder()
+        .setName(senderName.ifBlank { AppLanguageSettings.translate(context, "Thành viên") })
+        .setKey(senderUid.ifBlank { "community" })
+        .setImportant(true)
+        .build()
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val currentPerson = androidx.core.app.Person.Builder()
+        .setName(AppLanguageSettings.translate(context, "Bạn"))
+        .setKey(currentUser?.uid ?: "coc-lio-current-user")
+        .build()
+    val builder = NotificationCompat.Builder(context, channelId)
+        .setSmallIcon(android.R.drawable.ic_dialog_info)
+        .setContentTitle(title)
+        .setContentText((senderName + ": " + messageText).take(420))
+        .setStyle(
+            NotificationCompat.MessagingStyle(currentPerson)
+                .setConversationTitle(AppLanguageSettings.translate(context, "Cộng đồng COC-LIO"))
+                .addMessage(messageText.take(2000), System.currentTimeMillis(), sender)
+        )
+        .setContentIntent(contentIntent)
+        .setAutoCancel(false)
+        .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .addPerson(sender)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        ensureCommunityBubbleShortcut(context)
+        val bubbleIntent = Intent(context, CocLioBubbleActivity::class.java)
+            .setAction(Intent.ACTION_VIEW)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra("bubble_title", AppLanguageSettings.translate(context, "Cộng đồng COC-LIO"))
+        val mutableFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+        val bubblePendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId xor 0x434F43,
+            bubbleIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag
+        )
+        val bubble = NotificationCompat.BubbleMetadata.Builder(
+            bubblePendingIntent,
+            IconCompat.createWithResource(context, android.R.drawable.sym_action_chat)
+        ).setDesiredHeight(560).build()
+        builder.setShortcutId(COC_LIO_COMMUNITY_SHORTCUT).setBubbleMetadata(bubble)
+    }
+    runCatching { notificationManager.notify(notificationId, builder.build()) }
+}
+
+private data class CommunityBubbleMessage(
+    val id: String,
+    val uid: String,
+    val displayName: String,
+    val text: String,
+    val senderIsAdmin: Boolean
+)
+
 class CocLioBubbleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val title = intent.getStringExtra("bubble_title") ?: AppLanguageSettings.translate(this, "Cộng đồng COC-LIO")
-        val body = intent.getStringExtra("bubble_body") ?: AppLanguageSettings.translate(this, "Thông báo mới trong cộng đồng.")
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         val language = AppLanguageSettings.resolve(
             AppLanguageSettings.load(this),
             resources.configuration.locales[0].language
         )
+        val title = intent.getStringExtra("bubble_title")
+            ?: AppLanguageSettings.translate(this, "Cộng đồng COC-LIO")
         setContent {
             CompositionLocalProvider(LocalAppLanguage provides language) {
                 MaterialTheme {
-                    androidx.compose.material3.Surface(
-                        modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.surface
-                    ) {
-                        Column(
-                            modifier = androidx.compose.ui.Modifier.fillMaxSize().padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(title, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-                            Text(body, color = MaterialTheme.colorScheme.onSurface)
-                            Button(
-                                onClick = {
-                                    startActivity(
-                                        Intent(this@CocLioBubbleActivity, MainActivity::class.java)
-                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                    )
-                                },
-                                modifier = androidx.compose.ui.Modifier.fillMaxWidth()
-                            ) { Text("MỞ COC-LIO") }
+                    CommunityBubbleChatContent(
+                        title = title,
+                        onOpenApp = {
+                            startActivity(
+                                Intent(this@CocLioBubbleActivity, MainActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            )
                         }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommunityBubbleChatContent(
+    title: String,
+    onOpenApp: () -> Unit
+) {
+    val context = LocalContext.current
+    val user = remember { FirebaseAuth.getInstance().currentUser }
+    var messages by remember { mutableStateOf<List<CommunityBubbleMessage>>(emptyList()) }
+    var draft by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(user != null) }
+    var sending by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scrollState = rememberScrollState()
+
+    DisposableEffect(user?.uid) {
+        if (user == null) {
+            messages = emptyList()
+            loading = false
+            onDispose { }
+        } else {
+            val registration = FirebaseFirestore.getInstance()
+                .collection("community_messages")
+                .orderBy("createdAt", Query.Direction.ASCENDING)
+                .limitToLast(60)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        errorMessage = error.message
+                            ?: AppLanguageSettings.translate(context, "Không thể tải tin nhắn.")
+                        loading = false
+                    } else {
+                        messages = snapshot?.documents.orEmpty().mapNotNull { document ->
+                            val uid = document.getString("uid") ?: return@mapNotNull null
+                            val type = document.getString("type").orEmpty()
+                            val text = when (type) {
+                                "text", "json" -> document.getString("text").orEmpty()
+                                "image", "file" -> document.getString("fileName").orEmpty()
+                                else -> ""
+                            }
+                            if (text.isBlank()) return@mapNotNull null
+                            CommunityBubbleMessage(
+                                id = document.id,
+                                uid = uid,
+                                displayName = document.getString("displayName").orEmpty(),
+                                text = text,
+                                senderIsAdmin = document.getBoolean("senderIsAdmin") ?: false
+                            )
+                        }
+                        errorMessage = null
+                        loading = false
+                    }
+                }
+            onDispose { registration.remove() }
+        }
+    }
+
+    LaunchedEffect(messages.size) {
+        scrollState.animateScrollTo(scrollState.maxValue)
+    }
+
+    androidx.compose.material3.Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(title, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+                    Text(
+                        AppLanguageSettings.translate(context, "Trò chuyện cộng đồng"),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 9.sp
+                    )
+                }
+                TextButton(onClick = onOpenApp) {
+                    Text(AppLanguageSettings.translate(context, "Mở ứng dụng"), fontSize = 10.sp)
+                }
+            }
+            if (user == null) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        AppLanguageSettings.translate(context, "Đăng nhập Google để trò chuyện và gửi tin nhắn."),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp
+                    )
+                    Button(onClick = onOpenApp) {
+                        Text(AppLanguageSettings.translate(context, "ĐĂNG NHẬP"))
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (loading) {
+                        Text(
+                            AppLanguageSettings.translate(context, "Đang tải tin nhắn…"),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 10.sp
+                        )
+                    }
+                    if (!loading && messages.isEmpty()) {
+                        Text(
+                            AppLanguageSettings.translate(context, "Chưa có tin nhắn. Hãy gửi lời chào đầu tiên!"),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                    }
+                    messages.forEach { message ->
+                        val mine = message.uid == user.uid
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start
+                        ) {
+                            Card(
+                                modifier = Modifier.widthIn(max = 300.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (mine) MaterialTheme.colorScheme.primaryContainer
+                                    else if (message.senderIsAdmin) Color(0xFF3A2A12)
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    if (!mine) {
+                                        Text(
+                                            message.displayName.ifBlank {
+                                                AppLanguageSettings.translate(context, "Thành viên")
+                                            },
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Text(
+                                        message.text,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                errorMessage?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = draft,
+                        onValueChange = { if (it.length <= 2000) draft = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = {
+                            Text(
+                                AppLanguageSettings.translate(context, "Viết tin nhắn…"),
+                                fontSize = 11.sp
+                            )
+                        },
+                        maxLines = 3,
+                        textStyle = MaterialTheme.typography.bodySmall
+                    )
+                    Button(
+                        enabled = !sending && draft.trim().isNotEmpty(),
+                        onClick = {
+                            val text = draft.trim()
+                            val signedInUser = FirebaseAuth.getInstance().currentUser
+                            if (signedInUser != null && text.isNotEmpty()) {
+                                sending = true
+                                errorMessage = null
+                                FirebaseFirestore.getInstance()
+                                    .collection("community_messages")
+                                    .add(
+                                        mapOf(
+                                            "uid" to signedInUser.uid,
+                                            "displayName" to (signedInUser.displayName ?: signedInUser.email ?: "Thành viên").take(80),
+                                            "senderIsAdmin" to FirebaseAccountAdministration.isOwner(signedInUser.email),
+                                            "photoUrl" to signedInUser.photoUrl?.toString().orEmpty().take(1000),
+                                            "type" to "text",
+                                            "text" to text.take(2000),
+                                            "fileName" to "",
+                                            "storagePath" to "",
+                                            "downloadUrl" to "",
+                                            "contentType" to "",
+                                            "fileSize" to 0L,
+                                            "sharedJsonId" to "",
+                                            "createdAt" to FieldValue.serverTimestamp()
+                                        )
+                                    )
+                                    .addOnSuccessListener {
+                                        draft = ""
+                                        sending = false
+                                    }
+                                    .addOnFailureListener { failure ->
+                                        errorMessage = failure.message
+                                            ?: AppLanguageSettings.translate(context, "Không gửi được tin nhắn.")
+                                        sending = false
+                                    }
+                            }
+                        },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            if (sending) "…" else AppLanguageSettings.translate(context, "GỬI"),
+                            fontSize = 10.sp
+                        )
                     }
                 }
             }
