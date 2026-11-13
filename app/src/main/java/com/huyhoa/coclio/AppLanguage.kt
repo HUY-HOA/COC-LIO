@@ -996,12 +996,64 @@ private val englishTranslations = mapOf(
     "Không có dữ liệu phụ" to "No extra data",
     "Không tìm thấy dữ liệu phù hợp." to "No matching data found.",
     "Đã đồng bộ bản JSON mới nhất" to "Synced the latest JSON snapshot",
+    "Máy công thành" to "Siege Machines",
+    "Trợ thủ" to "Helpers",
+    "Mục căn cứ thợ xây" to "Builder Base Item",
+    "Mục" to "Item",
+    "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
+    "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
+    "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
+    "Bạn cần đăng nhập Google trước." to "You must sign in with Google first.",
+    "Tài khoản Google hiện tại không khớp với hồ sơ vừa chọn." to "The current Google account does not match the selected profile.",
+    "Không thể mở hồ sơ này." to "Unable to open this profile.",
+    "Không thể tải thêm kết quả." to "Unable to load more results.",
+    "Không thể hoàn tất bản dịch." to "Unable to complete the translation.",
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
     if (language != AppUiLanguage.ENGLISH) return source
     englishTranslations[source]?.let { return it }
     return when {
+        Regex("^(.+) cấp (\\d+)$").matchEntire(source) != null ->
+            Regex("^(.+) cấp (\\d+)$").matchEntire(source)!!.let { match ->
+                (englishTranslations[match.groupValues[1]] ?: match.groupValues[1]) + " level " + match.groupValues[2]
+            }
+        Regex("^(.+) • cấp (.+)$").matchEntire(source) != null ->
+            Regex("^(.+) • cấp (.+)$").matchEntire(source)!!.let { match ->
+                (englishTranslations[match.groupValues[1]] ?: match.groupValues[1]) + " • level " + match.groupValues[2]
+            }
+        Regex("^(\\d+) mục • (\\d+) nâng$").matchEntire(source) != null ->
+            Regex("^(\\d+) mục • (\\d+) nâng$").matchEntire(source)!!.let { "${it.groupValues[1]} items • ${it.groupValues[2]} upgrades" }
+        Regex("^ID: (.+)  •  TH (.+)  •  BH (.+)  •  (\\d+) mốc  •  (\\d+) đang nâng$").matchEntire(source) != null ->
+            Regex("^ID: (.+)  •  TH (.+)  •  BH (.+)  •  (\\d+) mốc  •  (\\d+) đang nâng$").matchEntire(source)!!.let {
+                "ID: ${it.groupValues[1]}  •  TH ${it.groupValues[2]}  •  BH ${it.groupValues[3]}  •  ${it.groupValues[4]} snapshots  •  ${it.groupValues[5]} upgrading"
+            }
+        Regex("^(.+)  •  TH (.+)  •  BH (.+)  •  (\\d+) mục$").matchEntire(source) != null ->
+            Regex("^(.+)  •  TH (.+)  •  BH (.+)  •  (\\d+) mục$").matchEntire(source)!!.let {
+                "${it.groupValues[1]}  •  TH ${it.groupValues[2]}  •  BH ${it.groupValues[3]}  •  ${it.groupValues[4]} items"
+            }
+        Regex("^Lần đăng nhập gần nhất · (.+)$").matchEntire(source) != null ->
+            "Last sign-in · " + source.removePrefix("Lần đăng nhập gần nhất · ")
+        Regex("^Nhắc nâng cấp kiểu báo thức • (\\d+)s$").matchEntire(source) != null ->
+            Regex("^Nhắc nâng cấp kiểu báo thức • (\\d+)s$").matchEntire(source)!!.let { "Upgrade alarm reminder • ${it.groupValues[1]}s" }
+        Regex("^Thông báo báo thức tự đóng sau (\\d+) giây$").matchEntire(source) != null ->
+            Regex("^Thông báo báo thức tự đóng sau (\\d+) giây$").matchEntire(source)!!.let { "Alarm notification closes after ${it.groupValues[1]} seconds" }
+        Regex("^ClashKing trả về lỗi HTTP (.+)\\.$").matchEntire(source) != null ->
+            Regex("^ClashKing trả về lỗi HTTP (.+)\\.$").matchEntire(source)!!.let { "ClashKing returned HTTP error ${it.groupValues[1]}." }
+        Regex("^Chưa có hồ sơ Clan (.+) trong kho dữ liệu ClashKing\\.$").matchEntire(source) != null ->
+            Regex("^Chưa có hồ sơ Clan (.+) trong kho dữ liệu ClashKing\\.$").matchEntire(source)!!.let { "No Clan profile for ${it.groupValues[1]} is available in the ClashKing database." }
+        Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source) != null ->
+            Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source)!!.let {
+                "Update ${it.groupValues[1]} will be moved to the archive. The old APK file will be retained but will not be accessible."
+            }
+        source.startsWith("ĐANG TẢI ") ->
+            "LOADING " + translateAppText(source.removePrefix("ĐANG TẢI ").removeSuffix("..."), AppUiLanguage.ENGLISH) + "..."
+        source.startsWith("Tăng tốc ") ->
+            "Boost " + source.removePrefix("Tăng tốc ")
+        source.startsWith("Dữ liệu JSON: ") ->
+            "JSON data: " + source.removePrefix("Dữ liệu JSON: ")
+        source.startsWith("Máy công thành") ->
+            "Siege Machines" + source.removePrefix("Máy công thành")
         Regex("^Đăng nhập (\\d+) lần · (.+)$").matchEntire(source)?.let {
             "Signed in ${it.groupValues[1]} times · ${it.groupValues[2]}"
         } != null -> Regex("^Đăng nhập (\\d+) lần · (.+)$").matchEntire(source)!!.let {
@@ -1092,9 +1144,10 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             .replace(" sẽ bị xóa khỏi Kho JSON và không thể khôi phục.", " will be deleted from JSON Storage and cannot be recovered.")
             .replace(" Bản nhập trong LỊCH SỬ vẫn được giữ.", " Imports in HISTORY will be kept.")
         source.startsWith("Chia sẻ bởi: ") -> "Shared by: " + source.removePrefix("Chia sẻ bởi: ")
-        source.startsWith("Dữ liệu: ") -> "Data: " + source.removePrefix("Dữ liệu: ")
+        source.startsWith("Dữ liệu: ") -> "Data: " + source.removePrefix("Dữ liệu: ").replace(" • Nhận: ", " • Received: ")
         source.startsWith("Đã gỡ: ") -> "Removed: " + source.removePrefix("Đã gỡ: ")
         source.startsWith("Đã gửi: ") -> "Sent: " + source.removePrefix("Đã gửi: ").replace(" • Đã gỡ: ", " • Removed: ")
+        source.startsWith("  •  Đã gỡ: ") -> "  •  Removed: " + source.removePrefix("  •  Đã gỡ: ")
         source.startsWith("Đã tải ") -> "Loaded " + source.removePrefix("Đã tải ")
         source.startsWith("Nhà chính ") -> "Town Hall " + source.removePrefix("Nhà chính ")
         source.startsWith("Cấp Nhà chính ") -> "Town Hall Level " + source.removePrefix("Cấp Nhà chính ")
