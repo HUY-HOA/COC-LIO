@@ -266,7 +266,13 @@ fun ClashLookupScreen() {
             if (kind == ClashLookupKind.PLAYER) {
                 OutlinedTextField(
                     value = searchTownHallFilter,
-                    onValueChange = { searchTownHallFilter = it.filter(Char::isDigit).take(2) },
+                    onValueChange = {
+                        searchTownHallFilter = it.filter(Char::isDigit).take(2)
+                        result = null
+                        searchResults = emptyList()
+                        searchNextCursor = null
+                        error = null
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Lọc theo cấp Nhà chính (1–20)") },
                     singleLine = true,
@@ -275,7 +281,13 @@ fun ClashLookupScreen() {
             } else {
                 OutlinedTextField(
                     value = searchMinMembersFilter,
-                    onValueChange = { searchMinMembersFilter = it.filter(Char::isDigit).take(2) },
+                    onValueChange = {
+                        searchMinMembersFilter = it.filter(Char::isDigit).take(2)
+                        result = null
+                        searchResults = emptyList()
+                        searchNextCursor = null
+                        error = null
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Số thành viên tối thiểu (1–50)") },
                     singleLine = true,
@@ -286,13 +298,21 @@ fun ClashLookupScreen() {
         Button(
             onClick = {
                 scope.launch {
+                    val townHallFilter = searchTownHallFilter.toIntOrNull()?.takeIf { it in 1..20 }
+                    val minMembersFilter = searchMinMembersFilter.toIntOrNull()?.takeIf { it in 1..50 }
+                    if (kind == ClashLookupKind.PLAYER && searchTownHallFilter.isNotBlank() && townHallFilter == null) {
+                        error = "Cấp Nhà chính phải từ 1 đến 20."
+                        return@launch
+                    }
+                    if (kind == ClashLookupKind.CLAN && searchMinMembersFilter.isNotBlank() && minMembersFilter == null) {
+                        error = "Số thành viên tối thiểu phải từ 1 đến 50."
+                        return@launch
+                    }
                     loading = true
                     error = null
                     result = null
                     searchResults = emptyList()
                     searchNextCursor = null
-                    val townHallFilter = searchTownHallFilter.toIntOrNull()?.takeIf { it in 1..20 }
-                    val minMembersFilter = searchMinMembersFilter.toIntOrNull()?.takeIf { it in 1..50 }
                     runCatching {
                         searchClashKing(kind, tagInput, null, townHallFilter, minMembersFilter)
                     }
@@ -346,7 +366,7 @@ fun ClashLookupScreen() {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Tìm thấy " + searchResults.size + " kết quả. Chọn đúng hồ sơ để xem chi tiết.",
+                "Đã tải " + searchResults.size + " kết quả. Chọn đúng hồ sơ để xem chi tiết.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp
             )
