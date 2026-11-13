@@ -1135,6 +1135,14 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^CẤP (\\d+) → (\\d+) • CÒN (\\d+)%$").matchEntire(source)!!.let {
                 "LEVEL ${it.groupValues[1]} → ${it.groupValues[2]} • ${it.groupValues[3]}% LEFT"
             }
+        Regex("^(\\d+) mục$").matchEntire(source) != null ->
+            Regex("^(\\d+) mục$").matchEntire(source)!!.let { "${it.groupValues[1]} items" }
+        Regex("^(\\d+) nâng$").matchEntire(source) != null ->
+            Regex("^(\\d+) nâng$").matchEntire(source)!!.let { "${it.groupValues[1]} upgrades" }
+        Regex("^(\\d+) mốc$").matchEntire(source) != null ->
+            Regex("^(\\d+) mốc$").matchEntire(source)!!.let { "${it.groupValues[1]} snapshots" }
+        Regex("^Cấp (\\d+)$").matchEntire(source) != null ->
+            Regex("^Cấp (\\d+)$").matchEntire(source)!!.let { "Level ${it.groupValues[1]}" }
         Regex("^(\\d+) mục dữ liệu\\.$").matchEntire(source) != null ->
             Regex("^(\\d+) mục dữ liệu\\.$").matchEntire(source)!!.let { "${it.groupValues[1]} data items." }
         Regex("^(\\d+) mục\\.$").matchEntire(source) != null ->
