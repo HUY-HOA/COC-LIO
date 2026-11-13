@@ -1421,7 +1421,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Lịch sử làng, JSON đã nhập, tên làng, mục ghim, lịch sử đã xóa và JSON nhận từ cộng đồng có thể được lưu trong bộ nhớ riêng của ứng dụng trên điện thoại để bạn xem lại. Việc nhập hoặc mở JSON không tự động tải nội dung đó lên máy chủ; JSON chỉ được gửi lên Firebase khi bạn chủ động chọn chia sẻ vào cộng đồng. Dữ liệu cục bộ không tự mất khi xóa hồ sơ Firebase; bạn cần xóa dữ liệu ứng dụng hoặc gỡ ứng dụng để xóa bản lưu trên máy.",
+                        "Lịch sử làng, JSON đã nhập, tên làng, mục ghim, lịch sử đã xóa, JSON nhận từ cộng đồng và các tùy chỉnh giao diện/thông báo/nhắc nhở có thể được lưu trong bộ nhớ riêng của ứng dụng trên điện thoại để bạn xem lại. Việc nhập hoặc mở JSON không tự động tải nội dung đó lên máy chủ; JSON chỉ được gửi lên Firebase khi bạn chủ động chọn chia sẻ vào cộng đồng. Dữ liệu cục bộ không tự mất khi xóa hồ sơ Firebase; bạn cần xóa dữ liệu ứng dụng hoặc gỡ ứng dụng để xóa bản lưu trên máy.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
