@@ -983,6 +983,19 @@ private val englishTranslations = mapOf(
     "COC-LIO • Thử thông báo" to "COC-LIO • Test notification",
     "Đã chia sẻ JSON" to "Shared JSON",
     "Đã lưu dữ liệu" to "Data saved",
+    "Làng" to "Village",
+    "Căn cứ" to "Base",
+    "Nhóm" to "Section",
+    "Dự kiến" to "Expected level",
+    "Bộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game." to "The JSON countdown has ended. Import a new JSON to confirm the level in the game.",
+    "Công trình căn cứ thợ xây" to "Builder Base Buildings",
+    "Bẫy căn cứ thợ xây" to "Builder Base Traps",
+    "Quân đội căn cứ thợ xây" to "Builder Base Troops",
+    "Anh hùng căn cứ thợ xây" to "Builder Base Heroes",
+    "Nhập JSON đầu tiên" to "Import your first JSON",
+    "Không có dữ liệu phụ" to "No extra data",
+    "Không tìm thấy dữ liệu phù hợp." to "No matching data found.",
+    "Đã đồng bộ bản JSON mới nhất" to "Synced the latest JSON snapshot",
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
@@ -1019,6 +1032,15 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^(\\d+) mục dữ liệu\\.$").matchEntire(source)!!.let { "${it.groupValues[1]} data items." }
         Regex("^(\\d+) mục\\.$").matchEntire(source) != null ->
             Regex("^(\\d+) mục\\.$").matchEntire(source)!!.let { "${it.groupValues[1]} items." }
+        Regex("^(?:(\\d+) ngày )?(?:(\\d+) giờ )?(?:(\\d+) phút|(\\d+) giây)$").matchEntire(source) != null ->
+            Regex("^(?:(\\d+) ngày )?(?:(\\d+) giờ )?(?:(\\d+) phút|(\\d+) giây)$").matchEntire(source)!!.let { match ->
+                buildList {
+                    match.groupValues[1].takeIf { it.isNotEmpty() }?.let { add("$it days") }
+                    match.groupValues[2].takeIf { it.isNotEmpty() }?.let { add("$it hours") }
+                    match.groupValues[3].takeIf { it.isNotEmpty() }?.let { add("$it minutes") }
+                    match.groupValues[4].takeIf { it.isNotEmpty() }?.let { add("$it seconds") }
+                }.joinToString(" ")
+            }
         Regex("^(\\d+) ngày (.+)$").matchEntire(source) != null ->
             Regex("^(\\d+) ngày (.+)$").matchEntire(source)!!.let { "${it.groupValues[1]} days ${it.groupValues[2]}" }
         source.startsWith("Đang tải ") ->
