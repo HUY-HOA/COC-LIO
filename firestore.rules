@@ -116,7 +116,7 @@ service cloud.firestore {
               'activityConsentAt'
             ])
             || (
-              request.resource.data.activityDataConsentVersion == 3
+              request.resource.data.activityDataConsentVersion == 4
               && request.resource.data.activityConsentAt is timestamp
             )
           )
