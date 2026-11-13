@@ -2315,16 +2315,6 @@ fun SettingsScreen(
                     }
                 }
                 if (isAdmin) {
-                    Text("THÔNG TIN GOOGLE QUẢN LÝ", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    ProfileDataRow("Tên Google", accountData?.displayName)
-                    ProfileDataRow("Tên", accountData?.givenName)
-                    ProfileDataRow("Họ", accountData?.familyName)
-                    ProfileDataRow("Email", accountData?.email ?: accountEmail)
-                    ProfileDataRow("Ảnh đại diện", accountData?.profilePictureUri)
-                    ProfileDataRow("Tên bạn đặt", preferredName)
-                    if (lastUsedLabel != null) ProfileDataRow("Mở app lần gần nhất trên máy này", lastUsedLabel)
-                }
-                if (isAdmin) {
                     Button(
                         onClick = { showAdminAccounts = true },
                         modifier = Modifier.fillMaxWidth(),
