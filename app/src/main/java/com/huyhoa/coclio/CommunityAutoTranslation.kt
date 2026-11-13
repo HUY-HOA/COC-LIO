@@ -73,14 +73,15 @@ private object CommunityTranslationEngine {
 
 private suspend fun <T> Task<T>.awaitTranslationResult(): T =
     suspendCancellableCoroutine { continuation ->
-        addOnSuccessListener { result ->
-            if (continuation.isActive) continuation.resume(result)
-        }
-        addOnFailureListener { error ->
-            if (continuation.isActive) continuation.resumeWithException(error)
-        }
-        addOnCanceledListener {
-            if (continuation.isActive) continuation.cancel()
+        addOnCompleteListener { task ->
+            if (!continuation.isActive) return@addOnCompleteListener
+            if (task.isSuccessful) {
+                continuation.resume(task.result)
+            } else {
+                continuation.resumeWithException(
+                    task.exception ?: IllegalStateException("Không thể hoàn tất bản dịch.")
+                )
+            }
         }
     }
 
