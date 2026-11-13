@@ -173,7 +173,7 @@ service cloud.firestore {
             ])
             || (
               resource.data.dataSharingConsent == true
-              && resource.data.activityDataConsentVersion == 4
+              && resource.data.activityDataConsentVersion == 5
               && request.resource.data.activityDataConsentVersion == 5
               && request.resource.data.lastActivityEvent in ['open', 'heartbeat', 'background']
               && request.resource.data.activityUpdatedAt == request.time
