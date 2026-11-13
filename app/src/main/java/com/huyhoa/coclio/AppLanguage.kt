@@ -53,7 +53,7 @@ object AppLanguageSettings {
         when (preference) {
             "en" -> AppUiLanguage.ENGLISH
             "vi" -> AppUiLanguage.VIETNAMESE
-            else -> if (systemLanguage.lowercase().startsWith("en")) AppUiLanguage.ENGLISH else AppUiLanguage.VIETNAMESE
+            else -> if (systemLanguage.lowercase().startsWith("vi")) AppUiLanguage.VIETNAMESE else AppUiLanguage.ENGLISH
         }
 }
 
@@ -507,7 +507,29 @@ private val englishTranslations = mapOf(
     "Không thể tải tin nhắn." to "Unable to load messages.",
     "Không gửi được tin nhắn." to "Unable to send the message.",
     "Bong bóng chat cộng đồng" to "Community chat bubbles",
-    "Để hiện bong bóng, hãy bật Bong bóng trong cài đặt thông báo Android hoặc nhấn giữ thông báo tin nhắn cộng đồng rồi chọn hiển thị dạng bong bóng." to "To show chat bubbles, enable Bubbles in Android notification settings or long-press a community message notification and choose to show it as a bubble."
+    "Để hiện bong bóng, hãy bật Bong bóng trong cài đặt thông báo Android hoặc nhấn giữ thông báo tin nhắn cộng đồng rồi chọn hiển thị dạng bong bóng." to "To show chat bubbles, enable Bubbles in Android notification settings or long-press a community message notification and choose to show it as a bubble.",
+    "Thần chú" to "SPELLS",
+    "Thần chú sét" to "Lightning Spell",
+    "Thần chú hồi máu" to "Healing Spell",
+    "Thần chú cuồng nộ" to "Rage Spell",
+    "Thần chú nhảy" to "Jump Spell",
+    "Thần chú đóng băng" to "Freeze Spell",
+    "Thần chú độc" to "Poison Spell",
+    "Thần chú động đất" to "Earthquake Spell",
+    "Thần chú tăng tốc" to "Haste Spell",
+    "Thần chú nhân bản" to "Clone Spell",
+    "Thần chú bộ xương" to "Skeleton Spell",
+    "Thần chú dơi" to "Bat Spell",
+    "Thần chú tàng hình" to "Invisibility Spell",
+    "Thần chú gọi về" to "Recall Spell",
+    "Thần chú mọc um tùm" to "Overgrowth Spell",
+    "Thần chú hồi sinh" to "Revive Spell",
+    "Thần chú băng" to "Ice Spell",
+    "Thần chú vật tổ" to "Totem Spell",
+    "Thần chú giận dữ" to "Fury Spell",
+    "Bản dịch tự động" to "Automatic translation",
+    "Bản gốc" to "Original",
+    "Đang dịch tự động…" to "Translating automatically…",
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
