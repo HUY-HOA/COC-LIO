@@ -1321,7 +1321,7 @@ private fun CommunityMessageCard(
                     if (message.photoUrl.isNotBlank()) {
                         AsyncImage(
                             model = message.photoUrl,
-                            contentDescription = "Ảnh đại diện",
+                            contentDescription = AppLanguageSettings.translate(LocalContext.current, "Ảnh đại diện"),
                             modifier = Modifier.size(26.dp).clip(CircleShape),
                             contentScale = ContentScale.Crop
                         )
