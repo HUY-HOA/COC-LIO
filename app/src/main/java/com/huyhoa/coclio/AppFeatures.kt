@@ -441,6 +441,9 @@ data class AdminGoogleAccount(
     val firstOpenedAt: Long = 0L,
     val lastOpenedAt: Long = 0L,
     val lastBackgroundAt: Long = 0L,
+    val sessionStartedAt: Long = 0L,
+    val activityUpdatedAt: Long = 0L,
+    val lastActivityEvent: String = "",
     val appOpenCount: Long = 0L,
     val lastSessionDurationSeconds: Long = 0L,
     val totalForegroundSeconds: Long = 0L,
@@ -530,6 +533,9 @@ object FirebaseAccountAdministration {
                 firstOpenedAt = document.getTimestamp("firstOpenedAt")?.toDate()?.time ?: 0L,
                 lastOpenedAt = document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L,
                 lastBackgroundAt = lastBackgroundAt,
+                sessionStartedAt = document.getTimestamp("sessionStartedAt")?.toDate()?.time ?: 0L,
+                activityUpdatedAt = document.getTimestamp("activityUpdatedAt")?.toDate()?.time ?: 0L,
+                lastActivityEvent = document.getString("lastActivityEvent").orEmpty(),
                 appOpenCount = document.getLong("appOpenCount") ?: 0L,
                 lastSessionDurationSeconds = document.getLong("lastSessionDurationSeconds") ?: 0L,
                 totalForegroundSeconds = document.getLong("totalForegroundSeconds") ?: 0L,
@@ -1945,6 +1951,23 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 "Lần chuyển ứng dụng xuống nền",
                                 if (account.lastBackgroundAt > 0L) formatAdminAccountTime(account.lastBackgroundAt)
                                 else "Chưa ghi nhận"
+                            )
+                            ProfileDataRow(
+                                "Sự kiện hoạt động gần nhất",
+                                when (account.lastActivityEvent) {
+                                    "open" -> "Mở ứng dụng"
+                                    "heartbeat" -> "Đang sử dụng ứng dụng"
+                                    "background" -> "Chuyển ứng dụng xuống nền"
+                                    else -> "Chưa ghi nhận"
+                                }
+                            )
+                            ProfileDataRow(
+                                "Thời điểm cập nhật sự kiện",
+                                formatAdminAccountTime(account.activityUpdatedAt)
+                            )
+                            ProfileDataRow(
+                                "Bắt đầu phiên mở gần nhất",
+                                formatAdminAccountTime(account.sessionStartedAt)
                             )
                             ProfileDataRow(
                                 "Số phiên mở COC-LIO",
