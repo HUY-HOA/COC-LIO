@@ -633,10 +633,13 @@ private fun CocLioApp(
         )
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0f, 1f)) }
-    val normalizedLedSpeed = ledSpeed.coerceIn(1, 100) / 100f
-    val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
-        30000f / (1f + 19f * normalizedLedSpeed * normalizedLedSpeed)
-    ).roundToInt().coerceIn(1500, 30000)
+    val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) {
+        0
+    } else {
+        (30000f - (ledSpeed.coerceIn(1, 100) / 100f) * 28500f)
+            .roundToInt()
+            .coerceIn(1500, 30000)
+    }
     val ledProgress = remember { mutableStateOf(0f) }
     val currentLedSpeedMillis by rememberUpdatedState(ledSpeedMillis)
     LaunchedEffect(ledSpeedMillis > 0) {
@@ -646,7 +649,8 @@ private fun CocLioApp(
                 withFrameNanos { frameTimeNanos ->
                     val speedForFrame = currentLedSpeedMillis
                     if (lastFrameNanos != 0L && speedForFrame > 0) {
-                        val elapsedMillis = ((frameTimeNanos - lastFrameNanos) / 1_000_000f).coerceIn(0f, 50f)
+                        val elapsedMillis = ((frameTimeNanos - lastFrameNanos) / 1_000_000f)
+                            .coerceIn(0f, 100f)
                         ledProgress.value = (ledProgress.value + elapsedMillis / speedForFrame.toFloat()).rem(1f)
                     }
                     lastFrameNanos = frameTimeNanos
