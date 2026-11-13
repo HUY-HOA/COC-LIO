@@ -1078,6 +1078,7 @@ private fun CocLioApp(
                     Triple("buildings", "Công trình Quân đội", 1),
                     Triple("history", "Kho JSON", 2),
                     Triple("community", "Cộng đồng", 3),
+                    Triple("lookup", "Tra cứu ID", 5),
                     Triple("settings", "Cài đặt", 4)
                 )
                 navItems.forEach { item ->
@@ -1091,6 +1092,7 @@ private fun CocLioApp(
                                     "buildings" -> Icons.Filled.Business
                                     "history" -> Icons.Filled.History
                                     "community" -> Icons.Filled.Forum
+                                    "lookup" -> Icons.Filled.Tag
                                     else -> Icons.Filled.Settings
                                 },
                                 contentDescription = item.second,
@@ -1274,6 +1276,7 @@ private fun CocLioApp(
                         },
                         onOpenSettings = { selectedTab = 4 }
                     )
+                    5 -> ClashLookupScreen()
                     4 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
                         isAdmin = FirebaseAccountAdministration.isOwner(activeProfile),
