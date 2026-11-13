@@ -416,30 +416,32 @@ fun ClashLookupScreen() {
                     if (rowActions.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
-            if (detailLoading) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                    Text("ĐANG TẢI ${detailTitle.orEmpty()}...", fontSize = 10.sp)
-                }
+
+        }
+
+        if (detailLoading) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text("ĐANG TẢI ${detailTitle.orEmpty()}...", fontSize = 10.sp)
             }
-            detailError?.let {
-                LookupCard { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
-            }
-            detailText?.let { dataValue ->
-                LookupCard {
-                    Text(
-                        detailTitle.orEmpty(),
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
-                    LookupJsonViewer(dataValue)
-                }
+        }
+        detailError?.let {
+            LookupCard { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
+        }
+        detailText?.let { dataValue ->
+            LookupCard {
+                Text(
+                    detailTitle.orEmpty(),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+                LookupJsonViewer(dataValue)
             }
         }
 
@@ -707,7 +709,7 @@ private fun lookupScalarText(value: Any?, key: String): String = when (value) {
     null, JSONObject.NULL -> "Chưa có dữ liệu"
     is Boolean -> if (value) "Có" else "Không"
     is Number -> if (key.contains("destructionPercentage", true)) {
-        "\${value.toDouble()}%"
+        "${value.toDouble()}%"
     } else {
         value.toString()
     }
