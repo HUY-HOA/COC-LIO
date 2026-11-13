@@ -373,6 +373,7 @@ private val englishTranslations = mapOf(
     "ẨN THÔNG TIN" to "HIDE DETAILS",
     "XEM THÔNG TIN" to "VIEW DETAILS",
     "Chọn làng cho tiện ích" to "Choose a village for the widget",,
+    "Chưa có mục nào đang nâng cấp" to "No upgrades in progress",
     "Bạn chưa cấp quyền thông báo cho COC-LIO." to "You have not granted notification permission to COC-LIO.",
     "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem." to "Test notification sent. Pull down the notification shade to view it.",
     "Không thể gửi thông báo thử. Hãy kiểm tra quyền thông báo của ứng dụng." to "Unable to send the test notification. Check the app's notification permission.",
