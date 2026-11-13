@@ -51,7 +51,6 @@ jobs:
           bash "$RUNNER_TEMP/coclio-apk-progress.sh" 0 "Bắt đầu quy trình Build APK"
 
       - name: Verify GitHub runner
-      - name: Verify GitHub runner
         shell: bash
         run: |
           echo "Runner is online."
@@ -64,6 +63,9 @@ jobs:
 
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: APK progress — source checked out
+        run: bash "$RUNNER_TEMP/coclio-apk-progress.sh" 8 "Mã nguồn đã được tải về"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
