@@ -2861,7 +2861,6 @@ fun SettingsScreen(
 }
 
 @Composable
-@Composable
 private fun FeaturePanelTitle(icon: ImageVector, title: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
