@@ -2,6 +2,8 @@ package com.huyhoa.coclio
 
 import android.content.Context
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text as MaterialText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -370,7 +372,20 @@ private val englishTranslations = mapOf(
     "Hồ sơ Google được đồng bộ" to "Google profile synchronized",
     "ẨN THÔNG TIN" to "HIDE DETAILS",
     "XEM THÔNG TIN" to "VIEW DETAILS",
-    "Chọn làng cho tiện ích" to "Choose a village for the widget",
+    "Chọn làng cho tiện ích" to "Choose a village for the widget",,
+    "Bạn chưa cấp quyền thông báo cho COC-LIO." to "You have not granted notification permission to COC-LIO.",
+    "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem." to "Test notification sent. Pull down the notification shade to view it.",
+    "Không thể gửi thông báo thử. Hãy kiểm tra quyền thông báo của ứng dụng." to "Unable to send the test notification. Check the app's notification permission.",
+    "Không tải được lựa chọn dữ liệu tài khoản. Các mục tùy chọn vẫn đang tắt." to "Unable to load account data choices. Optional data collection remains off.",
+    "Bạn cần đăng nhập Google trước khi nhập JSON và xem dữ liệu làng." to "Sign in with Google before importing JSON and viewing village data.",
+    "JSON vẫn được lưu trên điện thoại nhưng chưa thể đồng bộ lên tài khoản của bạn." to "The JSON is saved on your phone but could not be synchronized to your account.",
+    "Đã xác nhận dữ liệu cần thiết và đăng nhập Google thành công." to "Required data consent confirmed and Google sign-in completed.",
+    "Đã khôi phục dữ liệu làng." to "Village data restored.",
+    "Đã xóa vĩnh viễn dữ liệu JSON." to "JSON data permanently deleted.",
+    "Đã chuyển JSON nhận được vào mục ĐÃ GỠ. Bản trong lịch sử vẫn được giữ." to "Received JSON moved to REMOVED. The copy in HISTORY is kept.",
+    "Đã khôi phục JSON đã nhận." to "Received JSON restored.",
+    "Đã xóa vĩnh viễn JSON nhận được khỏi thiết bị." to "Received JSON permanently deleted from this device.",
+    "Không thể chia sẻ JSON." to "Unable to share JSON."
     "Bạn đã hủy đăng nhập Google." to "You cancelled Google sign-in.",
     "Không thể đăng nhập Google. Hãy kiểm tra kết nối mạng và cấu hình OAuth." to "Unable to sign in with Google. Check your network connection and OAuth configuration.",
     "Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất." to "You declined the required account data processing and have been signed out.",
@@ -526,6 +541,16 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Nhóm ") -> "Group " + source.removePrefix("Nhóm ")
         source.startsWith("Đang hiển thị ") -> "Showing " + source.removePrefix("Đang hiển thị ")
         source.startsWith("Cập nhật ") -> "Updated " + source.removePrefix("Cập nhật ")
+        source.startsWith("Đã đồng bộ bản JSON mới nhất của ") -> {
+            val suffix = " lên tài khoản COC-LIO."
+            if (source.endsWith(suffix)) {
+                "Synced the latest JSON snapshot for " + source.removePrefix("Đã đồng bộ bản JSON mới nhất của ").removeSuffix(suffix) + " to your COC-LIO account."
+            } else source
+        }
+        source.startsWith("Đã chuyển ") && source.endsWith(" vào mục ĐÃ GỠ.") -> {
+            val tag = source.removePrefix("Đã chuyển ").removeSuffix(" vào mục ĐÃ GỠ.")
+            "Moved " + tag + " to REMOVED."
+        }
         source.startsWith("Độ sáng: ") -> "Brightness: " + source.removePrefix("Độ sáng: ")
         source.startsWith("Player Tag: ") -> source
         source.startsWith("COC-LIO ") && source.endsWith(" đã có bản cập nhật mới.") -> source.removeSuffix(" đã có bản cập nhật mới.") + " has a new update."
@@ -574,6 +599,17 @@ fun Text(
         onTextLayout = onTextLayout,
         style = style
     )
+}
+
+suspend fun SnackbarHostState.showAppSnackbar(
+    context: Context,
+    message: String
+): SnackbarResult {
+    val language = AppLanguageSettings.resolve(
+        AppLanguageSettings.load(context),
+        context.resources.configuration.locales[0].language
+    )
+    return showSnackbar(translateAppText(message, language))
 }
 
 @Composable
