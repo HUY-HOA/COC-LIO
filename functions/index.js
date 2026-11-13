@@ -37,8 +37,7 @@ async function deleteDocumentsByUid(collectionName, uid) {
 async function deleteUserOwnedData(uid) {
   const bucket = getStorage().bucket();
   await bucket.deleteFiles({
-    prefix: `community/${uid}/`,
-    force: true
+    prefix: `community/${uid}/`
   });
 
   const ownedCollections = [
@@ -196,8 +195,8 @@ exports.adminDeleteUser = onCall({ region: REGION }, async (request) => {
     throw new HttpsError("failed-precondition", "Không thể xóa tài khoản chủ sở hữu COC-LIO.");
   }
 
-  await deleteUserOwnedData(uid);
   await auth.deleteUser(uid);
+  await deleteUserOwnedData(uid);
 
   return { success: true, uid, email: user.email || "" };
 });
