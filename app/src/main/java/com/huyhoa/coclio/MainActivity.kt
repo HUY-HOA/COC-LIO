@@ -465,6 +465,7 @@ class MainActivity : ComponentActivity() {
                         onLanguagePreferenceChanged = { preference ->
                             AppLanguageSettings.save(this@MainActivity, preference)
                             languagePreference = preference
+                            AppWidgetUpdater.updateAll(this@MainActivity)
                         },
                         themeMode = themeMode,
                         onThemeModeChanged = {
