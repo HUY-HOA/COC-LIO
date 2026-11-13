@@ -158,6 +158,7 @@ private data class CommunityArchiveItem(
     val archivedAt: Long,
     val versionName: String,
     val notes: String,
+    val contentType: String = "",
     val contentData: String = ""
 )
 
@@ -659,7 +660,7 @@ fun CommunityScreen(
             val firestore = FirebaseFirestore.getInstance()
             val messageRegistration = firestore.collection("community_messages")
                 .orderBy("createdAt", Query.Direction.ASCENDING)
-                .limitToLast(100)
+                .limitToLast(50)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         messageError = error.message ?: "Không thể tải tin nhắn."
@@ -761,6 +762,7 @@ fun CommunityScreen(
                                     archivedAt = document.getTimestamp("archivedAt")?.toDate()?.time ?: 0L,
                                     versionName = document.getString("versionName").orEmpty(),
                                     notes = document.getString("notes").orEmpty(),
+                                    contentType = document.getString("contentType").orEmpty(),
                                     contentData = document.getString("contentData").orEmpty()
                                 )
                             }
@@ -1516,11 +1518,15 @@ private fun CommunitySaveAttachmentButton(
                     ?: throw IllegalStateException("Không thể mở vị trí lưu.")
                 output.use { it.write(bytes) }
             }
-            Toast.makeText(
-                context,
-                if (result.isSuccess) "Đã lưu tệp." else result.exceptionOrNull()?.message ?: "Không thể lưu tệp.",
-                Toast.LENGTH_LONG
-            ).show()
+            val message = if (result.isSuccess) {
+                AppLanguageSettings.translate(context, "Đã lưu tệp.")
+            } else {
+                AppLanguageSettings.translate(
+                    context,
+                    result.exceptionOrNull()?.message ?: "Không thể lưu tệp."
+                )
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
     TextButton(
@@ -1815,12 +1821,18 @@ private fun CommunityArchiveCard(
                 } else {
                     Text("Ảnh không còn dữ liệu xem trước.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 }
-                CommunitySaveAttachmentButton(
-                    fileName = item.fileName.ifBlank { "anh.jpg" },
-                    contentType = "image/jpeg",
-                    contentData = item.contentData,
-                    label = "LƯU ẢNH"
-                )
+                if (item.contentData.isNotBlank()) {
+                    CommunitySaveAttachmentButton(
+                        fileName = item.fileName.ifBlank { "anh.jpg" },
+                        contentType = item.contentType.ifBlank { "image/jpeg" },
+                        contentData = item.contentData,
+                        label = "LƯU ẢNH"
+                    )
+                } else if (item.downloadUrl.isNotBlank()) {
+                    TextButton(onClick = { onDownload(item.downloadUrl, item.fileName) }) {
+                        Text("LƯU ẢNH", fontSize = 9.sp)
+                    }
+                }
             }
             if (item.fileName.isNotBlank()) {
                 Text(
@@ -1833,7 +1845,7 @@ private fun CommunityArchiveCard(
                 if (item.category == "file" && item.contentData.isNotBlank()) {
                     CommunitySaveAttachmentButton(
                         fileName = item.fileName,
-                        contentType = "application/octet-stream",
+                        contentType = item.contentType.ifBlank { "application/octet-stream" },
                         contentData = item.contentData,
                         label = "TẢI TỆP"
                     )
