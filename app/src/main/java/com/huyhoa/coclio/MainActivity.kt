@@ -1390,7 +1390,7 @@ private fun OverviewScreen(
         item {
             NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
                 Column(Modifier.padding(horizontal = 9.dp, vertical = 7.dp)) {
-                    Text("ĐANG THEO DÕI", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp, letterSpacing = 1.sp)
+                    Text("ĐANG THEO DÕI", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp, letterSpacing = 1.sp)
                     Text(
                         snapshot.villageName?.takeIf { it.isNotBlank() } ?: "Làng chưa đặt tên",
                         color = MaterialTheme.colorScheme.onSurface,
@@ -1406,12 +1406,12 @@ private fun OverviewScreen(
                         Icon(
                             imageVector = Icons.Filled.Tag,
                             contentDescription = "Mã người chơi",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(10.dp)
                         )
-                        Text("ID: ${snapshot.tag}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                        Text("ID: ${snapshot.tag}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                     }
-                    Text("Cập nhật " + formatTimestamp(snapshot.timestamp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                    Text("Cập nhật " + formatTimestamp(snapshot.timestamp), color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                 }
             }
         }
