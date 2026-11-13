@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -124,8 +125,10 @@ fun CommunityAutoTranslatedText(
     color: Color = MaterialTheme.colorScheme.onSurface,
     fontSize: TextUnit = 12.sp,
     maxLines: Int = Int.MAX_VALUE,
-    enabled: Boolean = false
+    enabled: Boolean? = null
 ) {
+    val context = LocalContext.current
+    val shouldTranslate = enabled ?: remember { CommunityAutoTranslationPreferences.isEnabled(context) }
     val targetTag = when (LocalAppLanguage.current) {
         AppUiLanguage.VIETNAMESE -> "vi"
         AppUiLanguage.ENGLISH -> "en"
@@ -133,10 +136,10 @@ fun CommunityAutoTranslatedText(
     var translatedText by remember(sourceText, targetTag) { mutableStateOf<String?>(null) }
     var translating by remember(sourceText, targetTag) { mutableStateOf(false) }
 
-    LaunchedEffect(sourceText, targetTag, enabled) {
+    LaunchedEffect(sourceText, targetTag, shouldTranslate) {
         translatedText = null
-        translating = enabled && sourceText.isNotBlank() && sourceText.length <= 5000
-        if (enabled && translating) {
+        translating = shouldTranslate && sourceText.isNotBlank() && sourceText.length <= 5000
+        if (shouldTranslate && translating) {
             translatedText = CommunityTranslationEngine.translate(sourceText, targetTag)
             translating = false
         }
@@ -146,7 +149,7 @@ fun CommunityAutoTranslatedText(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        if (enabled && !translatedText.isNullOrBlank()) {
+        if (shouldTranslate && !translatedText.isNullOrBlank()) {
             Text(
                 translatedText.orEmpty(),
                 color = color,
