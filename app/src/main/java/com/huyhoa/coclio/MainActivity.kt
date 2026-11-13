@@ -632,9 +632,10 @@ private fun CocLioApp(
         )
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0f, 1f)) }
+    val normalizedLedSpeed = ledSpeed.coerceIn(1, 100) / 100f
     val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) 0 else (
-        40000.0 / ledSpeed.coerceIn(1, 100)
-    ).toInt().coerceIn(400, 40000)
+        40000f / (1f + 49f * normalizedLedSpeed * normalizedLedSpeed)
+    ).roundToInt().coerceIn(800, 40000)
     val ledProgress = remember { mutableStateOf(0f) }
     val currentLedSpeedMillis by rememberUpdatedState(ledSpeedMillis)
     LaunchedEffect(ledSpeedMillis > 0) {
