@@ -1121,6 +1121,10 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Cấp Clan (\\d+)  •  (\\d+) thành viên$").matchEntire(source)!!.let { "Clan Level ${it.groupValues[1]}  •  ${it.groupValues[2]} members" }
         Regex("^(\\d+) thành viên$").matchEntire(source) != null ->
             Regex("^(\\d+) thành viên$").matchEntire(source)!!.let { "${it.groupValues[1]} members" }
+        Regex("^(\\d+) mục đang nâng • Thợ rảnh (\\d+)/(\\d+)$").matchEntire(source) != null ->
+            Regex("^(\\d+) mục đang nâng • Thợ rảnh (\\d+)/(\\d+)$").matchEntire(source)!!.let {
+                "${it.groupValues[1]} upgrades in progress • Builders available: ${it.groupValues[2]}/${it.groupValues[3]}"
+            }
         Regex("^Có (\\d+) mục dữ liệu\\.$").matchEntire(source) != null ->
             Regex("^Có (\\d+) mục dữ liệu\\.$").matchEntire(source)!!.let { "Contains ${it.groupValues[1]} data items." }
         Regex("^Đang hiển thị (\\d+) / (\\d+) mục\\.$").matchEntire(source) != null ->
