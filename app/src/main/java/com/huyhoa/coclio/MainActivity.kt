@@ -1026,7 +1026,7 @@ private fun CocLioApp(
                         isGoogleSignedIn = isGoogleSignedIn,
                         initialSection = communityInitialSection,
                         onInitialSectionConsumed = { communityInitialSection = 0 },
-                        onImportJson = { rawJson, senderUid, senderName, tag, timestamp, jsonId ->
+                        onImportJson = { rawJson, senderUid, senderName, tag, villageName, timestamp, jsonId ->
                             val parsed = runCatching { VillageParser.parse(rawJson) }.getOrNull()
                             if (parsed != null) {
                                 ReceivedSharedJsonStore.saveReceived(
@@ -1035,7 +1035,7 @@ private fun CocLioApp(
                                     senderUid = senderUid,
                                     senderName = senderName,
                                     tag = tag.ifBlank { parsed.tag },
-                                    villageName = parsed.villageName ?: tag,
+                                    villageName = villageName.ifBlank { parsed.villageName.orEmpty() },
                                     timestamp = timestamp.takeIf { it > 0L } ?: parsed.timestamp,
                                     jsonId = jsonId,
                                     rawJson = rawJson,
