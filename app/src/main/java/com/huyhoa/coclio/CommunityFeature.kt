@@ -897,6 +897,7 @@ fun CommunityScreen(
                             message = message,
                             currentUid = user.uid,
                             isOwner = isOwner,
+                            autoTranslationEnabled = autoTranslationEnabled,
                             onDownload = { url, name -> downloadCommunityFile(context, url, name) },
                             onUseJson = { jsonId -> receiveSharedJson(jsonId) },
                             onDelete = { deleteMessage = message }
@@ -1176,6 +1177,7 @@ fun CommunityScreen(
                         items(archiveItems, key = { it.id }) { item ->
                             CommunityArchiveCard(
                                 item = item,
+                                autoTranslationEnabled = autoTranslationEnabled,
                                 onDownload = { url, name -> downloadCommunityFile(context, url, name) },
                                 onDelete = { deleteArchiveItem = item }
                             )
@@ -1263,6 +1265,7 @@ fun CommunityScreen(
                         CommunityReleaseCard(
                             release = release,
                             isOwner = isOwner,
+                            autoTranslationEnabled = autoTranslationEnabled,
                             onDownload = { url, name -> downloadCommunityFile(context, url, name) },
                             onDelete = { deleteRelease = release }
                         )
@@ -1533,6 +1536,7 @@ private fun CommunityMessageCard(
     message: CommunityMessage,
     currentUid: String,
     isOwner: Boolean,
+    autoTranslationEnabled: Boolean,
     onDownload: (String, String) -> Unit,
     onUseJson: (String) -> Unit,
     onDelete: () -> Unit
@@ -1750,6 +1754,7 @@ private fun CommunitySharedJsonCard(
 @Composable
 private fun CommunityArchiveCard(
     item: CommunityArchiveItem,
+    autoTranslationEnabled: Boolean,
     onDownload: (String, String) -> Unit,
     onDelete: () -> Unit
 ) {
@@ -1855,6 +1860,7 @@ private fun CommunityArchiveCard(
 private fun CommunityReleaseCard(
     release: CommunityRelease,
     isOwner: Boolean,
+    autoTranslationEnabled: Boolean,
     onDownload: (String, String) -> Unit,
     onDelete: () -> Unit
 ) {
