@@ -3029,6 +3029,7 @@ private data class CommunityBubbleMessage(
     val uid: String,
     val displayName: String,
     val text: String,
+    val type: String,
     val senderIsAdmin: Boolean
 )
 
@@ -3104,6 +3105,7 @@ private fun CommunityBubbleChatContent(
                                 uid = uid,
                                 displayName = document.getString("displayName").orEmpty(),
                                 text = text,
+                                type = type,
                                 senderIsAdmin = document.getBoolean("senderIsAdmin") ?: false
                             )
                         }
@@ -3207,11 +3209,19 @@ private fun CommunityBubbleChatContent(
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
-                                    Text(
-                                        message.text,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontSize = 11.sp
-                                    )
+                                    if (message.type == "text") {
+                                        CommunityAutoTranslatedText(
+                                            sourceText = message.text,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = 11.sp
+                                        )
+                                    } else {
+                                        Text(
+                                            message.text,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = 11.sp
+                                        )
+                                    }
                                 }
                             }
                         }
