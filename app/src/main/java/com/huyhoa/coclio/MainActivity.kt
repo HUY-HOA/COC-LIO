@@ -730,17 +730,6 @@ private fun CocLioApp(
         }
     }
 
-    LaunchedEffect(
-        isGoogleSignedIn,
-        communityNotificationsEnabled,
-        updateNotificationsEnabled
-    ) {
-        CocLioPushSubscriptions.sync(
-            communityEnabled = isGoogleSignedIn && communityNotificationsEnabled,
-            updatesEnabled = isGoogleSignedIn && updateNotificationsEnabled
-        )
-    }
-
     fun requestImportJson() {
         if (isGoogleSignedIn) {
             importError = null
