@@ -392,11 +392,6 @@ fun CommunityScreen(
     var draft by remember { mutableStateOf("") }
     var showEmojiPicker by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
-    var releaseVersion by remember { mutableStateOf("") }
-    var releaseNotes by remember { mutableStateOf("") }
-    var notifyUsersForRelease by remember { mutableStateOf(false) }
-    var selectedApkName by remember { mutableStateOf<String?>(null) }
-    var selectedApkUri by remember { mutableStateOf<Uri?>(null) }
     var deleteMessage by remember { mutableStateOf<CommunityMessage?>(null) }
     var deleteRelease by remember { mutableStateOf<CommunityRelease?>(null) }
     var deleteArchiveItem by remember { mutableStateOf<CommunityArchiveItem?>(null) }
@@ -418,12 +413,6 @@ fun CommunityScreen(
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             statusMessage = "Trên Firebase Spark, gửi tệp đính kèm qua Cloud Storage đang tạm dừng."
-        }
-    }
-
-    val apkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            statusMessage = "Đăng APK trong ứng dụng đang tạm dừng trên Firebase Spark vì tệp APK cần Cloud Storage."
         }
     }
 
@@ -1025,59 +1014,13 @@ fun CommunityScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     shape = RoundedCornerShape(18.dp)
                 ) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("ĐĂNG BẢN CẬP NHẬT MỚI", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
-                        OutlinedTextField(
-                            value = releaseVersion,
-                            onValueChange = { releaseVersion = it.take(40) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("Phiên bản, ví dụ 1.0.2") }
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("ĐĂNG BẢN CẬP NHẬT APK", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        Text(
+                            "Tạm dừng trên Firebase Spark. Tải lên và phân phối APK cần Cloud Storage, hiện không khả dụng khi dự án chưa liên kết Blaze.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 10.sp
                         )
-                        OutlinedTextField(
-                            value = releaseNotes,
-                            onValueChange = { releaseNotes = it.take(3000) },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Nội dung cập nhật") },
-                            minLines = 2,
-                            maxLines = 4
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = { apkPicker.launch(arrayOf(COMMUNITY_APK_MIME)) }, enabled = !busy) {
-                                Text("CHỌN FILE APK", fontSize = 9.sp)
-                            }
-                            Text(
-                                selectedApkName ?: "Chưa chọn APK",
-                                modifier = Modifier.weight(1f),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("THÔNG BÁO TỚI NGƯỜI DÙNG", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                Text("Tắt mặc định. Chỉ gửi tới người đã bật nhận thông báo APK.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                            }
-                            Switch(
-                                checked = notifyUsersForRelease,
-                                onCheckedChange = { notifyUsersForRelease = it }
-                            )
-                        }
-                        Button(
-                            onClick = {
-                                statusMessage = "Đăng và phân phối APK qua Cloud Storage cần gói Blaze. Trên Spark, hãy chia sẻ hướng dẫn bằng tin nhắn văn bản."
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = false
-                        ) {
-                            Text("ĐĂNG APK TẠM DỪNG TRÊN SPARK", fontWeight = FontWeight.Bold)
-                        }
-                        Text("Bản cập nhật APK được chia sẻ tại đây. Người dùng cần tự xác nhận cài đặt trên Android.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                     }
                 }
             }
