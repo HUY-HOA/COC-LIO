@@ -1010,12 +1010,32 @@ private val englishTranslations = mapOf(
     "Không thể hoàn tất bản dịch." to "Unable to complete the translation.",
     "Tháp phản công" to "Revenge Tower",
     "Clan" to "Clan",
+    "Phiên Google trên điện thoại cần xác thực lại. Hãy kiểm tra tài khoản Google trên thiết bị rồi thử lại. Nếu vẫn lỗi, kiểm tra OAuth Android của COC-LIO." to "The Google session on this device needs to be re-authenticated. Check the Google account on your device and try again. If the issue persists, check COC-LIO's Android OAuth configuration.",
+    "Không tìm thấy tài khoản Google có thể đăng nhập. Hãy kiểm tra tài khoản Google trên điện thoại rồi thử lại." to "No Google account available for sign-in was found. Check the Google accounts on your phone and try again.",
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
     if (language != AppUiLanguage.ENGLISH) return source
     englishTranslations[source]?.let { return it }
     return when {
+        Regex("^(.+) • (\\d+) mốc • (.+)$").matchEntire(source) != null ->
+            Regex("^(.+) • (\\d+) mốc • (.+)$").matchEntire(source)!!.let {
+                "${it.groupValues[1]} • ${it.groupValues[2]} snapshots • ${it.groupValues[3]}"
+            }
+        Regex("^(.+) đã bị quản lý vô hiệu hóa$").matchEntire(source) != null ->
+            Regex("^(.+) đã bị quản lý vô hiệu hóa$").matchEntire(source)!!.let {
+                "${it.groupValues[1]} has been disabled by an administrator"
+            }
+        Regex("^Google từ chối cấu hình OAuth \\[(.+?)\\]\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế của APK: (.+)\\. Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud\\.$").matchEntire(source) != null ->
+            Regex("^Google từ chối cấu hình OAuth \\[(.+?)\\]\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế của APK: (.+)\\. Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud\\.$").matchEntire(source)!!.let {
+                "Google rejected OAuth configuration [${it.groupValues[1]}]. Web Client ID embedded in APK: ${it.groupValues[2]}. Actual APK SHA-1: ${it.groupValues[3]}. Verify that GOOGLE_WEB_CLIENT_ID is a Web application OAuth Client; the Android OAuth Client must match the actual package and SHA-1; both clients must belong to the same Google Cloud project."
+            }
+        Regex("^Google vẫn từ chối xác thực sau khi làm mới phiên\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế: (.+)\\. Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án\\.$").matchEntire(source) != null ->
+            Regex("^Google vẫn từ chối xác thực sau khi làm mới phiên\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế: (.+)\\. Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án\\.$").matchEntire(source)!!.let {
+                "Google still rejected authentication after refreshing the session. Web Client ID embedded in APK: ${it.groupValues[1]}. Actual SHA-1: ${it.groupValues[2]}. Check the Android OAuth Client against this SHA-1 and use the Web application Client ID from the same project."
+            }
+        source.startsWith("không đọc được") ->
+            "Unable to read" + source.removePrefix("không đọc được")
         Regex("^Mục (\\d+)$").matchEntire(source) != null ->
             Regex("^Mục (\\d+)$").matchEntire(source)!!.let { "Item ${it.groupValues[1]}" }
         Regex("^(.+) · (.+) · Tải tệp hiện tạm ngừng trên gói miễn phí\\.$").matchEntire(source) != null ->
