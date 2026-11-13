@@ -1445,7 +1445,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý; người có quyền quản trị dự án Firebase có thể có quyền truy cập kỹ thuật theo phân quyền dự án. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Google Firebase cung cấp hạ tầng xác thực, cơ sở dữ liệu, lưu trữ tệp, xử lý chức năng máy chủ và thông báo.",
+                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý; người có quyền quản trị dự án Firebase có thể có quyền truy cập kỹ thuật theo phân quyền dự án. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Các sự kiện Analytics và báo cáo Crashlytics/Performance được xử lý trong các bảng điều khiển Firebase tương ứng, không hiển thị đầy đủ theo từng tài khoản trong danh sách quản lý của ứng dụng. Google Firebase cung cấp hạ tầng xác thực, cơ sở dữ liệu, lưu trữ tệp, xử lý chức năng máy chủ và thông báo.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
