@@ -627,6 +627,7 @@ fun CommunityScreen(
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("CỘNG ĐỒNG COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
             Text("Trò chuyện, chia sẻ hình ảnh và cập nhật COC-LIO cùng mọi thành viên.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Tin nhắn và ghi chú cập nhật được tự động dịch theo ngôn ngữ ứng dụng khi có thể; bản gốc vẫn được giữ.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
         }
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
