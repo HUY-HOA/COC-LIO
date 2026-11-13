@@ -144,7 +144,7 @@ service cloud.firestore {
               'activityConsentAt'
             ])
             || (
-              request.resource.data.activityDataConsentVersion == 4
+              request.resource.data.activityDataConsentVersion == 5
               && request.resource.data.activityConsentAt is timestamp
             )
           )
@@ -174,7 +174,7 @@ service cloud.firestore {
             || (
               resource.data.dataSharingConsent == true
               && resource.data.activityDataConsentVersion == 4
-              && request.resource.data.activityDataConsentVersion == 4
+              && request.resource.data.activityDataConsentVersion == 5
               && request.resource.data.lastActivityEvent in ['open', 'heartbeat', 'background']
               && request.resource.data.activityUpdatedAt == request.time
               && request.resource.data.deviceManufacturer is string
