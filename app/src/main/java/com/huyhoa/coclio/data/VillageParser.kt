@@ -459,7 +459,7 @@ object CocNames {
         1000015 to "Nhà thợ xây", 1000019 to "Tesla ẩn", 1000020 to "Nhà máy Thần chú",
         1000021 to "Nỏ X", 1000023 to "Mỏ hắc tiên", 1000024 to "Kho hắc tiên",
         1000026 to "Nhà lính hắc tiên", 1000027 to "Tháp địa ngục", 1000028 to "Quạt gió",
-        1000029 to "Nhà máy Hắc Thần chú", 1000031 to "Pháo đại bàng", 1000032 to "Tháp bom",
+        1000029 to "Nhà máy Thần chú Hắc ám", 1000031 to "Pháo đại bàng", 1000032 to "Tháp bom",
         1000059 to "Xưởng công thành", 1000064 to "Nhà B.O.B", 1000067 to "Tháp pháo bắn chùm",
         1000068 to "Nhà thú cưng", 1000070 to "Lò rèn", 1000071 to "Sảnh anh hùng",
         1000072 to "Tháp Thần chú", 1000077 to "Đại bác Monolith", 1000079 to "Tháp đa nòng",
