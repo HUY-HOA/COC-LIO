@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.tasks.Task
 import com.google.mlkit.nl.languageid.LanguageIdentification
+import com.google.mlkit.nl.languageid.LanguageIdentificationOptions
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.Translation
@@ -30,7 +31,11 @@ import kotlin.coroutines.resumeWithException
 
 private object CommunityTranslationEngine {
     private val mutex = Mutex()
-    private val languageIdentifier = LanguageIdentification.getClient()
+    private val languageIdentifier = LanguageIdentification.getClient(
+        LanguageIdentificationOptions.Builder()
+            .setConfidenceThreshold(0.34f)
+            .build()
+    )
     private val translators = LinkedHashMap<String, Translator>(4, 0.75f, true)
     private val cache = LinkedHashMap<String, String>(128, 0.75f, true)
 
