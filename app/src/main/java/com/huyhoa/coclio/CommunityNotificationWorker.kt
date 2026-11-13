@@ -86,7 +86,8 @@ class CommunityNotificationWorker(
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val profile = inputData.getString("profile").orEmpty()
         val user = FirebaseAuth.getInstance().currentUser
-        if (profile.isBlank() || user?.email?.equals(profile, ignoreCase = true) != true) {
+            ?: return@withContext Result.success()
+        if (profile.isBlank() || user.email?.equals(profile, ignoreCase = true) != true) {
             return@withContext Result.success()
         }
 
