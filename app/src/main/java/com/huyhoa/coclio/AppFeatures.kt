@@ -121,7 +121,6 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -398,6 +397,9 @@ private suspend fun syncFirebaseUserProfile(
         .collection("users")
         .document(user.uid)
     val existing = reference.get().awaitFirebaseResult()
+    if (existing.getBoolean("accountDisabled") == true) {
+        throw IllegalStateException("Tài khoản COC-LIO này đã bị quản lý vô hiệu hóa. Vui lòng liên hệ quản lý để được hỗ trợ.")
+    }
     val signInCount = (existing.getLong("signInCount") ?: 0L) + 1L
     val profile = hashMapOf<String, Any>(
         "uid" to user.uid,
@@ -459,7 +461,8 @@ data class AdminGoogleAccount(
     val dataSharingConsent: Boolean = false,
     val analyticsConsent: Boolean = false,
     val diagnosticsConsent: Boolean = false,
-    val activityConsentAt: Long = 0L
+    val activityConsentAt: Long = 0L,
+    val accountDisabled: Boolean = false
 )
 
 object FirebaseAccountAdministration {
@@ -487,22 +490,7 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
     }
 
-    suspend fun loadAccounts(
-        context: Context,
-        syncBeforeLoad: Boolean = true
-    ): List<AdminGoogleAccount> {
-        if (syncBeforeLoad) {
-            try {
-                FirebaseFunctions.getInstance("asia-southeast1")
-                    .getHttpsCallable("adminSyncSharedAccounts")
-                    .call()
-                    .awaitFirebaseResult()
-            } catch (error: com.google.firebase.functions.FirebaseFunctionsException) {
-                if (error.code != com.google.firebase.functions.FirebaseFunctionsException.Code.NOT_FOUND) {
-                    throw error
-                }
-            }
-        }
+    suspend fun loadAccounts(context: Context): List<AdminGoogleAccount> {
         val result = FirebaseFirestore.getInstance()
             .collection("users")
             .get()
@@ -551,7 +539,8 @@ object FirebaseAccountAdministration {
                 dataSharingConsent = document.getBoolean("dataSharingConsent") ?: false,
                 analyticsConsent = document.getBoolean("analyticsConsent") ?: false,
                 diagnosticsConsent = document.getBoolean("diagnosticsConsent") ?: false,
-                activityConsentAt = document.getTimestamp("activityConsentAt")?.toDate()?.time ?: 0L
+                activityConsentAt = document.getTimestamp("activityConsentAt")?.toDate()?.time ?: 0L,
+                accountDisabled = document.getBoolean("accountDisabled") ?: false
             )
         }.toMutableList()
 
@@ -616,11 +605,22 @@ object FirebaseAccountAdministration {
         )
     }
 
-    suspend fun deleteAccount(uid: String) {
-        require(uid.isNotBlank()) { "Thiếu mã tài khoản cần xóa." }
-        FirebaseFunctions.getInstance("asia-southeast1")
-            .getHttpsCallable("adminDeleteUser")
-            .call(mapOf("uid" to uid))
+    suspend fun disableAccount(uid: String) {
+        require(uid.isNotBlank()) { "Thiếu mã tài khoản cần vô hiệu hóa." }
+        val owner = FirebaseAuth.getInstance().currentUser
+            ?: throw IllegalStateException("Bạn cần đăng nhập tài khoản quản lý.")
+        require(isOwner(owner.email)) { "Chỉ chủ sở hữu COC-LIO mới được vô hiệu hóa tài khoản." }
+        require(uid != owner.uid) { "Không thể tự vô hiệu hóa tài khoản quản lý đang sử dụng." }
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .update(
+                mapOf(
+                    "accountDisabled" to true,
+                    "accountDisabledAt" to FieldValue.serverTimestamp(),
+                    "accountDisabledBy" to owner.uid
+                )
+            )
             .awaitFirebaseResult()
     }
 }
@@ -695,7 +695,7 @@ object AccountActivityTracker {
             sessionStartedAt = System.currentTimeMillis()
             record(context.applicationContext, "open", 0L)
             while (isActive) {
-                delay(45_000L)
+                delay(600_000L)
                 if (!hasConsent(user.uid)) break
                 record(context.applicationContext, "heartbeat", 0L)
             }
@@ -737,6 +737,18 @@ object AccountActivityTracker {
 
     private suspend fun record(context: Context, event: String, durationSeconds: Long) {
         runCatching {
+            val user = FirebaseAuth.getInstance().currentUser ?: return@runCatching
+            val profileRef = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(user.uid)
+            val profile = profileRef.get().awaitFirebaseResult()
+            if (
+                !profile.exists() ||
+                profile.getBoolean("dataSharingConsent") != true ||
+                profile.getLong("activityDataConsentVersion") != AccountPrivacyConsent.CURRENT_VERSION
+            ) {
+                return@runCatching
+            }
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             val versionCode = if (Build.VERSION.SDK_INT >= 28) {
                 packageInfo.longVersionCode
@@ -745,21 +757,37 @@ object AccountActivityTracker {
                 packageInfo.versionCode.toLong()
             }
             val payload = hashMapOf<String, Any>(
-                "event" to event,
-                "deviceManufacturer" to Build.MANUFACTURER.orEmpty(),
-                "deviceModel" to Build.MODEL.orEmpty(),
-                "androidVersion" to Build.VERSION.RELEASE.orEmpty(),
+                "lastActivityEvent" to event,
+                "activityUpdatedAt" to FieldValue.serverTimestamp(),
+                "deviceManufacturer" to Build.MANUFACTURER.orEmpty().take(60),
+                "deviceModel" to Build.MODEL.orEmpty().take(100),
+                "androidVersion" to Build.VERSION.RELEASE.orEmpty().take(40),
                 "sdkInt" to Build.VERSION.SDK_INT.toLong(),
-                "appVersionName" to packageInfo.versionName.orEmpty(),
-                "appVersionCode" to versionCode
+                "appVersionName" to packageInfo.versionName.orEmpty().take(40),
+                "appVersionCode" to versionCode.coerceAtLeast(0L)
             )
-            if (durationSeconds > 0L) {
-                payload["sessionDurationSeconds"] = durationSeconds
+            when (event) {
+                "open" -> {
+                    if (!profile.contains("firstOpenedAt")) {
+                        payload["firstOpenedAt"] = FieldValue.serverTimestamp()
+                    }
+                    payload["lastOpenedAt"] = FieldValue.serverTimestamp()
+                    payload["lastActiveAt"] = FieldValue.serverTimestamp()
+                    payload["sessionStartedAt"] = FieldValue.serverTimestamp()
+                    payload["appOpenCount"] = FieldValue.increment(1)
+                }
+                "heartbeat" -> {
+                    payload["lastActiveAt"] = FieldValue.serverTimestamp()
+                }
+                "background" -> {
+                    val duration = durationSeconds.coerceIn(0L, 86_400L)
+                    payload["lastBackgroundAt"] = FieldValue.serverTimestamp()
+                    payload["lastSessionDurationSeconds"] = duration
+                    payload["totalForegroundSeconds"] = FieldValue.increment(duration)
+                }
+                else -> return@runCatching
             }
-            FirebaseFunctions.getInstance("asia-southeast1")
-                .getHttpsCallable("recordAccountActivity")
-                .call(payload)
-                .awaitFirebaseResult()
+            profileRef.set(payload, SetOptions.merge()).awaitFirebaseResult()
         }
     }
 }
@@ -1725,12 +1753,12 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
     LaunchedEffect(Unit) {
         refreshAccounts()
         while (true) {
-            delay(45_000L)
+            delay(300_000L)
             scope.launch {
                 loading = false
                 errorMessage = null
                 try {
-                    accounts = FirebaseAccountAdministration.loadAccounts(context, false)
+                    accounts = FirebaseAccountAdministration.loadAccounts(context)
                 } catch (error: Exception) {
                     errorMessage = error.message ?: "Không thể cập nhật trạng thái tài khoản."
                 }
@@ -1741,10 +1769,10 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
     pendingDelete?.let { account ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { if (!deleting) pendingDelete = null },
-            title = { Text("Xóa tài khoản Google?") },
+            title = { Text("Vô hiệu hóa tài khoản COC-LIO?") },
             text = {
                 Text(
-                    "Tài khoản Firebase của ${account.email}, hồ sơ và dữ liệu hoạt động, bài đăng/JSON cộng đồng do tài khoản tạo, mục lưu trữ tương ứng, tệp đã tải lên và hồ sơ giấy phép gắn UID sẽ bị xóa. Dữ liệu lưu cục bộ trên điện thoại không bị xóa. Người này vẫn có thể đăng nhập lại bằng Google và được tạo UID mới.",
+                    "Tài khoản Google vẫn tồn tại trong Firebase Authentication. COC-LIO sẽ đánh dấu hồ sơ này bị vô hiệu hóa để chặn đọc/ghi dữ liệu Firestore. Dữ liệu cũ không tự động bị xóa; chủ ứng dụng cần xử lý riêng trong Firebase Console nếu muốn xóa hẳn.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -1757,19 +1785,19 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             deleting = true
                             errorMessage = null
                             try {
-                                FirebaseAccountAdministration.deleteAccount(account.uid)
+                                FirebaseAccountAdministration.disableAccount(account.uid)
                                 pendingDelete = null
                                 expandedAccounts = expandedAccounts - account.uid
                                 accounts = FirebaseAccountAdministration.loadAccounts(context)
                             } catch (error: Exception) {
-                                errorMessage = error.message ?: "Không thể xóa tài khoản Firebase."
+                                errorMessage = error.message ?: "Không thể vô hiệu hóa tài khoản COC-LIO."
                             } finally {
                                 deleting = false
                             }
                         }
                     }
                 ) {
-                    Text(if (deleting) "ĐANG XÓA…" else "XÓA TÀI KHOẢN")
+                    Text(if (deleting) "ĐANG XỬ LÝ…" else "VÔ HIỆU HÓA")
                 }
             },
             dismissButton = {
@@ -1845,7 +1873,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             Text(account.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                             Text(
-                                if (account.isOnline) "● ĐANG ONLINE" else "● OFFLINE",
+                                when { account.accountDisabled -> "● ĐÃ VÔ HIỆU HÓA"; account.isOnline -> "● ĐANG ONLINE"; else -> "● OFFLINE" },
                                 color = if (account.isOnline) Color(0xFF35D6A3) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 8.sp,
                                 fontWeight = FontWeight.Bold
@@ -1858,7 +1886,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             Text(
                                 when {
-                                    account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent -> "Đã cho phép ghi nhận hoạt động/thiết bị/IP"
+                                    account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent -> "Đã cho phép ghi nhận hoạt động/thiết bị (không ghi IP trên Spark)"
                                     account.isAdmin -> "Tài khoản quản lý · thiết bị hiện tại"
                                     else -> "Hồ sơ Google được đồng bộ"
                                 },
@@ -1885,18 +1913,19 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                         ) {
                             Text(if (expanded) "ẨN THÔNG TIN" else "XEM THÔNG TIN", fontSize = 9.sp)
                         }
-                        if (!account.isAdmin) {
+                        if (!account.isAdmin && !account.accountDisabled) {
                             TextButton(
                                 onClick = { pendingDelete = account },
                                 enabled = !deleting
                             ) {
-                                Text("XÓA TÀI KHOẢN", color = Color(0xFFFF5D91), fontSize = 9.sp)
+                                Text("VÔ HIỆU HÓA", color = Color(0xFFFF5D91), fontSize = 9.sp)
                             }
                         }
                     }
                     if (expanded) {
                         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                             ProfileDataRow("Loại tài khoản", if (account.isAdmin) "QUẢN LÝ / CHỦ SỞ HỮU" else "Người dùng")
+                            ProfileDataRow("Trạng thái truy cập", if (account.accountDisabled) "ĐÃ VÔ HIỆU HÓA" else "ĐANG HOẠT ĐỘNG")
                             ProfileDataRow("Tên người dùng đặt", account.preferredName)
                             ProfileDataRow("Tên Google", account.displayName)
                             ProfileDataRow("Tên", account.givenName)
@@ -1908,7 +1937,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             ProfileDataRow(
                                 "Quyền theo dõi hoạt động",
-                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Đã cho phép IP, thiết bị và hoạt động" else "Chưa cho phép IP, thiết bị và hoạt động"
+                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Đã cho phép thiết bị và hoạt động" else "Chưa cho phép thiết bị và hoạt động"
                             )
                             ProfileDataRow(
                                 "Đồng ý phân tích mức sử dụng",
@@ -1982,8 +2011,8 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 "Tổng thời gian hoạt động",
                                 if (account.totalForegroundSeconds > 0L) formatDuration(account.totalForegroundSeconds) else "Chưa ghi nhận"
                             )
-                            ProfileDataRow("IP gần nhất", account.lastIp.ifBlank { "Chưa ghi nhận hoặc chưa được đồng ý" })
-                            ProfileDataRow("Thời điểm ghi nhận IP", formatAdminAccountTime(account.lastIpCapturedAt))
+                            ProfileDataRow("IP lịch sử", account.lastIp.ifBlank { "Không thu thập IP trên Spark" })
+                            ProfileDataRow("Thời điểm ghi nhận IP lịch sử", if (account.lastIpCapturedAt > 0L) formatAdminAccountTime(account.lastIpCapturedAt) else "Không thu thập IP trên Spark")
                             ProfileDataRow(
                                 "Thiết bị",
                                 listOf(account.deviceManufacturer, account.deviceModel).filter { it.isNotBlank() }.joinToString(" ").ifBlank { "Chưa ghi nhận" }
@@ -2167,7 +2196,7 @@ fun SettingsScreen(
                 fontSize = 10.sp,
                 lineHeight = 15.sp
             )
-            ProfileDataRow("Hoạt động, thiết bị và IP", if (securityTelemetryConsent) "Đang cho phép" else "Đang tắt")
+            ProfileDataRow("Hoạt động và thiết bị (không ghi IP trên Spark)", if (securityTelemetryConsent) "Đang cho phép" else "Đang tắt")
             ProfileDataRow("Phân tích mức sử dụng", if (analyticsConsent) "Đang cho phép" else "Đang tắt")
             ProfileDataRow("Báo cáo lỗi và hiệu năng", if (diagnosticsConsent) "Đang cho phép" else "Đang tắt")
             Button(
