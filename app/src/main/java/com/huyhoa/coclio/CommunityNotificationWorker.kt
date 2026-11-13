@@ -410,11 +410,9 @@ private fun postLocalCommunityNotification(
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val systemManager = context.getSystemService(NotificationManager::class.java)
-        if (systemManager.getNotificationChannel(channelId) == null) {
-            systemManager.createNotificationChannel(
-                NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
-            )
-        }
+        systemManager.createNotificationChannel(
+            NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
+        )
     }
 
     val openIntent = Intent(context, MainActivity::class.java)
