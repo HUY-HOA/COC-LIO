@@ -242,7 +242,7 @@ private suspend fun <T> Task<T>.awaitCommunityResult(): T =
                 continuation.resume(task.result)
             } else {
                 continuation.resumeWithException(
-                    task.exception ?: IllegalStateException("Firebase không trả về kết quả.")
+                    task.exception ?: IllegalStateException("Không thể hoàn tất thao tác cộng đồng. Vui lòng thử lại.")
                 )
             }
         }
@@ -411,13 +411,13 @@ fun CommunityScreen(
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            statusMessage = "Trên Firebase Spark, gửi ảnh qua Cloud Storage đang tạm dừng. Bạn vẫn có thể gửi tin nhắn văn bản và chia sẻ JSON."
+            statusMessage = "Hiện tại, gửi ảnh đang tạm dừng trên gói miễn phí. Bạn vẫn có thể gửi tin nhắn văn bản và chia sẻ JSON."
         }
     }
 
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            statusMessage = "Trên Firebase Spark, gửi tệp đính kèm qua Cloud Storage đang tạm dừng."
+            statusMessage = "Hiện tại, gửi tệp đính kèm đang tạm dừng trên gói miễn phí."
         }
     }
 
@@ -888,7 +888,7 @@ fun CommunityScreen(
                         }
                         Text(
                             if (archiveKeepForever) "Dữ liệu đã gỡ được giữ lại cho đến khi quản lý xóa vĩnh viễn."
-                            else "Áp dụng thời hạn cho các bản ghi Firestore trong kho. Tệp đính kèm cũ trên Cloud Storage không thể truy cập hoặc dọn dẹp khi dự án ở gói Spark.",
+                            else "Áp dụng thời hạn cho các bản ghi trong kho. Tệp đính kèm cũ hiện chưa thể truy cập hoặc dọn dẹp trên gói miễn phí.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 9.sp
                         )
@@ -1037,7 +1037,7 @@ fun CommunityScreen(
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("ĐĂNG BẢN CẬP NHẬT APK", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
                         Text(
-                            "Tạm dừng trên Firebase Spark. Tải lên và phân phối APK cần Cloud Storage, hiện không khả dụng khi dự án chưa liên kết Blaze.",
+                            "Tạm dừng trên gói miễn phí hiện tại. Tải lên và phân phối APK chưa được hỗ trợ.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 10.sp
                         )
@@ -1142,7 +1142,7 @@ fun CommunityScreen(
         AlertDialog(
             onDismissRequest = { deleteMessage = null },
             title = { Text("Gỡ tin nhắn vào kho?") },
-            text = { Text("Bản ghi tin nhắn/JSON sẽ được chuyển vào Kho đã gỡ. Tệp đính kèm cũ trên Cloud Storage có thể không truy cập được ở gói Spark.") },
+            text = { Text("Bản ghi tin nhắn/JSON sẽ được chuyển vào Kho đã gỡ. Tệp đính kèm cũ hiện có thể chưa truy cập được.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteMessage = null
@@ -1193,7 +1193,7 @@ fun CommunityScreen(
         AlertDialog(
             onDismissRequest = { deleteRelease = null },
             title = { Text("Gỡ bản cập nhật vào kho?") },
-            text = { Text("Bản ghi ${release.versionName} sẽ được chuyển vào kho đã gỡ. Tệp APK cũ vẫn nằm trong Cloud Storage nhưng không thể truy cập trên gói Spark.") },
+            text = { Text("Bản ghi ${release.versionName} sẽ được chuyển vào kho đã gỡ. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteRelease = null
@@ -1239,7 +1239,7 @@ fun CommunityScreen(
         AlertDialog(
             onDismissRequest = { deleteArchiveItem = null },
             title = { Text("Xóa vĩnh viễn khỏi kho?") },
-            text = { Text("Bản ghi Firestore này sẽ bị xóa vĩnh viễn. Tệp đính kèm cũ trong Cloud Storage không bị xóa và vẫn không thể truy cập trên gói Spark.") },
+            text = { Text("Bản ghi dữ liệu này sẽ bị xóa vĩnh viễn. Tệp đính kèm cũ không bị xóa và hiện vẫn không thể truy cập.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteArchiveItem = null
@@ -1357,7 +1357,7 @@ private fun CommunityMessageCard(
                     Text(message.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                 }
                 if (message.type == "image") {
-                    Text("Ảnh đính kèm cần Cloud Storage (Blaze); hiện không thể xem trên gói Spark.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    Text("Ảnh đính kèm hiện chưa thể xem trên gói miễn phí.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                 } else if (message.type == "json") {
                     Row(
                         modifier = Modifier.fillMaxWidth()
@@ -1391,7 +1391,7 @@ private fun CommunityMessageCard(
                     }
                 } else if (message.type == "file") {
                     Text(
-                        "${message.fileName} · ${formatCommunitySize(message.fileSize)} · Tải tệp cần Cloud Storage (Blaze), hiện tạm ngừng trên Spark.",
+                        "${message.fileName} · ${formatCommunitySize(message.fileSize)} · Tải tệp hiện tạm ngừng trên gói miễn phí.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 9.sp
                     )
@@ -1484,7 +1484,7 @@ private fun CommunityArchiveCard(
                 }
             }
             if (item.category == "image") {
-                Text("Ảnh lưu trữ cần Cloud Storage (Blaze); không thể xem trên Spark.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                Text("Ảnh lưu trữ hiện chưa thể xem trên gói miễn phí.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
             if (item.fileName.isNotBlank()) {
                 Text(
@@ -1502,7 +1502,7 @@ private fun CommunityArchiveCard(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (item.downloadUrl.isNotBlank()) {
-                    Text("Tệp đính kèm không tải được trên Spark", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                    Text("Tệp đính kèm hiện chưa thể tải xuống", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
                 TextButton(onClick = onDelete) {
                     Text("XÓA VĨNH VIỄN", color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
@@ -1539,7 +1539,7 @@ private fun CommunityReleaseCard(
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Tải APK qua Cloud Storage cần Blaze; tính năng này tạm dừng trên Spark.",
+                    "Tải APK hiện đang tạm dừng trên gói miễn phí.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp
                 )
