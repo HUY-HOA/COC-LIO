@@ -260,7 +260,7 @@ private suspend fun checkCommunityMessages(
         val document = item.document
         val senderUid = document.getString("uid").orEmpty()
         if (senderUid == currentUid) return@forEach
-        val sender = document.getString("displayName").orEmpty().ifBlank { "Thành viên" }
+        val sender = document.getString("displayName").orEmpty().ifBlank { AppLanguageSettings.translate(context, "Thành viên") }
         val type = document.getString("type").orEmpty()
         val messageText = when (type) {
             "text" -> document.getString("text").orEmpty().trim()
