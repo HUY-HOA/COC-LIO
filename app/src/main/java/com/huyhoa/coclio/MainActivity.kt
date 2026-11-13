@@ -565,17 +565,6 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
-    var securityTelemetryConsent by remember { mutableStateOf(false) }
-    var analyticsConsent by remember { mutableStateOf(false) }
-    var diagnosticsConsent by remember { mutableStateOf(false) }
-    var villageDataSyncConsent by remember { mutableStateOf(false) }
-    var privacyChoiceVersion by remember { mutableLongStateOf(0L) }
-    var showPrivacyConsentDialog by remember { mutableStateOf(false) }
-    var privacyDialogSecurity by remember { mutableStateOf(false) }
-    var privacyDialogAnalytics by remember { mutableStateOf(false) }
-    var privacyDialogDiagnostics by remember { mutableStateOf(false) }
-    var privacyDialogVillageData by remember { mutableStateOf(false) }
-    var privacySaving by remember { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var lastUsedAt by remember(activeProfile) {
         mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
@@ -608,13 +597,7 @@ private fun CocLioApp(
     var deletedReceivedSharedJsons by remember(activeProfile) {
         mutableStateOf(ReceivedSharedJsonStore.loadDeleted(context, activeProfile))
     }
-    fun openPrivacyDialog() {
-        privacyDialogSecurity = securityTelemetryConsent
-        privacyDialogAnalytics = analyticsConsent
-        privacyDialogDiagnostics = diagnosticsConsent
-        privacyDialogVillageData = villageDataSyncConsent
-        showPrivacyConsentDialog = true
-    }
+
 
     val ledPrefs = remember {
         context.getSharedPreferences("coc_lio_led", android.content.Context.MODE_PRIVATE).also { prefs ->
@@ -780,43 +763,22 @@ private fun CocLioApp(
 
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
         if (!isGoogleSignedIn) {
-            securityTelemetryConsent = false
-            analyticsConsent = false
-            diagnosticsConsent = false
-            villageDataSyncConsent = false
-            privacyChoiceVersion = 0L
             AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+            AccountActivityTracker.stopAndWait(context)
         } else {
             runCatching { AccountPrivacyConsent.load() }
                 .onSuccess { choice ->
-                    securityTelemetryConsent = choice.securityTelemetry
-                    analyticsConsent = choice.analytics
-                    diagnosticsConsent = choice.diagnostics
-                    villageDataSyncConsent = choice.villageDataSync
-                    privacyChoiceVersion = choice.version
                     AccountPrivacyConsent.applyCollectionSettings(context, choice)
-                    if (choice.version < AccountPrivacyConsent.CURRENT_VERSION) {
-                        AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
-                        AccountActivityTracker.stopAndWait(context)
-                        securityTelemetryConsent = false
-                        analyticsConsent = false
-                        diagnosticsConsent = false
-                        villageDataSyncConsent = false
-                    } else if (choice.securityTelemetry) {
+                    if (choice.securityTelemetry) {
                         AccountActivityTracker.start(context)
                     } else {
                         AccountActivityTracker.stopAndWait(context)
                     }
                 }
                 .onFailure {
-                    securityTelemetryConsent = false
-                    analyticsConsent = false
-                    diagnosticsConsent = false
-                    villageDataSyncConsent = false
-                    privacyChoiceVersion = 0L
                     AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
                     AccountActivityTracker.stopAndWait(context)
-                    snackbar.showSnackbar("Không tải được lựa chọn quyền riêng tư. Dữ liệu tùy chọn vẫn đang tắt.")
+                    snackbar.showSnackbar("Không tải được lựa chọn dữ liệu tài khoản. Các mục tùy chọn vẫn đang tắt.")
                 }
         }
     }
@@ -970,35 +932,7 @@ private fun CocLioApp(
         }
     }
 
-    fun savePrivacyChoice(choice: AccountPrivacyChoice) {
-        if (privacySaving) return
-        privacySaving = true
-        scope.launch {
-            try {
-                AccountPrivacyConsent.save(choice)
-                securityTelemetryConsent = choice.securityTelemetry
-                analyticsConsent = choice.analytics
-                diagnosticsConsent = choice.diagnostics
-                villageDataSyncConsent = choice.villageDataSync
-                privacyChoiceVersion = AccountPrivacyConsent.CURRENT_VERSION
-                AccountPrivacyConsent.applyCollectionSettings(context, choice)
-                if (choice.securityTelemetry) {
-                    AccountActivityTracker.start(context)
-                } else {
-                    AccountActivityTracker.stopAndWait(context)
-                }
-                showPrivacyConsentDialog = false
-                snackbar.showSnackbar("Đã lưu lựa chọn quyền riêng tư của bạn.")
-            } catch (error: Exception) {
-                snackbar.showSnackbar(
-                    error.message?.takeIf { it.isNotBlank() }
-                        ?: "Không thể lưu lựa chọn quyền riêng tư. Hãy thử lại."
-                )
-            } finally {
-                privacySaving = false
-            }
-        }
-    }
+
 
     fun signInWithGoogle() {
         if (!requiredAccountConsentChecked || requiredAccountConsentSubmitting) return
@@ -1283,11 +1217,6 @@ private fun CocLioApp(
                         accountData = AccountProfileStore.googleData(context, activeProfile),
                         preferredName = AccountProfileStore.preferredName(context, activeProfile),
                         lastUsedLabel = lastUsedAt.takeIf { it > 0L }?.let { formatTimestamp(it / 1000L) },
-                        securityTelemetryConsent = securityTelemetryConsent,
-                        analyticsConsent = analyticsConsent,
-                        diagnosticsConsent = diagnosticsConsent,
-                        privacyChoiceConfigured = privacyChoiceVersion >= AccountPrivacyConsent.CURRENT_VERSION,
-                        onManagePrivacy = { openPrivacyDialog() },
                         knownProfiles = AccountProfileStore.knownProfiles(context, activeProfile),
                         themeMode = themeMode,
                         onThemeModeChanged = onThemeModeChanged,
@@ -1480,205 +1409,7 @@ private fun CocLioApp(
         )
     }
 
-    if (showPrivacyConsentDialog && isGoogleSignedIn) {
-        AlertDialog(
-            onDismissRequest = { showPrivacyConsentDialog = false },
-            title = {
-                Text("QUYỀN RIÊNG TƯ & DỮ LIỆU COC-LIO", fontWeight = FontWeight.Black)
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .heightIn(max = 440.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        "THÔNG TIN TÀI KHOẢN CẦN THIẾT",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        "Khi bạn đăng nhập Google và dùng tính năng tài khoản, COC-LIO lưu mã tài khoản, email, tên và ảnh hồ sơ Google, trạng thái xác minh email, tên hiển thị bạn đặt, nhà cung cấp đăng nhập, số lần và thời điểm đăng nhập. Mục đích là xác thực, duy trì tài khoản, đồng bộ hồ sơ và hiển thị danh tính trong cộng đồng. Hồ sơ được xử lý qua dịch vụ xác thực Google và hệ thống lưu trữ bảo mật phục vụ COC-LIO.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp,
-                        lineHeight = 15.sp
-                    )
-                    Text(
-                        "CÁC MỤC THU THẬP BỔ SUNG — TỰ CHỌN",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        "Các mục dưới đây mặc định tắt. Bạn vẫn có thể dùng ứng dụng và các chức năng chính khi không bật.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.sp
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = privacyDialogSecurity,
-                            onCheckedChange = { privacyDialogSecurity = it },
-                            enabled = !privacySaving
-                        )
-                        Column(Modifier.weight(1f)) {
-                            Text("Bảo mật tài khoản và hoạt động", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                            Text(
-                                "Cho phép ghi nhận hãng, mẫu, dòng thiết bị và kiến trúc CPU; phiên bản Android/API và COC-LIO; kích thước/độ phân giải màn hình; ngôn ngữ, múi giờ, loại kết nối Wi-Fi/di động/khác; thời điểm mở, hoạt động, chuyển nền; số phiên và thời lượng sử dụng. Không ghi IP hoặc mã định danh phần cứng. Mục đích: hỗ trợ tương thích, bảo mật tài khoản và kỹ thuật.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp,
-                                lineHeight = 13.sp
-                            )
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = privacyDialogVillageData,
-                            onCheckedChange = { privacyDialogVillageData = it },
-                            enabled = !privacySaving
-                        )
-                        Column(Modifier.weight(1f)) {
-                            Text("Đồng bộ dữ liệu Clash of Clans lên tài khoản", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                            Text(
-                                "Khi bạn tự nhập JSON từ game, COC-LIO có thể gửi bản JSON đó lên kho dữ liệu tài khoản để bạn và chủ sở hữu ứng dụng xem dữ liệu làng. Chỉ lưu bản mới nhất cho mỗi Player Tag; giới hạn 700 KB/bản. Không tự đăng nhập game, không tự đọc dữ liệu game khi bạn chưa nhập JSON. Tắt mục này sẽ dừng đồng bộ mới; dữ liệu đã lưu không tự xóa.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp,
-                                lineHeight = 13.sp
-                            )
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = privacyDialogAnalytics,
-                            onCheckedChange = { privacyDialogAnalytics = it },
-                            enabled = !privacySaving
-                        )
-                        Column(Modifier.weight(1f)) {
-                            Text("Phân tích mức sử dụng", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                            Text(
-                                "Cho phép công cụ phân tích sử dụng ghi nhận sự kiện như đăng nhập, đăng xuất, nhập JSON và một số thông tin sử dụng/thiết bị tự động. Mục đích: hiểu tính năng được dùng ra sao để cải thiện ứng dụng.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp,
-                                lineHeight = 13.sp
-                            )
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = privacyDialogDiagnostics,
-                            onCheckedChange = { privacyDialogDiagnostics = it },
-                            enabled = !privacySaving
-                        )
-                        Column(Modifier.weight(1f)) {
-                            Text("Báo cáo lỗi và hiệu năng", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                            Text(
-                                "Cho phép công cụ báo lỗi gửi thông tin sự cố, dấu vết lỗi và trạng thái thiết bị/ứng dụng; công cụ đo hiệu năng ghi nhận số liệu hiệu năng và thời gian mạng. Mục đích: tìm lỗi, cải thiện độ ổn định và tốc độ.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp,
-                                lineHeight = 13.sp
-                            )
-                        }
-                    }
-                    Text(
-                        "DỮ LIỆU LƯU TRÊN THIẾT BỊ",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        "Lịch sử làng, JSON đã nhập, tên làng, mục ghim, lịch sử đã xóa, JSON nhận từ cộng đồng và các tùy chỉnh giao diện/thông báo/nhắc nhở có thể được lưu trong bộ nhớ riêng của ứng dụng trên điện thoại để bạn xem lại. JSON chỉ được đồng bộ lên kho dữ liệu trực tuyến nếu bạn bật riêng lựa chọn đồng bộ dữ liệu Clash of Clans; nếu tắt, JSON chỉ lưu trên thiết bị. Chia sẻ JSON vào cộng đồng là thao tác riêng và nội dung sẽ hiển thị cho thành viên theo quy tắc cộng đồng. Dữ liệu cục bộ không tự mất khi xóa hồ sơ tài khoản trực tuyến; bạn cần xóa dữ liệu ứng dụng hoặc gỡ ứng dụng để xóa bản lưu trên máy.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 9.sp,
-                        lineHeight = 13.sp
-                    )
-                    Text(
-                        "KHI BẠN TỰ GỬI NỘI DUNG VÀ DÙNG THÔNG BÁO",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        "Tin nhắn chữ, hồ sơ và JSON bạn chủ động chia sẻ được lưu trong hệ thống dữ liệu cộng đồng; thành viên đã đăng nhập có thể xem nội dung cộng đồng. Trên gói miễn phí hiện tại, gửi ảnh, tệp và APK đang tạm dừng; tệp cũ vẫn được giữ nhưng hiện chưa thể đọc hoặc quản lý. Thông báo đẩy tự động cho tin nhắn và cập nhật cũng đang tạm dừng. Nếu bật tùy chọn thông báo, ứng dụng có thể lưu lựa chọn trên thiết bị nhưng hiện chưa gửi thông báo tự động.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 9.sp,
-                        lineHeight = 13.sp
-                    )
-                    Text(
-                        "AI CÓ THỂ XEM DỮ LIỆU",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý. Bản JSON làng đồng bộ theo lựa chọn chỉ người dùng sở hữu và chủ sở hữu ứng dụng được đọc theo phân quyền của hệ thống; người có quyền quản trị hạ tầng kỹ thuật vẫn có thể có quyền truy cập theo phân quyền được cấp. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Dữ liệu phân tích, báo lỗi và hiệu năng được xử lý trong các công cụ vận hành tương ứng.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 9.sp,
-                        lineHeight = 13.sp
-                    )
-                    Text(
-                        "THỜI GIAN LƯU TRỮ VÀ XÓA DỮ LIỆU",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        "Hồ sơ và dữ liệu hoạt động được lưu trên hệ thống trực tuyến được giữ cho đến khi được quản lý xóa; hiện chưa đặt thời hạn tự động xóa cố định. Bài đăng cộng đồng được giữ cho đến khi bị gỡ. Trên gói miễn phí hiện tại, việc dọn kho chỉ xóa bản ghi dữ liệu; tệp đính kèm cũ không thể truy cập hoặc xóa từ ứng dụng. Dữ liệu phân tích, báo lỗi và hiệu năng đã gửi trước đó tuân theo thời hạn lưu trữ của từng công cụ. Chức năng Vô hiệu hóa tài khoản trong COC-LIO chỉ đánh dấu hồ sơ và chặn quyền truy cập COC-LIO; chức năng này không xóa tài khoản Google hoặc tự xóa toàn bộ dữ liệu liên quan. Dữ liệu lưu cục bộ trên điện thoại không bị xóa.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 9.sp,
-                        lineHeight = 13.sp
-                    )
-                    Text(
-                        "Bạn có thể đổi hoặc rút lại từng lựa chọn thu thập tùy chọn trong Cài đặt. Khi rút lại, việc thu thập mới cho mục đó sẽ dừng; dữ liệu đã ghi trước đó không tự động bị xóa, trừ khi bạn gửi yêu cầu xóa và yêu cầu được xử lý. Bạn có thể yêu cầu xem, sửa, hạn chế xử lý hoặc xóa dữ liệu qua email phunghuyhoahaikba@gmail.com. Dịch vụ kỹ thuật hỗ trợ xác thực và lưu trữ: các nhà cung cấp hạ tầng trực tuyến. Đầu mối vận hành và tiếp nhận yêu cầu: COC-LIO. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước thời điểm rút lại.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 9.sp,
-                        lineHeight = 13.sp
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = !privacySaving,
-                    onClick = {
-                        savePrivacyChoice(
-                            AccountPrivacyChoice(
-                                securityTelemetry = privacyDialogSecurity,
-                                analytics = privacyDialogAnalytics,
-                                diagnostics = privacyDialogDiagnostics,
-                                villageDataSync = privacyDialogVillageData
-                            )
-                        )
-                    }
-                ) {
-                    Text(if (privacySaving) "ĐANG LƯU..." else "LƯU LỰA CHỌN")
-                }
-            },
-            dismissButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    TextButton(
-                        enabled = !privacySaving,
-                        onClick = {
-                            privacyDialogSecurity = false
-                            privacyDialogAnalytics = false
-                            privacyDialogDiagnostics = false
-                            savePrivacyChoice(AccountPrivacyChoice())
-                        }
-                    ) {
-                        Text("TỪ CHỐI TẤT CẢ", color = MaterialTheme.colorScheme.error)
-                    }
-                    TextButton(
-                        enabled = !privacySaving,
-                        onClick = { showPrivacyConsentDialog = false }
-                    ) {
-                        Text("ĐỂ SAU")
-                    }
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurface
-        )
-    }
+
 
     if (showImportDialog && isGoogleSignedIn) {
         CompositionLocalProvider(
@@ -1842,21 +1573,21 @@ private fun RequiredAccountDataDetailsDialog(
                 )
                 Text("3. DỮ LIỆU KHÔNG BẮT BUỘC", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Thông tin thiết bị và hoạt động, phân tích mức sử dụng, báo cáo lỗi/hiệu năng và đồng bộ JSON Clash of Clans lên tài khoản là các mục riêng. Các mục này mặc định tắt; bạn có thể quản lý riêng trong Cài đặt sau khi đăng nhập. Ô xác nhận trên màn hình này không bật các mục đó.",
+                    "Thông tin thiết bị và hoạt động, phân tích mức sử dụng, báo cáo lỗi/hiệu năng và đồng bộ JSON Clash of Clans lên tài khoản là các mục riêng, mặc định tắt. Ô xác nhận dữ liệu tài khoản bắt buộc trên màn hình đăng nhập không bật các mục tùy chọn này.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
                 )
                 Text("4. JSON VÀ NỘI DUNG CỘNG ĐỒNG", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "JSON bạn nhập được lưu trên điện thoại. Chỉ khi bật đồng bộ riêng thì bản JSON mới được gửi lên hệ thống lưu trữ trực tuyến. Tin nhắn và JSON bạn chủ động chia sẻ trong cộng đồng có thể được thành viên đã đăng nhập xem theo quy tắc cộng đồng.",
+                    "JSON bạn nhập được lưu trên điện thoại. Với tài khoản đã bật đồng bộ từ trước, lựa chọn đó tiếp tục được áp dụng; tài khoản chưa bật đồng bộ chỉ lưu JSON trên thiết bị. Tin nhắn và JSON bạn chủ động chia sẻ trong cộng đồng có thể được thành viên đã đăng nhập xem theo quy tắc cộng đồng.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
                 )
                 Text("5. THỜI HẠN, QUYỀN VÀ LIÊN HỆ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Hồ sơ tài khoản trực tuyến được giữ cho đến khi được xóa theo quy trình quản lý hoặc yêu cầu hợp lệ; dữ liệu trên điện thoại vẫn còn cho đến khi bạn xóa dữ liệu ứng dụng hoặc gỡ ứng dụng. Bạn có quyền yêu cầu xem, chỉnh sửa, hạn chế xử lý hoặc xóa dữ liệu và rút lại các lựa chọn tùy chọn trong Cài đặt. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước đó. Đơn vị vận hành: COC-LIO. Dịch vụ kỹ thuật hỗ trợ xác thực và lưu trữ: các nhà cung cấp hạ tầng trực tuyến. Liên hệ: phunghuyhoahaikba@gmail.com.",
+                    "Hồ sơ tài khoản trực tuyến được giữ cho đến khi được xóa theo quy trình quản lý hoặc yêu cầu hợp lệ; dữ liệu trên điện thoại vẫn còn cho đến khi bạn xóa dữ liệu ứng dụng hoặc gỡ ứng dụng. Bạn có quyền yêu cầu xem, chỉnh sửa, hạn chế xử lý hoặc xóa dữ liệu, hoặc yêu cầu rút lại lựa chọn tùy chọn qua email phunghuyhoahaikba@gmail.com. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước đó. Đơn vị vận hành: COC-LIO. Dịch vụ kỹ thuật hỗ trợ xác thực và lưu trữ: các nhà cung cấp hạ tầng trực tuyến.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
