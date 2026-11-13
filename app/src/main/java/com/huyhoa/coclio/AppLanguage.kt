@@ -1008,12 +1008,20 @@ private val englishTranslations = mapOf(
     "Không thể mở hồ sơ này." to "Unable to open this profile.",
     "Không thể tải thêm kết quả." to "Unable to load more results.",
     "Không thể hoàn tất bản dịch." to "Unable to complete the translation.",
+    "Tháp phản công" to "Revenge Tower",
+    "Clan" to "Clan",
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
     if (language != AppUiLanguage.ENGLISH) return source
     englishTranslations[source]?.let { return it }
     return when {
+        Regex("^Mục (\\d+)$").matchEntire(source) != null ->
+            Regex("^Mục (\\d+)$").matchEntire(source)!!.let { "Item ${it.groupValues[1]}" }
+        Regex("^(.+) · (.+) · Tải tệp hiện tạm ngừng trên gói miễn phí\\.$").matchEntire(source) != null ->
+            Regex("^(.+) · (.+) · Tải tệp hiện tạm ngừng trên gói miễn phí\\.$").matchEntire(source)!!.let {
+                "${it.groupValues[1]} · ${it.groupValues[2]} · File downloads are currently paused on the free plan."
+            }
         Regex("^(.+) cấp (\\d+)$").matchEntire(source) != null ->
             Regex("^(.+) cấp (\\d+)$").matchEntire(source)!!.let { match ->
                 (englishTranslations[match.groupValues[1]] ?: match.groupValues[1]) + " level " + match.groupValues[2]
