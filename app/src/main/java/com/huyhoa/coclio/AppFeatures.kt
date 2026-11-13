@@ -2167,7 +2167,7 @@ fun SettingsScreen(
         val ledSliderColors = androidx.compose.material3.SliderDefaults.colors(
             activeTrackColor = Color(0xFF36F4FF),
             inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-            thumbColor = Color(0xFF36F4FF),
+            thumbColor = Color.Transparent,
             activeTickColor = Color.Transparent,
             inactiveTickColor = Color.Transparent
         )
@@ -2204,12 +2204,14 @@ fun SettingsScreen(
                 onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(0, 100)) },
                 valueRange = 0f..100f,
                 colors = ledSliderColors,
+                thumb = {},
                 track = { sliderState ->
                     androidx.compose.material3.SliderDefaults.Track(
                         sliderState = sliderState,
                         colors = ledSliderColors,
                         modifier = Modifier.height(12.dp),
-                        drawStopIndicator = null
+                        drawStopIndicator = null,
+                        thumbTrackGapSize = 0.dp
                     )
                 }
             )
@@ -2230,7 +2232,8 @@ fun SettingsScreen(
                         sliderState = sliderState,
                         colors = ledSliderColors,
                         modifier = Modifier.height(12.dp),
-                        drawStopIndicator = null
+                        drawStopIndicator = null,
+                        thumbTrackGapSize = 0.dp
                     )
                 }
             )
