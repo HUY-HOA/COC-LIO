@@ -1021,8 +1021,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^(\\d+) mục\\.$").matchEntire(source)!!.let { "${it.groupValues[1]} items." }
         Regex("^(\\d+) ngày (.+)$").matchEntire(source) != null ->
             Regex("^(\\d+) ngày (.+)$").matchEntire(source)!!.let { "${it.groupValues[1]} days ${it.groupValues[2]}" }
-        source.startsWith("Cấp ") ->
-            "Level " + source.removePrefix("Cấp ")
         source.startsWith("Đang tải ") ->
             "Loading " + source.removePrefix("Đang tải ")
         source.startsWith("Đã lưu dữ liệu cho ") ->
@@ -1033,7 +1031,7 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             "Shared JSON " + source.removePrefix("Đã chia sẻ JSON ")
         source.startsWith("JSON làng ") ->
             "Village JSON " + source.removePrefix("JSON làng ")
-        source.startsWith("Làng ") && source.startsWith("Làng #") ->
+        source.startsWith("Làng #") ->
             "Village " + source.removePrefix("Làng ")
         source.endsWith(" • LÀNG ĐÊM") -> {
             val name = source.removeSuffix(" • LÀNG ĐÊM")
@@ -1074,7 +1072,7 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Chia sẻ bởi: ") -> "Shared by: " + source.removePrefix("Chia sẻ bởi: ")
         source.startsWith("Dữ liệu: ") -> "Data: " + source.removePrefix("Dữ liệu: ")
         source.startsWith("Đã gỡ: ") -> "Removed: " + source.removePrefix("Đã gỡ: ")
-        source.startsWith("Đã gửi: ") -> "Sent: " + source.removePrefix("Đã gửi: ")
+        source.startsWith("Đã gửi: ") -> "Sent: " + source.removePrefix("Đã gửi: ").replace(" • Đã gỡ: ", " • Removed: ")
         source.startsWith("Đã tải ") -> "Loaded " + source.removePrefix("Đã tải ")
         source.startsWith("Nhà chính ") -> "Town Hall " + source.removePrefix("Nhà chính ")
         source.startsWith("Cấp Nhà chính ") -> "Town Hall Level " + source.removePrefix("Cấp Nhà chính ")
