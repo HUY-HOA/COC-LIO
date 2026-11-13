@@ -1836,7 +1836,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             fontSize = 12.sp
         )
         Text(
-            "Chỉ tài khoản quản lý mới xem được. Thông tin chi tiết chỉ mở khi bạn chọn từng tài khoản.",
+            "Chỉ tài khoản quản lý mới xem được. Danh sách lấy từ hồ sơ Firestore; trên Spark không tự đối chiếu trạng thái toàn bộ tài khoản Firebase Authentication.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp,
             lineHeight = 15.sp
