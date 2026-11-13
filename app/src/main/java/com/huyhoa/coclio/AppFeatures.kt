@@ -684,6 +684,32 @@ data class AccountPrivacyChoice(
 
 object AccountPrivacyConsent {
     const val CURRENT_VERSION = 6L
+    const val REQUIRED_ACCOUNT_DATA_VERSION = 1L
+
+    suspend fun hasRequiredAccountDataConsent(): Boolean {
+        val user = FirebaseAuth.getInstance().currentUser ?: return false
+        val profile = FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .get()
+            .awaitFirebaseResult()
+        return profile.getLong("requiredAccountDataConsentVersion") == REQUIRED_ACCOUNT_DATA_VERSION
+    }
+
+    suspend fun saveRequiredAccountDataConsent() {
+        val user = FirebaseAuth.getInstance().currentUser
+            ?: throw IllegalStateException("Bạn cần đăng nhập Google để xác nhận dữ liệu tài khoản.")
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .update(
+                mapOf(
+                    "requiredAccountDataConsentVersion" to REQUIRED_ACCOUNT_DATA_VERSION,
+                    "requiredAccountDataConsentAt" to FieldValue.serverTimestamp()
+                )
+            )
+            .awaitFirebaseResult()
+    }
 
     suspend fun load(): AccountPrivacyChoice {
         val user = FirebaseAuth.getInstance().currentUser ?: return AccountPrivacyChoice()
