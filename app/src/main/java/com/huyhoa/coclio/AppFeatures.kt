@@ -1282,7 +1282,7 @@ class UpgradeReminderWorker(
         val alarmDurationSeconds = AppPreferences.alarmDurationSeconds(applicationContext, profile)
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
-            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v3" else "_message"
+            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v4" else "_message"
         ensureUpgradeNotificationChannel(applicationContext, channelId, alarmStyle, alarmDurationSeconds)
 
         val notificationKey = "$profile|$tag|$dataId|$endAt"
@@ -1314,7 +1314,7 @@ class UpgradeReminderWorker(
             "${AppLanguageSettings.translate(applicationContext, "Căn cứ")}: $baseText",
             "${AppLanguageSettings.translate(applicationContext, "Nhóm")}: $localizedSection",
             "${AppLanguageSettings.translate(applicationContext, "Công trình")}: $localizedItem",
-            "ID: $dataId",
+            "$dataId",
             "${AppLanguageSettings.translate(applicationContext, "Dự kiến")}: $levelText",
             AppLanguageSettings.translate(
                 applicationContext,
@@ -1383,7 +1383,7 @@ object UpgradeNotificationTester {
         val alarmStyle = style == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
-            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v3" else "_message"
+            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v4" else "_message"
         ensureUpgradeNotificationChannel(context, channelId, alarmStyle, alarmDurationSeconds)
 
         val openApp = Intent(context, MainActivity::class.java)
@@ -1434,8 +1434,9 @@ object UpgradeNotificationTester {
         ) {
             return@runCatching false
         }
+        NotificationManagerCompat.from(context).cancel(testNotificationId)
         NotificationManagerCompat.from(context).notify(testNotificationId, notification)
-        if (alarmStyle && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        if (alarmStyle) {
             scheduleUpgradeNotificationDismissal(context, testNotificationId, alarmDurationSeconds)
         }
         true
@@ -2892,8 +2893,8 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                     drawPath(path, Brush.sweepGradient(colors), style = Stroke(width = stroke))
                 }
             }
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         content = content
     )
 }
