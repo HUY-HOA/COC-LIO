@@ -128,6 +128,116 @@ private fun compareNotificationTimestamps(first: Timestamp, second: Timestamp): 
     return if (seconds != 0) seconds else first.nanoseconds.compareTo(second.nanoseconds)
 }
 
+private data class NotificationScan(
+    val firstRun: Boolean,
+    val documents: List<NotificationDocument>
+)
+
+private suspend fun readNotificationChanges(
+    firestore: FirebaseFirestore,
+    collectionName: String,
+    preferences: android.content.SharedPreferences,
+    profile: String,
+    watermarkType: String,
+    limit: Long
+): NotificationScan {
+    val collection = firestore.collection(collectionName)
+    val prefix = profile.hashCode().toUInt().toString(16) + "_" + watermarkType
+    val secondsKey = prefix + "_seconds"
+    val nanosKey = prefix + "_nanos"
+    val idsKey = prefix + "_ids"
+
+    if (!preferences.contains(secondsKey)) {
+        val latest = collection.orderBy("createdAt", Query.Direction.DESCENDING)
+            .limit(1)
+            .get()
+            .awaitNotificationResult()
+            .documents
+            .firstOrNull()
+        val latestTimestamp = latest?.let(::notificationTimestamp)
+        if (latest == null || latestTimestamp == null) {
+            preferences.edit()
+                .putLong(secondsKey, Long.MIN_VALUE)
+                .putInt(nanosKey, 0)
+                .putStringSet(idsKey, mutableSetOf())
+                .apply()
+            return NotificationScan(true, emptyList())
+        }
+        val existingAtLatestTime = collection.whereEqualTo("createdAt", latestTimestamp)
+            .get()
+            .awaitNotificationResult()
+            .documents
+            .mapNotNull { document ->
+                notificationTimestamp(document)?.let { NotificationDocument(document, it) }
+            }
+        saveNotificationWatermark(
+            preferences,
+            secondsKey,
+            nanosKey,
+            idsKey,
+            existingAtLatestTime.ifEmpty { listOf(NotificationDocument(latest, latestTimestamp)) }
+        )
+        return NotificationScan(true, listOf(NotificationDocument(latest, latestTimestamp)))
+    }
+
+    val lastSeconds = preferences.getLong(secondsKey, Long.MIN_VALUE)
+    val lastNanos = preferences.getInt(nanosKey, 0)
+    val lastTimestamp = if (lastSeconds == Long.MIN_VALUE) null else Timestamp(lastSeconds, lastNanos)
+    val lastIds = preferences.getStringSet(idsKey, mutableSetOf()).orEmpty()
+    val newerDocuments = if (lastTimestamp == null) {
+        collection.orderBy("createdAt", Query.Direction.ASCENDING)
+            .limit(limit)
+            .get()
+            .awaitNotificationResult()
+            .documents
+    } else {
+        collection.whereGreaterThan("createdAt", lastTimestamp)
+            .orderBy("createdAt", Query.Direction.ASCENDING)
+            .limit(limit)
+            .get()
+            .awaitNotificationResult()
+            .documents
+    }
+    val sameTimestampDocuments = if (lastTimestamp == null) {
+        emptyList()
+    } else {
+        collection.whereEqualTo("createdAt", lastTimestamp)
+            .get()
+            .awaitNotificationResult()
+            .documents
+            .filter { it.id !in lastIds }
+    }
+    val changes = (newerDocuments + sameTimestampDocuments)
+        .distinctBy { it.id }
+        .mapNotNull { document ->
+            notificationTimestamp(document)?.let { NotificationDocument(document, it) }
+        }
+        .sortedWith(
+            compareBy<NotificationDocument> { it.timestamp.seconds }
+                .thenBy { it.timestamp.nanoseconds }
+                .thenBy { it.document.id }
+        )
+
+    if (changes.isNotEmpty()) {
+        saveNotificationWatermark(
+            preferences,
+            secondsKey,
+            nanosKey,
+            idsKey,
+            changes,
+            lastTimestamp,
+            lastIds
+        )
+    } else if (lastTimestamp == null) {
+        preferences.edit()
+            .putLong(secondsKey, Long.MIN_VALUE)
+            .putInt(nanosKey, 0)
+            .putStringSet(idsKey, mutableSetOf())
+            .apply()
+    }
+    return NotificationScan(false, changes)
+}
+
 private suspend fun checkCommunityMessages(
     context: Context,
     firestore: FirebaseFirestore,
@@ -135,63 +245,36 @@ private suspend fun checkCommunityMessages(
     profile: String,
     currentUid: String
 ) {
-    val documents = firestore.collection("community_messages")
-        .orderBy("createdAt", Query.Direction.DESCENDING)
-        .limit(50)
-        .get()
-        .awaitNotificationResult()
-        .documents
-        .mapNotNull { document ->
-            notificationTimestamp(document)?.let { NotificationDocument(document, it) }
+    val scan = readNotificationChanges(
+        firestore,
+        "community_messages",
+        preferences,
+        profile,
+        "community",
+        50L
+    )
+    if (scan.firstRun) return
+
+    scan.documents.takeLast(5).forEach { item ->
+        val document = item.document
+        val senderUid = document.getString("uid").orEmpty()
+        if (senderUid == currentUid) return@forEach
+        val sender = document.getString("displayName").orEmpty().ifBlank { "Thành viên" }
+        val type = document.getString("type").orEmpty()
+        val messageText = when (type) {
+            "text" -> document.getString("text").orEmpty().trim()
+            "json" -> "Đã chia sẻ dữ liệu JSON."
+            else -> ""
         }
-    if (documents.isEmpty()) return
-
-    val prefix = profile.hashCode().toUInt().toString(16) + "_community"
-    val secondsKey = prefix + "_seconds"
-    val nanosKey = prefix + "_nanos"
-    val idsKey = prefix + "_ids"
-    val hasCursor = preferences.contains(secondsKey)
-    val lastSeconds = preferences.getLong(secondsKey, Long.MIN_VALUE)
-    val lastNanos = preferences.getInt(nanosKey, 0)
-    val lastIds = preferences.getStringSet(idsKey, mutableSetOf()).orEmpty()
-
-    if (hasCursor) {
-        val fresh = documents.filter { item ->
-            val timestampComparison = compareNotificationTimestamps(
-                item.timestamp,
-                Timestamp(lastSeconds, lastNanos)
+        if (messageText.isNotBlank()) {
+            postCommunityNotification(
+                context = context,
+                notificationId = ("community_" + document.id).hashCode(),
+                title = "Tin nhắn cộng đồng",
+                body = (sender + ": " + messageText).take(420)
             )
-            timestampComparison > 0 ||
-                (timestampComparison == 0 && item.document.id !in lastIds)
-        }.sortedWith(
-            compareBy<NotificationDocument> { it.timestamp.seconds }
-                .thenBy { it.timestamp.nanoseconds }
-                .thenBy { it.document.id }
-        )
-
-        fresh.takeLast(5).forEach { item ->
-            val document = item.document
-            val senderUid = document.getString("uid").orEmpty()
-            if (senderUid == currentUid) return@forEach
-            val sender = document.getString("displayName").orEmpty().ifBlank { "Thành viên" }
-            val type = document.getString("type").orEmpty()
-            val messageText = when (type) {
-                "text" -> document.getString("text").orEmpty().trim()
-                "json" -> "Đã chia sẻ dữ liệu JSON."
-                else -> ""
-            }
-            if (messageText.isNotBlank()) {
-                postCommunityNotification(
-                    context = context,
-                    notificationId = ("community_" + document.id).hashCode(),
-                    title = "Tin nhắn cộng đồng",
-                    body = (sender + ": " + messageText).take(420)
-                )
-            }
         }
     }
-
-    saveNotificationWatermark(preferences, secondsKey, nanosKey, idsKey, documents)
 }
 
 private suspend fun checkAppUpdates(
@@ -200,48 +283,19 @@ private suspend fun checkAppUpdates(
     preferences: android.content.SharedPreferences,
     profile: String
 ) {
-    val documents = firestore.collection("app_updates")
-        .orderBy("createdAt", Query.Direction.DESCENDING)
-        .limit(20)
-        .get()
-        .awaitNotificationResult()
-        .documents
-        .mapNotNull { document ->
-            notificationTimestamp(document)?.let { NotificationDocument(document, it) }
-        }
-    if (documents.isEmpty()) return
-
-    val prefix = profile.hashCode().toUInt().toString(16) + "_updates"
-    val secondsKey = prefix + "_seconds"
-    val nanosKey = prefix + "_nanos"
-    val idsKey = prefix + "_ids"
-    val hasCursor = preferences.contains(secondsKey)
-    val lastSeconds = preferences.getLong(secondsKey, Long.MIN_VALUE)
-    val lastNanos = preferences.getInt(nanosKey, 0)
-    val lastIds = preferences.getStringSet(idsKey, mutableSetOf()).orEmpty()
-
-    val fresh = if (hasCursor) {
-        documents.filter { item ->
-            val timestampComparison = compareNotificationTimestamps(
-                item.timestamp,
-                Timestamp(lastSeconds, lastNanos)
-            )
-            timestampComparison > 0 ||
-                (timestampComparison == 0 && item.document.id !in lastIds)
-        }.sortedWith(
-            compareBy<NotificationDocument> { it.timestamp.seconds }
-                .thenBy { it.timestamp.nanoseconds }
-                .thenBy { it.document.id }
-        )
-    } else {
-        documents.take(1)
-    }
-
+    val scan = readNotificationChanges(
+        firestore,
+        "app_updates",
+        preferences,
+        profile,
+        "updates",
+        20L
+    )
     val installedVersion = runCatching {
         applicationVersionName(context)
     }.getOrDefault("")
 
-    fresh.takeLast(5).forEach { item ->
+    scan.documents.takeLast(5).forEach { item ->
         val document = item.document
         if (document.getBoolean("notifyUsers") == false) return@forEach
         val versionName = document.getString("versionName").orEmpty().trim()
@@ -259,8 +313,6 @@ private suspend fun checkAppUpdates(
             body
         )
     }
-
-    saveNotificationWatermark(preferences, secondsKey, nanosKey, idsKey, documents)
 }
 
 private fun saveNotificationWatermark(
@@ -268,16 +320,25 @@ private fun saveNotificationWatermark(
     secondsKey: String,
     nanosKey: String,
     idsKey: String,
-    documents: List<NotificationDocument>
+    documents: List<NotificationDocument>,
+    previousTimestamp: Timestamp? = null,
+    previousIds: Set<String> = emptySet()
 ) {
     val newest = documents.maxWithOrNull(
         compareBy<NotificationDocument> { it.timestamp.seconds }
             .thenBy { it.timestamp.nanoseconds }
     ) ?: return
-    val latestIds = documents
-        .filter { compareNotificationTimestamps(it.timestamp, newest.timestamp) == 0 }
-        .map { it.document.id }
-        .toSet()
+    val comparison = previousTimestamp?.let { compareNotificationTimestamps(newest.timestamp, it) } ?: 1
+    val latestIds = if (comparison == 0) {
+        previousIds + documents
+            .filter { compareNotificationTimestamps(it.timestamp, newest.timestamp) == 0 }
+            .map { it.document.id }
+    } else {
+        documents
+            .filter { compareNotificationTimestamps(it.timestamp, newest.timestamp) == 0 }
+            .map { it.document.id }
+            .toSet()
+    }
     preferences.edit()
         .putLong(secondsKey, newest.timestamp.seconds)
         .putInt(nanosKey, newest.timestamp.nanoseconds)
