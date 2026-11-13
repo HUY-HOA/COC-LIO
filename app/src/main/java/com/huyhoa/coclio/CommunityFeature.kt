@@ -2,12 +2,17 @@ package com.huyhoa.coclio
 
 import android.app.DownloadManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
+import android.widget.Toast
 import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -60,6 +65,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -78,8 +84,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -93,6 +102,8 @@ import com.huyhoa.coclio.data.VillageSnapshot
 private const val COMMUNITY_APK_MIME = "application/vnd.android.package-archive"
 private const val COMMUNITY_MAX_FILE_BYTES = 15L * 1024L * 1024L
 private const val COMMUNITY_MAX_APK_BYTES = 150L * 1024L * 1024L
+private const val COMMUNITY_MAX_EMBEDDED_BYTES = 350 * 1024
+private const val COMMUNITY_MAX_INPUT_BYTES = 25 * 1024 * 1024
 
 private data class CommunityMessage(
     val id: String,
@@ -107,6 +118,7 @@ private data class CommunityMessage(
     val downloadUrl: String,
     val contentType: String,
     val fileSize: Long,
+    val contentData: String = "",
     val createdAt: Long,
     val sharedJsonId: String = ""
 )
@@ -145,7 +157,8 @@ private data class CommunityArchiveItem(
     val createdAt: Long,
     val archivedAt: Long,
     val versionName: String,
-    val notes: String
+    val notes: String,
+    val contentData: String = ""
 )
 
 private fun communityArchiveCollection(category: String): String = when (category) {
