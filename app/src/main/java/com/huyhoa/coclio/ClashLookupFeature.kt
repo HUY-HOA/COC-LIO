@@ -106,7 +106,9 @@ private fun readClashKingJson(path: String): Any = run {
 private suspend fun searchClashKing(
     kind: ClashLookupKind,
     query: String,
-    cursor: String? = null
+    cursor: String? = null,
+    townHallFilter: Int? = null,
+    minMembersFilter: Int? = null
 ): ClashLookupSearchPage = withContext(Dispatchers.IO) {
     val term = query.trim()
     require(term.length in 2..40) {
@@ -115,8 +117,16 @@ private suspend fun searchClashKing(
     val encodedQuery = URLEncoder.encode(term, "UTF-8")
     val encodedCursor = cursor?.let { "&cursor=" + URLEncoder.encode(it, "UTF-8") }.orEmpty()
     val path = when (kind) {
-        ClashLookupKind.PLAYER -> "/v2/player/search?query=$encodedQuery&limit=10$encodedCursor"
-        ClashLookupKind.CLAN -> "/v2/clan/search?query=$encodedQuery&limit=10$encodedCursor"
+        ClashLookupKind.PLAYER -> {
+            val filter = townHallFilter?.let { "&townhallLevels=$it" }.orEmpty()
+            "/v2/player/search?query=$encodedQuery&limit=10$filter$encodedCursor"
+        }
+        ClashLookupKind.CLAN -> {
+            val filter = minMembersFilter?.let {
+                "&" + URLEncoder.encode("members[min]", "UTF-8") + "=$it"
+            }.orEmpty()
+            "/v2/clan/search?query=$encodedQuery&limit=10$filter$encodedCursor"
+        }
     }
     val search = readClashKingJson(path) as? JSONObject
         ?: throw IllegalStateException("Dữ liệu tìm kiếm không đúng định dạng.")
@@ -157,6 +167,9 @@ fun ClashLookupScreen() {
     var result by remember { mutableStateOf<ClashLookupResponse?>(null) }
     var searchResults by remember { mutableStateOf<List<ClashLookupCandidate>>(emptyList()) }
     var searchNextCursor by remember { mutableStateOf<String?>(null) }
+    var searchFiltersExpanded by remember { mutableStateOf(false) }
+    var searchTownHallFilter by remember { mutableStateOf("") }
+    var searchMinMembersFilter by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     var detailLoading by remember { mutableStateOf(false) }
@@ -243,6 +256,33 @@ fun ClashLookupScreen() {
             singleLine = true,
             enabled = !loading
         )
+        OutlinedButton(
+            onClick = { searchFiltersExpanded = !searchFiltersExpanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (searchFiltersExpanded) "ẨN LỌC NÂNG CAO" else "LỌC NÂNG CAO")
+        }
+        if (searchFiltersExpanded) {
+            if (kind == ClashLookupKind.PLAYER) {
+                OutlinedTextField(
+                    value = searchTownHallFilter,
+                    onValueChange = { searchTownHallFilter = it.filter(Char::isDigit).take(2) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Lọc theo cấp Nhà chính (1–20)") },
+                    singleLine = true,
+                    enabled = !loading
+                )
+            } else {
+                OutlinedTextField(
+                    value = searchMinMembersFilter,
+                    onValueChange = { searchMinMembersFilter = it.filter(Char::isDigit).take(2) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Số thành viên tối thiểu (1–50)") },
+                    singleLine = true,
+                    enabled = !loading
+                )
+            }
+        }
         Button(
             onClick = {
                 scope.launch {
@@ -251,7 +291,11 @@ fun ClashLookupScreen() {
                     result = null
                     searchResults = emptyList()
                     searchNextCursor = null
-                    runCatching { searchClashKing(kind, tagInput) }
+                    val townHallFilter = searchTownHallFilter.toIntOrNull()?.takeIf { it in 1..20 }
+                    val minMembersFilter = searchMinMembersFilter.toIntOrNull()?.takeIf { it in 1..50 }
+                    runCatching {
+                        searchClashKing(kind, tagInput, null, townHallFilter, minMembersFilter)
+                    }
                         .onSuccess { page ->
                             if (page.candidates.isEmpty()) {
                                 error = "Không tìm thấy kết quả phù hợp. Hãy kiểm tra tên hoặc mã tag."
@@ -366,7 +410,11 @@ fun ClashLookupScreen() {
                         scope.launch {
                             loading = true
                             error = null
-                            runCatching { searchClashKing(kind, tagInput, cursor) }
+                            val townHallFilter = searchTownHallFilter.toIntOrNull()?.takeIf { it in 1..20 }
+                            val minMembersFilter = searchMinMembersFilter.toIntOrNull()?.takeIf { it in 1..50 }
+                            runCatching {
+                                searchClashKing(kind, tagInput, cursor, townHallFilter, minMembersFilter)
+                            }
                                 .onSuccess { page ->
                                     searchResults = searchResults + page.candidates
                                     searchNextCursor = page.nextCursor
@@ -975,6 +1023,7 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
             ClanRankingCategory("Nhà thợ", rankings.optJSONObject("builderBase"))
             ClanRankingCategory("Thủ đô Clan", rankings.optJSONObject("clanCapital"))
             ClanRankingCategory("Quyên góp", rankings.optJSONObject("donations"))
+            ClanRankingCategory("Nhận quyên góp", rankings.optJSONObject("donationsReceived"))
             ClanRankingCategory("Chiến thắng chiến tranh", rankings.optJSONObject("warWins"))
             ClanRankingCategory("Chuỗi thắng", rankings.optJSONObject("warWinStreak"))
             ClanRankingCategory("Vàng Thủ đô", rankings.optJSONObject("capitalGold"))
