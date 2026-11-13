@@ -812,7 +812,7 @@ private fun lookupFieldLabel(key: String): String = when (key) {
     "townHallLevel", "townhall_level", "townhallLevel" -> "Nhà chính"
     "builderHallLevel" -> "Nhà thợ"
     "clanLevel" -> "Cấp Clan"
-    "members" -> "Thành viên"
+    "members" -> "Số thành viên"
     "trophies" -> "Cúp"
     "stars", "totalStars" -> "Số sao"
     "destructionPercentage" -> "Phần trăm phá hủy"
