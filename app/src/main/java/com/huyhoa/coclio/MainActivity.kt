@@ -900,7 +900,7 @@ private fun CocLioApp(
                     } catch (error: Exception) {
                         snackbar.showSnackbar(
                             error.message?.takeIf { it.isNotBlank() }
-                                ?: "JSON vẫn được lưu trên điện thoại nhưng chưa đồng bộ được lên Firestore."
+                                ?: "JSON vẫn được lưu trên điện thoại nhưng chưa thể đồng bộ lên tài khoản của bạn."
                         )
                     }
                 }
@@ -1500,7 +1500,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Khi bạn đăng nhập Google và dùng tính năng tài khoản, COC-LIO lưu Firebase UID, email, tên và ảnh hồ sơ Google, trạng thái xác minh email, tên hiển thị bạn đặt, nhà cung cấp đăng nhập, số lần và thời điểm đăng nhập. Mục đích là xác thực, duy trì tài khoản, đồng bộ hồ sơ và hiển thị danh tính trong cộng đồng. Hồ sơ được lưu trong Firebase Authentication và Cloud Firestore.",
+                        "Khi bạn đăng nhập Google và dùng tính năng tài khoản, COC-LIO lưu mã tài khoản, email, tên và ảnh hồ sơ Google, trạng thái xác minh email, tên hiển thị bạn đặt, nhà cung cấp đăng nhập, số lần và thời điểm đăng nhập. Mục đích là xác thực, duy trì tài khoản, đồng bộ hồ sơ và hiển thị danh tính trong cộng đồng. Hồ sơ được xử lý qua dịch vụ xác thực Google và hệ thống lưu trữ bảo mật phục vụ COC-LIO.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 10.sp,
                         lineHeight = 15.sp
@@ -1541,7 +1541,7 @@ private fun CocLioApp(
                         Column(Modifier.weight(1f)) {
                             Text("Đồng bộ dữ liệu Clash of Clans lên tài khoản", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             Text(
-                                "Khi bạn tự nhập JSON từ game, COC-LIO có thể gửi bản JSON đó lên Firestore để chủ tài khoản và chủ sở hữu ứng dụng xem dữ liệu làng. Chỉ lưu bản mới nhất cho mỗi Player Tag; giới hạn 700 KB/bản. Không tự đăng nhập game, không tự đọc dữ liệu game khi bạn chưa nhập JSON. Tắt mục này sẽ dừng đồng bộ mới; dữ liệu đã lưu không tự xóa.",
+                                "Khi bạn tự nhập JSON từ game, COC-LIO có thể gửi bản JSON đó lên kho dữ liệu tài khoản để bạn và chủ sở hữu ứng dụng xem dữ liệu làng. Chỉ lưu bản mới nhất cho mỗi Player Tag; giới hạn 700 KB/bản. Không tự đăng nhập game, không tự đọc dữ liệu game khi bạn chưa nhập JSON. Tắt mục này sẽ dừng đồng bộ mới; dữ liệu đã lưu không tự xóa.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp,
                                 lineHeight = 13.sp
@@ -1557,7 +1557,7 @@ private fun CocLioApp(
                         Column(Modifier.weight(1f)) {
                             Text("Phân tích mức sử dụng", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             Text(
-                                "Cho phép Firebase Analytics ghi nhận sự kiện như đăng nhập, đăng xuất, nhập JSON và một số thông tin sử dụng/thiết bị tự động của SDK. Mục đích: hiểu tính năng được dùng ra sao để cải thiện ứng dụng.",
+                                "Cho phép công cụ phân tích sử dụng ghi nhận sự kiện như đăng nhập, đăng xuất, nhập JSON và một số thông tin sử dụng/thiết bị tự động. Mục đích: hiểu tính năng được dùng ra sao để cải thiện ứng dụng.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp,
                                 lineHeight = 13.sp
@@ -1573,7 +1573,7 @@ private fun CocLioApp(
                         Column(Modifier.weight(1f)) {
                             Text("Báo cáo lỗi và hiệu năng", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             Text(
-                                "Cho phép Firebase Crashlytics gửi thông tin sự cố, dấu vết lỗi và trạng thái thiết bị/ứng dụng; Firebase Performance ghi nhận số liệu hiệu năng và thời gian mạng. Mục đích: tìm lỗi, cải thiện độ ổn định và tốc độ.",
+                                "Cho phép công cụ báo lỗi gửi thông tin sự cố, dấu vết lỗi và trạng thái thiết bị/ứng dụng; công cụ đo hiệu năng ghi nhận số liệu hiệu năng và thời gian mạng. Mục đích: tìm lỗi, cải thiện độ ổn định và tốc độ.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp,
                                 lineHeight = 13.sp
@@ -1587,7 +1587,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Lịch sử làng, JSON đã nhập, tên làng, mục ghim, lịch sử đã xóa, JSON nhận từ cộng đồng và các tùy chỉnh giao diện/thông báo/nhắc nhở có thể được lưu trong bộ nhớ riêng của ứng dụng trên điện thoại để bạn xem lại. JSON chỉ được đồng bộ lên Firestore nếu bạn bật riêng lựa chọn đồng bộ dữ liệu Clash of Clans; nếu tắt, JSON chỉ lưu trên thiết bị. Chia sẻ JSON vào cộng đồng là thao tác riêng và nội dung sẽ hiển thị cho thành viên theo quy tắc cộng đồng. Dữ liệu cục bộ không tự mất khi xóa hồ sơ Firebase; bạn cần xóa dữ liệu ứng dụng hoặc gỡ ứng dụng để xóa bản lưu trên máy.",
+                        "Lịch sử làng, JSON đã nhập, tên làng, mục ghim, lịch sử đã xóa, JSON nhận từ cộng đồng và các tùy chỉnh giao diện/thông báo/nhắc nhở có thể được lưu trong bộ nhớ riêng của ứng dụng trên điện thoại để bạn xem lại. JSON chỉ được đồng bộ lên kho dữ liệu trực tuyến nếu bạn bật riêng lựa chọn đồng bộ dữ liệu Clash of Clans; nếu tắt, JSON chỉ lưu trên thiết bị. Chia sẻ JSON vào cộng đồng là thao tác riêng và nội dung sẽ hiển thị cho thành viên theo quy tắc cộng đồng. Dữ liệu cục bộ không tự mất khi xóa hồ sơ tài khoản trực tuyến; bạn cần xóa dữ liệu ứng dụng hoặc gỡ ứng dụng để xóa bản lưu trên máy.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1599,7 +1599,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Tin nhắn chữ, hồ sơ và JSON bạn chủ động chia sẻ được lưu trong Cloud Firestore; thành viên đã đăng nhập có thể xem nội dung cộng đồng. Trên gói Firebase Spark, gửi ảnh, tệp và APK qua Cloud Storage đang tạm dừng; tệp cũ trong Storage vẫn còn nhưng không thể đọc/ghi khi chưa liên kết lại gói Blaze. Thông báo đẩy tự động cho tin nhắn và cập nhật cũng tạm dừng vì cần Cloud Functions. Nếu bật tùy chọn thông báo, ứng dụng có thể quản lý đăng ký FCM nhưng hiện không có chức năng máy chủ gửi các thông báo này.",
+                        "Tin nhắn chữ, hồ sơ và JSON bạn chủ động chia sẻ được lưu trong hệ thống dữ liệu cộng đồng; thành viên đã đăng nhập có thể xem nội dung cộng đồng. Trên gói miễn phí hiện tại, gửi ảnh, tệp và APK đang tạm dừng; tệp cũ vẫn được giữ nhưng hiện chưa thể đọc hoặc quản lý. Thông báo đẩy tự động cho tin nhắn và cập nhật cũng đang tạm dừng. Nếu bật tùy chọn thông báo, ứng dụng có thể lưu lựa chọn trên thiết bị nhưng hiện chưa gửi thông báo tự động.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1611,7 +1611,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý. Bản JSON làng đồng bộ theo lựa chọn chỉ người dùng sở hữu và chủ sở hữu ứng dụng được đọc qua quy tắc Firestore; người có quyền quản trị dự án Firebase vẫn có thể có quyền truy cập kỹ thuật theo phân quyền dự án. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Analytics, Crashlytics và Performance được xử lý trong bảng điều khiển Firebase tương ứng.",
+                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý. Bản JSON làng đồng bộ theo lựa chọn chỉ người dùng sở hữu và chủ sở hữu ứng dụng được đọc theo phân quyền của hệ thống; người có quyền quản trị hạ tầng kỹ thuật vẫn có thể có quyền truy cập theo phân quyền được cấp. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Dữ liệu phân tích, báo lỗi và hiệu năng được xử lý trong các công cụ vận hành tương ứng.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1623,13 +1623,13 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Hồ sơ và dữ liệu hoạt động được ghi trong Firestore được giữ cho đến khi được quản lý xóa; hiện chưa đặt thời hạn tự động xóa cố định. Bài đăng cộng đồng được giữ cho đến khi bị gỡ. Trên Spark, việc dọn kho chỉ xóa bản ghi Firestore; tệp đính kèm cũ trong Cloud Storage không thể truy cập hoặc xóa từ ứng dụng. Dữ liệu Analytics, Crashlytics và Performance đã gửi trước đó tuân theo thời hạn lưu trữ của từng dịch vụ. Chức năng Vô hiệu hóa tài khoản trong COC-LIO chỉ đánh dấu hồ sơ Firestore và chặn quyền truy cập COC-LIO; chức năng này không xóa tài khoản Firebase Authentication hoặc tự xóa toàn bộ dữ liệu liên quan. Dữ liệu lưu cục bộ trên điện thoại không bị xóa.",
+                        "Hồ sơ và dữ liệu hoạt động được lưu trên hệ thống trực tuyến được giữ cho đến khi được quản lý xóa; hiện chưa đặt thời hạn tự động xóa cố định. Bài đăng cộng đồng được giữ cho đến khi bị gỡ. Trên gói miễn phí hiện tại, việc dọn kho chỉ xóa bản ghi dữ liệu; tệp đính kèm cũ không thể truy cập hoặc xóa từ ứng dụng. Dữ liệu phân tích, báo lỗi và hiệu năng đã gửi trước đó tuân theo thời hạn lưu trữ của từng công cụ. Chức năng Vô hiệu hóa tài khoản trong COC-LIO chỉ đánh dấu hồ sơ và chặn quyền truy cập COC-LIO; chức năng này không xóa tài khoản Google hoặc tự xóa toàn bộ dữ liệu liên quan. Dữ liệu lưu cục bộ trên điện thoại không bị xóa.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
                     )
                     Text(
-                        "Bạn có thể đổi hoặc rút lại từng lựa chọn thu thập tùy chọn trong Cài đặt. Khi rút lại, việc thu thập mới cho mục đó sẽ dừng; dữ liệu đã ghi trước đó không tự động bị xóa, trừ khi bạn gửi yêu cầu xóa và yêu cầu được xử lý. Bạn có thể yêu cầu xem, sửa, hạn chế xử lý hoặc xóa dữ liệu qua email phunghuyhoahaikba@gmail.com. Dịch vụ xử lý/lưu trữ kỹ thuật: Google Firebase. Đầu mối vận hành và tiếp nhận yêu cầu: COC-LIO. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước thời điểm rút lại.",
+                        "Bạn có thể đổi hoặc rút lại từng lựa chọn thu thập tùy chọn trong Cài đặt. Khi rút lại, việc thu thập mới cho mục đó sẽ dừng; dữ liệu đã ghi trước đó không tự động bị xóa, trừ khi bạn gửi yêu cầu xóa và yêu cầu được xử lý. Bạn có thể yêu cầu xem, sửa, hạn chế xử lý hoặc xóa dữ liệu qua email phunghuyhoahaikba@gmail.com. Dịch vụ kỹ thuật hỗ trợ xác thực và lưu trữ: các nhà cung cấp hạ tầng trực tuyến. Đầu mối vận hành và tiếp nhận yêu cầu: COC-LIO. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước thời điểm rút lại.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1742,7 +1742,7 @@ private fun GoogleLoginStartScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
-                    "Để tạo và duy trì tài khoản, COC-LIO cần xử lý UID Firebase, email, tên và ảnh hồ sơ Google, trạng thái xác minh cùng thông tin đăng nhập. Dữ liệu này được dùng để xác thực, quản lý tài khoản và hiển thị danh tính thành viên.",
+                    "Để tạo và duy trì tài khoản, COC-LIO cần xử lý mã tài khoản, email, tên và ảnh hồ sơ Google, trạng thái xác minh cùng thông tin đăng nhập. Dữ liệu này được dùng để xác thực, quản lý tài khoản và hiển thị danh tính thành viên.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     lineHeight = 16.sp,
@@ -1828,14 +1828,14 @@ private fun RequiredAccountDataDetailsDialog(
             ) {
                 Text("1. DỮ LIỆU CẦN THIẾT KHI ĐĂNG NHẬP", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "COC-LIO xử lý Firebase UID, email Google, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email, nhà cung cấp đăng nhập, số lần và thời điểm đăng nhập. Mục đích là xác thực, tạo và duy trì tài khoản, quản lý hồ sơ và hiển thị danh tính người gửi trong cộng đồng.",
+                    "COC-LIO xử lý mã tài khoản, email Google, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email, nhà cung cấp đăng nhập, số lần và thời điểm đăng nhập. Mục đích là xác thực, tạo và duy trì tài khoản, quản lý hồ sơ và hiển thị danh tính người gửi trong cộng đồng.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
                 )
                 Text("2. NƠI LƯU VÀ NGƯỜI CÓ THỂ XEM", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Thông tin xác thực được xử lý bằng Firebase Authentication; hồ sơ tài khoản được lưu trong Cloud Firestore. Bạn có thể xem hồ sơ của mình. Chủ sở hữu COC-LIO có quyền quản lý hồ sơ người dùng trong ứng dụng. Tên và ảnh đại diện có thể xuất hiện cạnh nội dung bạn gửi trong cộng đồng.",
+                    "Thông tin xác thực được xử lý qua dịch vụ đăng nhập Google; hồ sơ tài khoản được lưu trong hệ thống lưu trữ bảo mật phục vụ COC-LIO. Bạn có thể xem hồ sơ của mình. Chủ sở hữu COC-LIO có quyền quản lý hồ sơ người dùng trong ứng dụng. Tên và ảnh đại diện có thể xuất hiện cạnh nội dung bạn gửi trong cộng đồng.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
@@ -1849,14 +1849,14 @@ private fun RequiredAccountDataDetailsDialog(
                 )
                 Text("4. JSON VÀ NỘI DUNG CỘNG ĐỒNG", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "JSON bạn nhập được lưu trên điện thoại. Chỉ khi bật đồng bộ riêng thì bản JSON mới được gửi lên Firestore. Tin nhắn và JSON bạn chủ động chia sẻ trong cộng đồng có thể được thành viên đã đăng nhập xem theo quy tắc cộng đồng.",
+                    "JSON bạn nhập được lưu trên điện thoại. Chỉ khi bật đồng bộ riêng thì bản JSON mới được gửi lên hệ thống lưu trữ trực tuyến. Tin nhắn và JSON bạn chủ động chia sẻ trong cộng đồng có thể được thành viên đã đăng nhập xem theo quy tắc cộng đồng.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
                 )
                 Text("5. THỜI HẠN, QUYỀN VÀ LIÊN HỆ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Hồ sơ Firestore được giữ cho đến khi được xóa theo quy trình quản lý hoặc yêu cầu hợp lệ; dữ liệu trên điện thoại vẫn còn cho đến khi bạn xóa dữ liệu ứng dụng hoặc gỡ ứng dụng. Bạn có quyền yêu cầu xem, chỉnh sửa, hạn chế xử lý hoặc xóa dữ liệu và rút lại các lựa chọn tùy chọn trong Cài đặt. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước đó. Đơn vị vận hành: COC-LIO. Dịch vụ xử lý và lưu trữ kỹ thuật: Google Firebase. Liên hệ: phunghuyhoahaikba@gmail.com.",
+                    "Hồ sơ tài khoản trực tuyến được giữ cho đến khi được xóa theo quy trình quản lý hoặc yêu cầu hợp lệ; dữ liệu trên điện thoại vẫn còn cho đến khi bạn xóa dữ liệu ứng dụng hoặc gỡ ứng dụng. Bạn có quyền yêu cầu xem, chỉnh sửa, hạn chế xử lý hoặc xóa dữ liệu và rút lại các lựa chọn tùy chọn trong Cài đặt. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước đó. Đơn vị vận hành: COC-LIO. Dịch vụ kỹ thuật hỗ trợ xác thực và lưu trữ: các nhà cung cấp hạ tầng trực tuyến. Liên hệ: phunghuyhoahaikba@gmail.com.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
