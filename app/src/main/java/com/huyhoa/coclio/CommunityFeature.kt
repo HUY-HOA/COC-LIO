@@ -1493,6 +1493,40 @@ private fun communityMessagePayload(
 )
 
 @Composable
+private fun CommunitySaveAttachmentButton(
+    fileName: String,
+    contentType: String,
+    contentData: String,
+    label: String
+) {
+    val context = LocalContext.current
+    val saveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(contentType.ifBlank { "application/octet-stream" })
+    ) { destination ->
+        if (destination != null) {
+            val result = runCatching {
+                val bytes = Base64.decode(contentData, Base64.DEFAULT)
+                require(bytes.isNotEmpty()) { "Tệp trống." }
+                val output = context.contentResolver.openOutputStream(destination)
+                    ?: throw IllegalStateException("Không thể mở vị trí lưu.")
+                output.use { it.write(bytes) }
+            }
+            Toast.makeText(
+                context,
+                if (result.isSuccess) "Đã lưu tệp." else result.exceptionOrNull()?.message ?: "Không thể lưu tệp.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+    TextButton(
+        onClick = { saveLauncher.launch(communitySafeFileName(fileName)) },
+        enabled = contentData.isNotBlank()
+    ) {
+        Text(label, fontSize = 9.sp)
+    }
+}
+
+@Composable
 private fun CommunityMessageCard(
     message: CommunityMessage,
     currentUid: String,
@@ -1502,6 +1536,14 @@ private fun CommunityMessageCard(
     onDelete: () -> Unit
 ) {
     val mine = message.uid == currentUid
+    val previewBitmap = remember(message.contentData, message.type) {
+        if (message.type == "image" && message.contentData.isNotBlank()) {
+            runCatching {
+                val bytes = Base64.decode(message.contentData, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            }.getOrNull()
+        } else null
+    }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start
@@ -1567,7 +1609,24 @@ private fun CommunityMessageCard(
                     }
                 }
                 if (message.type == "image") {
-                    Text("Ảnh đính kèm hiện chưa thể xem trên gói miễn phí.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    if (previewBitmap != null) {
+                        Image(
+                            bitmap = previewBitmap,
+                            contentDescription = message.fileName,
+                            modifier = Modifier.fillMaxWidth()
+                                .heightIn(max = 230.dp)
+                                .clip(RoundedCornerShape(10.dp)),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Text("Không thể hiển thị ảnh này.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    }
+                    CommunitySaveAttachmentButton(
+                        fileName = message.fileName.ifBlank { "anh.jpg" },
+                        contentType = message.contentType.ifBlank { "image/jpeg" },
+                        contentData = message.contentData,
+                        label = "LƯU ẢNH"
+                    )
                 } else if (message.type == "json") {
                     Row(
                         modifier = Modifier.fillMaxWidth()
@@ -1600,11 +1659,34 @@ private fun CommunityMessageCard(
                         }
                     }
                 } else if (message.type == "file") {
-                    Text(
-                        "${message.fileName} · ${formatCommunitySize(message.fileSize)} · Tải tệp hiện tạm ngừng trên gói miễn phí.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 9.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                message.fileName,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 10.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                formatCommunitySize(message.fileSize),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 8.sp
+                            )
+                        }
+                        if (message.contentData.isNotBlank()) {
+                            CommunitySaveAttachmentButton(
+                                fileName = message.fileName,
+                                contentType = message.contentType,
+                                contentData = message.contentData,
+                                label = "TẢI TỆP"
+                            )
+                        } else if (message.downloadUrl.isNotBlank()) {
+                            TextButton(onClick = { onDownload(message.downloadUrl, message.fileName) }) {
+                                Text("TẢI TỆP", fontSize = 9.sp)
+                            }
+                        }
+                    }
                 }
                 if (isOwner) {
                     TextButton(onClick = onDelete, modifier = Modifier.align(Alignment.End)) {
