@@ -516,7 +516,7 @@ object FirebaseAccountAdministration {
                 isAdmin = isOwner(email),
                 isOnline = lastActiveAt > lastBackgroundAt &&
                     lastActiveAt > 0L &&
-                    System.currentTimeMillis() - lastActiveAt <= 120_000L,
+                    System.currentTimeMillis() - lastActiveAt <= 660_000L,
                 lastActiveAt = lastActiveAt,
                 firstOpenedAt = document.getTimestamp("firstOpenedAt")?.toDate()?.time ?: 0L,
                 lastOpenedAt = document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L,
