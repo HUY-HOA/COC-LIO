@@ -671,7 +671,7 @@ private fun CocLioApp(
             AppPreferences.setNotificationsEnabled(context, activeProfile, false)
             notificationsEnabled = false
             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, false)
-            scope.launch { snackbar.showSnackbar("Bạn chưa cấp quyền thông báo cho COC-LIO.") }
+            scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
         }
     }
 
@@ -702,7 +702,7 @@ private fun CocLioApp(
                     updateNotificationsEnabled = false
                 }
             }
-            scope.launch { snackbar.showSnackbar("Bạn chưa cấp quyền thông báo cho COC-LIO.") }
+            scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
         }
     }
 
@@ -712,13 +712,13 @@ private fun CocLioApp(
         if (granted) {
             val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle, alarmDurationSeconds)
             scope.launch {
-                snackbar.showSnackbar(
+                snackbar.showAppSnackbar(context, 
                     if (sent) "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem."
                     else "Không thể gửi thông báo thử. Hãy kiểm tra quyền thông báo của ứng dụng."
                 )
             }
         } else {
-            scope.launch { snackbar.showSnackbar("Bạn chưa cấp quyền thông báo cho COC-LIO.") }
+            scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
         }
     }
 
@@ -799,7 +799,7 @@ private fun CocLioApp(
                     villageDataSyncConsent = false
                     AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
                     AccountActivityTracker.stopAndWait(context)
-                    snackbar.showSnackbar("Không tải được lựa chọn dữ liệu tài khoản. Các mục tùy chọn vẫn đang tắt.")
+                    snackbar.showAppSnackbar(context, "Không tải được lựa chọn dữ liệu tài khoản. Các mục tùy chọn vẫn đang tắt.")
                 }
         }
     }
@@ -819,7 +819,7 @@ private fun CocLioApp(
             showImportDialog = false
             selectedTab = 4
             scope.launch {
-                snackbar.showSnackbar("Bạn cần đăng nhập Google trước khi nhập JSON và xem dữ liệu làng.")
+                snackbar.showAppSnackbar(context, "Bạn cần đăng nhập Google trước khi nhập JSON và xem dữ liệu làng.")
             }
         }
     }
@@ -878,10 +878,10 @@ private fun CocLioApp(
                 scope.launch {
                     try {
                         if (FirebaseVillageDataSync.saveLatest(parsed)) {
-                            snackbar.showSnackbar("Đã đồng bộ bản JSON mới nhất của ${parsed.tag} lên tài khoản COC-LIO.")
+                            snackbar.showAppSnackbar(context, "Đã đồng bộ bản JSON mới nhất của ${parsed.tag} lên tài khoản COC-LIO.")
                         }
                     } catch (error: Exception) {
-                        snackbar.showSnackbar(
+                        snackbar.showAppSnackbar(context, 
                             error.message?.takeIf { it.isNotBlank() }
                                 ?: "JSON vẫn được lưu trên điện thoại nhưng chưa thể đồng bộ lên tài khoản của bạn."
                         )
@@ -927,11 +927,11 @@ private fun CocLioApp(
                 interactiveGoogleSignIn = false
                 selectedTab = 0
                 googleAuthError = null
-                snackbar.showSnackbar("Đã xác nhận dữ liệu cần thiết và đăng nhập Google thành công.")
+                snackbar.showAppSnackbar(context, "Đã xác nhận dữ liệu cần thiết và đăng nhập Google thành công.")
             } catch (error: Exception) {
                 requiredAccountConsentSubmitting = false
                 interactiveGoogleSignIn = false
-                snackbar.showSnackbar(
+                snackbar.showAppSnackbar(context, 
                     error.message?.takeIf { it.isNotBlank() }
                         ?: "Không thể lưu xác nhận dữ liệu tài khoản. Hãy thử lại."
                 )
@@ -949,7 +949,7 @@ private fun CocLioApp(
             interactiveGoogleSignIn = false
             activeProfile = "local"
             selectedTab = 0
-            snackbar.showSnackbar(message)
+            snackbar.showAppSnackbar(context, message)
         }
     }
 
@@ -971,7 +971,7 @@ private fun CocLioApp(
                 requiredAccountConsentSubmitting = false
                 if (error is GetCredentialCancellationException) {
                     googleAuthError = null
-                    snackbar.showSnackbar("Bạn đã hủy đăng nhập Google.")
+                    snackbar.showAppSnackbar(context, "Bạn đã hủy đăng nhập Google.")
                 } else {
                     googleAuthError = error.message
                         ?.takeIf { it.isNotBlank() }
@@ -1149,7 +1149,7 @@ private fun CocLioApp(
                                 if (current?.tag == tag) current = history.firstOrNull()
                                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
                                 AppWidgetUpdater.updateAll(context)
-                                scope.launch { snackbar.showSnackbar("Đã chuyển $tag vào mục ĐÃ GỠ.") }
+                                scope.launch { snackbar.showAppSnackbar(context, "Đã chuyển $tag vào mục ĐÃ GỠ.") }
                             }
                         },
                         onRestore = { recordId ->
@@ -1161,21 +1161,21 @@ private fun CocLioApp(
                                 current = history.firstOrNull { it.tag == restoredTag } ?: history.firstOrNull()
                                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
                                 AppWidgetUpdater.updateAll(context)
-                                scope.launch { snackbar.showSnackbar("Đã khôi phục dữ liệu làng.") }
+                                scope.launch { snackbar.showAppSnackbar(context, "Đã khôi phục dữ liệu làng.") }
                             }
                         },
                         onDeletePermanently = { recordId ->
                             if (VillageStore.permanentlyDelete(context, recordId, activeProfile)) {
                                 deletedVillages = VillageStore.loadDeleted(context, activeProfile)
-                                scope.launch { snackbar.showSnackbar("Đã xóa vĩnh viễn dữ liệu JSON.") }
+                                scope.launch { snackbar.showAppSnackbar(context, "Đã xóa vĩnh viễn dữ liệu JSON.") }
                             }
                         },
                         onShare = { snapshot ->
                             scope.launch {
                                 runCatching { shareVillageJsonToCommunity(snapshot) }
-                                    .onSuccess { snackbar.showSnackbar(it) }
+                                    .onSuccess { snackbar.showAppSnackbar(context, it) }
                                     .onFailure { error ->
-                                        snackbar.showSnackbar(error.message ?: "Không thể chia sẻ JSON.")
+                                        snackbar.showAppSnackbar(context, error.message ?: "Không thể chia sẻ JSON.")
                                     }
                             }
                         },
@@ -1184,20 +1184,20 @@ private fun CocLioApp(
                             if (ReceivedSharedJsonStore.moveToDeleted(context, jsonId, activeProfile)) {
                                 receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
                                 deletedReceivedSharedJsons = ReceivedSharedJsonStore.loadDeleted(context, activeProfile)
-                                scope.launch { snackbar.showSnackbar("Đã chuyển JSON nhận được vào mục ĐÃ GỠ. Bản trong lịch sử vẫn được giữ.") }
+                                scope.launch { snackbar.showAppSnackbar(context, "Đã chuyển JSON nhận được vào mục ĐÃ GỠ. Bản trong lịch sử vẫn được giữ.") }
                             }
                         },
                         onRestoreReceivedJson = { jsonId ->
                             if (ReceivedSharedJsonStore.restore(context, jsonId, activeProfile)) {
                                 receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
                                 deletedReceivedSharedJsons = ReceivedSharedJsonStore.loadDeleted(context, activeProfile)
-                                scope.launch { snackbar.showSnackbar("Đã khôi phục JSON đã nhận.") }
+                                scope.launch { snackbar.showAppSnackbar(context, "Đã khôi phục JSON đã nhận.") }
                             }
                         },
                         onDeleteReceivedJsonPermanently = { jsonId ->
                             if (ReceivedSharedJsonStore.permanentlyDelete(context, jsonId, activeProfile)) {
                                 deletedReceivedSharedJsons = ReceivedSharedJsonStore.loadDeleted(context, activeProfile)
-                                scope.launch { snackbar.showSnackbar("Đã xóa vĩnh viễn JSON nhận được khỏi thiết bị.") }
+                                scope.launch { snackbar.showAppSnackbar(context, "Đã xóa vĩnh viễn JSON nhận được khỏi thiết bị.") }
                             }
                         },
                         onOpenSharedJsonFeed = {
@@ -1333,7 +1333,7 @@ private fun CocLioApp(
                             } else {
                                 val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle, alarmDurationSeconds)
                                 scope.launch {
-                                    snackbar.showSnackbar(
+                                    snackbar.showAppSnackbar(context, 
                                         if (sent) "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem."
                                         else "Không thể gửi thông báo thử. Hãy kiểm tra quyền thông báo của ứng dụng."
                                     )
