@@ -1153,14 +1153,16 @@ fun openClashOfClans(context: Context) {
     }
 }
 
-private fun alarmVibrationPattern(durationSeconds: Int): LongArray =
-    LongArray(21) { index ->
+private fun alarmVibrationPattern(durationSeconds: Int): LongArray {
+    val seconds = if (durationSeconds in listOf(5, 10, 15, 20, 25)) durationSeconds else 10
+    return LongArray(seconds * 2 + 1) { index ->
         when {
             index == 0 -> 0L
             index % 2 == 1 -> 650L
             else -> 350L
         }
     }
+}
 
 private fun ensureUpgradeNotificationChannel(
     context: Context,
