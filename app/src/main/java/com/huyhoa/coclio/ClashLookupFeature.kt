@@ -131,7 +131,10 @@ private suspend fun loadClashKingProfile(candidate: ClashLookupCandidate): Clash
             ClashLookupKind.CLAN -> {
                 val clan = readClashKingJson("/v2/clan/$encodedTag/cached") as? JSONObject
                     ?: throw IllegalStateException("Chưa có hồ sơ Clan $tag trong kho dữ liệu ClashKing.")
-                ClashLookupResponse(ClashLookupKind.CLAN, clan)
+                val rankings = runCatching {
+                    readClashKingJson("/v2/clan/$encodedTag/rankings") as? JSONObject
+                }.getOrNull()
+                ClashLookupResponse(ClashLookupKind.CLAN, clan, rankings)
             }
         }
     }
@@ -827,8 +830,23 @@ private fun PlayerLookupCard(data: ClashLookupResponse) {
 }
 
 @Composable
+@Composable
+private fun ClanRankingCategory(label: String, category: JSONObject?) {
+    if (category == null) return
+    Text(label, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    LookupValue("Điểm", category.optInt("points").toString())
+    val placements = category.optJSONArray("placements") ?: JSONArray()
+    (0 until minOf(placements.length(), 6)).forEach { index ->
+        val placement = placements.optJSONObject(index) ?: JSONObject()
+        val locationId = placement.optString("locationId").ifBlank { "—" }
+        LookupValue("Hạng khu vực $locationId", placement.optInt("rank").toString())
+    }
+}
+
+@Composable
 private fun ClanLookupCard(data: ClashLookupResponse) {
     val clan = data.profile
+    val rankings = data.rankings
     val badge = clan.optJSONObject("badgeUrls")?.optString("large").orEmpty()
     val location = clan.optJSONObject("location")?.optString("name").orEmpty()
     val warLeague = clan.optJSONObject("warLeague")?.optString("name").orEmpty()
@@ -875,6 +893,17 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
         LookupValue("Được nhận lính", clan.optInt("troopsReceived").toString())
         LookupValue("Vàng thủ đô", clan.optLong("capitalGoldTotal").toString())
         LookupValue("Nhật ký chiến tranh", if (clan.optBoolean("publicWarLog")) "Công khai" else "Riêng tư")
+        if (rankings != null) {
+            Spacer(Modifier.height(4.dp))
+            Text("XẾP HẠNG CLAN", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            ClanRankingCategory("Nhà chính", rankings.optJSONObject("homeVillage"))
+            ClanRankingCategory("Nhà thợ", rankings.optJSONObject("builderBase"))
+            ClanRankingCategory("Thủ đô Clan", rankings.optJSONObject("clanCapital"))
+            ClanRankingCategory("Quyên góp", rankings.optJSONObject("donations"))
+            ClanRankingCategory("Chiến thắng chiến tranh", rankings.optJSONObject("warWins"))
+            ClanRankingCategory("Chuỗi thắng", rankings.optJSONObject("warWinStreak"))
+            ClanRankingCategory("Vàng Thủ đô", rankings.optJSONObject("capitalGold"))
+        }
 
         if (members.length() > 0) {
             Spacer(Modifier.height(4.dp))
