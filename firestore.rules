@@ -11,6 +11,7 @@ service cloud.firestore {
       return verifiedAccount()
         && (
           !exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          || !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['accountDisabled'])
           || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountDisabled != true
         );
     }
