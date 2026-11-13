@@ -1433,7 +1433,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Tin nhắn, tên/ảnh hồ sơ hiển thị, JSON, hình ảnh và tệp bạn chủ động gửi được lưu trong Cloud Firestore/Cloud Storage. Thành viên đã đăng nhập có thể xem nội dung cộng đồng. Khi bạn bật thông báo cộng đồng, Firebase Cloud Messaging có thể chuyển tên người gửi và phần xem trước tin nhắn đến thiết bị đã đăng ký nhận thông báo. Thông báo cập nhật có thể chứa phiên bản và ghi chú phát hành. Thông báo đã được chuyển đến thiết bị khác không thể bị thu hồi từ xa.",
+                        "Tin nhắn, tên/ảnh hồ sơ hiển thị, JSON, hình ảnh và tệp bạn chủ động gửi được lưu trong Cloud Firestore/Cloud Storage. Thành viên đã đăng nhập có thể xem nội dung cộng đồng. Khi bạn bật thông báo cộng đồng, Firebase Cloud Messaging xử lý mã thông báo thiết bị để định tuyến thông báo và có thể chuyển tên người gửi cùng phần xem trước tin nhắn đến thiết bị đã đăng ký. Thông báo cập nhật có thể chứa phiên bản và ghi chú phát hành. Thông báo đã được chuyển đến thiết bị khác không thể bị thu hồi từ xa.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1445,7 +1445,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Thông tin hồ sơ và dữ liệu hoạt động riêng tư trong danh sách quản lý chỉ được tài khoản chủ sở hữu COC-LIO truy cập. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập theo chức năng cộng đồng. Google Firebase cung cấp hạ tầng xác thực, cơ sở dữ liệu, lưu trữ tệp, xử lý chức năng máy chủ và thông báo.",
+                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý; người có quyền quản trị dự án Firebase có thể có quyền truy cập kỹ thuật theo phân quyền dự án. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Google Firebase cung cấp hạ tầng xác thực, cơ sở dữ liệu, lưu trữ tệp, xử lý chức năng máy chủ và thông báo.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1457,7 +1457,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Hồ sơ tài khoản và dữ liệu hoạt động trên Firestore được giữ trong thời gian tài khoản tồn tại; hiện chưa có thời hạn tự động xóa cố định cho nhóm dữ liệu này. Bài đăng cộng đồng được giữ cho đến khi bị gỡ. Nội dung đã gỡ được chuyển vào kho lưu trữ; quản trị có thể đặt chế độ giữ vô thời hạn hoặc thời hạn ngày/tháng, sau đó tác vụ dọn kho sẽ xóa mục hết hạn và tệp đính kèm. Khi tài khoản được xóa và quy trình hoàn tất, COC-LIO xóa hồ sơ Firebase, dữ liệu hoạt động, bài đăng/JSON do tài khoản tạo, các mục lưu trữ tương ứng, tệp trong thư mục của tài khoản và hồ sơ giấy phép gắn UID. Dữ liệu đã lưu cục bộ trên điện thoại không bị xóa bởi thao tác này.",
+                        "Hồ sơ tài khoản và dữ liệu hoạt động trên Firestore được giữ trong thời gian tài khoản tồn tại; hiện chưa có thời hạn tự động xóa cố định cho nhóm dữ liệu này. Bài đăng cộng đồng được giữ cho đến khi bị gỡ. Nội dung đã gỡ được chuyển vào kho lưu trữ; quản trị có thể đặt chế độ giữ vô thời hạn hoặc thời hạn ngày/tháng, sau đó tác vụ dọn kho sẽ xóa mục hết hạn và tệp đính kèm. Dữ liệu Analytics, Crashlytics và Performance đã được gửi đến Firebase tuân theo cấu hình lưu trữ của dịch vụ và dự án; xóa hồ sơ COC-LIO không đồng nghĩa xóa ngay các dữ liệu thống kê/kỹ thuật đã được dịch vụ xử lý. Khi tài khoản được xóa và quy trình hoàn tất, COC-LIO xóa hồ sơ Firebase, dữ liệu hoạt động, bài đăng/JSON do tài khoản tạo, các mục lưu trữ tương ứng, tệp trong thư mục của tài khoản và hồ sơ giấy phép gắn UID. Dữ liệu đã lưu cục bộ trên điện thoại không bị xóa bởi thao tác này.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
