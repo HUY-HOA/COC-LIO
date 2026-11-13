@@ -1743,22 +1743,33 @@ private class UpgradeWidgetListFactory(
 }
 
 object AppWidgetUpdater {
-    fun ensureRefresh(context: Context) {
-        if (Build.VERSION.SDK_INT >= 35) {
-            val previewPrefs = context.getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
-            if (!previewPrefs.getBoolean("generated_preview_set", false)) {
-                runCatching {
-                    val previewSet = AppWidgetManager.getInstance(context).setWidgetPreview(
-                        ComponentName(context, UpgradeWidgetProvider::class.java),
-                        AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
-                        RemoteViews(context.packageName, R.layout.widget_upgrade_preview)
-                    )
-                    if (previewSet) {
-                        previewPrefs.edit().putBoolean("generated_preview_set", true).apply()
-                    }
-                }
+    private fun updateLocalizedPreview(context: Context) {
+        if (Build.VERSION.SDK_INT < 35) return
+        val status = AppLanguageSettings.translate(context, "2 mục đang nâng • Thợ rảnh 4/6")
+        val firstTitle = AppLanguageSettings.translate(context, "CẤP 14 → 15 • CÒN 56%")
+        val secondTitle = AppLanguageSettings.translate(context, "CẤP 8 → 9 • CÒN 32%")
+        val signature = listOf(status, firstTitle, secondTitle).joinToString("|")
+        val previewPrefs = context.getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
+        if (previewPrefs.getString("generated_preview_signature", null) == signature) return
+        runCatching {
+            val preview = RemoteViews(context.packageName, R.layout.widget_upgrade_preview).apply {
+                setTextViewText(R.id.widget_preview_status, status)
+                setTextViewText(R.id.widget_preview_row_title_1, firstTitle)
+                setTextViewText(R.id.widget_preview_row_title_2, secondTitle)
+            }
+            val previewSet = AppWidgetManager.getInstance(context).setWidgetPreview(
+                ComponentName(context, UpgradeWidgetProvider::class.java),
+                AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,
+                preview
+            )
+            if (previewSet) {
+                previewPrefs.edit().putString("generated_preview_signature", signature).apply()
             }
         }
+    }
+
+    fun ensureRefresh(context: Context) {
+        updateLocalizedPreview(context)
         val request = PeriodicWorkRequestBuilder<WidgetRefreshWorker>(15, TimeUnit.MINUTES).build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "coc_lio_widget_refresh",
@@ -1768,6 +1779,7 @@ object AppWidgetUpdater {
     }
 
     fun updateAll(context: Context) {
+        updateLocalizedPreview(context)
         val manager = AppWidgetManager.getInstance(context)
         val ids = manager.getAppWidgetIds(ComponentName(context, UpgradeWidgetProvider::class.java))
         ids.forEach { updateWidget(context, it) }
