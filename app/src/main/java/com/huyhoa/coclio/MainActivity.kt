@@ -1659,6 +1659,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
 private fun OverviewScreen(
     snapshot: VillageSnapshot,
 ) {
+    val context = LocalContext.current
     var nowEpoch by remember(snapshot.tag, snapshot.timestamp) {
         mutableLongStateOf(System.currentTimeMillis() / 1000L)
     }
