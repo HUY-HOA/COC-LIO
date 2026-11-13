@@ -1445,8 +1445,9 @@ private fun GoogleLoginStartScreen(
     onReject: () -> Unit,
     onGoogleSignIn: () -> Unit
 ) {
-    LedFrameBox(
-        modifier = modifier.padding(10.dp)
+    Box(
+        modifier = modifier.padding(10.dp),
+        contentAlignment = Alignment.Center
     ) {
         NeonPanel(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
