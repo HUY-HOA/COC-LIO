@@ -134,6 +134,7 @@ fun ClashLookupScreen() {
     var townHallInput by remember { mutableStateOf("") }
     var leagueTierInput by remember { mutableStateOf("") }
     var locationInput by remember { mutableStateOf("") }
+    var comparePlayerTagInput by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
 
@@ -250,6 +251,46 @@ fun ClashLookupScreen() {
                 PlayerLookupCard(data)
             } else {
                 ClanLookupCard(data)
+            }
+
+            if (data.kind == ClashLookupKind.PLAYER) {
+                LookupCard {
+                    Text(
+                        "SO SÁNH THỜI GIAN Ở CLAN",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                    OutlinedTextField(
+                        value = comparePlayerTagInput,
+                        onValueChange = { comparePlayerTagInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Player Tag thứ hai") },
+                        placeholder = { Text("#ABC123") },
+                        singleLine = true
+                    )
+                    OutlinedButton(
+                        onClick = {
+                            val otherTag = runCatching { normalizeClashTag(comparePlayerTagInput) }.getOrNull()
+                            if (otherTag == null) {
+                                detailTitle = "So sánh người chơi"
+                                detailText = null
+                                detailError = "Mã người chơi thứ hai không hợp lệ."
+                            } else {
+                                val encodedOther = URLEncoder.encode(otherTag, "UTF-8")
+                                val encodedCurrent = URLEncoder.encode(data.profile.optString("tag"), "UTF-8")
+                                loadAction(
+                                    ClashLookupAction(
+                                        "Thời gian ở Clan chung",
+                                        "/v2/player/$encodedCurrent/join-leave/shared?tag=$encodedOther"
+                                    )
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !detailLoading && comparePlayerTagInput.isNotBlank()
+                    ) { Text("SO SÁNH") }
+                }
             }
 
             Text(
@@ -435,13 +476,13 @@ fun ClashLookupScreen() {
 
         LookupCard {
             Text(
-                "Nguồn dữ liệu: ClashKing",
+                "Nguồn dữ liệu: ClashKing · Creator Code: ClashKing",
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp
             )
             Text(
-                "Dữ liệu được ClashKing lưu và đồng bộ từ nguồn trò chơi; có thể chậm hoặc chưa có đầy đủ. COC-LIO không phải ứng dụng chính thức của Supercell.",
+                "Dữ liệu do ClashKing thu thập bằng cách đồng bộ nguồn trò chơi; có thể chậm hoặc chưa đầy đủ. COC-LIO không liên kết, được bảo trợ hoặc xác nhận bởi Supercell.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 lineHeight = 15.sp
