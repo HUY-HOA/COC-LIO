@@ -1583,7 +1583,7 @@ private fun RequiredAccountDataDetailsDialog(
             ) {
                 Text("1. LOẠI DỮ LIỆU ĐƯỢC XỬ LÝ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Mã tài khoản Google (UID); email; tên hiển thị, tên và họ; ảnh đại diện; trạng thái xác minh email; nhà cung cấp đăng nhập; số lần, thời điểm đăng nhập; thời điểm tạo và cập nhật hồ sơ; phiên bản và thời điểm xác nhận đồng ý.",
+                    "Mã tài khoản Google (UID); email; tên hiển thị, tên, họ và tên hiển thị do bạn đặt (nếu có); ảnh đại diện; trạng thái xác minh email; nhà cung cấp đăng nhập; số lần, thời điểm đăng nhập; thời điểm tạo, cập nhật hồ sơ; phiên bản và thời điểm xác nhận đồng ý.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
