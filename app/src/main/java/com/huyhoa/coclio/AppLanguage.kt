@@ -287,6 +287,8 @@ private val englishTranslations = mapOf(
     "Lựa chọn ngôn ngữ được lưu trên thiết bị này." to "Your language preference is saved on this device.",
     "Tin nhắn cộng đồng" to "Community messages",
     "Bản cập nhật COC-LIO" to "COC-LIO updates",,
+    "Thông báo mới trong cộng đồng." to "New community message.",
+    "MỞ GAME" to "OPEN GAME",
     "Cộng đồng COC-LIO" to "COC-LIO Community",
     "COC-LIO có bản cập nhật" to "COC-LIO update available",
     "Có tin nhắn mới trong cộng đồng." to "There is a new community message.",
