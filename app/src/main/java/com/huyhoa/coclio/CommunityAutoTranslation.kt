@@ -1,5 +1,6 @@
 package com.huyhoa.coclio
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
@@ -30,8 +31,7 @@ import kotlin.coroutines.resumeWithException
 private object CommunityTranslationEngine {
     private val mutex = Mutex()
     private val languageIdentifier = LanguageIdentification.getClient()
-    private var activeTranslator: Translator? = null
-    private var activePair = ""
+    private val translators = LinkedHashMap<String, Translator>(4, 0.75f, true)
     private val cache = LinkedHashMap<String, String>(128, 0.75f, true)
 
     suspend fun translate(sourceText: String, targetTag: String): String? = mutex.withLock {
@@ -49,18 +49,20 @@ private object CommunityTranslationEngine {
         if (sourceLanguage == targetLanguage) return@withLock null
 
         val pair = "$sourceLanguage-$targetLanguage"
-        if (activePair != pair) {
-            runCatching { activeTranslator?.close() }
-            activeTranslator = Translation.getClient(
-                TranslatorOptions.Builder()
-                    .setSourceLanguage(sourceLanguage)
-                    .setTargetLanguage(targetLanguage)
-                    .build()
-            )
-            activePair = pair
+        val translator = translators[pair] ?: Translation.getClient(
+            TranslatorOptions.Builder()
+                .setSourceLanguage(sourceLanguage)
+                .setTargetLanguage(targetLanguage)
+                .build()
+        ).also { created ->
+            translators[pair] = created
+            if (translators.size > 4) {
+                val oldestPair = translators.entries.first().key
+                if (oldestPair != pair) {
+                    runCatching { translators.remove(oldestPair)?.close() }
+                }
+            }
         }
-
-        val translator = activeTranslator ?: return@withLock null
         runCatching {
             translator.downloadModelIfNeeded(DownloadConditions.Builder().build()).awaitTranslationResult()
             translator.translate(sourceText).awaitTranslationResult().trim()
@@ -69,6 +71,15 @@ private object CommunityTranslationEngine {
             if (cache.size > 200) cache.remove(cache.entries.first().key)
         }
     }
+}
+
+suspend fun translateCommunityTextForApp(context: Context, sourceText: String): String? {
+    val systemLanguage = context.resources.configuration.locales[0].language
+    val targetTag = when (AppLanguageSettings.resolve(AppLanguageSettings.load(context), systemLanguage)) {
+        AppUiLanguage.VIETNAMESE -> "vi"
+        AppUiLanguage.ENGLISH -> "en"
+    }
+    return CommunityTranslationEngine.translate(sourceText, targetTag)
 }
 
 private suspend fun <T> Task<T>.awaitTranslationResult(): T =
