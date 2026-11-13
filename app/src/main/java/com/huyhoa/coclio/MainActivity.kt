@@ -498,7 +498,6 @@ private fun CocLioApp(
     var requiredAccountConsentSubmitting by remember { mutableStateOf(false) }
     var requiredAccountConsentReadError by remember { mutableStateOf<String?>(null) }
     var villageDataSyncConsent by remember { mutableStateOf(false) }
-    var showRequiredPrivacyDetails by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
         val listener = FirebaseAuth.AuthStateListener { state ->
@@ -1138,7 +1137,6 @@ private fun CocLioApp(
                     isBusy = requiredAccountConsentSubmitting || interactiveGoogleSignIn,
                     hasAuthenticatedGoogleAccount = firebaseGoogleEmail != null,
                     readError = requiredAccountConsentReadError,
-                    onOpenDetails = { showRequiredPrivacyDetails = true },
                     onReject = { leaveGoogleAccount("Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất.") },
                     onGoogleSignIn = { signInWithGoogle() }
                 )
@@ -1472,13 +1470,6 @@ private fun CocLioApp(
         )
     }
 
-    if (showRequiredPrivacyDetails) {
-        RequiredAccountDataDetailsDialog(
-            onDismiss = { showRequiredPrivacyDetails = false }
-        )
-    }
-
-
 
     if (showImportDialog && isGoogleSignedIn) {
         CompositionLocalProvider(
@@ -1510,7 +1501,6 @@ private fun GoogleLoginStartScreen(
     isBusy: Boolean,
     hasAuthenticatedGoogleAccount: Boolean,
     readError: String?,
-    onOpenDetails: () -> Unit,
     onReject: () -> Unit,
     onGoogleSignIn: () -> Unit
 ) {
@@ -1555,10 +1545,10 @@ private fun GoogleLoginStartScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(36.dp)
                             .then(
                                 if (!consentChecked) {
-                                    Modifier.ledRgbBorder(cornerRadiusDp = 4f, strokeWidthDp = 2f)
+                                    Modifier.ledRgbBorder(cornerRadiusDp = 6f, strokeWidthDp = 2.2f)
                                 } else {
                                     Modifier
                                 }
@@ -1569,7 +1559,7 @@ private fun GoogleLoginStartScreen(
                             checked = consentChecked,
                             onCheckedChange = onConsentChecked,
                             enabled = !isBusy,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                     }
                     Text(
@@ -1579,12 +1569,6 @@ private fun GoogleLoginStartScreen(
                         fontSize = 11.sp,
                         lineHeight = 15.sp
                     )
-                }
-                TextButton(
-                    onClick = onOpenDetails,
-                    enabled = !isBusy
-                ) {
-                    Text("XEM CHI TIẾT DỮ LIỆU", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 if (!readError.isNullOrBlank()) {
                     Text(
@@ -1597,12 +1581,12 @@ private fun GoogleLoginStartScreen(
                 Button(
                     onClick = onGoogleSignIn,
                     enabled = consentChecked && !isBusy,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .then(
                             if (consentChecked) {
-                                Modifier.ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.4f)
+                                Modifier.ledRgbBorder(cornerRadiusDp = 10f, strokeWidthDp = 2.4f)
                             } else {
                                 Modifier
                             }
