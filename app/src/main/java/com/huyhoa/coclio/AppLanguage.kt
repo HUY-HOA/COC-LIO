@@ -529,7 +529,7 @@ private val englishTranslations = mapOf(
     "Thần chú Hồi sinh" to "Revive Spell",
     "Thần chú Khiên chắn băng" to "Ice Block Spell",
     "Thần chú Vật tổ" to "Totem Spell",
-    "Thần chú Giận dữ" to "Angry Spell",
+    "Thần chú Giận dữ" to "Fury Spell",
     "Bản dịch tự động" to "Automatic translation",
     "Bản gốc" to "Original",
     "Đang dịch tự động…" to "Translating automatically…",
