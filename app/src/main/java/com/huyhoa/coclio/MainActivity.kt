@@ -1415,37 +1415,55 @@ private fun CocLioApp(
                         }
                     }
                     Text(
-                        "KHI BẠN TỰ GỬI NỘI DUNG",
+                        "DỮ LIỆU LƯU TRÊN THIẾT BỊ",
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp
                     )
                     Text(
-                        "Tin nhắn cộng đồng, JSON, hình ảnh hoặc tệp bạn chủ động gửi sẽ được lưu để cung cấp đúng chức năng chia sẻ. Nếu bật thông báo, Firebase Messaging xử lý mã thông báo thiết bị để gửi thông báo bạn đã chọn.",
+                        "Lịch sử làng, JSON đã nhập, tên làng, mục ghim, lịch sử đã xóa và JSON nhận từ cộng đồng có thể được lưu trong bộ nhớ riêng của ứng dụng trên điện thoại để bạn xem lại. Việc nhập hoặc mở JSON không tự động tải nội dung đó lên máy chủ; JSON chỉ được gửi lên Firebase khi bạn chủ động chọn chia sẻ vào cộng đồng. Dữ liệu cục bộ không tự mất khi xóa hồ sơ Firebase; bạn cần xóa dữ liệu ứng dụng hoặc gỡ ứng dụng để xóa bản lưu trên máy.",
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp,
-                        lineHeight = 15.sp
-                    )
-                    Text(
-                        "Lựa chọn được lưu cùng tài khoản, thời điểm máy chủ ghi nhận và phiên bản thông báo. Bạn có thể đổi hoặc rút lại bất cứ lúc nào trong Cài đặt. Khi rút lại, COC-LIO dừng thu thập mới cho mục đó; dữ liệu đã ghi trước đó không tự động bị xóa. Bạn có quyền yêu cầu truy cập, chỉnh sửa, hạn chế xử lý hoặc xóa dữ liệu cá nhân theo quy định.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
                     )
                     Text(
-                        "THỜI GIAN LƯU TRỮ VÀ ĐƠN VỊ XỬ LÝ",
+                        "KHI BẠN TỰ GỬI NỘI DUNG VÀ DÙNG THÔNG BÁO",
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp
                     )
                     Text(
-                        "Hồ sơ tài khoản và dữ liệu hoạt động lưu trong Firestore được giữ khi tài khoản còn hoạt động hoặc đến khi yêu cầu xóa hợp lệ được xử lý; hiện ứng dụng không tự động xóa dữ liệu hoạt động theo một số ngày cố định. Dữ liệu do Firebase Analytics, Crashlytics và Performance xử lý tuân theo cấu hình và chính sách lưu trữ của dịch vụ Google Firebase. Nội dung cộng đồng bạn tự gửi được lưu để cung cấp tính năng tương ứng và có thể được quản lý theo chức năng xóa trong ứng dụng.",
+                        "Tin nhắn, tên/ảnh hồ sơ hiển thị, JSON, hình ảnh và tệp bạn chủ động gửi được lưu trong Cloud Firestore/Cloud Storage. Thành viên đã đăng nhập có thể xem nội dung cộng đồng. Khi bạn bật thông báo cộng đồng, Firebase Cloud Messaging có thể chuyển tên người gửi và phần xem trước tin nhắn đến thiết bị đã đăng ký nhận thông báo. Thông báo cập nhật có thể chứa phiên bản và ghi chú phát hành. Thông báo đã được chuyển đến thiết bị khác không thể bị thu hồi từ xa.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
                     )
                     Text(
-                        "Bên vận hành/đầu mối tiếp nhận yêu cầu dữ liệu: COC-LIO, email phunghuyhoahaikba@gmail.com. Dịch vụ xử lý/lưu trữ kỹ thuật: Google Firebase. Bạn có thể gửi yêu cầu xem, sửa, rút lại đồng ý, hạn chế xử lý hoặc xóa dữ liệu qua email trên. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước thời điểm rút lại.",
+                        "AI CÓ THỂ XEM DỮ LIỆU",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        "Thông tin hồ sơ và dữ liệu hoạt động riêng tư trong danh sách quản lý chỉ được tài khoản chủ sở hữu COC-LIO truy cập. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập theo chức năng cộng đồng. Google Firebase cung cấp hạ tầng xác thực, cơ sở dữ liệu, lưu trữ tệp, xử lý chức năng máy chủ và thông báo.",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 9.sp,
+                        lineHeight = 13.sp
+                    )
+                    Text(
+                        "THỜI GIAN LƯU TRỮ VÀ XÓA DỮ LIỆU",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        "Hồ sơ tài khoản và dữ liệu hoạt động trên Firestore được giữ trong thời gian tài khoản tồn tại; hiện chưa có thời hạn tự động xóa cố định cho nhóm dữ liệu này. Bài đăng cộng đồng được giữ cho đến khi bị gỡ. Nội dung đã gỡ được chuyển vào kho lưu trữ; quản trị có thể đặt chế độ giữ vô thời hạn hoặc thời hạn ngày/tháng, sau đó tác vụ dọn kho sẽ xóa mục hết hạn và tệp đính kèm. Khi tài khoản được xóa và quy trình hoàn tất, COC-LIO xóa hồ sơ Firebase, dữ liệu hoạt động, bài đăng/JSON do tài khoản tạo, các mục lưu trữ tương ứng, tệp trong thư mục của tài khoản và hồ sơ giấy phép gắn UID. Dữ liệu đã lưu cục bộ trên điện thoại không bị xóa bởi thao tác này.",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 9.sp,
+                        lineHeight = 13.sp
+                    )
+                    Text(
+                        "Bạn có thể đổi hoặc rút lại từng lựa chọn thu thập tùy chọn trong Cài đặt. Khi rút lại, việc thu thập mới cho mục đó sẽ dừng; dữ liệu đã ghi trước đó không tự động bị xóa, trừ khi bạn gửi yêu cầu xóa và yêu cầu được xử lý. Bạn có thể yêu cầu xem, sửa, hạn chế xử lý hoặc xóa dữ liệu qua email phunghuyhoahaikba@gmail.com. Dịch vụ xử lý/lưu trữ kỹ thuật: Google Firebase. Đầu mối vận hành và tiếp nhận yêu cầu: COC-LIO. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước thời điểm rút lại.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
