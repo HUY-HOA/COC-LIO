@@ -2338,32 +2338,17 @@ fun SettingsScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
                     ) { Text("ĐĂNG XUẤT", fontSize = 10.sp) }
                 }
+                TextButton(
+                    onClick = onManagePrivacy,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("QUẢN LÝ LỰA CHỌN DỮ LIỆU", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
 
         if (isAdmin && showAdminAccounts) {
             AdminAccountsPanel(onClose = { showAdminAccounts = false })
-        }
-
-        FeaturePanel {
-            Text("QUYỀN RIÊNG TƯ & DỮ LIỆU", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Text(
-                if (!privacyChoiceConfigured) "Bạn chưa lưu lựa chọn dữ liệu bổ sung. Mặc định các mục thu thập tùy chọn đang tắt."
-                else "Bạn có thể thay đổi hoặc rút lại từng lựa chọn bất cứ lúc nào.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp,
-                lineHeight = 15.sp
-            )
-            ProfileDataRow("Hoạt động và thiết bị (không ghi IP trên Spark)", if (securityTelemetryConsent) "Đang cho phép" else "Đang tắt")
-            ProfileDataRow("Phân tích mức sử dụng", if (analyticsConsent) "Đang cho phép" else "Đang tắt")
-            ProfileDataRow("Báo cáo lỗi và hiệu năng", if (diagnosticsConsent) "Đang cho phép" else "Đang tắt")
-            Button(
-                onClick = onManagePrivacy,
-                enabled = !accountEmail.isNullOrBlank(),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("XEM / THAY ĐỔI LỰA CHỌN DỮ LIỆU", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            }
         }
 
         FeaturePanel {
