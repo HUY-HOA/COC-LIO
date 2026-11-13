@@ -260,6 +260,59 @@ private fun LedFrameBox(
 }
 
 @Composable
+fun Modifier.ledRgbBorder(
+    cornerRadiusDp: Float = 18f,
+    strokeWidthDp: Float = 2.6f
+): Modifier {
+    val led = LocalLedTheme.current
+    return this.drawWithCache {
+        val palette = led.palette.map { it.copy(alpha = led.brightness.coerceIn(0f, 1f)) }
+        val active = led.enabled && palette.size >= 2 && strokeWidthDp > 0f
+        val phase = if (active && led.speedMillis > 0) {
+            (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+        } else {
+            0f
+        }
+        val intervals = (palette.size - 1).coerceAtLeast(1)
+        val colors = if (active && led.speedMillis > 0) {
+            List(32) { index ->
+                val position = ((index / 32f + phase) % 1f) * intervals
+                val startIndex = position.toInt().coerceIn(0, intervals - 1)
+                val fraction = position - startIndex
+                val first = palette[startIndex]
+                val second = palette[startIndex + 1]
+                Color(
+                    red = first.red + (second.red - first.red) * fraction,
+                    green = first.green + (second.green - first.green) * fraction,
+                    blue = first.blue + (second.blue - first.blue) * fraction,
+                    alpha = led.brightness.coerceIn(0f, 1f)
+                )
+            }
+        } else {
+            palette
+        }
+        val brush = Brush.sweepGradient(colors)
+        val stroke = strokeWidthDp.dp.toPx()
+        val inset = stroke / 2f
+        val path = Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = inset,
+                    top = inset,
+                    right = size.width - inset,
+                    bottom = size.height - inset,
+                    cornerRadius = CornerRadius(cornerRadiusDp.dp.toPx())
+                )
+            )
+        }
+        onDrawWithContent {
+            drawContent()
+            if (active) drawPath(path, brush, style = Stroke(width = stroke))
+        }
+    }
+}
+
+@Composable
 private fun NeonBackdrop() {
     Box(
         Modifier
@@ -323,8 +376,10 @@ private fun NeonPanel(
                             )
                         }
                         Brush.sweepGradient(movingColors)
-                    } else {
+                    } else if (led.enabled) {
                         Brush.sweepGradient(palette)
+                    } else {
+                        SolidColor(glow.copy(alpha = led.brightness.coerceIn(0f, 1f)))
                     }
                     drawPath(path, brush, style = Stroke(width = stroke))
                 }
