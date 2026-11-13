@@ -290,6 +290,18 @@ object AppPreferences {
             .edit().putBoolean(key(profile, "update_notifications"), enabled).apply()
     }
 
+    fun ensureNotificationPreferences(context: Context, profile: String, defaultEnabled: Boolean) {
+        val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val editor = preferences.edit()
+        val notificationKey = key(profile, "notifications")
+        val communityKey = key(profile, "community_notifications")
+        val updateKey = key(profile, "update_notifications")
+        if (!preferences.contains(notificationKey)) editor.putBoolean(notificationKey, defaultEnabled)
+        if (!preferences.contains(communityKey)) editor.putBoolean(communityKey, defaultEnabled)
+        if (!preferences.contains(updateKey)) editor.putBoolean(updateKey, defaultEnabled)
+        editor.apply()
+    }
+
     fun notificationStyle(context: Context, profile: String): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(key(profile, "notification_style"), "alarm") ?: "alarm"
