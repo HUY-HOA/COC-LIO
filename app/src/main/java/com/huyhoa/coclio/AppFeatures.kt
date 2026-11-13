@@ -2635,10 +2635,10 @@ fun SettingsScreen(
                     contentColor = Color(0xFF04101D)
                 )
             ) {
-                Text("THỬ THÔNG BÁO NGAY", fontWeight = FontWeight.Black)
+                Text("THỬ NHẮC NÂNG CẤP", fontWeight = FontWeight.Black)
             }
             Text(
-                "Gửi một thông báo mẫu theo kiểu đang chọn. Thử nghiệm không tự bật lịch nhắc nâng cấp.",
+                "Gửi một thông báo thử cho chức năng nhắc nâng cấp. Không tự bật lịch nhắc.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 lineHeight = 14.sp
