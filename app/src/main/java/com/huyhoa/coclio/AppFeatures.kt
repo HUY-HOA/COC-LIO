@@ -382,7 +382,7 @@ private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
                 continuation.resume(task.result)
             } else {
                 continuation.resumeWithException(
-                    task.exception ?: IllegalStateException("Firebase không trả về kết quả.")
+                    task.exception ?: IllegalStateException("Không thể hoàn tất thao tác tài khoản. Vui lòng thử lại.")
                 )
             }
         }
@@ -394,7 +394,7 @@ private suspend fun syncFirebaseUserProfile(
     countAsSignIn: Boolean = true
 ) {
     val email = user.email?.trim()?.takeIf { it.isNotBlank() }
-        ?: throw IllegalStateException("Firebase không trả về email tài khoản.")
+        ?: throw IllegalStateException("Không nhận được email từ tài khoản Google.")
     val reference = FirebaseFirestore.getInstance()
         .collection("users")
         .document(user.uid)
@@ -1020,7 +1020,7 @@ object GoogleAccountAuth {
     suspend fun signIn(context: Context): GoogleAccountData {
         val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
         require(clientId.isNotBlank() && clientId.contains(".apps.googleusercontent.com")) {
-            "Chưa cấu hình mã ứng dụng đăng nhập Google. Cần thêm mã GOOGLE_WEB_CLIENT_ID trong phần bí mật của GitHub để bật tính năng này."
+            "Đăng nhập Google chưa được cấu hình hoàn chỉnh. Vui lòng liên hệ quản lý ứng dụng."
         }
 
         val credentialManager = CredentialManager.create(context)
@@ -1081,7 +1081,7 @@ object GoogleAccountAuth {
             .signInWithCredential(firebaseCredential)
             .awaitFirebaseResult()
         val firebaseUser = authResult.user
-            ?: throw IllegalStateException("Firebase Authentication không trả về người dùng.")
+            ?: throw IllegalStateException("Không nhận được tài khoản Google sau khi xác thực.")
 
         val accountData = GoogleAccountData(
             email = email.lowercase(),
@@ -1947,7 +1947,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             title = { Text(if (account.accountDisabled) "Kích hoạt lại tài khoản COC-LIO?" else "Vô hiệu hóa tài khoản COC-LIO?") },
             text = {
                 Text(
-                    if (account.accountDisabled) "Tài khoản Google vẫn tồn tại. Kích hoạt lại sẽ cho phép tài khoản này truy cập COC-LIO và dữ liệu Firestore theo quyền bình thường." else "Tài khoản Google vẫn tồn tại trong Firebase Authentication. COC-LIO sẽ đánh dấu hồ sơ này bị vô hiệu hóa để chặn truy cập dữ liệu Firestore. Dữ liệu cũ không bị xóa.",
+                    if (account.accountDisabled) "Tài khoản Google vẫn tồn tại. Kích hoạt lại sẽ cho phép tài khoản này truy cập COC-LIO và dữ liệu của mình theo quyền bình thường." else "Tài khoản Google vẫn tồn tại. COC-LIO sẽ đánh dấu hồ sơ này bị vô hiệu hóa để chặn truy cập dữ liệu tài khoản. Dữ liệu cũ không bị xóa.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
@@ -2004,7 +2004,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             fontSize = 12.sp
         )
         Text(
-            "Chỉ tài khoản quản lý mới xem được. Danh sách lấy từ hồ sơ Firestore; trên Spark không tự đối chiếu trạng thái toàn bộ tài khoản Firebase Authentication.",
+            "Chỉ tài khoản quản lý mới xem được. Danh sách lấy từ hồ sơ tài khoản đã đăng nhập; ứng dụng không tự đối chiếu trạng thái toàn bộ tài khoản Google.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp,
             lineHeight = 15.sp
@@ -2210,7 +2210,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Builder Hall", if (account.lastVillageBuilderHallLevel > 0L) account.lastVillageBuilderHallLevel.toString() else "Chưa ghi nhận")
                             ProfileDataRow("Số lần đồng bộ JSON", if (account.villageImportCount > 0L) account.villageImportCount.toString() else "Chưa ghi nhận")
                             ProfileDataRow("Thời điểm JSON mới nhất", if (account.lastVillageTimestamp > 0L) formatAdminAccountTime(account.lastVillageTimestamp * 1000L) else "Chưa ghi nhận")
-                            ProfileDataRow("Lần đồng bộ JSON lên Firestore", if (account.lastVillageSyncedAt > 0L) formatAdminAccountTime(account.lastVillageSyncedAt) else "Chưa ghi nhận")
+                            ProfileDataRow("Lần đồng bộ JSON gần nhất", if (account.lastVillageSyncedAt > 0L) formatAdminAccountTime(account.lastVillageSyncedAt) else "Chưa ghi nhận")
                             ProfileDataRow("Dung lượng JSON gần nhất", if (account.lastVillageRawJsonBytes > 0L) "${account.lastVillageRawJsonBytes} byte" else "Chưa ghi nhận")
                             ProfileDataRow("Android", account.androidVersion.ifBlank { "Chưa ghi nhận" })
                             ProfileDataRow("API Android", if (account.sdkInt > 0L) account.sdkInt.toString() else "Chưa ghi nhận")
@@ -2218,7 +2218,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Mã phiên bản ứng dụng", if (account.appVersionCode > 0L) account.appVersionCode.toString() else "Chưa ghi nhận")
                             ProfileDataRow("Tạo hồ sơ", formatAdminAccountTime(account.createdAt))
                             ProfileDataRow("Cập nhật hồ sơ", formatAdminAccountTime(account.updatedAt))
-                            ProfileDataRow("Firebase UID", account.uid)
+                            ProfileDataRow("Mã tài khoản", account.uid)
                         }
                     }
                 }
