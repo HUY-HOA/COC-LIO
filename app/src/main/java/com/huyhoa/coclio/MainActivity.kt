@@ -1604,7 +1604,7 @@ private fun RequiredAccountDataDetailsDialog(
                 )
                 Text("4. QUYỀN VÀ NGHĨA VỤ CỦA BẠN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 Text(
-                    "Quyền: được biết; đồng ý hoặc từ chối, yêu cầu rút lại đồng ý; xem, chỉnh sửa hoặc yêu cầu chỉnh sửa; yêu cầu cung cấp, xóa, hạn chế xử lý hoặc phản đối xử lý; khiếu nại, tố cáo, khởi kiện và yêu cầu bồi thường theo luật. Nghĩa vụ: cung cấp thông tin chính xác; tự bảo vệ dữ liệu của mình; tôn trọng, bảo vệ dữ liệu của người khác và tuân thủ pháp luật.",
+                    "Quyền: được biết; đồng ý hoặc không đồng ý, yêu cầu rút lại đồng ý; xem, chỉnh sửa hoặc yêu cầu chỉnh sửa; yêu cầu cung cấp, xóa, hạn chế hoặc phản đối xử lý; khiếu nại, tố cáo, khởi kiện, yêu cầu bồi thường và yêu cầu áp dụng biện pháp bảo vệ dữ liệu. Nghĩa vụ: cung cấp thông tin chính xác; tự bảo vệ dữ liệu của mình; tôn trọng, bảo vệ dữ liệu của người khác; tuân thủ pháp luật và tham gia phòng, chống hành vi xâm phạm dữ liệu cá nhân.",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     lineHeight = 15.sp
