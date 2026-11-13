@@ -1284,7 +1284,7 @@ class UpgradeReminderWorker(
         val alarmDurationSeconds = AppPreferences.alarmDurationSeconds(applicationContext, profile)
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
-            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v2" else "_message"
+            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v3" else "_message"
         ensureUpgradeNotificationChannel(applicationContext, channelId, alarmStyle, alarmDurationSeconds)
 
         val notificationKey = "$profile|$tag|$dataId|$endAt"
@@ -1307,7 +1307,7 @@ class UpgradeReminderWorker(
         )
         val baseText = AppLanguageSettings.translate(
             applicationContext,
-            if (base == "builder") "Làng đêm" else "NHÀ CHÍNH"
+            if (base == "builder") "Làng đêm" else "Làng chính"
         )
         val localizedItem = AppLanguageSettings.translate(applicationContext, item)
         val localizedSection = AppLanguageSettings.translate(applicationContext, section)
@@ -1385,7 +1385,7 @@ object UpgradeNotificationTester {
         val alarmStyle = style == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
-            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v2" else "_message"
+            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v3" else "_message"
         ensureUpgradeNotificationChannel(context, channelId, alarmStyle, alarmDurationSeconds)
 
         val openApp = Intent(context, MainActivity::class.java)
@@ -2335,8 +2335,8 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text("CÀI ĐẶT", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
 
@@ -2876,31 +2876,26 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                     )
                 }
                 onDrawBehind {
-                    val brush = if (led.enabled && led.speedMillis > 0) {
-                        val progress = led.progress.value.rem(1f)
-                        val intervals = palette.size - 1
-                        val colors = List(32) { index ->
-                            val position = ((index / 32f - progress + 1f) % 1f) * intervals
-                            val startIndex = position.toInt().coerceIn(0, intervals - 1)
-                            val fraction = position - startIndex
-                            val first = palette[startIndex]
-                            val second = palette[startIndex + 1]
-                            Color(
-                                red = first.red + (second.red - first.red) * fraction,
-                                green = first.green + (second.green - first.green) * fraction,
-                                blue = first.blue + (second.blue - first.blue) * fraction,
-                                alpha = led.brightness
-                            )
-                        }
-                        Brush.sweepGradient(colors)
-                    } else {
-                        Brush.sweepGradient(palette)
+                    val progress = led.progress.value.rem(1f)
+                    val intervals = (palette.size - 1).coerceAtLeast(1)
+                    val colors = List(32) { index ->
+                        val position = ((index / 32f - progress + 1f) % 1f) * intervals
+                        val startIndex = position.toInt().coerceIn(0, intervals - 1)
+                        val fraction = position - startIndex
+                        val first = palette[startIndex]
+                        val second = palette[startIndex + 1]
+                        Color(
+                            red = first.red + (second.red - first.red) * fraction,
+                            green = first.green + (second.green - first.green) * fraction,
+                            blue = first.blue + (second.blue - first.blue) * fraction,
+                            alpha = led.brightness
+                        )
                     }
-                    drawPath(path, brush, style = Stroke(width = stroke))
+                    drawPath(path, Brush.sweepGradient(colors), style = Stroke(width = stroke))
                 }
             }
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp),
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp),
         content = content
     )
 }
