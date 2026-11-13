@@ -2518,7 +2518,14 @@ fun SettingsScreen(
                 onValueChange = { onLedSpeedChanged(it.roundToInt().coerceIn(0, 100)) },
                 valueRange = 0f..100f,
                 colors = ledSliderColors,
-                thumb = {},
+                thumb = {
+                    Box(
+                        Modifier
+                            .width(3.dp)
+                            .height(20.dp)
+                            .background(Color.White, RoundedCornerShape(2.dp))
+                    )
+                },
                 track = { sliderState ->
                     androidx.compose.material3.SliderDefaults.Track(
                         sliderState = sliderState,
@@ -2540,7 +2547,14 @@ fun SettingsScreen(
                 onValueChange = { onLedBrightnessChanged(it.roundToInt().coerceIn(0, 100) / 100f) },
                 valueRange = 0f..100f,
                 colors = ledSliderColors,
-                thumb = {},
+                thumb = {
+                    Box(
+                        Modifier
+                            .width(3.dp)
+                            .height(20.dp)
+                            .background(Color.White, RoundedCornerShape(2.dp))
+                    )
+                },
                 track = { sliderState ->
                     androidx.compose.material3.SliderDefaults.Track(
                         sliderState = sliderState,
