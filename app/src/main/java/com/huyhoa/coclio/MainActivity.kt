@@ -218,7 +218,7 @@ private fun LedFrameBox(
         (led.progress.value * (20000f / led.speedMillis)).rem(1f)
     } else 0f
     val movingColors = List(48) { index ->
-        val position = ((index / 48f + phase) % 1f) * (palette.size - 1)
+        val position = ((index / 48f - phase + 1f) % 1f) * (palette.size - 1)
         val startIndex = position.toInt().coerceIn(0, palette.size - 2)
         val fraction = position - startIndex
         val first = palette[startIndex]
@@ -276,7 +276,7 @@ fun Modifier.ledRgbBorder(
         val intervals = (palette.size - 1).coerceAtLeast(1)
         val colors = if (active && led.speedMillis > 0) {
             List(32) { index ->
-                val position = ((index / 32f + phase) % 1f) * intervals
+                val position = ((index / 32f - phase + 1f) % 1f) * intervals
                 val startIndex = position.toInt().coerceIn(0, intervals - 1)
                 val fraction = position - startIndex
                 val first = palette[startIndex]
@@ -363,7 +363,7 @@ private fun NeonPanel(
                         val ledProgress = (led.progress.value * (20000f / led.speedMillis)).rem(1f)
                         val intervals = palette.size - 1
                         val movingColors = List(32) { index ->
-                            val position = ((index / 32f + ledProgress) % 1f) * intervals
+                            val position = ((index / 32f - ledProgress + 1f) % 1f) * intervals
                             val startIndex = position.toInt().coerceIn(0, intervals - 1)
                             val fraction = position - startIndex
                             val first = palette[startIndex]
@@ -404,11 +404,8 @@ private fun NeonButton(
             .shadow(5.dp, shape)
             .clip(shape)
             .background(Brush.horizontalGradient(buttonFillPalette.take(3)))
-            .border(
-                2.dp,
-                if (led.enabled) Brush.sweepGradient(palette) else SolidColor(palette.first()),
-                shape
-            )
+            .border(2.dp, SolidColor(palette.first()), shape)
+            .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
@@ -1484,11 +1481,19 @@ private fun GoogleLoginStartScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Checkbox(
-                        checked = consentChecked,
-                        onCheckedChange = onConsentChecked,
-                        enabled = !isBusy
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .ledRgbBorder(cornerRadiusDp = 7f, strokeWidthDp = 2f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Checkbox(
+                            checked = consentChecked,
+                            onCheckedChange = onConsentChecked,
+                            enabled = !isBusy,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
                     Text(
                         "Tôi đã đọc và đồng ý với việc xử lý dữ liệu tài khoản cần thiết để sử dụng COC-LIO.",
                         modifier = Modifier.weight(1f),
@@ -1514,7 +1519,9 @@ private fun GoogleLoginStartScreen(
                 Button(
                     onClick = onGoogleSignIn,
                     enabled = consentChecked && !isBusy,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.4f)
                 ) {
                     Text(
                         when {
