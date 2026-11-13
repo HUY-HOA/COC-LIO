@@ -2,12 +2,28 @@ name: Build COC-LIO APK
 
 on:
   workflow_dispatch:
+  issues:
+    types: [opened]
 
 permissions:
   contents: read
 
 jobs:
   build:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issues' &&
+          github.event.action == 'opened' &&
+          github.event.issue.title == '[COC-LIO] BUILD APK' &&
+          github.event.issue.body == 'COC-LIO automatic build request.' &&
+          github.event.issue.user.login == 'HUY-HOA-1'
+        )
+      }}
+    permissions:
+      contents: read
+      issues: write
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     env:
@@ -236,3 +252,28 @@ jobs:
             echo "**Công đoạn:** ${stage}"
             echo "Xem log của bước bị lỗi để biết nguyên nhân cụ thể."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify build result on GitHub
+        if: always() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          BUILD_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [[ "$BUILD_STATUS" == "success" ]]; then
+            MESSAGE="✅ BUILD APK THÀNH CÔNG — APK đã được tạo. Mở workflow để xem và tải tệp APK: $RUN_URL"
+          else
+            MESSAGE="❌ BUILD APK THẤT BẠI — Hãy mở workflow để xem bước lỗi và log chi tiết: $RUN_URL"
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" --method POST -f body="$MESSAGE"
+
+      - name: Close build request issue
+        if: always() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --method PATCH -f state=closed -f state_reason=completed
