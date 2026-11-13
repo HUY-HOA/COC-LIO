@@ -308,11 +308,11 @@ private suspend fun checkAppUpdates(
         if (versionName.isBlank() || !isNewerAppVersion(versionName, installedVersion)) return@forEach
         val notes = document.getString("notes").orEmpty().trim()
         val localizedNotes = if (notes.isBlank()) "" else translateCommunityTextForApp(context, notes) ?: notes
-        val body = if (localizedNotes.isBlank()) {
+        val body = (if (localizedNotes.isBlank()) {
             AppLanguageSettings.translate(context, "COC-LIO có bản cập nhật mới")
         } else {
             "COC-LIO $versionName: $localizedNotes"
-        }.take(420)
+        }).take(420)
         postUpdateNotification(
             context,
             ("update_" + document.id).hashCode(),
