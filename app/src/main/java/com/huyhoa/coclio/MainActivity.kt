@@ -1375,7 +1375,7 @@ private fun CocLioApp(
                         Column(Modifier.weight(1f)) {
                             Text("Bảo mật tài khoản và hoạt động", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             Text(
-                                "Cho phép ghi nhận IP kết nối; hãng và mẫu thiết bị; phiên bản Android/API; phiên bản ứng dụng; thời điểm mở, hoạt động, chuyển nền; số phiên và thời lượng sử dụng. Mục đích: bảo vệ tài khoản, phát hiện lạm dụng và hỗ trợ kỹ thuật.",
+                                "Cho phép ghi nhận hãng và mẫu thiết bị; phiên bản Android/API; phiên bản COC-LIO; thời điểm mở, hoạt động, chuyển nền; số phiên và thời lượng sử dụng. Trên gói Firebase Spark, ứng dụng không thu thập IP kết nối. Mục đích: hỗ trợ quản lý tài khoản và kỹ thuật.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp,
                                 lineHeight = 13.sp
@@ -1433,7 +1433,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Tin nhắn, tên/ảnh hồ sơ hiển thị, JSON, hình ảnh và tệp bạn chủ động gửi được lưu trong Cloud Firestore/Cloud Storage. Thành viên đã đăng nhập có thể xem nội dung cộng đồng. Khi bạn bật thông báo cộng đồng, Firebase Cloud Messaging xử lý mã thông báo thiết bị để định tuyến thông báo và có thể chuyển tên người gửi cùng phần xem trước tin nhắn đến thiết bị đã đăng ký. Thông báo cập nhật có thể chứa phiên bản và ghi chú phát hành. Thông báo đã được chuyển đến thiết bị khác không thể bị thu hồi từ xa.",
+                        "Tin nhắn chữ, hồ sơ và JSON bạn chủ động chia sẻ được lưu trong Cloud Firestore; thành viên đã đăng nhập có thể xem nội dung cộng đồng. Trên gói Firebase Spark, gửi ảnh, tệp và APK qua Cloud Storage đang tạm dừng; tệp cũ trong Storage vẫn còn nhưng không thể đọc/ghi khi chưa liên kết lại gói Blaze. Thông báo đẩy tự động cho tin nhắn và cập nhật cũng tạm dừng vì cần Cloud Functions. Nếu bật tùy chọn thông báo, ứng dụng có thể quản lý đăng ký FCM nhưng hiện không có chức năng máy chủ gửi các thông báo này.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1457,7 +1457,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Hồ sơ tài khoản và dữ liệu hoạt động trên Firestore được giữ trong thời gian tài khoản tồn tại; hiện chưa có thời hạn tự động xóa cố định cho nhóm dữ liệu này. Bài đăng cộng đồng được giữ cho đến khi bị gỡ. Nội dung đã gỡ được chuyển vào kho lưu trữ; quản trị có thể đặt chế độ giữ vô thời hạn hoặc thời hạn ngày/tháng, sau đó tác vụ dọn kho sẽ xóa mục hết hạn và tệp đính kèm. Dữ liệu Analytics, Crashlytics và Performance đã được gửi đến Firebase tuân theo cấu hình lưu trữ của dịch vụ và dự án; xóa hồ sơ COC-LIO không đồng nghĩa xóa ngay các dữ liệu thống kê/kỹ thuật đã được dịch vụ xử lý. Khi tài khoản được xóa và quy trình hoàn tất, COC-LIO xóa hồ sơ Firebase, dữ liệu hoạt động, bài đăng/JSON do tài khoản tạo, các mục lưu trữ tương ứng, tệp trong thư mục của tài khoản và hồ sơ giấy phép gắn UID. Dữ liệu đã lưu cục bộ trên điện thoại không bị xóa bởi thao tác này.",
+                        "Hồ sơ và dữ liệu hoạt động được ghi trong Firestore được giữ cho đến khi được quản lý xóa; hiện chưa đặt thời hạn tự động xóa cố định. Bài đăng cộng đồng được giữ cho đến khi bị gỡ. Trên Spark, việc dọn kho chỉ xóa bản ghi Firestore; tệp đính kèm cũ trong Cloud Storage không thể truy cập hoặc xóa từ ứng dụng. Dữ liệu Analytics, Crashlytics và Performance đã gửi trước đó tuân theo thời hạn lưu trữ của từng dịch vụ. Chức năng Vô hiệu hóa tài khoản trong COC-LIO chỉ đánh dấu hồ sơ Firestore và chặn quyền truy cập COC-LIO; chức năng này không xóa tài khoản Firebase Authentication hoặc tự xóa toàn bộ dữ liệu liên quan. Dữ liệu lưu cục bộ trên điện thoại không bị xóa.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1581,7 +1581,7 @@ private fun GoogleLoginStartScreen(
                     Text("ĐĂNG NHẬP VỚI GOOGLE")
                 }
                 Text(
-                    "Khi đăng nhập, COC-LIO lưu UID, email, tên và ảnh đại diện Google để xác thực và quản lý tài khoản. IP, thiết bị và lịch sử hoạt động không được tự động thu thập chỉ vì bạn đăng nhập Google.",
+                    "Khi đăng nhập, COC-LIO lưu UID, email, tên và ảnh đại diện Google để xác thực và quản lý tài khoản. Thiết bị và lịch sử hoạt động chỉ được ghi nhận khi bạn đồng ý; trên gói Spark, ứng dụng không ghi nhận IP kết nối.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
