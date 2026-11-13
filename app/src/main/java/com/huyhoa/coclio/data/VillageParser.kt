@@ -570,6 +570,7 @@ object CocNames {
             section == "decos" || section == "decos2" -> "Đồ trang trí"
             section == "obstacles" || section == "obstacles2" -> "Chướng ngại vật"
             section == "house_parts" -> "Bộ phận nhà"
+            section == "spells" -> "Thần chú"
             section.endsWith("2") -> "Mục căn cứ thợ xây"
             else -> "Mục"
         }
