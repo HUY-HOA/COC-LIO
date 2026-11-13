@@ -1187,6 +1187,21 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         }
         source.startsWith("ĐẾM NGƯỢC") -> source
         source.startsWith("Tổng số tài khoản: ") -> "Total accounts: " + source.removePrefix("Tổng số tài khoản: ")
+        Regex("^Tổng số tài khoản: (\\d+)$").matchEntire(source) != null ->
+            Regex("^Tổng số tài khoản: (\\d+)$").matchEntire(source)!!.let { "Total accounts: ${it.groupValues[1]}" }
+        Regex("^(.+) • (\\d+) mốc • (.+)$").matchEntire(source) != null ->
+            Regex("^(.+) • (\\d+) mốc • (.+)$").matchEntire(source)!!.let {
+                "${it.groupValues[1]} • ${it.groupValues[2]} entries • ${it.groupValues[3]}"
+            }
+        Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source) != null ->
+            Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source)!!.let {
+                "Release ${it.groupValues[1]} will be moved to the removed archive. The old APK file will be kept but will not be accessible for now."
+            }
+        Regex("^Dữ liệu JSON: (.+)$").matchEntire(source) != null ->
+            Regex("^Dữ liệu JSON: (.+)$").matchEntire(source)!!.let { "JSON data: ${it.groupValues[1]}" }
+        source.startsWith("Tải tệp hiện tạm ngừng trên gói miễn phí.") ->
+            "File downloads are currently paused on the free plan."
+        source.startsWith("Mở lần cuối: ") -> "Last opened: " + source.removePrefix("Mở lần cuối: ")
         source.startsWith("MỨC ") -> "LEVEL " + source.removePrefix("MỨC ")
         source.startsWith("Mở lần cuối: ") -> "Last opened: " + source.removePrefix("Mở lần cuối: ")
         source.startsWith("Đăng nhập ") -> "Signed in " + source.removePrefix("Đăng nhập ")
