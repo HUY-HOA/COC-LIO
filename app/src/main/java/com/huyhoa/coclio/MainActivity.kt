@@ -341,29 +341,22 @@ private fun NeonPanel(
                     )
                 }
                 onDrawBehind {
-                    val brush = if (led.enabled && led.speedMillis > 0) {
-                        val ledProgress = (led.progress.value).rem(1f)
-                        val intervals = palette.size - 1
-                        val movingColors = List(32) { index ->
-                            val position = ((index / 32f - ledProgress + 1f) % 1f) * intervals
-                            val startIndex = position.toInt().coerceIn(0, intervals - 1)
-                            val fraction = position - startIndex
-                            val first = palette[startIndex]
-                            val second = palette[startIndex + 1]
-                            Color(
-                                red = first.red + (second.red - first.red) * fraction,
-                                green = first.green + (second.green - first.green) * fraction,
-                                blue = first.blue + (second.blue - first.blue) * fraction,
-                                alpha = led.brightness
-                            )
-                        }
-                        Brush.sweepGradient(movingColors)
-                    } else if (led.enabled) {
-                        Brush.sweepGradient(palette)
-                    } else {
-                        SolidColor(glow.copy(alpha = led.brightness.coerceIn(0f, 1f)))
+                    val ledProgress = (led.progress.value).rem(1f)
+                    val intervals = (palette.size - 1).coerceAtLeast(1)
+                    val movingColors = List(32) { index ->
+                        val position = ((index / 32f - ledProgress + 1f) % 1f) * intervals
+                        val startIndex = position.toInt().coerceIn(0, intervals - 1)
+                        val fraction = position - startIndex
+                        val first = palette[startIndex]
+                        val second = palette[startIndex + 1]
+                        Color(
+                            red = first.red + (second.red - first.red) * fraction,
+                            green = first.green + (second.green - first.green) * fraction,
+                            blue = first.blue + (second.blue - first.blue) * fraction,
+                            alpha = led.brightness
+                        )
                     }
-                    drawPath(path, brush, style = Stroke(width = stroke))
+                    drawPath(path, Brush.sweepGradient(movingColors), style = Stroke(width = stroke))
                 }
             }
             .padding(innerPadding),
