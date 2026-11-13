@@ -546,6 +546,9 @@ private fun CocLioApp(
         firebaseGoogleEmail?.equals(activeProfile, ignoreCase = true) == true &&
         requiredAccountConsentLoadedForEmail?.equals(firebaseGoogleEmail, ignoreCase = true) == true &&
         requiredAccountConsentAccepted
+    val isCheckingRequiredAccountConsent = firebaseGoogleEmail != null &&
+        requiredAccountConsentLoadedForEmail == null &&
+        !requiredAccountConsentSubmitting
     val initialHistory = remember(activeProfile) { VillageStore.loadAll(context, activeProfile) }
 
     var history by remember { mutableStateOf(initialHistory) }
@@ -1106,17 +1109,30 @@ private fun CocLioApp(
         }
     ) { innerPadding ->
         if (!isGoogleSignedIn) {
-            GoogleLoginStartScreen(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                consentChecked = requiredAccountConsentChecked,
-                onConsentChecked = { requiredAccountConsentChecked = it },
-                isBusy = requiredAccountConsentSubmitting || interactiveGoogleSignIn,
-                hasAuthenticatedGoogleAccount = firebaseGoogleEmail != null,
-                readError = requiredAccountConsentReadError,
-                onOpenDetails = { showRequiredPrivacyDetails = true },
-                onReject = { leaveGoogleAccount("Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất.") },
-                onGoogleSignIn = { signInWithGoogle() }
-            )
+            if (isCheckingRequiredAccountConsent) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "ĐANG KIỂM TRA XÁC NHẬN DỮ LIỆU TÀI KHOẢN...",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp
+                    )
+                }
+            } else {
+                GoogleLoginStartScreen(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    consentChecked = requiredAccountConsentChecked,
+                    onConsentChecked = { requiredAccountConsentChecked = it },
+                    isBusy = requiredAccountConsentSubmitting || interactiveGoogleSignIn,
+                    hasAuthenticatedGoogleAccount = firebaseGoogleEmail != null,
+                    readError = requiredAccountConsentReadError,
+                    onOpenDetails = { showRequiredPrivacyDetails = true },
+                    onReject = { leaveGoogleAccount("Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất.") },
+                    onGoogleSignIn = { signInWithGoogle() }
+                )
+            }
         } else {
         Box(
             modifier = Modifier
