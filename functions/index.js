@@ -36,9 +36,17 @@ async function deleteDocumentsByUid(collectionName, uid) {
 
 async function deleteUserOwnedData(uid) {
   const bucket = getStorage().bucket();
-  await bucket.deleteFiles({
+  const [files] = await bucket.getFiles({
     prefix: `community/${uid}/`
   });
+
+  for (let index = 0; index < files.length; index += 20) {
+    await Promise.all(
+      files.slice(index, index + 20).map(file =>
+        file.delete({ ignoreNotFound: true })
+      )
+    );
+  }
 
   const ownedCollections = [
     "community_messages",
