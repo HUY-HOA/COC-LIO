@@ -23,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -126,6 +127,10 @@ fun ClashLookupScreen() {
     var result by remember { mutableStateOf<ClashLookupResponse?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
+    var detailLoading by remember { mutableStateOf(false) }
+    var detailTitle by remember { mutableStateOf<String?>(null) }
+    var detailText by remember { mutableStateOf<String?>(null) }
+    var detailError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
 
@@ -227,6 +232,81 @@ fun ClashLookupScreen() {
             } else {
                 ClanLookupCard(data)
             }
+
+            Text(
+                if (data.kind == ClashLookupKind.PLAYER) "THỐNG KÊ & LỊCH SỬ NGƯỜI CHƠI" else "THỐNG KÊ & LỊCH SỬ CLAN",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Chọn mục để tải thêm dữ liệu từ ClashKing.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp
+            )
+            val actions = clashLookupActions(data)
+            actions.chunked(2).forEach { rowActions ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowActions.forEach { action ->
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    detailLoading = true
+                                    detailTitle = action.title
+                                    detailText = null
+                                    detailError = null
+                                    runCatching { loadClashKingDetail(action.path) }
+                                        .onSuccess { detailText = it }
+                                        .onFailure {
+                                            detailError = it.message?.takeIf(String::isNotBlank)
+                                                ?: "Không thể tải dữ liệu này."
+                                        }
+                                    detailLoading = false
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = !detailLoading
+                        ) {
+                            Text(action.title, fontSize = 9.sp, lineHeight = 12.sp)
+                        }
+                    }
+                    if (rowActions.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+            if (detailLoading) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("ĐANG TẢI ${detailTitle.orEmpty()}...", fontSize = 10.sp)
+                }
+            }
+            detailError?.let {
+                LookupCard { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
+            }
+            detailText?.let { json ->
+                LookupCard {
+                    Text(
+                        detailTitle.orEmpty(),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        json,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 9.sp,
+                        lineHeight = 12.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                    )
+                }
+            }
         }
 
         LookupCard {
@@ -252,6 +332,60 @@ fun ClashLookupScreen() {
                 }
             )
         }
+    }
+}
+
+
+private data class ClashLookupAction(val title: String, val path: String)
+
+private fun clashLookupActions(data: ClashLookupResponse): List<ClashLookupAction> {
+    val tag = URLEncoder.encode(data.profile.optString("tag"), "UTF-8")
+    return if (data.kind == ClashLookupKind.PLAYER) {
+        listOf(
+            ClashLookupAction("Hoạt động 30 ngày", "/v2/player/$tag/activity-summary"),
+            ClashLookupAction("Lịch sử trận đánh", "/v2/player/$tag/battlelog/history"),
+            ClashLookupAction("Thống kê kiếm tài nguyên", "/v2/player/$tag/farming"),
+            ClashLookupAction("Thống kê chiến tranh", "/v2/player/$tag/war/stats"),
+            ClashLookupAction("Chi tiết lượt đánh", "/v2/player/$tag/war/attacks"),
+            ClashLookupAction("Lịch sử CWL", "/v2/player/$tag/cwl/history?limit=15"),
+            ClashLookupAction("Lịch sử vào/rời Clan", "/v2/player/$tag/join-leave?limit=40"),
+            ClashLookupAction("Thống kê thời gian ở Clan", "/v2/player/$tag/join-leave/totals"),
+            ClashLookupAction("Lịch sử nâng cấp Nhà chính", "/v2/player/$tag/history/changes?type=townhall_level&limit=30"),
+            ClashLookupAction("Lịch sử quyên góp", "/v2/player/$tag/history/stats?type=donated&limit=30"),
+            ClashLookupAction("Các mốc chiến tranh", "/v2/player/$tag/timers"),
+            ClashLookupAction("Thành tích Legend", "/v2/player/$tag/legend-history"),
+            ClashLookupAction("Lịch sử Ranked", "/v2/player/$tag/ranked/history")
+        )
+    } else {
+        listOf(
+            ClashLookupAction("Tổng kết quyên góp", "/v2/clan/$tag/donations/summary"),
+            ClashLookupAction("Lịch sử chiến tranh", "/v2/clan/$tag/wars?limit=20"),
+            ClashLookupAction("Cuộc chiến hiện tại", "/v2/war/$tag/basic"),
+            ClashLookupAction("Các mùa CWL", "/v2/cwl/$tag/seasons?limit=15"),
+            ClashLookupAction("Nhóm CWL", "/v2/cwl/$tag/group"),
+            ClashLookupAction("Thứ hạng CWL", "/v2/cwl/$tag/ranking-history"),
+            ClashLookupAction("Lịch sử thành viên", "/v2/clan/$tag/join-leave?limit=50"),
+            ClashLookupAction("Thay đổi hồ sơ Clan", "/v2/clan/$tag/history/changes?limit=30"),
+            ClashLookupAction("Lịch sử bảng xếp hạng", "/v2/clan/$tag/history/leaderboards?limit=30"),
+            ClashLookupAction("Lịch sử Legend của Clan", "/v2/clan/$tag/history/legends?limit=30"),
+            ClashLookupAction("Top Legend của Clan", "/v2/clan/$tag/history/legends/summary?top=20"),
+            ClashLookupAction("Kỷ lục Clan", "/v2/clan/$tag/records"),
+            ClashLookupAction("Bảng xếp hạng Clan", "/v2/clan/$tag/rankings")
+        )
+    }
+}
+
+private suspend fun loadClashKingDetail(path: String): String = withContext(Dispatchers.IO) {
+    val value = readClashKingJson(path)
+    val formatted = when (value) {
+        is JSONObject -> value.toString(2)
+        is JSONArray -> value.toString(2)
+        else -> value.toString()
+    }
+    if (formatted.length > 40000) {
+        formatted.take(40000) + "\\n\\n... Đã rút gọn kết quả để tránh làm ứng dụng quá tải."
+    } else {
+        formatted
     }
 }
 
