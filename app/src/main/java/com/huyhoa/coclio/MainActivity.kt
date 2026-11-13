@@ -507,6 +507,12 @@ private fun CocLioApp(
     var firebaseGoogleEmail by remember { mutableStateOf(initialFirebaseGoogleEmail) }
     var initialAuthStateHandled by remember { mutableStateOf(false) }
     var interactiveGoogleSignIn by remember { mutableStateOf(false) }
+    var requiredAccountConsentLoadedForEmail by remember { mutableStateOf<String?>(null) }
+    var requiredAccountConsentAccepted by remember { mutableStateOf(false) }
+    var requiredAccountConsentChecked by remember { mutableStateOf(false) }
+    var requiredAccountConsentSubmitting by remember { mutableStateOf(false) }
+    var requiredAccountConsentReadError by remember { mutableStateOf<String?>(null) }
+    var showRequiredPrivacyDetails by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
         val listener = FirebaseAuth.AuthStateListener { state ->
@@ -537,7 +543,9 @@ private fun CocLioApp(
         onDispose { auth.removeAuthStateListener(listener) }
     }
     val isGoogleSignedIn = activeProfile != "local" &&
-        firebaseGoogleEmail?.equals(activeProfile, ignoreCase = true) == true
+        firebaseGoogleEmail?.equals(activeProfile, ignoreCase = true) == true &&
+        requiredAccountConsentLoadedForEmail?.equals(firebaseGoogleEmail, ignoreCase = true) == true &&
+        requiredAccountConsentAccepted
     val initialHistory = remember(activeProfile) { VillageStore.loadAll(context, activeProfile) }
 
     var history by remember { mutableStateOf(initialHistory) }
@@ -734,6 +742,32 @@ private fun CocLioApp(
         AppWidgetUpdater.ensureRefresh(context)
     }
 
+    LaunchedEffect(firebaseGoogleEmail) {
+        val email = firebaseGoogleEmail
+        requiredAccountConsentAccepted = false
+        requiredAccountConsentLoadedForEmail = null
+        requiredAccountConsentReadError = null
+        if (email.isNullOrBlank()) {
+            requiredAccountConsentLoadedForEmail = ""
+            requiredAccountConsentChecked = false
+        } else if (!requiredAccountConsentSubmitting) {
+            runCatching { AccountPrivacyConsent.hasRequiredAccountDataConsent() }
+                .onSuccess { accepted ->
+                    requiredAccountConsentAccepted = accepted
+                    requiredAccountConsentLoadedForEmail = email
+                    if (accepted) requiredAccountConsentChecked = false
+                }
+                .onFailure { error ->
+                    requiredAccountConsentAccepted = false
+                    requiredAccountConsentLoadedForEmail = email
+                    requiredAccountConsentChecked = false
+                    requiredAccountConsentReadError = error.message
+                        ?.takeIf { it.isNotBlank() }
+                        ?: "Không thể kiểm tra xác nhận dữ liệu tài khoản."
+                }
+        }
+    }
+
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
         if (!isGoogleSignedIn) {
             securityTelemetryConsent = false
@@ -758,7 +792,6 @@ private fun CocLioApp(
                         analyticsConsent = false
                         diagnosticsConsent = false
                         villageDataSyncConsent = false
-                        openPrivacyDialog()
                     } else if (choice.securityTelemetry) {
                         AccountActivityTracker.start(context)
                     } else {
@@ -889,17 +922,25 @@ private fun CocLioApp(
                     AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
                 }
                 GoogleAccountAuth.shareProfile(googleAccount)
+                AccountPrivacyConsent.saveRequiredAccountDataConsent()
                 FirebaseAccountAdministration.savePreferredName(profileName)
                 AccountProfileStore.setActive(context, googleAccount.email)
+                requiredAccountConsentAccepted = true
+                requiredAccountConsentLoadedForEmail = googleAccount.email
+                requiredAccountConsentChecked = false
+                requiredAccountConsentSubmitting = false
+                requiredAccountConsentReadError = null
                 activeProfile = googleAccount.email
                 interactiveGoogleSignIn = false
                 selectedTab = 0
                 googleAuthError = null
-                snackbar.showSnackbar("Đã đăng nhập Google và đồng bộ hồ sơ tài khoản cơ bản.")
+                snackbar.showSnackbar("Đã xác nhận dữ liệu cần thiết và đăng nhập Google thành công.")
             } catch (error: Exception) {
+                requiredAccountConsentSubmitting = false
+                interactiveGoogleSignIn = false
                 snackbar.showSnackbar(
                     error.message?.takeIf { it.isNotBlank() }
-                        ?: "Không thể lưu hồ sơ tài khoản. Hãy thử lại."
+                        ?: "Không thể lưu xác nhận dữ liệu tài khoản. Hãy thử lại."
                 )
             }
         }
@@ -950,6 +991,8 @@ private fun CocLioApp(
     }
 
     fun signInWithGoogle() {
+        if (!requiredAccountConsentChecked || requiredAccountConsentSubmitting) return
+        requiredAccountConsentSubmitting = true
         scope.launch {
             interactiveGoogleSignIn = true
             try {
@@ -960,6 +1003,7 @@ private fun CocLioApp(
                 googleAuthError = null
             } catch (error: Exception) {
                 interactiveGoogleSignIn = false
+                requiredAccountConsentSubmitting = false
                 if (error is GetCredentialCancellationException) {
                     googleAuthError = null
                     snackbar.showSnackbar("Bạn đã hủy đăng nhập Google.")
@@ -1064,6 +1108,13 @@ private fun CocLioApp(
         if (!isGoogleSignedIn) {
             GoogleLoginStartScreen(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
+                consentChecked = requiredAccountConsentChecked,
+                onConsentChecked = { requiredAccountConsentChecked = it },
+                isBusy = requiredAccountConsentSubmitting || interactiveGoogleSignIn,
+                hasAuthenticatedGoogleAccount = firebaseGoogleEmail != null,
+                readError = requiredAccountConsentReadError,
+                onOpenDetails = { showRequiredPrivacyDetails = true },
+                onReject = { leaveGoogleAccount("Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất.") },
                 onGoogleSignIn = { signInWithGoogle() }
             )
         } else {
@@ -1397,6 +1448,12 @@ private fun CocLioApp(
         )
     }
 
+    if (showRequiredPrivacyDetails) {
+        RequiredAccountDataDetailsDialog(
+            onDismiss = { showRequiredPrivacyDetails = false }
+        )
+    }
+
     if (showPrivacyConsentDialog && isGoogleSignedIn) {
         AlertDialog(
             onDismissRequest = { showPrivacyConsentDialog = false },
@@ -1622,6 +1679,13 @@ private fun CocLioApp(
 @Composable
 private fun GoogleLoginStartScreen(
     modifier: Modifier = Modifier,
+    consentChecked: Boolean,
+    onConsentChecked: (Boolean) -> Unit,
+    isBusy: Boolean,
+    hasAuthenticatedGoogleAccount: Boolean,
+    readError: String?,
+    onOpenDetails: () -> Unit,
+    onReject: () -> Unit,
     onGoogleSignIn: () -> Unit
 ) {
     LedFrameBox(
@@ -1635,7 +1699,7 @@ private fun GoogleLoginStartScreen(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(13.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     "COC-LIO",
@@ -1652,27 +1716,134 @@ private fun GoogleLoginStartScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
-                    "Đăng nhập Google để vào ứng dụng, theo dõi làng, trò chuyện và chia sẻ cùng mọi thành viên.",
+                    "Để tạo và duy trì tài khoản, COC-LIO cần xử lý UID Firebase, email, tên và ảnh hồ sơ Google, trạng thái xác minh cùng thông tin đăng nhập. Dữ liệu này được dùng để xác thực, quản lý tài khoản và hiển thị danh tính thành viên.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
-                    lineHeight = 18.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = consentChecked,
+                        onCheckedChange = onConsentChecked,
+                        enabled = !isBusy
+                    )
+                    Text(
+                        "Tôi đã đọc và đồng ý với việc xử lý dữ liệu tài khoản cần thiết để sử dụng COC-LIO.",
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+                TextButton(
+                    onClick = onOpenDetails,
+                    enabled = !isBusy
+                ) {
+                    Text("XEM CHI TIẾT DỮ LIỆU", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+                if (!readError.isNullOrBlank()) {
+                    Text(
+                        readError,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 10.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
                 Button(
                     onClick = onGoogleSignIn,
+                    enabled = consentChecked && !isBusy,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("ĐĂNG NHẬP VỚI GOOGLE")
+                    Text(
+                        when {
+                            isBusy -> "ĐANG XÁC NHẬN..."
+                            hasAuthenticatedGoogleAccount -> "ĐỒNG Ý & TIẾP TỤC"
+                            else -> "ĐỒNG Ý & ĐĂNG NHẬP GOOGLE"
+                        }
+                    )
+                }
+                if (hasAuthenticatedGoogleAccount) {
+                    TextButton(
+                        onClick = onReject,
+                        enabled = !isBusy
+                    ) {
+                        Text("KHÔNG ĐỒNG Ý / ĐĂNG XUẤT", color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
+                    }
                 }
                 Text(
-                    "Khi đăng nhập, COC-LIO lưu UID, email, tên và ảnh đại diện Google để xác thực và quản lý tài khoản. Thiết bị và lịch sử hoạt động chỉ được ghi nhận khi bạn đồng ý; trên gói Spark, ứng dụng không ghi nhận IP mới. IP đã ghi nhận trước khi chuyển sang Spark có thể vẫn còn trong hồ sơ lịch sử Firestore cho đến khi được xóa.",
+                    "Dữ liệu hoạt động, thiết bị, phân tích, báo lỗi và đồng bộ JSON là các mục riêng; mặc định tắt và không được bật chỉ bằng ô xác nhận này.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp,
+                    fontSize = 9.sp,
+                    lineHeight = 13.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
     }
+}
+
+@Composable
+private fun RequiredAccountDataDetailsDialog(
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("CHI TIẾT DỮ LIỆU TÀI KHOẢN", fontWeight = FontWeight.Black) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("1. DỮ LIỆU CẦN THIẾT KHI ĐĂNG NHẬP", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text(
+                    "COC-LIO xử lý Firebase UID, email Google, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email, nhà cung cấp đăng nhập, số lần và thời điểm đăng nhập. Mục đích là xác thực, tạo và duy trì tài khoản, quản lý hồ sơ và hiển thị danh tính người gửi trong cộng đồng.",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+                Text("2. NƠI LƯU VÀ NGƯỜI CÓ THỂ XEM", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text(
+                    "Thông tin xác thực được xử lý bằng Firebase Authentication; hồ sơ tài khoản được lưu trong Cloud Firestore. Bạn có thể xem hồ sơ của mình. Chủ sở hữu COC-LIO có quyền quản lý hồ sơ người dùng trong ứng dụng. Tên và ảnh đại diện có thể xuất hiện cạnh nội dung bạn gửi trong cộng đồng.",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+                Text("3. DỮ LIỆU KHÔNG BẮT BUỘC", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text(
+                    "Thông tin thiết bị và hoạt động, phân tích mức sử dụng, báo cáo lỗi/hiệu năng và đồng bộ JSON Clash of Clans lên tài khoản là các mục riêng. Các mục này mặc định tắt; bạn có thể quản lý riêng trong Cài đặt sau khi đăng nhập. Ô xác nhận trên màn hình này không bật các mục đó.",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+                Text("4. JSON VÀ NỘI DUNG CỘNG ĐỒNG", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text(
+                    "JSON bạn nhập được lưu trên điện thoại. Chỉ khi bật đồng bộ riêng thì bản JSON mới được gửi lên Firestore. Tin nhắn và JSON bạn chủ động chia sẻ trong cộng đồng có thể được thành viên đã đăng nhập xem theo quy tắc cộng đồng.",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+                Text("5. THỜI HẠN, QUYỀN VÀ LIÊN HỆ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text(
+                    "Hồ sơ Firestore được giữ cho đến khi được xóa theo quy trình quản lý hoặc yêu cầu hợp lệ; dữ liệu trên điện thoại vẫn còn cho đến khi bạn xóa dữ liệu ứng dụng hoặc gỡ ứng dụng. Bạn có quyền yêu cầu xem, chỉnh sửa, hạn chế xử lý hoặc xóa dữ liệu và rút lại các lựa chọn tùy chọn trong Cài đặt. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước đó. Đơn vị vận hành: COC-LIO. Dịch vụ xử lý và lưu trữ kỹ thuật: Google Firebase. Liên hệ: phunghuyhoahaikba@gmail.com.",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("ĐÓNG") }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurface
+    )
 }
 
 @Composable
