@@ -192,7 +192,7 @@ private fun animatedLedTextBrush(): Brush {
         (led.progress.value * (20000f / led.speedMillis)).rem(1f)
     } else 0f
     val movingColors = List(32) { index ->
-        val position = ((index / 32f + phase) % 1f) * (palette.size - 1)
+        val position = ((index / 32f - phase + 1f) % 1f) * (palette.size - 1)
         val startIndex = position.toInt().coerceIn(0, palette.size - 2)
         val fraction = position - startIndex
         val first = palette[startIndex]
