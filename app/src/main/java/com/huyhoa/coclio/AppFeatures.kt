@@ -1,5 +1,7 @@
 package com.huyhoa.coclio
 
+import android.Manifest
+
 import android.app.Activity
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
@@ -101,6 +103,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -1333,6 +1336,11 @@ class UpgradeReminderWorker(
         if (iconBitmap != null) notificationBuilder.setLargeIcon(iconBitmap)
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle, alarmDurationSeconds)
         val notification = notificationBuilder.build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return Result.success()
+        }
         val posted = runCatching {
             NotificationManagerCompat.from(applicationContext)
                 .notify(notificationId, notification)
@@ -1398,6 +1406,11 @@ object UpgradeNotificationTester {
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle, alarmDurationSeconds)
         if (alarmStyle) notificationBuilder.setTimeoutAfter(alarmDurationSeconds * 1_000L)
         val notification = notificationBuilder.build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return@runCatching false
+        }
         NotificationManagerCompat.from(context).notify(testNotificationId, notification)
         if (alarmStyle && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             scheduleUpgradeNotificationDismissal(context, testNotificationId, alarmDurationSeconds)
@@ -2958,6 +2971,11 @@ class CocLioMessagingService : FirebaseMessagingService() {
             builder.setShortcutId(COC_LIO_COMMUNITY_SHORTCUT).setBubbleMetadata(bubble)
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         runCatching {
             NotificationManagerCompat.from(this).notify(notificationId, builder.build())
         }
@@ -2972,6 +2990,11 @@ internal fun postCommunityChatBubbleNotification(
     messageText: String
 ) {
     val notificationManager = NotificationManagerCompat.from(context)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+    ) {
+        return
+    }
     if (!notificationManager.areNotificationsEnabled()) return
     val channelId = COC_LIO_COMMUNITY_CHANNEL
     val title = AppLanguageSettings.translate(context, "Tin nhắn cộng đồng")
