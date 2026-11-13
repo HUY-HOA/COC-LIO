@@ -2,13 +2,21 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
+    function verifiedAccount() {
       return request.auth != null
         && request.auth.token.email_verified == true;
     }
 
+    function signedIn() {
+      return verifiedAccount()
+        && (
+          !exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountDisabled != true
+        );
+    }
+
     function isOwner() {
-      return signedIn()
+      return verifiedAccount()
         && request.auth.token.email == 'phunghuyhoahaikba@gmail.com';
     }
 
@@ -16,8 +24,12 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function isVerifiedSelf(userId) {
+      return verifiedAccount() && request.auth.uid == userId;
+    }
+
     match /users/{userId} {
-      allow get: if isOwner() || isSelf(userId);
+      allow get: if isOwner() || isVerifiedSelf(userId);
       allow list: if isOwner();
 
       allow create: if isSelf(userId)
@@ -81,7 +93,23 @@ service cloud.firestore {
             'activityConsentAt',
             'signInCount',
             'lastSignInAt',
-            'updatedAt'
+            'updatedAt',
+            'lastActivityEvent',
+            'activityUpdatedAt',
+            'firstOpenedAt',
+            'lastOpenedAt',
+            'lastActiveAt',
+            'lastBackgroundAt',
+            'sessionStartedAt',
+            'appOpenCount',
+            'lastSessionDurationSeconds',
+            'totalForegroundSeconds',
+            'deviceManufacturer',
+            'deviceModel',
+            'androidVersion',
+            'sdkInt',
+            'appVersionName',
+            'appVersionCode'
           ])
           && (
             !request.resource.data.keys().hasAny(['preferredName'])
@@ -124,6 +152,77 @@ service cloud.firestore {
           && request.resource.data.email == request.auth.token.email
           && request.resource.data.emailVerified == request.auth.token.email_verified
           && request.resource.data.providerId == 'google.com'
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'lastActivityEvent',
+              'activityUpdatedAt',
+              'firstOpenedAt',
+              'lastOpenedAt',
+              'lastActiveAt',
+              'lastBackgroundAt',
+              'sessionStartedAt',
+              'appOpenCount',
+              'lastSessionDurationSeconds',
+              'totalForegroundSeconds',
+              'deviceManufacturer',
+              'deviceModel',
+              'androidVersion',
+              'sdkInt',
+              'appVersionName',
+              'appVersionCode'
+            ])
+            || (
+              resource.data.dataSharingConsent == true
+              && resource.data.activityDataConsentVersion == 4
+              && request.resource.data.activityDataConsentVersion == 4
+              && request.resource.data.lastActivityEvent in ['open', 'heartbeat', 'background']
+              && request.resource.data.activityUpdatedAt == request.time
+              && request.resource.data.deviceManufacturer is string
+              && request.resource.data.deviceManufacturer.size() <= 60
+              && request.resource.data.deviceModel is string
+              && request.resource.data.deviceModel.size() <= 100
+              && request.resource.data.androidVersion is string
+              && request.resource.data.androidVersion.size() <= 40
+              && request.resource.data.sdkInt is int
+              && request.resource.data.sdkInt >= 0
+              && request.resource.data.appVersionName is string
+              && request.resource.data.appVersionName.size() <= 40
+              && request.resource.data.appVersionCode is int
+              && request.resource.data.appVersionCode >= 0
+              && (
+                !request.resource.data.keys().hasAny(['appOpenCount'])
+                || request.resource.data.appOpenCount is int
+              )
+              && (
+                !request.resource.data.keys().hasAny(['totalForegroundSeconds'])
+                || request.resource.data.totalForegroundSeconds is int
+              )
+              && (
+                !request.resource.data.keys().hasAny(['lastSessionDurationSeconds'])
+                || request.resource.data.lastSessionDurationSeconds is int
+              )
+              && (
+                !request.resource.data.keys().hasAny(['firstOpenedAt'])
+                || request.resource.data.firstOpenedAt is timestamp
+              )
+              && (
+                !request.resource.data.keys().hasAny(['lastOpenedAt'])
+                || request.resource.data.lastOpenedAt is timestamp
+              )
+              && (
+                !request.resource.data.keys().hasAny(['lastActiveAt'])
+                || request.resource.data.lastActiveAt is timestamp
+              )
+              && (
+                !request.resource.data.keys().hasAny(['lastBackgroundAt'])
+                || request.resource.data.lastBackgroundAt is timestamp
+              )
+              && (
+                !request.resource.data.keys().hasAny(['sessionStartedAt'])
+                || request.resource.data.sessionStartedAt is timestamp
+              )
+            )
+          )
           && request.resource.data.createdAt == resource.data.createdAt
         );
 
@@ -194,7 +293,7 @@ service cloud.firestore {
         )
         && request.resource.data.photoUrl is string
         && request.resource.data.photoUrl.size() <= 1000
-        && request.resource.data.type in ['text', 'image', 'file', 'json']
+        && request.resource.data.type in ['text', 'json']
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 2000
         && request.resource.data.fileName is string
@@ -324,38 +423,7 @@ service cloud.firestore {
     match /app_updates/{updateId} {
       allow get, list: if signedIn();
 
-      allow create: if isOwner()
-        && request.resource.data.keys().hasOnly([
-          'versionName',
-          'notes',
-          'fileName',
-          'storagePath',
-          'downloadUrl',
-          'fileSize',
-          'createdBy',
-          'notifyUsers',
-          'createdAt'
-        ])
-        && request.resource.data.versionName is string
-        && request.resource.data.versionName.size() > 0
-        && request.resource.data.versionName.size() <= 40
-        && request.resource.data.notes is string
-        && request.resource.data.notes.size() <= 3000
-        && request.resource.data.fileName is string
-        && request.resource.data.fileName.matches('.*\\.apk')
-        && request.resource.data.storagePath is string
-        && request.resource.data.storagePath.matches('updates/.*')
-        && request.resource.data.downloadUrl is string
-        && request.resource.data.downloadUrl.matches('https://.*')
-        && request.resource.data.fileSize is int
-        && request.resource.data.fileSize > 0
-        && request.resource.data.fileSize <= 150 * 1024 * 1024
-        && request.resource.data.createdBy == request.auth.uid
-        && (
-          !request.resource.data.keys().hasAny(['notifyUsers'])
-          || request.resource.data.notifyUsers is bool
-        )
-        && request.resource.data.createdAt == request.time;
+      allow create: if false;
 
       allow update: if isOwner();
       allow delete: if isOwner()
