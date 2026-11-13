@@ -573,6 +573,20 @@ fun ClashLookupScreen() {
             ) { Text("TOP GIẢI ĐẤU") }
             OutlinedButton(
                 onClick = {
+                    if (townHall != null && leagueTier != null) {
+                        loadAction(
+                            ClashLookupAction(
+                                "Thống kê Ranked TH$townHall – Giải $leagueTier",
+                                "/v2/stats/ranked?townHallLevel=$townHall&leagueTierId=$leagueTier"
+                            )
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !detailLoading && townHall != null && townHall in 1..20 && leagueTier != null && leagueTier > 0
+            ) { Text("THỐNG KÊ RANKED THEO NHÀ CHÍNH & GIẢI") }
+            OutlinedButton(
+                onClick = {
                     leagueTier?.let {
                         loadAction(ClashLookupAction("Phân bố cúp giải đấu $it", "/v2/leaderboard/$it/trophy-buckets"))
                     }
@@ -656,14 +670,13 @@ private fun globalClashActions(): List<ClashLookupAction> = listOf(
     ClashLookupAction("Số lượng Clan theo CWL", "/v2/counts/clans/cwl-leagues"),
     ClashLookupAction("Số lượng Clan theo giải thủ đô", "/v2/counts/clans/capital-leagues"),
     ClashLookupAction("Phân bố quy mô Clan", "/v2/counts/clans/member-bins"),
-    ClashLookupAction("Số lượng Nhà thợ", "/v2/counts/players/builder-halls"),
     ClashLookupAction("Lịch mùa giải hiện tại", "/v2/dates/current"),
     ClashLookupAction("Lịch cuối tuần đột kích", "/v2/dates/raid-weekends"),
     ClashLookupAction("Lịch các mùa giải", "/v2/dates/seasons"),
     ClashLookupAction("Top chuỗi thắng Clan", "/v2/leaderboard/clan/win-streak?limit=50"),
     ClashLookupAction("Tỷ lệ sao chiến tranh", "/v2/stats/wars/hitrates?interval=month"),
     ClashLookupAction("Tổng kết chiến tranh", "/v2/stats/wars/summary?interval=month"),
-    ClashLookupAction("Thống kê ranked", "/v2/stats/ranked"),
+    ClashLookupAction("Hiệu suất chiến tranh", "/v2/stats/war"),
     ClashLookupAction("Thống kê CWL", "/v2/stats/cwl"),
     ClashLookupAction("Tỷ lệ đánh theo giải", "/v2/stats/league/hit-rates"),
     ClashLookupAction("Hiệu suất Legend", "/v2/stats/legend/performance?cohort=observed"),
