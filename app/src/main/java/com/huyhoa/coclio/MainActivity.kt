@@ -1421,13 +1421,25 @@ private fun CocLioApp(
                         lineHeight = 15.sp
                     )
                     Text(
-                        "Lựa chọn được lưu cùng tài khoản, thời điểm máy chủ ghi nhận và phiên bản thông báo. Bạn có thể đổi hoặc rút lại bất cứ lúc nào trong Cài đặt. Khi rút lại, COC-LIO dừng thu thập mới cho mục đó; yêu cầu xem, sửa hoặc xóa dữ liệu đã lưu có thể gửi đến phunghuyhoahaikba@gmail.com. Dữ liệu bổ sung đã thu thập trước khi rút lại không tự động bị xóa.",
+                        "Lựa chọn được lưu cùng tài khoản, thời điểm máy chủ ghi nhận và phiên bản thông báo. Bạn có thể đổi hoặc rút lại bất cứ lúc nào trong Cài đặt. Khi rút lại, COC-LIO dừng thu thập mới cho mục đó; dữ liệu đã ghi trước đó không tự động bị xóa. Bạn có quyền yêu cầu truy cập, chỉnh sửa, hạn chế xử lý hoặc xóa dữ liệu cá nhân theo quy định.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
                     )
                     Text(
-                        "Đơn vị quản lý ứng dụng: COC-LIO. Dịch vụ xử lý/lưu trữ sử dụng Google Firebase. Chính sách áp dụng theo quy định bảo vệ dữ liệu cá nhân hiện hành.",
+                        "THỜI GIAN LƯU TRỮ VÀ ĐƠN VỊ XỬ LÝ",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        "Hồ sơ tài khoản và dữ liệu hoạt động lưu trong Firestore được giữ khi tài khoản còn hoạt động hoặc đến khi yêu cầu xóa hợp lệ được xử lý; hiện ứng dụng không tự động xóa dữ liệu hoạt động theo một số ngày cố định. Dữ liệu do Firebase Analytics, Crashlytics và Performance xử lý tuân theo cấu hình và chính sách lưu trữ của dịch vụ Google Firebase. Nội dung cộng đồng bạn tự gửi được lưu để cung cấp tính năng tương ứng và có thể được quản lý theo chức năng xóa trong ứng dụng.",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 9.sp,
+                        lineHeight = 13.sp
+                    )
+                    Text(
+                        "Bên vận hành/đầu mối tiếp nhận yêu cầu dữ liệu: COC-LIO, email phunghuyhoahaikba@gmail.com. Dịch vụ xử lý/lưu trữ kỹ thuật: Google Firebase. Bạn có thể gửi yêu cầu xem, sửa, rút lại đồng ý, hạn chế xử lý hoặc xóa dữ liệu qua email trên. Việc rút lại không làm mất hiệu lực xử lý đã thực hiện hợp pháp trước thời điểm rút lại.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
