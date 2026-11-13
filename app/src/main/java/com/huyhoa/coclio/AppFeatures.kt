@@ -84,6 +84,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text as MaterialText
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -2824,15 +2825,15 @@ private fun ensureCommunityBubbleShortcut(context: Context) {
         val shortcutManager = context.getSystemService(ShortcutManager::class.java)
         val bubbleIntent = Intent(context, CocLioBubbleActivity::class.java).setAction(Intent.ACTION_VIEW)
         val shortcut = ShortcutInfo.Builder(context, COC_LIO_COMMUNITY_SHORTCUT)
-            .setShortLabel("Cộng đồng")
-            .setLongLabel("Cộng đồng COC-LIO")
+            .setShortLabel(AppLanguageSettings.translate(context, "Cộng đồng"))
+            .setLongLabel(AppLanguageSettings.translate(context, "Cộng đồng COC-LIO"))
             .setIcon(Icon.createWithResource(context, android.R.drawable.sym_action_chat))
             .setIntent(bubbleIntent)
             .setLongLived(true)
             .setCategories(setOf("android.shortcut.conversation"))
             .setPerson(
                 android.app.Person.Builder()
-                    .setName("Cộng đồng COC-LIO")
+                    .setName(AppLanguageSettings.translate(context, "Cộng đồng COC-LIO"))
                     .setKey(COC_LIO_COMMUNITY_SHORTCUT)
                     .setImportant(true)
                     .build()
@@ -2849,16 +2850,16 @@ class CocLioMessagingService : FirebaseMessagingService() {
         val isCommunity = type == "community_message"
         if (isCommunity && FirebaseAuth.getInstance().currentUser?.uid == data["senderUid"]) return
         val channelId = if (isCommunity) COC_LIO_COMMUNITY_CHANNEL else COC_LIO_UPDATE_CHANNEL
-        val title = data["title"] ?: if (isCommunity) "Cộng đồng COC-LIO" else "COC-LIO có bản cập nhật"
-        val body = data["body"] ?: if (isCommunity) "Có tin nhắn mới trong cộng đồng." else "Có phiên bản APK mới."
+        val title = data["title"] ?: AppLanguageSettings.translate(this, if (isCommunity) "Cộng đồng COC-LIO" else "COC-LIO có bản cập nhật")
+        val body = data["body"] ?: AppLanguageSettings.translate(this, if (isCommunity) "Có tin nhắn mới trong cộng đồng." else "Có phiên bản APK mới.")
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager.getNotificationChannel(channelId) == null) {
             val channel = NotificationChannel(
                 channelId,
-                if (isCommunity) "Tin nhắn cộng đồng" else "Bản cập nhật COC-LIO",
+                AppLanguageSettings.translate(this, if (isCommunity) "Tin nhắn cộng đồng" else "Bản cập nhật COC-LIO"),
                 NotificationManager.IMPORTANCE_HIGH
             )
-            channel.description = if (isCommunity) "Thông báo tin nhắn mới trong cộng đồng COC-LIO" else "Thông báo khi quản lý chọn gửi tin bản cập nhật"
+            channel.description = AppLanguageSettings.translate(this, if (isCommunity) "Thông báo tin nhắn mới trong cộng đồng COC-LIO" else "Thông báo khi quản lý chọn gửi tin bản cập nhật")
             if (isCommunity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) channel.setAllowBubbles(true)
             manager.createNotificationChannel(channel)
         }
@@ -2872,12 +2873,12 @@ class CocLioMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val senderPerson = androidx.core.app.Person.Builder()
-            .setName(data["senderName"] ?: "Thành viên")
+            .setName(data["senderName"] ?: AppLanguageSettings.translate(this, "Thành viên"))
             .setKey(data["senderUid"] ?: "community")
             .setImportant(true)
             .build()
         val currentPerson = androidx.core.app.Person.Builder()
-            .setName("Bạn")
+            .setName(AppLanguageSettings.translate(this, "Bạn"))
             .setKey("coc-lio-current-user")
             .build()
         val builder = NotificationCompat.Builder(this, channelId)
@@ -2926,11 +2927,16 @@ class CocLioMessagingService : FirebaseMessagingService() {
 class CocLioBubbleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val title = intent.getStringExtra("bubble_title") ?: "Cộng đồng COC-LIO"
-        val body = intent.getStringExtra("bubble_body") ?: "Thông báo mới trong cộng đồng."
+        val title = intent.getStringExtra("bubble_title") ?: AppLanguageSettings.translate(this, "Cộng đồng COC-LIO")
+        val body = intent.getStringExtra("bubble_body") ?: AppLanguageSettings.translate(this, "Thông báo mới trong cộng đồng.")
+        val language = AppLanguageSettings.resolve(
+            AppLanguageSettings.load(this),
+            resources.configuration.locales[0].language
+        )
         setContent {
-            MaterialTheme {
-                androidx.compose.material3.Surface(
+            CompositionLocalProvider(LocalAppLanguage provides language) {
+                MaterialTheme {
+                    androidx.compose.material3.Surface(
                     modifier = androidx.compose.ui.Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.surface
                 ) {
@@ -2949,6 +2955,7 @@ class CocLioBubbleActivity : ComponentActivity() {
                             },
                             modifier = androidx.compose.ui.Modifier.fillMaxWidth()
                         ) { Text("MỞ COC-LIO") }
+                    }
                     }
                 }
             }
