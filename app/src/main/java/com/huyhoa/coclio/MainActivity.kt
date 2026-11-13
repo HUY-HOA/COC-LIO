@@ -2081,7 +2081,7 @@ private fun BuildingsAndArmyScreen(snapshot: VillageSnapshot) {
                         modifier = Modifier.weight(1f),
                         label = {
                             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text(if (base == "home") "NHÀ CHÍNH" else "LÀNG ĐÊM", fontSize = 10.sp, maxLines = 1)
+                                Text(if (base == "home") "NHÀ CHÍNH" else "CĂN CỨ THỢ XÂY", fontSize = 10.sp, maxLines = 1)
                             }
                         }
                     )
@@ -2175,11 +2175,11 @@ private fun CategoryScreen(
     } else {
         listOf(
             "all" to "Tất cả",
-            "troops" to "Quân",
+            "troops" to "Quân đội",
             "heroes" to "Anh hùng",
             "spells" to "Thần chú",
-            "pets" to "Thú cưng",
-            "equipment" to "Trang bị",
+            "pets" to "Linh thú",
+            "equipment" to "Trang bị anh hùng",
             "other" to "Khác"
         ).filter { (key, _) ->
             key == "all" || baseItems.any { armyCategory(it) == key }
