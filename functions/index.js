@@ -148,16 +148,6 @@ exports.recordAccountActivity = onCall({ region: REGION }, async (request) => {
   update.sdkInt = safeInteger(data.sdkInt, 1000);
   update.appVersionCode = safeInteger(data.appVersionCode, 2147483647);
 
-  const headers = request.rawRequest?.headers || {};
-  const forwardedIp = String(headers["x-forwarded-for"] || "")
-    .split(",")[0]
-    .trim();
-  const ip = String(request.rawRequest?.ip || forwardedIp).trim().slice(0, 80);
-  if (ip) {
-    update.lastIp = ip;
-    update.lastIpCapturedAt = admin.firestore.FieldValue.serverTimestamp();
-  }
-
   if (event === "open") {
     if (!profile.get("firstOpenedAt")) {
       update.firstOpenedAt = admin.firestore.FieldValue.serverTimestamp();
