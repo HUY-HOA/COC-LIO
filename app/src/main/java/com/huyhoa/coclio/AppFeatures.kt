@@ -1291,12 +1291,32 @@ class UpgradeReminderWorker(
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val levelText = if (level >= 0) {
-            if (gearUp) "Cấp $level • GEAR-UP" else "Cấp $level → ${level + 1}"
-        } else {
-            if (gearUp) "GEAR-UP" else "Chưa rõ cấp độ"
-        }
-        val baseText = if (base == "builder") "Làng đêm" else "Nhà chính"
+        val levelText = AppLanguageSettings.translate(
+            applicationContext,
+            if (level >= 0) {
+                if (gearUp) "Cấp $level • GEAR-UP" else "Cấp $level → ${level + 1}"
+            } else {
+                if (gearUp) "GEAR-UP" else "Chưa rõ cấp độ"
+            }
+        )
+        val baseText = AppLanguageSettings.translate(
+            applicationContext,
+            if (base == "builder") "Làng đêm" else "Nhà chính"
+        )
+        val localizedItem = AppLanguageSettings.translate(applicationContext, item)
+        val localizedSection = AppLanguageSettings.translate(applicationContext, section)
+        val notificationBody = listOf(
+            "${AppLanguageSettings.translate(applicationContext, "Làng")}: $villageName ($tag)",
+            "${AppLanguageSettings.translate(applicationContext, "Căn cứ")}: $baseText",
+            "${AppLanguageSettings.translate(applicationContext, "Nhóm")}: $localizedSection",
+            "${AppLanguageSettings.translate(applicationContext, "Công trình")}: $localizedItem",
+            "ID: $dataId",
+            "${AppLanguageSettings.translate(applicationContext, "Dự kiến")}: $levelText",
+            AppLanguageSettings.translate(
+                applicationContext,
+                "Bộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
+            )
+        ).joinToString("\n")
         val gameIntent = applicationContext.packageManager
             .getLaunchIntentForPackage("com.supercell.clashofclans")
             ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -1311,13 +1331,9 @@ class UpgradeReminderWorker(
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
-            .setContentTitle("Đến giờ hoàn thành • $item")
+            .setContentTitle(AppLanguageSettings.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem")
             .setContentText("$villageName • ID $dataId • $levelText")
-            .setStyle(
-                NotificationCompat.BigTextStyle().bigText(
-                    "Làng: $villageName ($tag)\nCăn cứ: $baseText\nNhóm: $section\nCông trình: $item\nID: $dataId\nDự kiến: $levelText\nBộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
-                )
-            )
+            .setStyle(NotificationCompat.BigTextStyle().bigText(notificationBody))
             .setContentIntent(pendingIntent)
             .setAutoCancel(!alarmStyle)
             .setOngoing(alarmStyle)
@@ -1331,7 +1347,7 @@ class UpgradeReminderWorker(
                 gameIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            notificationBuilder.addAction(android.R.drawable.ic_media_play, "MỞ GAME", gamePendingIntent)
+            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(applicationContext, "MỞ GAME"), gamePendingIntent)
         }
         if (iconBitmap != null) notificationBuilder.setLargeIcon(iconBitmap)
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle, alarmDurationSeconds)
@@ -1374,17 +1390,20 @@ object UpgradeNotificationTester {
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val title = "COC-LIO • Thử thông báo"
-        val message = if (alarmStyle) {
-            "Đây là thông báo thử kiểu báo thức. Âm thanh và rung phụ thuộc cài đặt thông báo của Android."
-        } else {
-            "Đây là thông báo thử kiểu tin nhắn. Thông báo nâng cấp thật sẽ xuất hiện khi bộ đếm kết thúc."
-        }
+        val title = AppLanguageSettings.translate(context, "COC-LIO • Thử thông báo")
+        val message = AppLanguageSettings.translate(
+            context,
+            if (alarmStyle) {
+                "Đây là thông báo thử kiểu báo thức. Âm thanh và rung phụ thuộc cài đặt thông báo của Android."
+            } else {
+                "Đây là thông báo thử kiểu tin nhắn. Thông báo nâng cấp thật sẽ xuất hiện khi bộ đếm kết thúc."
+            }
+        )
         val notificationBuilder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
             .setContentTitle(title)
-            .setContentText(if (alarmStyle) "Đang thử kiểu báo thức" else "Đang thử kiểu tin nhắn")
+            .setContentText(AppLanguageSettings.translate(context, if (alarmStyle) "Đang thử kiểu báo thức" else "Đang thử kiểu tin nhắn"))
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setContentIntent(pendingIntent)
             .setAutoCancel(!alarmStyle)
@@ -1401,7 +1420,7 @@ object UpgradeNotificationTester {
                 gameIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            notificationBuilder.addAction(android.R.drawable.ic_media_play, "MỞ GAME", gamePendingIntent)
+            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(context, "MỞ GAME"), gamePendingIntent)
         }
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle, alarmDurationSeconds)
         if (alarmStyle) notificationBuilder.setTimeoutAfter(alarmDurationSeconds * 1_000L)
@@ -2840,7 +2859,7 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                 }
                 onDrawBehind {
                     val brush = if (led.enabled && led.speedMillis > 0) {
-                        val progress = (led.progress.value * (20000f / led.speedMillis)).rem(1f)
+                        val progress = led.progress.value.rem(1f)
                         val intervals = palette.size - 1
                         val colors = List(32) { index ->
                             val position = ((index / 32f - progress + 1f) % 1f) * intervals
