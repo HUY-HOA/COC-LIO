@@ -123,7 +123,6 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -2775,14 +2774,6 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
         verticalArrangement = Arrangement.spacedBy(7.dp),
         content = content
     )
-}
-
-object CocLioPushSubscriptions {
-    fun sync(communityEnabled: Boolean, updatesEnabled: Boolean) {
-        val messaging = FirebaseMessaging.getInstance()
-        messaging.unsubscribeFromTopic("coc_lio_community")
-        messaging.unsubscribeFromTopic("coc_lio_updates")
-    }
 }
 
 private const val COC_LIO_COMMUNITY_CHANNEL = "coc_lio_community_messages"
