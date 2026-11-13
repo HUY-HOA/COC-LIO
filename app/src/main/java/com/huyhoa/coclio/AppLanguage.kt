@@ -510,7 +510,7 @@ private val englishTranslations = mapOf(
     "Để hiện bong bóng, hãy bật Bong bóng trong cài đặt thông báo Android hoặc nhấn giữ thông báo tin nhắn cộng đồng rồi chọn hiển thị dạng bong bóng." to "To show chat bubbles, enable Bubbles in Android notification settings or long-press a community message notification and choose to show it as a bubble.",
     "Thần chú" to "SPELLS",
     "Nhà máy Thần chú" to "Spell Factory",
-    "Nhà máy Hắc Thần chú" to "Dark Spell Factory",
+    "Nhà máy Thần chú Hắc ám" to "Dark Spell Factory",
     "Tháp Thần chú" to "Spell Tower",
     "Thần chú Sấm sét" to "Lightning Spell",
     "Thần chú Hồi máu" to "Healing Spell",
