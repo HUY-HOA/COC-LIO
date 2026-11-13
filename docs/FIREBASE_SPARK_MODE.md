@@ -11,12 +11,12 @@ COC-LIO is configured to run without Firebase Blaze billing.
 - The owner account list, profile details, and consent-based activity/device fields written directly by the app.
 - Local village data and other on-device features.
 
-Firestore activity/device fields are client-reported. They are not server-verified audit records. New IP addresses are not collected in Spark mode; IP values recorded before the transition may remain in existing Firestore profiles until deleted. Activity reporting runs only after the user has opted in.
+Firestore activity/device fields are client-reported. They are not server-verified audit records. The app does not collect IP addresses. When the owner opens the account list, any legacy `lastIp` and `lastIpCapturedAt` fields still present in user profiles are deleted. Activity reporting runs only after the user has opted in. The current Android manifest requests Internet, network-state, and notification permissions only; it does not request location, contacts, call logs, SMS, or phone-state access.
 
 ## Features paused on Spark
 
 - Cloud Functions are not deployed or called by the Android app.
-- Automatic push notifications for community messages and app releases are paused. Firebase Cloud Messaging itself remains in the project, but the server-side notification triggers are not available.
+- Automatic push notifications for community messages and app releases are paused. Firebase Cloud Messaging auto-initialization is disabled in the Android manifest, so new APK installs do not automatically register an FCM token while this feature is unavailable. This does not erase a token that an older APK may already have registered.
 - Uploading or downloading community images, attachments, and APK releases through Firebase Storage is paused.
 - The owner cannot delete another user's Firebase Authentication account from the Android app. The app can mark that user's COC-LIO Firestore profile as disabled. This blocks access to Firestore-protected COC-LIO features, but does not delete the Authentication account or automatically erase the user's other data.
 - The owner account list is based on Firestore profile documents. Without the server-side Auth user-list sync, stale profiles can remain after an Auth account is deleted separately.
