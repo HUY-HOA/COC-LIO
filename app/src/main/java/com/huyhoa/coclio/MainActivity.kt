@@ -87,7 +87,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import androidx.compose.material3.Text as MaterialText
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Surface
@@ -422,6 +422,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             var themeMode by remember { mutableStateOf(AppPreferences.themeMode(this@MainActivity)) }
+            var languagePreference by remember { mutableStateOf(AppLanguageSettings.load(this@MainActivity)) }
+            val deviceLanguage = LocalConfiguration.current.locales[0].language
             val dark = when (themeMode) {
                 "light" -> false
                 "dark" -> true
@@ -454,14 +456,23 @@ class MainActivity : ComponentActivity() {
                     onSurfaceVariant = Color(0xFF526176)
                 )
             }
-            MaterialTheme(colorScheme = colors) {
-                CocLioApp(
-                    themeMode = themeMode,
-                    onThemeModeChanged = {
-                        themeMode = it
-                        AppPreferences.setThemeMode(this@MainActivity, it)
-                    }
-                )
+            CompositionLocalProvider(
+                LocalAppLanguage provides AppLanguageSettings.resolve(languagePreference, deviceLanguage)
+            ) {
+                MaterialTheme(colorScheme = colors) {
+                    CocLioApp(
+                        languagePreference = languagePreference,
+                        onLanguagePreferenceChanged = { preference ->
+                            AppLanguageSettings.save(this@MainActivity, preference)
+                            languagePreference = preference
+                        },
+                        themeMode = themeMode,
+                        onThemeModeChanged = {
+                            themeMode = it
+                            AppPreferences.setThemeMode(this@MainActivity, it)
+                        }
+                    )
+                }
             }
         }
     }
@@ -469,6 +480,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun CocLioApp(
+    languagePreference: String,
+    onLanguagePreferenceChanged: (String) -> Unit,
     themeMode: String,
     onThemeModeChanged: (String) -> Unit
 ) {
@@ -1227,6 +1240,8 @@ private fun CocLioApp(
                         knownProfiles = AccountProfileStore.knownProfiles(context, activeProfile),
                         themeMode = themeMode,
                         onThemeModeChanged = onThemeModeChanged,
+                        languagePreference = languagePreference,
+                        onLanguagePreferenceChanged = onLanguagePreferenceChanged,
                         textScale = appFontScale,
                         displaySizeLevel = displaySizeLevel,
                         onDisplaySizeLevelChanged = { level ->
