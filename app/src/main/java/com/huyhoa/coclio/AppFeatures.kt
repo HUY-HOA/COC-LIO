@@ -1611,8 +1611,10 @@ private class UpgradeWidgetListFactory(
         }
         views.setTextViewText(
             R.id.row_title,
-            if (remaining > 0L) "$levelText • $progressPercent%"
-            else levelText
+            AppLanguageSettings.translate(
+                context,
+                if (remaining > 0L) "$levelText • $progressPercent%" else levelText
+            )
         )
         views.setTextViewTextSize(
             R.id.row_timer,
@@ -1660,7 +1662,7 @@ private class UpgradeWidgetListFactory(
         } else {
             views.setChronometerCountDown(R.id.row_timer, false)
             views.setChronometer(R.id.row_timer, SystemClock.elapsedRealtime(), "%s", false)
-            views.setTextViewText(R.id.row_timer, "HOÀN THÀNH")
+            views.setTextViewText(R.id.row_timer, AppLanguageSettings.translate(context, "HOÀN THÀNH"))
         }
         return views
     }
@@ -1674,9 +1676,9 @@ private class UpgradeWidgetListFactory(
     override fun getLoadingView(): RemoteViews? {
         return RemoteViews(context.packageName, R.layout.widget_upgrade_row).apply {
             setViewVisibility(R.id.row_icon, View.GONE)
-            setTextViewText(R.id.row_title, "Đang tải danh sách nâng cấp…")
+            setTextViewText(R.id.row_title, AppLanguageSettings.translate(context, "Đang tải danh sách nâng cấp…"))
             setTextViewText(R.id.row_subtitle, "COC-LIO")
-            setTextViewText(R.id.row_timer, "ĐANG CẬP NHẬT")
+            setTextViewText(R.id.row_timer, AppLanguageSettings.translate(context, "ĐANG CẬP NHẬT"))
             setProgressBar(R.id.row_progress, 100, 0, false)
         }
     }
@@ -1739,20 +1741,20 @@ object AppWidgetUpdater {
             (builderTotal - snapshot.homeBuildersBusyAt(nowSeconds)).coerceAtLeast(0)
         views.setTextViewText(
             R.id.widget_village,
-            if (snapshot == null) "COC-LIO • Chưa có dữ liệu"
+            if (snapshot == null) "COC-LIO • " + AppLanguageSettings.translate(context, "Chưa có dữ liệu")
             else (snapshot.villageName ?: snapshot.tag) +
                 (if (snapshot.villageName.isNullOrBlank()) "" else " • " + snapshot.tag) +
                 " • TH" + (snapshot.townHallLevel ?: "—") +
-                (if (builderTotal == null) "" else " • Thợ rảnh $buildersFree/$builderTotal")
+                (if (builderTotal == null) "" else " • " + AppLanguageSettings.translate(context, "Thợ rảnh") + " $buildersFree/$builderTotal")
         )
         views.setTextViewText(
             R.id.widget_status,
             when {
-                snapshot == null -> "Mở ứng dụng và nhập dữ liệu JSON"
-                activeCount == 0 && expiredCount == 0 -> "Không có mục nào đang nâng cấp"
-                activeCount > 0 && expiredCount > 0 -> "$activeCount đang nâng • $expiredCount hoàn thành"
-                activeCount > 0 -> "$activeCount mục đang nâng cấp"
-                else -> "$expiredCount hoàn thành • chờ JSON mới"
+                snapshot == null -> AppLanguageSettings.translate(context, "Mở ứng dụng và nhập dữ liệu JSON")
+                activeCount == 0 && expiredCount == 0 -> AppLanguageSettings.translate(context, "Không có mục nào đang nâng cấp")
+                activeCount > 0 && expiredCount > 0 -> "$activeCount " + AppLanguageSettings.translate(context, "đang nâng") + " • $expiredCount " + AppLanguageSettings.translate(context, "hoàn thành")
+                activeCount > 0 -> "$activeCount " + AppLanguageSettings.translate(context, "mục đang nâng cấp")
+                else -> "$expiredCount " + AppLanguageSettings.translate(context, "hoàn thành • chờ JSON mới")
             }
         )
 
@@ -1797,6 +1799,13 @@ class UpgradeWidgetProvider : AppWidgetProvider() {
         AppWidgetUpdater.ensureRefresh(context)
     }
 
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == Intent.ACTION_LOCALE_CHANGED) {
+            AppWidgetUpdater.updateAll(context)
+        }
+    }
+
     override fun onAppWidgetOptionsChanged(
         context: Context,
         manager: AppWidgetManager,
@@ -1824,9 +1833,9 @@ class UpgradeWidgetConfigActivity : Activity() {
         val villages = VillageStore.loadAll(this, profile).distinctBy { it.tag }
         if (villages.isEmpty()) {
             AlertDialog.Builder(this)
-                .setTitle("Chưa có làng để theo dõi")
-                .setMessage("Hãy mở COC-LIO, đăng nhập tài khoản cần dùng (nếu có), nhập JSON ít nhất một lần rồi thêm tiện ích.")
-                .setPositiveButton("Đóng") { _, _ -> finish() }
+                .setTitle(AppLanguageSettings.translate(this, "Chưa có làng để theo dõi"))
+                .setMessage(AppLanguageSettings.translate(this, "Hãy mở COC-LIO, đăng nhập tài khoản cần dùng (nếu có), nhập JSON ít nhất một lần rồi thêm tiện ích."))
+                .setPositiveButton(AppLanguageSettings.translate(this, "Đóng")) { _, _ -> finish() }
                 .show()
             return
         }
@@ -1834,10 +1843,10 @@ class UpgradeWidgetConfigActivity : Activity() {
         val labels = villages.map {
             (it.villageName?.takeIf { name -> name.isNotBlank() } ?: it.tag) +
                 (if (it.villageName.isNullOrBlank()) "" else " • " + it.tag) +
-                " • Nhà chính " + (it.townHallLevel ?: "—")
+                " • " + AppLanguageSettings.translate(this, "Nhà chính") + " " + (it.townHallLevel ?: "—")
         }.toTypedArray()
         AlertDialog.Builder(this)
-            .setTitle("Chọn làng cho tiện ích")
+            .setTitle(AppLanguageSettings.translate(this, "Chọn làng cho tiện ích"))
             .setItems(labels) { _, which ->
                 getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
                     .edit()
