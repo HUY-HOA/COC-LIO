@@ -2001,7 +2001,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, showBase: Bo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         levelText,
-                        color = if (remaining == 0L) CocGreen else MaterialTheme.colorScheme.onSurface,
+                        color = if (remaining == 0L) CocGold else MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Black,
                         fontSize = 15.sp,
                         maxLines = 1,
