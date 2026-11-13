@@ -371,6 +371,9 @@ fun CommunityScreen(
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
+    var autoTranslationEnabled by remember {
+        mutableStateOf(CommunityAutoTranslationPreferences.isEnabled(context))
+    }
     val scope = rememberCoroutineScope()
     val user = FirebaseAuth.getInstance().currentUser?.takeIf { isGoogleSignedIn }
     val isOwner = FirebaseAccountAdministration.isOwner(user?.email)
@@ -627,7 +630,16 @@ fun CommunityScreen(
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("CỘNG ĐỒNG COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
             Text("Trò chuyện, chia sẻ hình ảnh và cập nhật COC-LIO cùng mọi thành viên.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-            Text("Tin nhắn và ghi chú cập nhật được tự động dịch theo ngôn ngữ ứng dụng khi có thể; bản gốc vẫn được giữ.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Tự động dịch", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                Switch(
+                    checked = autoTranslationEnabled,
+                    onCheckedChange = {
+                        autoTranslationEnabled = it
+                        CommunityAutoTranslationPreferences.setEnabled(context, it)
+                    }
+                )
+            }
         }
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -1359,7 +1371,8 @@ private fun CommunityMessageCard(
                         CommunityAutoTranslatedText(
                             sourceText = message.text,
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            enabled = autoTranslationEnabled
                         )
                     } else {
                         Text(message.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
@@ -1487,7 +1500,8 @@ private fun CommunityArchiveCard(
                     CommunityAutoTranslatedText(
                         sourceText = item.notes,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp
+                        fontSize = 10.sp,
+                        enabled = autoTranslationEnabled
                     )
                 }
             } else {
@@ -1499,7 +1513,8 @@ private fun CommunityArchiveCard(
                         CommunityAutoTranslatedText(
                             sourceText = item.text,
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 11.sp
+                            fontSize = 11.sp,
+                            enabled = autoTranslationEnabled
                         )
                     } else {
                         Text(item.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
@@ -1556,7 +1571,8 @@ private fun CommunityReleaseCard(
                 CommunityAutoTranslatedText(
                     sourceText = release.notes,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 11.sp
+                    fontSize = 11.sp,
+                    enabled = autoTranslationEnabled
                 )
             }
             Text(
