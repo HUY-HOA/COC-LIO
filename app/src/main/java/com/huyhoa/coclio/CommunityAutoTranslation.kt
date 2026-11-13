@@ -29,6 +29,21 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+object CommunityAutoTranslationPreferences {
+    private const val PREFS = "coc_lio_community_translation"
+    private const val KEY_ENABLED = "enabled"
+
+    fun isEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, false)
+
+    fun setEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_ENABLED, enabled)
+            .apply()
+    }
+}
+
 private object CommunityTranslationEngine {
     private val mutex = Mutex()
     private val languageIdentifier = LanguageIdentification.getClient(
@@ -79,6 +94,7 @@ private object CommunityTranslationEngine {
 }
 
 suspend fun translateCommunityTextForApp(context: Context, sourceText: String): String? {
+    if (!CommunityAutoTranslationPreferences.isEnabled(context)) return null
     val systemLanguage = context.resources.configuration.locales[0].language
     val targetTag = when (AppLanguageSettings.resolve(AppLanguageSettings.load(context), systemLanguage)) {
         AppUiLanguage.VIETNAMESE -> "vi"
@@ -107,7 +123,8 @@ fun CommunityAutoTranslatedText(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onSurface,
     fontSize: TextUnit = 12.sp,
-    maxLines: Int = Int.MAX_VALUE
+    maxLines: Int = Int.MAX_VALUE,
+    enabled: Boolean = false
 ) {
     val targetTag = when (LocalAppLanguage.current) {
         AppUiLanguage.VIETNAMESE -> "vi"
@@ -116,10 +133,10 @@ fun CommunityAutoTranslatedText(
     var translatedText by remember(sourceText, targetTag) { mutableStateOf<String?>(null) }
     var translating by remember(sourceText, targetTag) { mutableStateOf(false) }
 
-    LaunchedEffect(sourceText, targetTag) {
+    LaunchedEffect(sourceText, targetTag, enabled) {
         translatedText = null
-        translating = sourceText.isNotBlank() && sourceText.length <= 5000
-        if (translating) {
+        translating = enabled && sourceText.isNotBlank() && sourceText.length <= 5000
+        if (enabled && translating) {
             translatedText = CommunityTranslationEngine.translate(sourceText, targetTag)
             translating = false
         }
@@ -129,7 +146,7 @@ fun CommunityAutoTranslatedText(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        if (!translatedText.isNullOrBlank()) {
+        if (enabled && !translatedText.isNullOrBlank()) {
             Text(
                 translatedText.orEmpty(),
                 color = color,
@@ -139,11 +156,6 @@ fun CommunityAutoTranslatedText(
             Text(
                 "Bản dịch tự động",
                 color = MaterialTheme.colorScheme.tertiary,
-                fontSize = 8.sp
-            )
-            Text(
-                "Bản gốc",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 8.sp
             )
             Text(
