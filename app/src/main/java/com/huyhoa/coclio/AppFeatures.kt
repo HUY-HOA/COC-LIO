@@ -2354,11 +2354,20 @@ fun SettingsScreen(
         FeaturePanel {
             Text("GIAO DIỆN ỨNG DỤNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("system" to "Theo thiết bị", "light" to "Sáng", "dark" to "Tối").forEach { (mode, label) ->
+                listOf(
+                    Triple("system", "Theo thiết bị", "System"),
+                    Triple("light", "Sáng", "Light"),
+                    Triple("dark", "Tối", "Dark")
+                ).forEach { (mode, labelVi, labelEn) ->
                     FilterChip(
                         selected = themeMode == mode,
                         onClick = { onThemeModeChanged(mode) },
-                        label = { Text(label, fontSize = 10.sp) }
+                        label = {
+                            Text(
+                                if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) labelEn else labelVi,
+                                fontSize = 10.sp
+                            )
+                        }
                     )
                 }
             }
