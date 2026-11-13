@@ -452,8 +452,6 @@ data class AdminGoogleAccount(
     val appOpenCount: Long = 0L,
     val lastSessionDurationSeconds: Long = 0L,
     val totalForegroundSeconds: Long = 0L,
-    val lastIp: String = "",
-    val lastIpCapturedAt: Long = 0L,
     val deviceManufacturer: String = "",
     val deviceModel: String = "",
     val deviceBrand: String = "",
@@ -549,8 +547,6 @@ object FirebaseAccountAdministration {
                 appOpenCount = document.getLong("appOpenCount") ?: 0L,
                 lastSessionDurationSeconds = document.getLong("lastSessionDurationSeconds") ?: 0L,
                 totalForegroundSeconds = document.getLong("totalForegroundSeconds") ?: 0L,
-                lastIp = document.getString("lastIp").orEmpty(),
-                lastIpCapturedAt = document.getTimestamp("lastIpCapturedAt")?.toDate()?.time ?: 0L,
                 deviceManufacturer = document.getString("deviceManufacturer").orEmpty(),
                 deviceModel = document.getString("deviceModel").orEmpty(),
                 deviceBrand = document.getString("deviceBrand").orEmpty(),
@@ -588,6 +584,19 @@ object FirebaseAccountAdministration {
         val owner = FirebaseAuth.getInstance().currentUser
             ?.takeIf { isOwner(it.email) }
         if (owner != null) {
+            val legacyIpDocuments = result.documents.filter { document ->
+                document.contains("lastIp") || document.contains("lastIpCapturedAt")
+            }
+            for (chunk in legacyIpDocuments.chunked(400)) {
+                val batch = FirebaseFirestore.getInstance().batch()
+                for (document in chunk) {
+                    val legacyFields = mutableMapOf<String, Any>()
+                    if (document.contains("lastIp")) legacyFields["lastIp"] = FieldValue.delete()
+                    if (document.contains("lastIpCapturedAt")) legacyFields["lastIpCapturedAt"] = FieldValue.delete()
+                    if (legacyFields.isNotEmpty()) batch.update(document.reference, legacyFields)
+                }
+                if (chunk.isNotEmpty()) batch.commit().awaitFirebaseResult()
+            }
             val packageInfo = runCatching {
                 context.packageManager.getPackageInfo(context.packageName, 0)
             }.getOrNull()
@@ -2151,8 +2160,6 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 "Tổng thời gian hoạt động",
                                 if (account.totalForegroundSeconds > 0L) formatDuration(account.totalForegroundSeconds) else "Chưa ghi nhận"
                             )
-                            ProfileDataRow("IP lịch sử", account.lastIp.ifBlank { "Không thu thập IP trên Spark" })
-                            ProfileDataRow("Thời điểm ghi nhận IP lịch sử", if (account.lastIpCapturedAt > 0L) formatAdminAccountTime(account.lastIpCapturedAt) else "Không thu thập IP trên Spark")
                             ProfileDataRow(
                                 "Thiết bị",
                                 listOf(account.deviceManufacturer, account.deviceModel).filter { it.isNotBlank() }.joinToString(" ").ifBlank { "Chưa ghi nhận" }
