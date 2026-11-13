@@ -46,6 +46,7 @@ service cloud.firestore {
           'dataSharingConsent',
           'analyticsConsent',
           'diagnosticsConsent',
+          'villageDataConsent',
           'activityDataConsentVersion',
           'activityConsentAt',
           'signInCount',
@@ -71,6 +72,10 @@ service cloud.firestore {
           || request.resource.data.diagnosticsConsent is bool
         )
         && (
+          !request.resource.data.keys().hasAny(['villageDataConsent'])
+          || request.resource.data.villageDataConsent is bool
+        )
+        && (
           !request.resource.data.keys().hasAny(['activityDataConsentVersion'])
           || request.resource.data.activityDataConsentVersion is int
         );
@@ -90,6 +95,7 @@ service cloud.firestore {
             'dataSharingConsent',
             'analyticsConsent',
             'diagnosticsConsent',
+            'villageDataConsent',
             'activityDataConsentVersion',
             'activityConsentAt',
             'signInCount',
@@ -107,10 +113,28 @@ service cloud.firestore {
             'totalForegroundSeconds',
             'deviceManufacturer',
             'deviceModel',
+            'deviceBrand',
+            'deviceProduct',
+            'deviceCodeName',
+            'supportedAbis',
+            'localeTag',
+            'timeZoneId',
+            'screenWidthPx',
+            'screenHeightPx',
+            'densityDpi',
+            'networkType',
             'androidVersion',
             'sdkInt',
             'appVersionName',
-            'appVersionCode'
+            'appVersionCode',
+            'lastVillageTag',
+            'lastVillageName',
+            'lastVillageTimestamp',
+            'lastVillageTownHallLevel',
+            'lastVillageBuilderHallLevel',
+            'villageImportCount',
+            'lastVillageSyncedAt',
+            'lastVillageRawJsonBytes'
           ])
           && (
             !request.resource.data.keys().hasAny(['preferredName'])
@@ -133,6 +157,10 @@ service cloud.firestore {
             || request.resource.data.diagnosticsConsent is bool
           )
           && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['villageDataConsent'])
+            || request.resource.data.villageDataConsent is bool
+          )
+          && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['activityConsentAt'])
             || request.resource.data.activityConsentAt is timestamp
           )
@@ -141,11 +169,12 @@ service cloud.firestore {
               'dataSharingConsent',
               'analyticsConsent',
               'diagnosticsConsent',
+              'villageDataConsent',
               'activityDataConsentVersion',
               'activityConsentAt'
             ])
             || (
-              request.resource.data.activityDataConsentVersion == 5
+              request.resource.data.activityDataConsentVersion == 6
               && request.resource.data.activityConsentAt is timestamp
             )
           )
@@ -167,6 +196,16 @@ service cloud.firestore {
               'totalForegroundSeconds',
               'deviceManufacturer',
               'deviceModel',
+              'deviceBrand',
+              'deviceProduct',
+              'deviceCodeName',
+              'supportedAbis',
+              'localeTag',
+              'timeZoneId',
+              'screenWidthPx',
+              'screenHeightPx',
+              'densityDpi',
+              'networkType',
               'androidVersion',
               'sdkInt',
               'appVersionName',
@@ -174,14 +213,33 @@ service cloud.firestore {
             ])
             || (
               resource.data.dataSharingConsent == true
-              && resource.data.activityDataConsentVersion == 5
-              && request.resource.data.activityDataConsentVersion == 5
+              && resource.data.activityDataConsentVersion == 6
+              && request.resource.data.activityDataConsentVersion == 6
               && request.resource.data.lastActivityEvent in ['open', 'heartbeat', 'background']
               && request.resource.data.activityUpdatedAt == request.time
               && request.resource.data.deviceManufacturer is string
               && request.resource.data.deviceManufacturer.size() <= 60
               && request.resource.data.deviceModel is string
               && request.resource.data.deviceModel.size() <= 100
+              && request.resource.data.deviceBrand is string
+              && request.resource.data.deviceBrand.size() <= 60
+              && request.resource.data.deviceProduct is string
+              && request.resource.data.deviceProduct.size() <= 80
+              && request.resource.data.deviceCodeName is string
+              && request.resource.data.deviceCodeName.size() <= 80
+              && request.resource.data.supportedAbis is string
+              && request.resource.data.supportedAbis.size() <= 100
+              && request.resource.data.localeTag is string
+              && request.resource.data.localeTag.size() <= 35
+              && request.resource.data.timeZoneId is string
+              && request.resource.data.timeZoneId.size() <= 80
+              && request.resource.data.screenWidthPx is int
+              && request.resource.data.screenWidthPx >= 0
+              && request.resource.data.screenHeightPx is int
+              && request.resource.data.screenHeightPx >= 0
+              && request.resource.data.densityDpi is int
+              && request.resource.data.densityDpi >= 0
+              && request.resource.data.networkType in ['offline', 'wifi', 'cellular', 'ethernet', 'bluetooth', 'other']
               && request.resource.data.androidVersion is string
               && request.resource.data.androidVersion.size() <= 40
               && request.resource.data.sdkInt is int
@@ -224,8 +282,518 @@ service cloud.firestore {
               )
             )
           )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'lastVillageTag',
+              'lastVillageName',
+              'lastVillageTimestamp',
+              'lastVillageTownHallLevel',
+              'lastVillageBuilderHallLevel',
+              'villageImportCount',
+              'lastVillageSyncedAt',
+              'lastVillageRawJsonBytes'
+            ])
+            || (
+              resource.data.villageDataConsent == true
+              && resource.data.activityDataConsentVersion == 6
+              && request.resource.data.lastVillageTag is string
+              && request.resource.data.lastVillageTag.matches('^#[A-Za-z0-9]+
+      allow get, list: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'playerTag',
+          'villageName',
+          'timestamp',
+          'rawJson',
+          'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.playerTag is string
+        && request.resource.data.playerTag.matches('^#[A-Za-z0-9]+$')
+        && request.resource.data.villageName is string
+        && request.resource.data.villageName.size() <= 100
+        && request.resource.data.timestamp is int
+        && request.resource.data.timestamp > 0
+        && request.resource.data.rawJson is string
+        && request.resource.data.rawJson.size() > 0
+        && request.resource.data.rawJson.size() <= 700000
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if isOwner();
+    }
+
+    match /community_messages/{messageId} {
+      allow get, list: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'senderIsAdmin',
+          'photoUrl',
+          'type',
+          'text',
+          'fileName',
+          'storagePath',
+          'downloadUrl',
+          'contentType',
+          'fileSize',
+          'sharedJsonId',
+          'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && (
+          !request.resource.data.keys().hasAny(['senderIsAdmin'])
+          || (
+            request.resource.data.senderIsAdmin is bool
+            && request.resource.data.senderIsAdmin == isOwner()
+          )
+        )
+        && request.resource.data.photoUrl is string
+        && request.resource.data.photoUrl.size() <= 1000
+        && request.resource.data.type in ['text', 'json']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.fileName is string
+        && request.resource.data.storagePath is string
+        && request.resource.data.downloadUrl is string
+        && request.resource.data.contentType is string
+        && request.resource.data.fileSize is int
+        && (
+          !request.resource.data.keys().hasAny(['sharedJsonId'])
+          || (
+            request.resource.data.sharedJsonId is string
+            && request.resource.data.sharedJsonId.size() <= 100
+          )
+        )
+        && request.resource.data.createdAt == request.time
+        && (
+          (
+            request.resource.data.type == 'text'
+            && request.resource.data.text.size() > 0
+            && request.resource.data.storagePath == ''
+            && request.resource.data.downloadUrl == ''
+            && request.resource.data.contentType == ''
+            && request.resource.data.fileSize == 0
+            && (
+              !request.resource.data.keys().hasAny(['sharedJsonId'])
+              || request.resource.data.sharedJsonId == ''
+            )
+          )
+          ||
+          (
+            request.resource.data.type == 'image'
+            && request.resource.data.contentType.matches('image/.*')
+            && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
+            && request.resource.data.downloadUrl.matches('https://.*')
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 15 * 1024 * 1024
+            && (
+              !request.resource.data.keys().hasAny(['sharedJsonId'])
+              || request.resource.data.sharedJsonId == ''
+            )
+          )
+          ||
+          (
+            request.resource.data.type == 'file'
+            && isOwner()
+            && request.resource.data.contentType in [
+              'application/pdf',
+              'text/plain',
+              'application/zip',
+              'application/msword',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/vnd.ms-powerpoint',
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              'application/vnd.ms-excel',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'application/vnd.android.package-archive'
+            ]
+            && (
+              request.resource.data.contentType != 'application/vnd.android.package-archive'
+              || isOwner()
+            )
+            && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
+            && request.resource.data.downloadUrl.matches('https://.*')
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 15 * 1024 * 1024
+            && (
+              !request.resource.data.keys().hasAny(['sharedJsonId'])
+              || request.resource.data.sharedJsonId == ''
+            )
+          )
+          ||
+          (
+            request.resource.data.type == 'json'
+            && request.resource.data.text.size() > 0
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.storagePath == ''
+            && request.resource.data.downloadUrl == ''
+            && request.resource.data.contentType == 'application/json'
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 700000
+            && request.resource.data.keys().hasAny(['sharedJsonId'])
+            && request.resource.data.sharedJsonId.size() > 0
+            && exists(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId))
+            && get(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId)).data.uid == request.auth.uid
+          )
+        );
+
+      allow delete: if isOwner()
+        && (
+          (
+            resource.data.type == 'text'
+            && existsAfter(/databases/$(database)/documents/community_deleted_messages/$(messageId))
+          )
+          || (
+            resource.data.type == 'image'
+            && existsAfter(/databases/$(database)/documents/community_deleted_images/$(messageId))
+          )
+          || (
+            resource.data.type == 'file'
+            && existsAfter(/databases/$(database)/documents/community_deleted_files/$(messageId))
+          )
+          || (
+            resource.data.type == 'json'
+            && existsAfter(/databases/$(database)/documents/community_deleted_messages/$(messageId))
+          )
+        );
+    }
+
+    match /community_deleted_messages/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /community_deleted_images/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /community_deleted_files/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /app_update_archive/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /app_updates/{updateId} {
+      allow get, list: if signedIn();
+
+      allow create: if false;
+
+      allow update: if isOwner();
+      allow delete: if isOwner()
+        && existsAfter(/databases/$(database)/documents/app_update_archive/$(updateId));
+    }
+
+    match /licenses/{userId} {
+      allow get: if isOwner() || isSelf(userId);
+      allow list, create, update, delete: if isOwner();
+    }
+
+    match /admin/{document=**} {
+      allow read, write: if isOwner();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+              && request.resource.data.lastVillageName is string
+              && request.resource.data.lastVillageName.size() <= 80
+              && request.resource.data.lastVillageTimestamp is int
+              && request.resource.data.lastVillageTimestamp >= 0
+              && request.resource.data.lastVillageTownHallLevel is int
+              && request.resource.data.lastVillageTownHallLevel >= 0
+              && request.resource.data.lastVillageTownHallLevel <= 100
+              && request.resource.data.lastVillageBuilderHallLevel is int
+              && request.resource.data.lastVillageBuilderHallLevel >= 0
+              && request.resource.data.villageImportCount is int
+              && request.resource.data.villageImportCount >= 1
+              && request.resource.data.lastVillageSyncedAt == request.time
+              && request.resource.data.lastVillageRawJsonBytes is int
+              && request.resource.data.lastVillageRawJsonBytes > 0
+              && request.resource.data.lastVillageRawJsonBytes <= 700000
+            )
+          )
           && request.resource.data.createdAt == resource.data.createdAt
         );
+
+      allow delete: if isOwner() || isSelf(userId);
+    }
+
+    match /users/{userId}/village_snapshots/{snapshotId} {
+      allow get, list: if isOwner() || isSelf(userId);
+
+      allow create, update: if isSelf(userId)
+        && get(/databases/$(database)/documents/users/$(userId)).data.villageDataConsent == true
+        && get(/databases/$(database)/documents/users/$(userId)).data.activityDataConsentVersion == 6
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'playerTag',
+          'villageName',
+          'snapshotTimestamp',
+          'rawJson',
+          'rawJsonBytes',
+          'itemCount',
+          'extraItemCount',
+          'activeUpgradeCount',
+          'townHallLevel',
+          'builderHallLevel',
+          'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.playerTag is string
+        && request.resource.data.playerTag.matches('^#[A-Za-z0-9]+
+      allow get, list: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'playerTag',
+          'villageName',
+          'timestamp',
+          'rawJson',
+          'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.playerTag is string
+        && request.resource.data.playerTag.matches('^#[A-Za-z0-9]+$')
+        && request.resource.data.villageName is string
+        && request.resource.data.villageName.size() <= 100
+        && request.resource.data.timestamp is int
+        && request.resource.data.timestamp > 0
+        && request.resource.data.rawJson is string
+        && request.resource.data.rawJson.size() > 0
+        && request.resource.data.rawJson.size() <= 700000
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if isOwner();
+    }
+
+    match /community_messages/{messageId} {
+      allow get, list: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'senderIsAdmin',
+          'photoUrl',
+          'type',
+          'text',
+          'fileName',
+          'storagePath',
+          'downloadUrl',
+          'contentType',
+          'fileSize',
+          'sharedJsonId',
+          'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && (
+          !request.resource.data.keys().hasAny(['senderIsAdmin'])
+          || (
+            request.resource.data.senderIsAdmin is bool
+            && request.resource.data.senderIsAdmin == isOwner()
+          )
+        )
+        && request.resource.data.photoUrl is string
+        && request.resource.data.photoUrl.size() <= 1000
+        && request.resource.data.type in ['text', 'json']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.fileName is string
+        && request.resource.data.storagePath is string
+        && request.resource.data.downloadUrl is string
+        && request.resource.data.contentType is string
+        && request.resource.data.fileSize is int
+        && (
+          !request.resource.data.keys().hasAny(['sharedJsonId'])
+          || (
+            request.resource.data.sharedJsonId is string
+            && request.resource.data.sharedJsonId.size() <= 100
+          )
+        )
+        && request.resource.data.createdAt == request.time
+        && (
+          (
+            request.resource.data.type == 'text'
+            && request.resource.data.text.size() > 0
+            && request.resource.data.storagePath == ''
+            && request.resource.data.downloadUrl == ''
+            && request.resource.data.contentType == ''
+            && request.resource.data.fileSize == 0
+            && (
+              !request.resource.data.keys().hasAny(['sharedJsonId'])
+              || request.resource.data.sharedJsonId == ''
+            )
+          )
+          ||
+          (
+            request.resource.data.type == 'image'
+            && request.resource.data.contentType.matches('image/.*')
+            && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
+            && request.resource.data.downloadUrl.matches('https://.*')
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 15 * 1024 * 1024
+            && (
+              !request.resource.data.keys().hasAny(['sharedJsonId'])
+              || request.resource.data.sharedJsonId == ''
+            )
+          )
+          ||
+          (
+            request.resource.data.type == 'file'
+            && isOwner()
+            && request.resource.data.contentType in [
+              'application/pdf',
+              'text/plain',
+              'application/zip',
+              'application/msword',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/vnd.ms-powerpoint',
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              'application/vnd.ms-excel',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'application/vnd.android.package-archive'
+            ]
+            && (
+              request.resource.data.contentType != 'application/vnd.android.package-archive'
+              || isOwner()
+            )
+            && request.resource.data.storagePath.matches('community/' + request.auth.uid + '/.*')
+            && request.resource.data.downloadUrl.matches('https://.*')
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 15 * 1024 * 1024
+            && (
+              !request.resource.data.keys().hasAny(['sharedJsonId'])
+              || request.resource.data.sharedJsonId == ''
+            )
+          )
+          ||
+          (
+            request.resource.data.type == 'json'
+            && request.resource.data.text.size() > 0
+            && request.resource.data.fileName.size() > 0
+            && request.resource.data.storagePath == ''
+            && request.resource.data.downloadUrl == ''
+            && request.resource.data.contentType == 'application/json'
+            && request.resource.data.fileSize > 0
+            && request.resource.data.fileSize <= 700000
+            && request.resource.data.keys().hasAny(['sharedJsonId'])
+            && request.resource.data.sharedJsonId.size() > 0
+            && exists(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId))
+            && get(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId)).data.uid == request.auth.uid
+          )
+        );
+
+      allow delete: if isOwner()
+        && (
+          (
+            resource.data.type == 'text'
+            && existsAfter(/databases/$(database)/documents/community_deleted_messages/$(messageId))
+          )
+          || (
+            resource.data.type == 'image'
+            && existsAfter(/databases/$(database)/documents/community_deleted_images/$(messageId))
+          )
+          || (
+            resource.data.type == 'file'
+            && existsAfter(/databases/$(database)/documents/community_deleted_files/$(messageId))
+          )
+          || (
+            resource.data.type == 'json'
+            && existsAfter(/databases/$(database)/documents/community_deleted_messages/$(messageId))
+          )
+        );
+    }
+
+    match /community_deleted_messages/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /community_deleted_images/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /community_deleted_files/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /app_update_archive/{archiveId} {
+      allow get, list, create, update, delete: if isOwner();
+    }
+
+    match /app_updates/{updateId} {
+      allow get, list: if signedIn();
+
+      allow create: if false;
+
+      allow update: if isOwner();
+      allow delete: if isOwner()
+        && existsAfter(/databases/$(database)/documents/app_update_archive/$(updateId));
+    }
+
+    match /licenses/{userId} {
+      allow get: if isOwner() || isSelf(userId);
+      allow list, create, update, delete: if isOwner();
+    }
+
+    match /admin/{document=**} {
+      allow read, write: if isOwner();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+)
+        && request.resource.data.villageName is string
+        && request.resource.data.villageName.size() <= 80
+        && request.resource.data.snapshotTimestamp is int
+        && request.resource.data.rawJson is string
+        && request.resource.data.rawJson.size() > 0
+        && request.resource.data.rawJson.size() <= 700000
+        && request.resource.data.rawJsonBytes is int
+        && request.resource.data.rawJsonBytes > 0
+        && request.resource.data.rawJsonBytes <= 700000
+        && request.resource.data.itemCount is int
+        && request.resource.data.itemCount >= 0
+        && request.resource.data.extraItemCount is int
+        && request.resource.data.extraItemCount >= 0
+        && request.resource.data.activeUpgradeCount is int
+        && request.resource.data.activeUpgradeCount >= 0
+        && (!request.resource.data.keys().hasAny(['townHallLevel']) ||
+          (request.resource.data.townHallLevel is int && request.resource.data.townHallLevel >= 0 && request.resource.data.townHallLevel <= 100))
+        && (!request.resource.data.keys().hasAny(['builderHallLevel']) ||
+          (request.resource.data.builderHallLevel is int && request.resource.data.builderHallLevel >= 0 && request.resource.data.builderHallLevel <= 100))
+        && request.resource.data.createdAt == request.time;
 
       allow delete: if isOwner() || isSelf(userId);
     }

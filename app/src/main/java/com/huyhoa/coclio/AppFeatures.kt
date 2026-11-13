@@ -26,6 +26,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.Intent
 import android.net.Uri
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Build
 import android.os.SystemClock
@@ -414,6 +416,7 @@ private suspend fun syncFirebaseUserProfile(
     )
     if (!existing.exists()) {
         profile["createdAt"] = FieldValue.serverTimestamp()
+        profile["villageDataConsent"] = false
         profile["signInCount"] = 1L
         profile["lastSignInAt"] = FieldValue.serverTimestamp()
     } else if (countAsSignIn) {
@@ -453,6 +456,16 @@ data class AdminGoogleAccount(
     val lastIpCapturedAt: Long = 0L,
     val deviceManufacturer: String = "",
     val deviceModel: String = "",
+    val deviceBrand: String = "",
+    val deviceProduct: String = "",
+    val deviceCodeName: String = "",
+    val supportedAbis: String = "",
+    val localeTag: String = "",
+    val timeZoneId: String = "",
+    val screenWidthPx: Long = 0L,
+    val screenHeightPx: Long = 0L,
+    val densityDpi: Long = 0L,
+    val networkType: String = "",
     val androidVersion: String = "",
     val sdkInt: Long = 0L,
     val appVersionName: String = "",
@@ -461,6 +474,15 @@ data class AdminGoogleAccount(
     val dataSharingConsent: Boolean = false,
     val analyticsConsent: Boolean = false,
     val diagnosticsConsent: Boolean = false,
+    val villageDataConsent: Boolean = false,
+    val lastVillageTag: String = "",
+    val lastVillageName: String = "",
+    val lastVillageTimestamp: Long = 0L,
+    val lastVillageTownHallLevel: Long = 0L,
+    val lastVillageBuilderHallLevel: Long = 0L,
+    val villageImportCount: Long = 0L,
+    val lastVillageSyncedAt: Long = 0L,
+    val lastVillageRawJsonBytes: Long = 0L,
     val activityConsentAt: Long = 0L,
     val accountDisabled: Boolean = false
 )
@@ -531,6 +553,16 @@ object FirebaseAccountAdministration {
                 lastIpCapturedAt = document.getTimestamp("lastIpCapturedAt")?.toDate()?.time ?: 0L,
                 deviceManufacturer = document.getString("deviceManufacturer").orEmpty(),
                 deviceModel = document.getString("deviceModel").orEmpty(),
+                deviceBrand = document.getString("deviceBrand").orEmpty(),
+                deviceProduct = document.getString("deviceProduct").orEmpty(),
+                deviceCodeName = document.getString("deviceCodeName").orEmpty(),
+                supportedAbis = document.getString("supportedAbis").orEmpty(),
+                localeTag = document.getString("localeTag").orEmpty(),
+                timeZoneId = document.getString("timeZoneId").orEmpty(),
+                screenWidthPx = document.getLong("screenWidthPx") ?: 0L,
+                screenHeightPx = document.getLong("screenHeightPx") ?: 0L,
+                densityDpi = document.getLong("densityDpi") ?: 0L,
+                networkType = document.getString("networkType").orEmpty(),
                 androidVersion = document.getString("androidVersion").orEmpty(),
                 sdkInt = document.getLong("sdkInt") ?: 0L,
                 appVersionName = document.getString("appVersionName").orEmpty(),
@@ -539,6 +571,15 @@ object FirebaseAccountAdministration {
                 dataSharingConsent = document.getBoolean("dataSharingConsent") ?: false,
                 analyticsConsent = document.getBoolean("analyticsConsent") ?: false,
                 diagnosticsConsent = document.getBoolean("diagnosticsConsent") ?: false,
+                villageDataConsent = document.getBoolean("villageDataConsent") ?: false,
+                lastVillageTag = document.getString("lastVillageTag").orEmpty(),
+                lastVillageName = document.getString("lastVillageName").orEmpty(),
+                lastVillageTimestamp = document.getLong("lastVillageTimestamp") ?: 0L,
+                lastVillageTownHallLevel = document.getLong("lastVillageTownHallLevel") ?: 0L,
+                lastVillageBuilderHallLevel = document.getLong("lastVillageBuilderHallLevel") ?: 0L,
+                villageImportCount = document.getLong("villageImportCount") ?: 0L,
+                lastVillageSyncedAt = document.getTimestamp("lastVillageSyncedAt")?.toDate()?.time ?: 0L,
+                lastVillageRawJsonBytes = document.getLong("lastVillageRawJsonBytes") ?: 0L,
                 activityConsentAt = document.getTimestamp("activityConsentAt")?.toDate()?.time ?: 0L,
                 accountDisabled = document.getBoolean("accountDisabled") ?: false
             )
@@ -629,11 +670,12 @@ data class AccountPrivacyChoice(
     val securityTelemetry: Boolean = false,
     val analytics: Boolean = false,
     val diagnostics: Boolean = false,
+    val villageDataSync: Boolean = false,
     val version: Long = 0L
 )
 
 object AccountPrivacyConsent {
-    const val CURRENT_VERSION = 5L
+    const val CURRENT_VERSION = 6L
 
     suspend fun load(): AccountPrivacyChoice {
         val user = FirebaseAuth.getInstance().currentUser ?: return AccountPrivacyChoice()
@@ -648,6 +690,7 @@ object AccountPrivacyConsent {
             securityTelemetry = profile.getBoolean("dataSharingConsent") == true,
             analytics = profile.getBoolean("analyticsConsent") == true,
             diagnostics = profile.getBoolean("diagnosticsConsent") == true,
+            villageDataSync = profile.getBoolean("villageDataConsent") == true,
             version = version
         )
     }
@@ -663,6 +706,7 @@ object AccountPrivacyConsent {
                     "dataSharingConsent" to choice.securityTelemetry,
                     "analyticsConsent" to choice.analytics,
                     "diagnosticsConsent" to choice.diagnostics,
+                    "villageDataConsent" to choice.villageDataSync,
                     "activityDataConsentVersion" to CURRENT_VERSION,
                     "activityConsentAt" to FieldValue.serverTimestamp(),
                     "updatedAt" to FieldValue.serverTimestamp()
@@ -756,11 +800,41 @@ object AccountActivityTracker {
                 @Suppress("DEPRECATION")
                 packageInfo.versionCode.toLong()
             }
+            val displayMetrics = context.resources.displayMetrics
+            val localeTag = runCatching {
+                context.resources.configuration.locales.get(0).toLanguageTag()
+            }.getOrDefault(java.util.Locale.getDefault().toLanguageTag()).take(35)
+            val timeZoneId = java.util.TimeZone.getDefault().id.take(80)
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            val activeNetwork = connectivityManager?.activeNetwork
+            val networkCapabilities = if (activeNetwork != null) {
+                connectivityManager?.getNetworkCapabilities(activeNetwork)
+            } else {
+                null
+            }
+            val networkType = when {
+                networkCapabilities == null -> "offline"
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> "bluetooth"
+                else -> "other"
+            }
             val payload = hashMapOf<String, Any>(
                 "lastActivityEvent" to event,
                 "activityUpdatedAt" to FieldValue.serverTimestamp(),
                 "deviceManufacturer" to Build.MANUFACTURER.orEmpty().take(60),
                 "deviceModel" to Build.MODEL.orEmpty().take(100),
+                "deviceBrand" to Build.BRAND.orEmpty().take(60),
+                "deviceProduct" to Build.PRODUCT.orEmpty().take(80),
+                "deviceCodeName" to Build.DEVICE.orEmpty().take(80),
+                "supportedAbis" to Build.SUPPORTED_ABIS.take(4).joinToString(",").take(100),
+                "localeTag" to localeTag,
+                "timeZoneId" to timeZoneId,
+                "screenWidthPx" to displayMetrics.widthPixels.coerceAtLeast(0).toLong(),
+                "screenHeightPx" to displayMetrics.heightPixels.coerceAtLeast(0).toLong(),
+                "densityDpi" to displayMetrics.densityDpi.coerceAtLeast(0).toLong(),
+                "networkType" to networkType,
                 "androidVersion" to Build.VERSION.RELEASE.orEmpty().take(40),
                 "sdkInt" to Build.VERSION.SDK_INT.toLong(),
                 "appVersionName" to packageInfo.versionName.orEmpty().take(40),
@@ -791,6 +865,65 @@ object AccountActivityTracker {
         }
     }
 }
+
+object FirebaseVillageDataSync {
+    suspend fun saveLatest(snapshot: VillageSnapshot): Boolean {
+        val user = FirebaseAuth.getInstance().currentUser ?: return false
+        val firestore = FirebaseFirestore.getInstance()
+        val userRef = firestore.collection("users").document(user.uid)
+        val profile = userRef.get().awaitFirebaseResult()
+        if (
+            !profile.exists() ||
+            profile.getBoolean("villageDataConsent") != true ||
+            profile.getLong("activityDataConsentVersion") != AccountPrivacyConsent.CURRENT_VERSION
+        ) {
+            return false
+        }
+
+        val playerTag = snapshot.tag.trim()
+        require(playerTag.matches(Regex("^#[A-Za-z0-9]+$"))) {
+            "Player Tag trong JSON không hợp lệ."
+        }
+        val rawBytes = snapshot.rawJson.toByteArray(Charsets.UTF_8).size
+        require(rawBytes in 1..700_000) {
+            "JSON lớn hơn giới hạn đồng bộ miễn phí 700 KB. Bản JSON vẫn được lưu trên điện thoại."
+        }
+
+        val snapshotData = hashMapOf<String, Any>(
+            "uid" to user.uid,
+            "playerTag" to playerTag,
+            "villageName" to (snapshot.villageName.orEmpty().take(80)),
+            "snapshotTimestamp" to snapshot.timestamp,
+            "rawJson" to snapshot.rawJson,
+            "rawJsonBytes" to rawBytes.toLong(),
+            "itemCount" to snapshot.items.size.toLong(),
+            "extraItemCount" to snapshot.extraItems.size.toLong(),
+            "activeUpgradeCount" to (snapshot.upgrades.size + snapshot.gearUps.size).toLong(),
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+        snapshot.townHallLevel?.let { snapshotData["townHallLevel"] = it.toLong() }
+        snapshot.builderHallLevel?.let { snapshotData["builderHallLevel"] = it.toLong() }
+
+        val snapshotId = playerTag.removePrefix("#")
+        userRef.collection("village_snapshots").document(snapshotId)
+            .set(snapshotData).awaitFirebaseResult()
+
+        val summary = hashMapOf<String, Any>(
+            "lastVillageTag" to playerTag,
+            "lastVillageName" to snapshot.villageName.orEmpty().take(80),
+            "lastVillageTimestamp" to snapshot.timestamp,
+            "lastVillageTownHallLevel" to (snapshot.townHallLevel ?: 0).toLong(),
+            "lastVillageBuilderHallLevel" to (snapshot.builderHallLevel ?: 0).toLong(),
+            "villageImportCount" to FieldValue.increment(1),
+            "lastVillageRawJsonBytes" to rawBytes.toLong(),
+            "lastVillageSyncedAt" to FieldValue.serverTimestamp(),
+            "updatedAt" to FieldValue.serverTimestamp()
+        )
+        userRef.set(summary, SetOptions.merge()).awaitFirebaseResult()
+        return true
+    }
+}
+
 object FirebaseTelemetry {
     fun logGoogleSignIn(context: Context) {
         runCatching {
@@ -2024,6 +2157,28 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 "Thiết bị",
                                 listOf(account.deviceManufacturer, account.deviceModel).filter { it.isNotBlank() }.joinToString(" ").ifBlank { "Chưa ghi nhận" }
                             )
+                            ProfileDataRow("Thương hiệu / dòng / mã thiết bị", listOf(account.deviceBrand, account.deviceProduct, account.deviceCodeName).filter { it.isNotBlank() }.joinToString(" / ").ifBlank { "Chưa ghi nhận" })
+                            ProfileDataRow("Kiến trúc CPU", account.supportedAbis.ifBlank { "Chưa ghi nhận" })
+                            ProfileDataRow("Màn hình", if (account.screenWidthPx > 0L && account.screenHeightPx > 0L) "${account.screenWidthPx} × ${account.screenHeightPx} px · ${account.densityDpi} dpi" else "Chưa ghi nhận")
+                            ProfileDataRow("Ngôn ngữ / múi giờ", listOf(account.localeTag, account.timeZoneId).filter { it.isNotBlank() }.joinToString(" / ").ifBlank { "Chưa ghi nhận" })
+                            ProfileDataRow("Loại kết nối", when (account.networkType) {
+                                "wifi" -> "Wi-Fi"
+                                "cellular" -> "Di động"
+                                "ethernet" -> "Ethernet"
+                                "bluetooth" -> "Bluetooth"
+                                "offline" -> "Ngoại tuyến"
+                                "other" -> "Khác"
+                                else -> "Chưa ghi nhận"
+                            })
+                            ProfileDataRow("Đồng bộ JSON Clash of Clans", if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.villageDataConsent) "Đã cho phép" else "Chưa cho phép")
+                            ProfileDataRow("Player Tag gần nhất", account.lastVillageTag.ifBlank { "Chưa ghi nhận" })
+                            ProfileDataRow("Tên làng gần nhất", account.lastVillageName.ifBlank { "Chưa ghi nhận" })
+                            ProfileDataRow("Town Hall", if (account.lastVillageTownHallLevel > 0L) account.lastVillageTownHallLevel.toString() else "Chưa ghi nhận")
+                            ProfileDataRow("Builder Hall", if (account.lastVillageBuilderHallLevel > 0L) account.lastVillageBuilderHallLevel.toString() else "Chưa ghi nhận")
+                            ProfileDataRow("Số lần đồng bộ JSON", if (account.villageImportCount > 0L) account.villageImportCount.toString() else "Chưa ghi nhận")
+                            ProfileDataRow("Thời điểm JSON mới nhất", if (account.lastVillageTimestamp > 0L) formatAdminAccountTime(account.lastVillageTimestamp * 1000L) else "Chưa ghi nhận")
+                            ProfileDataRow("Lần đồng bộ JSON lên Firestore", if (account.lastVillageSyncedAt > 0L) formatAdminAccountTime(account.lastVillageSyncedAt) else "Chưa ghi nhận")
+                            ProfileDataRow("Dung lượng JSON gần nhất", if (account.lastVillageRawJsonBytes > 0L) "${account.lastVillageRawJsonBytes} byte" else "Chưa ghi nhận")
                             ProfileDataRow("Android", account.androidVersion.ifBlank { "Chưa ghi nhận" })
                             ProfileDataRow("API Android", if (account.sdkInt > 0L) account.sdkInt.toString() else "Chưa ghi nhận")
                             ProfileDataRow("Phiên bản COC-LIO", account.appVersionName.ifBlank { "Chưa ghi nhận" })

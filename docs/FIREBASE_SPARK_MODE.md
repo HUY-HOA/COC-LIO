@@ -38,3 +38,12 @@ The old Cloud Functions deploy workflow has been removed. The `functions/` sourc
 ## Free-plan limits
 
 Spark has service-specific free quotas. When a quota is exhausted, the affected service may stop accepting requests until its quota resets or the project is upgraded. Spark does not automatically switch the project to paid billing. Monitor Firestore reads, writes, stored data, and network usage to stay within the free limits.
+
+
+## Expanded opt-in collection (consent version 6)
+
+The Android app only sends optional device/activity telemetry when the user accepts the corresponding choice. The fields are device manufacturer/model/brand/product/codename, up to four supported CPU ABIs, Android version/API level, app version, locale, time zone, screen pixel dimensions/density, broad network transport type, app-open count, timestamps, and foreground duration. Network data is limited to the transport category; no IP or hardware identifier is added.
+
+A separate "Đồng bộ dữ liệu Clash of Clans lên tài khoản" choice controls cloud sync of JSON that the user explicitly imports. When enabled, COC-LIO writes the latest raw JSON snapshot per Player Tag to the user's Firestore subcollection and updates a small summary in the user profile. It does not connect to the game process or read the game account in the background.
+
+The synchronization is subject to Spark Firestore limits: 1 GiB total stored data, 20,000 document writes/day, 50,000 document reads/day, and 10 GiB/month network egress. The app keeps only one cloud snapshot per Player Tag, but each different tag creates another document. Users should disable sync or request deletion when they no longer need the cloud copy.

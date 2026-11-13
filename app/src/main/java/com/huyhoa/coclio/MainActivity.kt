@@ -502,11 +502,13 @@ private fun CocLioApp(
     var securityTelemetryConsent by remember { mutableStateOf(false) }
     var analyticsConsent by remember { mutableStateOf(false) }
     var diagnosticsConsent by remember { mutableStateOf(false) }
+    var villageDataSyncConsent by remember { mutableStateOf(false) }
     var privacyChoiceVersion by remember { mutableLongStateOf(0L) }
     var showPrivacyConsentDialog by remember { mutableStateOf(false) }
     var privacyDialogSecurity by remember { mutableStateOf(false) }
     var privacyDialogAnalytics by remember { mutableStateOf(false) }
     var privacyDialogDiagnostics by remember { mutableStateOf(false) }
+    var privacyDialogVillageData by remember { mutableStateOf(false) }
     var privacySaving by remember { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var lastUsedAt by remember(activeProfile) {
@@ -544,6 +546,7 @@ private fun CocLioApp(
         privacyDialogSecurity = securityTelemetryConsent
         privacyDialogAnalytics = analyticsConsent
         privacyDialogDiagnostics = diagnosticsConsent
+        privacyDialogVillageData = villageDataSyncConsent
         showPrivacyConsentDialog = true
     }
 
@@ -681,6 +684,7 @@ private fun CocLioApp(
             securityTelemetryConsent = false
             analyticsConsent = false
             diagnosticsConsent = false
+            villageDataSyncConsent = false
             privacyChoiceVersion = 0L
             AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
         } else {
@@ -689,6 +693,7 @@ private fun CocLioApp(
                     securityTelemetryConsent = choice.securityTelemetry
                     analyticsConsent = choice.analytics
                     diagnosticsConsent = choice.diagnostics
+                    villageDataSyncConsent = choice.villageDataSync
                     privacyChoiceVersion = choice.version
                     AccountPrivacyConsent.applyCollectionSettings(context, choice)
                     if (choice.version < AccountPrivacyConsent.CURRENT_VERSION) {
@@ -697,6 +702,7 @@ private fun CocLioApp(
                         securityTelemetryConsent = false
                         analyticsConsent = false
                         diagnosticsConsent = false
+                        villageDataSyncConsent = false
                         openPrivacyDialog()
                     } else if (choice.securityTelemetry) {
                         AccountActivityTracker.start(context)
@@ -708,6 +714,7 @@ private fun CocLioApp(
                     securityTelemetryConsent = false
                     analyticsConsent = false
                     diagnosticsConsent = false
+                    villageDataSyncConsent = false
                     privacyChoiceVersion = 0L
                     AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
                     AccountActivityTracker.stopAndWait(context)
@@ -797,6 +804,20 @@ private fun CocLioApp(
                 )
             }
             VillageStore.save(context, parsed, activeProfile, customName)
+            if (isGoogleSignedIn && villageDataSyncConsent) {
+                scope.launch {
+                    try {
+                        if (FirebaseVillageDataSync.saveLatest(parsed)) {
+                            snackbar.showSnackbar("Đã đồng bộ bản JSON mới nhất của ${parsed.tag} lên tài khoản COC-LIO.")
+                        }
+                    } catch (error: Exception) {
+                        snackbar.showSnackbar(
+                            error.message?.takeIf { it.isNotBlank() }
+                                ?: "JSON vẫn được lưu trên điện thoại nhưng chưa đồng bộ được lên Firestore."
+                        )
+                    }
+                }
+            }
             FirebaseTelemetry.logVillageImport(context, latestPrevious != null)
             history = VillageStore.loadAll(context, activeProfile)
             pinnedTags = VillageStore.pinnedTags(context, activeProfile)
@@ -863,6 +884,7 @@ private fun CocLioApp(
                 securityTelemetryConsent = choice.securityTelemetry
                 analyticsConsent = choice.analytics
                 diagnosticsConsent = choice.diagnostics
+                villageDataSyncConsent = choice.villageDataSync
                 privacyChoiceVersion = AccountPrivacyConsent.CURRENT_VERSION
                 AccountPrivacyConsent.applyCollectionSettings(context, choice)
                 if (choice.securityTelemetry) {
@@ -1375,7 +1397,23 @@ private fun CocLioApp(
                         Column(Modifier.weight(1f)) {
                             Text("Bảo mật tài khoản và hoạt động", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             Text(
-                                "Cho phép ghi nhận hãng và mẫu thiết bị; phiên bản Android/API; phiên bản COC-LIO; thời điểm mở, hoạt động, chuyển nền; số phiên và thời lượng sử dụng. Trên gói Firebase Spark, ứng dụng không thu thập IP kết nối. Mục đích: hỗ trợ quản lý tài khoản và kỹ thuật.",
+                                "Cho phép ghi nhận hãng, mẫu, dòng thiết bị và kiến trúc CPU; phiên bản Android/API và COC-LIO; kích thước/độ phân giải màn hình; ngôn ngữ, múi giờ, loại kết nối Wi-Fi/di động/khác; thời điểm mở, hoạt động, chuyển nền; số phiên và thời lượng sử dụng. Không ghi IP hoặc mã định danh phần cứng. Mục đích: hỗ trợ tương thích, bảo mật tài khoản và kỹ thuật.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp,
+                                lineHeight = 13.sp
+                            )
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = privacyDialogVillageData,
+                            onCheckedChange = { privacyDialogVillageData = it },
+                            enabled = !privacySaving
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text("Đồng bộ dữ liệu Clash of Clans lên tài khoản", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text(
+                                "Khi bạn tự nhập JSON từ game, COC-LIO có thể gửi bản JSON đó lên Firestore để chủ tài khoản và chủ sở hữu ứng dụng xem dữ liệu làng. Chỉ lưu bản mới nhất cho mỗi Player Tag; giới hạn 700 KB/bản. Không tự đăng nhập game, không tự đọc dữ liệu game khi bạn chưa nhập JSON. Tắt mục này sẽ dừng đồng bộ mới; dữ liệu đã lưu không tự xóa.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp,
                                 lineHeight = 13.sp
@@ -1445,7 +1483,7 @@ private fun CocLioApp(
                         fontSize = 11.sp
                     )
                     Text(
-                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý; người có quyền quản trị dự án Firebase có thể có quyền truy cập kỹ thuật theo phân quyền dự án. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Các sự kiện Analytics và báo cáo Crashlytics/Performance được xử lý trong các bảng điều khiển Firebase tương ứng, không hiển thị đầy đủ theo từng tài khoản trong danh sách quản lý của ứng dụng. Google Firebase cung cấp hạ tầng xác thực, cơ sở dữ liệu, lưu trữ tệp, xử lý chức năng máy chủ và thông báo.",
+                        "Trong giao diện COC-LIO, chỉ tài khoản chủ sở hữu COC-LIO mới được xem hồ sơ và dữ liệu hoạt động trong danh sách quản lý. Bản JSON làng đồng bộ theo lựa chọn chỉ người dùng sở hữu và chủ sở hữu ứng dụng được đọc qua quy tắc Firestore; người có quyền quản trị dự án Firebase vẫn có thể có quyền truy cập kỹ thuật theo phân quyền dự án. Nội dung bạn gửi vào cộng đồng được hiển thị cho các thành viên đã đăng nhập. Analytics, Crashlytics và Performance được xử lý trong bảng điều khiển Firebase tương ứng."",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 9.sp,
                         lineHeight = 13.sp
@@ -1478,7 +1516,8 @@ private fun CocLioApp(
                             AccountPrivacyChoice(
                                 securityTelemetry = privacyDialogSecurity,
                                 analytics = privacyDialogAnalytics,
-                                diagnostics = privacyDialogDiagnostics
+                                diagnostics = privacyDialogDiagnostics,
+                                villageDataSync = privacyDialogVillageData
                             )
                         )
                     }
