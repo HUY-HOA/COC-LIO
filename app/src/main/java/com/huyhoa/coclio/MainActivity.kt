@@ -171,7 +171,7 @@ private data class ImportSummary(
 )
 
 val LocalLedTheme = staticCompositionLocalOf {
-    LedThemeState(DefaultLedPalette, true, 3000, 0.9f, mutableStateOf(0f))
+    LedThemeState(DefaultLedPalette, true, 3000, 0.5f, mutableStateOf(0f))
 }
 
 private fun paletteForLed(preset: String): List<Color> = when (preset) {
@@ -186,9 +186,7 @@ private fun paletteForLed(preset: String): List<Color> = when (preset) {
 private fun animatedLedTextBrush(): Brush {
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val phase = if (led.enabled && led.speedMillis > 0) {
-        (led.progress.value).rem(1f)
-    } else 0f
+    val phase = (led.progress.value).rem(1f)
     val movingColors = List(32) { index ->
         val position = ((index / 32f - phase + 1f) % 1f) * (palette.size - 1)
         val startIndex = position.toInt().coerceIn(0, palette.size - 2)
@@ -212,9 +210,7 @@ private fun LedFrameBox(
 ) {
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val phase = if (led.enabled && led.speedMillis > 0) {
-        (led.progress.value).rem(1f)
-    } else 0f
+    val phase = (led.progress.value).rem(1f)
     val movingColors = List(48) { index ->
         val position = ((index / 48f - phase + 1f) % 1f) * (palette.size - 1)
         val startIndex = position.toInt().coerceIn(0, palette.size - 2)
@@ -228,11 +224,7 @@ private fun LedFrameBox(
             alpha = led.brightness
         )
     }
-    val brush = if (led.enabled && led.speedMillis > 0) {
-        Brush.sweepGradient(movingColors)
-    } else {
-        Brush.sweepGradient(palette)
-    }
+    val brush = Brush.sweepGradient(movingColors)
     Box(
         modifier = modifier.drawWithCache {
             val stroke = 3.dp.toPx()
@@ -265,14 +257,10 @@ fun Modifier.ledRgbBorder(
     val led = LocalLedTheme.current
     return this.drawWithCache {
         val palette = led.palette.map { it.copy(alpha = led.brightness.coerceIn(0f, 1f)) }
-        val active = led.enabled && palette.size >= 2 && strokeWidthDp > 0f
-        val phase = if (active && led.speedMillis > 0) {
-            (led.progress.value).rem(1f)
-        } else {
-            0f
-        }
+        val active = palette.size >= 2 && strokeWidthDp > 0f
+        val phase = (led.progress.value).rem(1f)
         val intervals = (palette.size - 1).coerceAtLeast(1)
-        val colors = if (active && led.speedMillis > 0) {
+        val colors = if (active) {
             List(32) { index ->
                 val position = ((index / 32f - phase + 1f) % 1f) * intervals
                 val startIndex = position.toInt().coerceIn(0, intervals - 1)
@@ -622,6 +610,11 @@ private fun CocLioApp(
                     .putInt("settings_version", 1)
                     .apply()
             }
+            if (prefs.getInt("settings_version", 0) < 2) {
+                val editor = prefs.edit()
+                if (!prefs.contains("brightness")) editor.putFloat("brightness", 0.5f)
+                editor.putInt("settings_version", 2).apply()
+            }
         }
     }
     var ledEnabled by remember { mutableStateOf(ledPrefs.getBoolean("enabled", true)) }
@@ -632,7 +625,7 @@ private fun CocLioApp(
             savedLedSpeed.coerceIn(0, 100)
         )
     }
-    var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.9f).coerceIn(0f, 1f)) }
+    var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.5f).coerceIn(0f, 1f)) }
     val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) {
         0
     } else {
@@ -968,7 +961,6 @@ private fun CocLioApp(
                 AccountProfileStore.setActive(context, googleAccount.email)
                 requiredAccountConsentAccepted = true
                 requiredAccountConsentLoadedForEmail = googleAccount.email
-                requiredAccountConsentChecked = false
                 requiredAccountConsentSubmitting = false
                 requiredAccountConsentReadError = null
                 activeProfile = googleAccount.email
@@ -1089,18 +1081,32 @@ private fun CocLioApp(
                         selected = selectedTab == item.third,
                         onClick = { selectedTab = item.third },
                         icon = {
-                            Icon(
-                                imageVector = when (item.first) {
-                                    "home" -> Icons.Filled.Home
-                                    "buildings" -> Icons.Filled.Business
-                                    "history" -> Icons.Filled.History
-                                    "community" -> Icons.Filled.Forum
-                                    "lookup" -> Icons.Filled.Tag
-                                    else -> Icons.Filled.Settings
-                                },
-                                contentDescription = item.second,
-                                tint = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .then(
+                                        if (selectedTab == item.third) {
+                                            Modifier.ledRgbBorder(cornerRadiusDp = 10f, strokeWidthDp = 1.8f)
+                                        } else {
+                                            Modifier
+                                        }
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = when (item.first) {
+                                        "home" -> Icons.Filled.Home
+                                        "buildings" -> Icons.Filled.Business
+                                        "history" -> Icons.Filled.History
+                                        "community" -> Icons.Filled.Forum
+                                        "lookup" -> Icons.Filled.Tag
+                                        else -> Icons.Filled.Settings
+                                    },
+                                    contentDescription = item.second,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         },
                         label = {
                             Text(
@@ -1560,7 +1566,7 @@ private fun GoogleLoginStartScreen(
                             .size(34.dp)
                             .then(
                                 if (!consentChecked) {
-                                    Modifier.ledRgbBorder(cornerRadiusDp = 7f, strokeWidthDp = 2f)
+                                    Modifier.ledRgbBorder(cornerRadiusDp = 4f, strokeWidthDp = 2f)
                                 } else {
                                     Modifier
                                 }
@@ -1571,11 +1577,11 @@ private fun GoogleLoginStartScreen(
                             checked = consentChecked,
                             onCheckedChange = onConsentChecked,
                             enabled = !isBusy,
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                     Text(
-                        "Tôi đã đọc và đồng ý với việc xử lý dữ liệu tài khoản cần thiết để sử dụng COC-LIO.",
+                        "Tôi đồng ý chia sẻ dữ liệu tài khoản cần thiết để sử dụng COC-LIO.",
                         modifier = Modifier.weight(1f),
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 11.sp,
@@ -1599,6 +1605,7 @@ private fun GoogleLoginStartScreen(
                 Button(
                     onClick = onGoogleSignIn,
                     enabled = consentChecked && !isBusy,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .then(
@@ -1782,7 +1789,7 @@ private fun OverviewScreen(
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(10.dp)
                         )
-                        Text("ID: ${snapshot.tag}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
+                        Text(snapshot.tag.removePrefix("#"), color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                     }
                     Text("Cập nhật " + formatTimestamp(snapshot.timestamp), color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                 }
@@ -1795,7 +1802,7 @@ private fun OverviewScreen(
                     hasHomeBase && hasBuilderBase -> {
                         Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                             BaseSummaryCard(
-                                title = "NHÀ CHÍNH",
+                                title = "LÀNG CHÍNH",
                                 levelLabel = "TH",
                                 level = snapshot.townHallLevel,
                                 itemCount = snapshot.homeItems.size,
@@ -1817,7 +1824,7 @@ private fun OverviewScreen(
                         }
                     }
                     hasHomeBase -> BaseSummaryCard(
-                        title = "NHÀ CHÍNH",
+                        title = "LÀNG CHÍNH",
                         levelLabel = "TH",
                         level = snapshot.townHallLevel,
                         itemCount = snapshot.homeItems.size,
@@ -1896,7 +1903,7 @@ private fun OverviewScreen(
 
         if (hasHomeBase || homeExtras.isNotEmpty()) {
             item {
-                SectionTitle("NHÀ CHÍNH", homeExtras.sumOf { it.count }.toString())
+                SectionTitle("LÀNG CHÍNH", homeExtras.sumOf { it.count }.toString())
             }
             item { ExtraEntriesCard(homeExtras) }
         }
@@ -2007,7 +2014,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, showBase: Bo
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
                     item.name + if (showBase) {
-                        if (item.base == "builder") " • LÀNG ĐÊM" else " • NHÀ CHÍNH"
+                        if (item.base == "builder") " • LÀNG ĐÊM" else " • LÀNG CHÍNH"
                     } else "",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
@@ -2093,7 +2100,7 @@ private fun BuildingsAndArmyScreen(snapshot: VillageSnapshot) {
                         modifier = Modifier.weight(1f),
                         label = {
                             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text(if (base == "home") "NHÀ CHÍNH" else "CĂN CỨ THỢ XÂY", fontSize = 10.sp, maxLines = 1)
+                                Text(if (base == "home") "LÀNG CHÍNH" else "CĂN CỨ THỢ XÂY", fontSize = 10.sp, maxLines = 1)
                             }
                         }
                     )
@@ -2530,7 +2537,7 @@ private fun HistoryScreen(
                                     modifier = Modifier.size(11.dp)
                                 )
                                 Text(
-                                    "ID: ${snapshot.tag}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
+                                    "${snapshot.tag.removePrefix("#")}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
                                     color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurface,
                                     fontSize = 10.sp,
                                     maxLines = 1,
