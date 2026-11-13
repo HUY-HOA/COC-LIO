@@ -1301,7 +1301,7 @@ class UpgradeReminderWorker(
         )
         val baseText = AppLanguageSettings.translate(
             applicationContext,
-            if (base == "builder") "Làng đêm" else "Nhà chính"
+            if (base == "builder") "Làng đêm" else "NHÀ CHÍNH"
         )
         val localizedItem = AppLanguageSettings.translate(applicationContext, item)
         val localizedSection = AppLanguageSettings.translate(applicationContext, section)
