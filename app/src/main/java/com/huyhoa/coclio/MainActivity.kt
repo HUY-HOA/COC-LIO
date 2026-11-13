@@ -509,6 +509,7 @@ private fun CocLioApp(
     var requiredAccountConsentChecked by remember { mutableStateOf(false) }
     var requiredAccountConsentSubmitting by remember { mutableStateOf(false) }
     var requiredAccountConsentReadError by remember { mutableStateOf<String?>(null) }
+    var villageDataSyncConsent by remember { mutableStateOf(false) }
     var showRequiredPrivacyDetails by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
@@ -760,11 +761,13 @@ private fun CocLioApp(
 
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
         if (!isGoogleSignedIn) {
+            villageDataSyncConsent = false
             AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
             AccountActivityTracker.stopAndWait(context)
         } else {
             runCatching { AccountPrivacyConsent.load() }
                 .onSuccess { choice ->
+                    villageDataSyncConsent = choice.villageDataSync
                     AccountPrivacyConsent.applyCollectionSettings(context, choice)
                     if (choice.securityTelemetry) {
                         AccountActivityTracker.start(context)
@@ -773,6 +776,7 @@ private fun CocLioApp(
                     }
                 }
                 .onFailure {
+                    villageDataSyncConsent = false
                     AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
                     AccountActivityTracker.stopAndWait(context)
                     snackbar.showSnackbar("Không tải được lựa chọn dữ liệu tài khoản. Các mục tùy chọn vẫn đang tắt.")
