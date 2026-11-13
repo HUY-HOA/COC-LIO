@@ -2737,7 +2737,7 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                         val progress = (led.progress.value * (20000f / led.speedMillis)).rem(1f)
                         val intervals = palette.size - 1
                         val colors = List(32) { index ->
-                            val position = ((index / 32f + progress) % 1f) * intervals
+                            val position = ((index / 32f - progress + 1f) % 1f) * intervals
                             val startIndex = position.toInt().coerceIn(0, intervals - 1)
                             val fraction = position - startIndex
                             val first = palette[startIndex]
