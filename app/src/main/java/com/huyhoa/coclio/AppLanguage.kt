@@ -1036,6 +1036,10 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             }
         source.startsWith("không đọc được") ->
             "Unable to read" + source.removePrefix("không đọc được")
+        Regex("^(.+) • cần nhập lại để xác nhận cấp độ mới$").matchEntire(source) != null ->
+            Regex("^(.+) • cần nhập lại để xác nhận cấp độ mới$").matchEntire(source)!!.let {
+                (englishTranslations[it.groupValues[1]] ?: it.groupValues[1]) + " • import again to confirm the new level"
+            }
         Regex("^Mục (\\d+)$").matchEntire(source) != null ->
             Regex("^Mục (\\d+)$").matchEntire(source)!!.let { "Item ${it.groupValues[1]}" }
         Regex("^(.+) · (.+) · Tải tệp hiện tạm ngừng trên gói miễn phí\\.$").matchEntire(source) != null ->
