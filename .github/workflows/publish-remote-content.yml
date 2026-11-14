@@ -40,11 +40,12 @@ jobs:
       - name: Validate, publish and verify Firestore content
         env:
           FIREBASE_PROJECT_ID: coc-lio-73de9
+          NODE_PATH: ${{ github.workspace }}/functions/node_modules
         run: |
           node <<'NODE'
           const fs = require("node:fs");
-          const { initializeApp, applicationDefault } = require("./functions/node_modules/firebase-admin/app");
-          const { getFirestore } = require("./functions/node_modules/firebase-admin/firestore");
+          const { initializeApp, applicationDefault } = require("firebase-admin/app");
+          const { getFirestore } = require("firebase-admin/firestore");
 
           function canonical(value) {
             if (Array.isArray(value)) return value.map(canonical);
