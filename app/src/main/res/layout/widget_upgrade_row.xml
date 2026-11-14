@@ -29,7 +29,7 @@
             android:id="@+id/row_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="CẤP 14 → 15 • CÒN 56%"
+            android:text="14 → 15 • 56%"
             android:textColor="#FFFFD166"
             android:textSize="12sp"
             android:textStyle="bold"
