@@ -164,6 +164,7 @@ data class LedThemeState(
     val enabled: Boolean,
     val speedMillis: Int,
     val brightness: Float,
+    val glowEnabled: Boolean,
     val progress: State<Float>
 )
 
@@ -173,7 +174,7 @@ private data class ImportSummary(
 )
 
 val LocalLedTheme = staticCompositionLocalOf {
-    LedThemeState(DefaultLedPalette, true, 3000, 1f, mutableStateOf(0f))
+    LedThemeState(DefaultLedPalette, true, 3000, 1f, false, mutableStateOf(0f))
 }
 
 private fun paletteForLed(preset: String): List<Color> = when (preset) {
@@ -203,6 +204,20 @@ private fun movingLedColors(
             alpha = first.alpha + (second.alpha - first.alpha) * fraction
         )
     }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLedStroke(
+    path: Path,
+    brush: Brush,
+    strokeWidth: Float,
+    glowEnabled: Boolean
+) {
+    if (glowEnabled) {
+        drawPath(path, brush, alpha = 0.10f, style = Stroke(width = strokeWidth * 6f))
+        drawPath(path, brush, alpha = 0.18f, style = Stroke(width = strokeWidth * 3.6f))
+        drawPath(path, brush, alpha = 0.32f, style = Stroke(width = strokeWidth * 2f))
+    }
+    drawPath(path, brush, style = Stroke(width = strokeWidth))
 }
 
 @Composable
@@ -237,10 +252,11 @@ private fun LedFrameBox(
             }
             onDrawBehind {
                 val phase = led.progress.value.rem(1f)
-                drawPath(
+                drawLedStroke(
                     path,
                     Brush.sweepGradient(movingLedColors(palette, phase)),
-                    style = Stroke(width = stroke)
+                    stroke,
+                    led.glowEnabled
                 )
             }
         },
@@ -257,6 +273,7 @@ fun Modifier.ledRgbBorder(
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness.coerceIn(0f, 1f)) }
     val active = palette.size >= 2 && strokeWidthDp > 0f
+    val glowEnabled = led.glowEnabled
     return this.drawWithCache {
         val stroke = strokeWidthDp.dp.toPx()
         val inset = stroke / 2f
@@ -275,10 +292,11 @@ fun Modifier.ledRgbBorder(
             drawContent()
             if (active) {
                 val phase = led.progress.value.rem(1f)
-                drawPath(
+                drawLedStroke(
                     path,
                     Brush.sweepGradient(movingLedColors(palette, phase)),
-                    style = Stroke(width = stroke)
+                    stroke,
+                    glowEnabled
                 )
             }
         }
@@ -307,12 +325,6 @@ private fun NeonPanel(
     Column(
         modifier = modifier
             .shadow(5.dp, shape)
-            .clip(shape)
-            .background(Brush.linearGradient(listOf(
-                MaterialTheme.colorScheme.surface,
-                MaterialTheme.colorScheme.surfaceVariant,
-                MaterialTheme.colorScheme.surface
-            )))
             .drawWithCache {
                 val stroke = 2.8.dp.toPx()
                 val inset = stroke / 2f
@@ -327,15 +339,23 @@ private fun NeonPanel(
                         )
                     )
                 }
-                onDrawBehind {
+                onDrawWithContent {
+                    drawContent()
                     val ledProgress = led.progress.value.rem(1f)
-                    drawPath(
+                    drawLedStroke(
                         path,
                         Brush.sweepGradient(movingLedColors(palette, ledProgress)),
-                        style = Stroke(width = stroke)
+                        stroke,
+                        led.glowEnabled
                     )
                 }
             }
+            .clip(shape)
+            .background(Brush.linearGradient(listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surfaceVariant,
+                MaterialTheme.colorScheme.surface
+            )))
             .padding(innerPadding),
         content = content
     )
@@ -355,9 +375,9 @@ private fun NeonButton(
     Box(
         modifier = modifier
             .shadow(5.dp, shape)
+            .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
             .clip(shape)
             .background(Brush.horizontalGradient(buttonFillPalette.take(3)))
-            .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
@@ -644,6 +664,7 @@ private fun CocLioApp(
         )
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 1f).coerceIn(0f, 1f)) }
+    var ledGlowEnabled by remember { mutableStateOf(ledPrefs.getBoolean("glow_enabled", false)) }
     val ledSpeedMultiplier = remoteAppConfig.ledSpeedMultiplier.coerceIn(0.5f, 3f)
     val minLedSpeedMillis = (375f / ledSpeedMultiplier).roundToInt().coerceAtLeast(125)
     val maxLedSpeedMillis = (7500f / ledSpeedMultiplier).roundToInt().coerceAtLeast(minLedSpeedMillis)
@@ -685,6 +706,7 @@ private fun CocLioApp(
         enabled = ledEnabled,
         speedMillis = ledSpeedMillis,
         brightness = ledBrightness.coerceIn(0f, 1f),
+        glowEnabled = ledGlowEnabled,
         progress = ledProgress
     )
 
@@ -1395,6 +1417,7 @@ private fun CocLioApp(
                         ledPreset = ledPreset,
                         ledSpeed = ledSpeed,
                         ledBrightness = ledBrightness,
+                        ledGlowEnabled = ledGlowEnabled,
                         onLedEnabledChanged = { value ->
                             ledEnabled = value
                             ledPrefs.edit().putBoolean("enabled", value).apply()
@@ -1410,6 +1433,10 @@ private fun CocLioApp(
                         onLedBrightnessChanged = { value ->
                             ledBrightness = value.coerceIn(0f, 1f)
                             ledPrefs.edit().putFloat("brightness", ledBrightness).apply()
+                        },
+                        onLedGlowEnabledChanged = { value ->
+                            ledGlowEnabled = value
+                            ledPrefs.edit().putBoolean("glow_enabled", value).apply()
                         },
                         notificationStyle = notificationStyle,
                         communityNotificationsEnabled = communityNotificationsEnabled,
