@@ -1713,7 +1713,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         Text("Bắt đầu theo dõi", color = MaterialTheme.colorScheme.onSurface, fontSize = 21.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Lấy JSON trực tiếp từ game để COC-LIO đọc cấp độ, công trình đang nâng và thời gian còn lại.",
+            "Lấy JSON trực tiếp từ trò chơi để COC-LIO đọc cấp độ, công trình đang nâng và thời gian còn lại.",
             color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, lineHeight = 18.sp
         )
         Spacer(Modifier.height(18.dp))
@@ -1729,7 +1729,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        Text("Nút mở game chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong game.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 15.sp)
+        Text("Nút mở trò chơi chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong trò chơi.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
@@ -2541,7 +2541,7 @@ private fun HistoryScreen(
 
         if (selectedSection == "villages") {
             if (villages.isEmpty()) {
-                item { InfoCard("Chưa có làng nào", "Sao chép JSON trong game rồi dán vào ứng dụng để thêm làng.") }
+                item { InfoCard("Chưa có làng nào", "Sao chép JSON trong trò chơi rồi dán vào ứng dụng để thêm làng.") }
             } else {
                 items(villages, key = { "village_" + it.tag }) { snapshot ->
                     val pinned = snapshot.tag in pinnedTags
