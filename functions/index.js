@@ -228,8 +228,8 @@ exports.notifyCommunityMessage = onDocumentCreated(
         senderUid: String(data.uid || ""),
         senderName: sender,
         senderIsAdmin: String(senderIsAdmin),
-        senderPhotoUrl: senderIsAdmin ? "" : String(data.photoUrl || ""),
-        messageText: content.slice(0, 2000),
+        senderPhotoUrl: senderIsAdmin ? "" : String(data.photoUrl || "").slice(0, 900),
+        messageText: content.slice(0, 1000),
         title: "Cộng đồng COC-LIO",
         body: (sender + ": " + content).slice(0, 450)
       },
