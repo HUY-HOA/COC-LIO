@@ -2366,10 +2366,10 @@ private fun VillageGridItemCard(
             }
             val remoteDetails = buildList {
                 remote?.description?.takeIf { it.isNotBlank() }?.let(::add)
-                remote?.aliases?.takeIf { it.isNotEmpty() }?.let { add("Tên khác: \${it.joinToString(", ")}") }
-                remote?.requirements?.takeIf { it.isNotEmpty() }?.let { add("Yêu cầu: \${it.joinToString(", ")}") }
+                remote?.aliases?.takeIf { it.isNotEmpty() }?.let { add("Tên khác: ${it.joinToString(", ")}") }
+                remote?.requirements?.takeIf { it.isNotEmpty() }?.let { add("Yêu cầu: ${it.joinToString(", ")}") }
                 remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let { add("Chi phí: $it") }
-                remote?.upgradeDurationSeconds?.let { add("Thời gian: \${formatDuration(it)}") }
+                remote?.upgradeDurationSeconds?.let { add("Thời gian: ${formatDuration(it)}") }
                 remote?.details?.forEach(::add)
             }
             val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" } + remoteDetails).joinToString(" • ")
