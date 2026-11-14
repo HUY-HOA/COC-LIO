@@ -1139,6 +1139,8 @@ private val englishTranslations = mapOf(
     "Đã xóa JSON nhận được khỏi danh sách chia sẻ. Bản trong lịch sử vẫn được giữ." to "Received JSON was removed from the sharing list. Its copy in History is still kept.",
     "NHẬP LẠI" to "IMPORT AGAIN",
     "XÓA JSON" to "DELETE JSON",
+    "Không thể xóa JSON đã gửi." to "Unable to delete sent JSON.",
+    "Không thể xóa JSON nhận được khỏi danh sách chia sẻ." to "Unable to delete received JSON from the sharing list.",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
     "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
