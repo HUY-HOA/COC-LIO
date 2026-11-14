@@ -406,7 +406,8 @@ suspend fun shareVillageJsonToCommunity(snapshot: VillageSnapshot): String {
         "JSON trống hoặc quá lớn. Dung lượng tối đa là 700 KB."
     }
     val firestore = FirebaseFirestore.getInstance()
-    val displayName = signedInUser.displayName ?: signedInUser.email ?: "Thành viên"
+    val senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email)
+    val displayName = if (senderIsAdmin) "AILIO" else signedInUser.displayName ?: signedInUser.email ?: "Thành viên"
     val sharedJson = firestore.collection("community_shared_jsons").add(
         mapOf(
             "uid" to signedInUser.uid,
@@ -422,7 +423,7 @@ suspend fun shareVillageJsonToCommunity(snapshot: VillageSnapshot): String {
         communityMessagePayload(
             uid = signedInUser.uid,
             displayName = displayName,
-            senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email),
+            senderIsAdmin = senderIsAdmin,
             photoUrl = signedInUser.photoUrl?.toString().orEmpty(),
             type = "json",
             text = "Đã chia sẻ JSON ${snapshot.villageName?.takeIf { it.isNotBlank() } ?: snapshot.tag} • ${snapshot.tag}",
