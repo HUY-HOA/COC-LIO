@@ -2308,7 +2308,7 @@ private fun VillageGridItemCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(132.dp),
+                .height(148.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
@@ -2364,9 +2364,17 @@ private fun VillageGridItemCard(
                     Text("V$it", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
-            val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" }).joinToString(" • ")
+            val remoteDetails = buildList {
+                remote?.description?.takeIf { it.isNotBlank() }?.let(::add)
+                remote?.aliases?.takeIf { it.isNotEmpty() }?.let { add("Tên khác: \${it.joinToString(", ")}") }
+                remote?.requirements?.takeIf { it.isNotEmpty() }?.let { add("Yêu cầu: \${it.joinToString(", ")}") }
+                remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let { add("Chi phí: $it") }
+                remote?.upgradeDurationSeconds?.let { add("Thời gian: \${formatDuration(it)}") }
+                remote?.details?.forEach(::add)
+            }
+            val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" } + remoteDetails).joinToString(" • ")
             if (detailText.isNotBlank()) {
-                Text(detailText, color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(detailText, color = MaterialTheme.colorScheme.onSurface, fontSize = 8.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
