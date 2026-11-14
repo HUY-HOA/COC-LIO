@@ -36,6 +36,44 @@ Set `dashboard.blocks` to an ordered array. Each block can use one of these type
 
 Use `pageId` values `home`, `buildings`, `history`, `community`, `settings`, `lookup` or `all`. Available action IDs are allowlisted in the APK: `import_json`, `open_game`, `open_settings`, `open_community`, `open_history`, and `open_lookup`. The app ignores unknown block types, page IDs and actions.
 
+Example: a notice on every page and two side-by-side quick actions on the overview page:
+
+```json
+{
+  "dashboard": {
+    "blocks": [
+      {
+        "id": "service-notice",
+        "pageId": "all",
+        "type": "notice",
+        "title": "Thông báo",
+        "message": "Nội dung thông báo được thay đổi từ máy chủ.",
+        "severity": "info"
+      },
+      {
+        "id": "home-quick-actions",
+        "pageId": "home",
+        "type": "row",
+        "children": [
+          {
+            "type": "button",
+            "actionId": "open_game",
+            "actionLabel": "MỞ GAME",
+            "weight": 1
+          },
+          {
+            "type": "button",
+            "actionId": "import_json",
+            "actionLabel": "NHẬP JSON",
+            "weight": 1
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
 ### Publishing future changes
 
 1. Edit `app.json` in this repository.
