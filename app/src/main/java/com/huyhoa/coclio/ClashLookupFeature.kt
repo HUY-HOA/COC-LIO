@@ -1012,7 +1012,7 @@ private fun PlayerLookupCard(data: ClashLookupResponse) {
         )
         Text(player.optString("tag"), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
         LookupValue("Nhà chính", player.optInt("townHallLevel").takeIf { it > 0 }?.toString() ?: "Chưa có dữ liệu")
-        LookupValue("Giải đấu", league?.optString("name")?.takeIf { it.isNotBlank() } ?: "Chưa có dữ liệu")
+        LookupValue("Giải đấu", league?.optString("name")?.takeIf { it.isNotBlank() }?.let(::localizeLookupLeagueName) ?: "Chưa có dữ liệu")
         LookupValue("Bang hội", clan?.optString("name")?.takeIf { it.isNotBlank() } ?: "Không có / chưa có dữ liệu")
         clan?.optString("tag")?.takeIf { it.isNotBlank() }?.let { LookupValue("Mã bang hội", it) }
         ranks?.optJSONObject("homeVillage")?.let {
@@ -1045,8 +1045,8 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
     val rankings = data.rankings
     val badge = clan.optJSONObject("badgeUrls")?.optString("large").orEmpty()
     val location = clan.optJSONObject("location")?.optString("name").orEmpty()
-    val warLeague = clan.optJSONObject("warLeague")?.optString("name").orEmpty()
-    val capitalLeague = clan.optJSONObject("capitalLeague")?.optString("name").orEmpty()
+    val warLeague = clan.optJSONObject("warLeague")?.optString("name").orEmpty().let(::localizeLookupLeagueName)
+    val capitalLeague = clan.optJSONObject("capitalLeague")?.optString("name").orEmpty().let(::localizeLookupLeagueName)
     val members = clan.optJSONArray("members") ?: JSONArray()
 
     LookupCard {
@@ -1081,8 +1081,8 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
         LookupValue("Thành viên", clan.optInt("memberCount").toString())
         LookupValue("Điểm bang hội", clan.optInt("clanPoints").toString())
         LookupValue("Vị trí", location.ifBlank { "Chưa có dữ liệu" })
-        LookupValue("Hạng chiến tranh", warLeague.ifBlank { "Chưa có dữ liệu" })
-        LookupValue("Giải thủ đô", capitalLeague.ifBlank { "Chưa có dữ liệu" })
+        LookupValue("Giải chiến tranh", warLeague.ifBlank { "Chưa có dữ liệu" })
+        LookupValue("Giải Thủ đô", capitalLeague.ifBlank { "Chưa có dữ liệu" })
         LookupValue("Số trận thắng", clan.optInt("warWins").toString())
         LookupValue("Chuỗi thắng", clan.optInt("warWinStreak").toString())
         LookupValue("Nhận lính", clan.optInt("troopsDonated").toString())
