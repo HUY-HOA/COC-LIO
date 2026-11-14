@@ -202,6 +202,57 @@ private suspend fun cleanupCommunityArchive(): Int {
     return removed
 }
 
+private suspend fun cleanupExpiredCommunityAttachments(retentionDays: Int) {
+    require(retentionDays in 1..1200)
+    val firestore = FirebaseFirestore.getInstance()
+    val cutoffMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(retentionDays.toLong())
+    val attachmentTypes = listOf(
+        "image" to "community_deleted_images",
+        "file" to "community_deleted_files"
+    )
+
+    for ((type, archiveCollection) in attachmentTypes) {
+        val activeSnapshot = firestore.collection("community_messages")
+            .whereEqualTo("type", type)
+            .get()
+            .awaitCommunityResult()
+        val expiredMessages = activeSnapshot.documents.filter { document ->
+            val createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: Long.MAX_VALUE
+            createdAt <= cutoffMillis
+        }
+
+        for (chunk in expiredMessages.chunked(100)) {
+            val batch = firestore.batch()
+            for (document in chunk) {
+                val archiveData = document.data.toMutableMap()
+                archiveData["originalId"] = document.id
+                archiveData["archivedBy"] = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+                archiveData["archivedAt"] = FieldValue.serverTimestamp()
+                archiveData["expiresAt"] = Timestamp.now()
+                batch.set(
+                    firestore.collection(archiveCollection).document(document.id),
+                    archiveData
+                )
+                batch.delete(document.reference)
+            }
+            if (chunk.isNotEmpty()) batch.commit().awaitCommunityResult()
+        }
+
+        val archiveSnapshot = firestore.collection(archiveCollection)
+            .get()
+            .awaitCommunityResult()
+        val expiredArchives = archiveSnapshot.documents.filter { document ->
+            val createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: Long.MAX_VALUE
+            createdAt <= cutoffMillis
+        }
+        for (chunk in expiredArchives.chunked(400)) {
+            val batch = firestore.batch()
+            for (document in chunk) batch.delete(document.reference)
+            if (chunk.isNotEmpty()) batch.commit().awaitCommunityResult()
+        }
+    }
+}
+
 class CommunityArchiveCleanupWorker(
     appContext: Context,
     workerParams: WorkerParameters
@@ -212,6 +263,17 @@ class CommunityArchiveCleanupWorker(
             return Result.success()
         }
         return try {
+            val settings = FirebaseFirestore.getInstance()
+                .collection("admin")
+                .document("community_archive_settings")
+                .get()
+                .awaitCommunityResult()
+            if (settings.getBoolean("attachmentAutoDeleteEnabled") == true) {
+                val retentionDays = (settings.getLong("attachmentAutoDeleteDays") ?: 30L).toInt()
+                if (retentionDays in 1..1200) {
+                    cleanupExpiredCommunityAttachments(retentionDays)
+                }
+            }
             cleanupCommunityArchive()
             Result.success()
         } catch (_: Exception) {
@@ -573,6 +635,8 @@ fun CommunityScreen(
     var archiveKeepForever by remember { mutableStateOf(true) }
     var archiveRetentionValue by remember { mutableStateOf("30") }
     var archiveRetentionUnit by remember { mutableStateOf("days") }
+    var attachmentAutoDeleteEnabled by remember { mutableStateOf(false) }
+    var attachmentAutoDeleteDays by remember { mutableStateOf("30") }
     val messageListState = rememberLazyListState()
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -791,12 +855,20 @@ fun CommunityScreen(
                 archiveKeepForever = settings.getBoolean("keepForever") ?: true
                 archiveRetentionValue = (settings.getLong("retentionValue") ?: 30L).toString()
                 archiveRetentionUnit = settings.getString("retentionUnit") ?: "days"
+                attachmentAutoDeleteEnabled = settings.getBoolean("attachmentAutoDeleteEnabled") ?: false
+                attachmentAutoDeleteDays = (settings.getLong("attachmentAutoDeleteDays") ?: 30L).toString()
                 val request = PeriodicWorkRequestBuilder<CommunityArchiveCleanupWorker>(1, TimeUnit.DAYS).build()
                 WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                     "community_archive_cleanup",
                     ExistingPeriodicWorkPolicy.KEEP,
                     request
                 )
+                if (attachmentAutoDeleteEnabled) {
+                    val retentionDays = attachmentAutoDeleteDays.toIntOrNull()
+                    if (retentionDays != null && retentionDays in 1..1200) {
+                        cleanupExpiredCommunityAttachments(retentionDays)
+                    }
+                }
                 val removed = cleanupCommunityArchive()
                 if (removed > 0) statusMessage = "Đã tự dọn $removed mục lưu trữ hết hạn."
             } catch (error: Exception) {
@@ -1078,15 +1150,44 @@ fun CommunityScreen(
                         }
                         Text(
                             if (archiveKeepForever) "Dữ liệu đã gỡ được giữ lại cho đến khi quản lý xóa vĩnh viễn."
-                            else "Áp dụng thời hạn cho các bản ghi trong kho. Tệp đính kèm cũ hiện chưa thể truy cập hoặc dọn dẹp trên gói miễn phí.",
+                            else "Áp dụng thời hạn cho các bản ghi trong kho đã gỡ.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 9.sp
+                        )
+                        Text("TỰ ĐỘNG XÓA ẢNH VÀ TỆP", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FilterChip(
+                                selected = !attachmentAutoDeleteEnabled,
+                                onClick = { attachmentAutoDeleteEnabled = false },
+                                label = { Text("TẮT", fontSize = 9.sp) }
+                            )
+                            FilterChip(
+                                selected = attachmentAutoDeleteEnabled,
+                                onClick = { attachmentAutoDeleteEnabled = true },
+                                label = { Text("BẬT", fontSize = 9.sp) }
+                            )
+                        }
+                        OutlinedTextField(
+                            value = attachmentAutoDeleteDays,
+                            onValueChange = { attachmentAutoDeleteDays = it.filter(Char::isDigit).take(4) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("Số ngày trước khi xóa") }
+                        )
+                        Text(
+                            if (attachmentAutoDeleteEnabled) "Ảnh và tệp trong Cộng đồng, kể cả mục đã gỡ, sẽ bị xóa khỏi Firestore sau số ngày tính từ lúc đăng. Ứng dụng quản lý sẽ dọn định kỳ; thời điểm xóa có thể trễ khi máy ngoại tuyến hoặc Android hạn chế chạy nền."
+                            else "Đang tắt tự động xóa ảnh và tệp. Bật chức năng rồi nhập số ngày từ 1 đến 1200 để áp dụng.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 9.sp
                         )
                         Button(
                             onClick = {
                                 val value = archiveRetentionValue.toIntOrNull()
+                                val attachmentDays = attachmentAutoDeleteDays.toIntOrNull()
                                 if (!archiveKeepForever && (value == null || value !in 1..1200)) {
-                                    statusMessage = "Nhập thời hạn từ 1 đến 1200 ngày hoặc tháng."
+                                    statusMessage = "Nhập thời hạn lưu kho từ 1 đến 1200 ngày hoặc tháng."
+                                } else if (attachmentAutoDeleteEnabled && (attachmentDays == null || attachmentDays !in 1..1200)) {
+                                    statusMessage = "Nhập số ngày tự động xóa từ 1 đến 1200."
                                 } else {
                                     scope.launch {
                                         busy = true
@@ -1099,6 +1200,8 @@ fun CommunityScreen(
                                                         "keepForever" to archiveKeepForever,
                                                         "retentionValue" to (value ?: 0),
                                                         "retentionUnit" to archiveRetentionUnit,
+                                                        "attachmentAutoDeleteEnabled" to attachmentAutoDeleteEnabled,
+                                                        "attachmentAutoDeleteDays" to (attachmentDays ?: 30),
                                                         "updatedAt" to FieldValue.serverTimestamp()
                                                     )
                                                 )
@@ -1108,11 +1211,14 @@ fun CommunityScreen(
                                                 value ?: 0,
                                                 archiveRetentionUnit
                                             )
+                                            if (attachmentAutoDeleteEnabled && attachmentDays != null) {
+                                                cleanupExpiredCommunityAttachments(attachmentDays)
+                                            }
                                             val removed = cleanupCommunityArchive()
                                             statusMessage = if (removed > 0) {
-                                                "Đã lưu thời hạn và dọn $removed mục hết hạn."
+                                                "Đã lưu thiết lập và dọn $removed mục hết hạn."
                                             } else {
-                                                "Đã lưu chế độ lưu trữ."
+                                                "Đã lưu thiết lập lưu trữ và tự động xóa."
                                             }
                                         } catch (error: Exception) {
                                             statusMessage = error.message ?: "Không thể lưu thời hạn lưu trữ."
@@ -1125,7 +1231,7 @@ fun CommunityScreen(
                             enabled = !busy,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("LƯU THIẾT LẬP LƯU TRỮ")
+                            Text("LƯU THIẾT LẬP")
                         }
                     }
                 }
