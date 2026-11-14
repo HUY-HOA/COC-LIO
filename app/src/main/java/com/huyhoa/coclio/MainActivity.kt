@@ -405,13 +405,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        RemoteAppConfigManager.loadCached(this)
+        RemoteAppConfigManager.initialize()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                RemoteAppConfigManager.refresh(this@MainActivity)
                 while (true) {
-                    delay(60_000L)
-                    RemoteAppConfigManager.refresh(this@MainActivity)
+                    delay(65_000L)
+                    RemoteAppConfigManager.refresh()
                 }
             }
         }
