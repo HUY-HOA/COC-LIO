@@ -1869,7 +1869,7 @@ private fun CommunityMessageCard(
                     )
                     if (message.senderIsAdmin) {
                         Text(
-                            "ADMIN",
+                            "QUẢN LÝ",
                             color = Color(0xFF261A00),
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Black,
