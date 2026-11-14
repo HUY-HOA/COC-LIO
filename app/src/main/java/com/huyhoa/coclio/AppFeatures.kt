@@ -2454,13 +2454,19 @@ fun SettingsScreen(
                         label = { Text(label, fontSize = 10.sp) }
                     )
                 }
-                FilterChip(
-                    selected = communityAutoTranslationEnabled,
-                    onClick = {
-                        communityAutoTranslationEnabled = !communityAutoTranslationEnabled
-                        CommunityAutoTranslationPreferences.setEnabled(context, communityAutoTranslationEnabled)
-                    },
-                    label = { Text("Tự động dịch", fontSize = 10.sp) }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Tự động dịch", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                Switch(
+                    checked = communityAutoTranslationEnabled,
+                    onCheckedChange = { enabled ->
+                        communityAutoTranslationEnabled = enabled
+                        CommunityAutoTranslationPreferences.setEnabled(context, enabled)
+                    }
                 )
             }
             Text(
