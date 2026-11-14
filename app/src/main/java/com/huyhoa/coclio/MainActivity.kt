@@ -1153,6 +1153,8 @@ private fun CocLioApp(
             } else {
                 GoogleLoginStartScreen(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    appTitle = remoteAppConfig.appTitle,
+                    appSubtitle = remoteAppConfig.appSubtitle,
                     consentChecked = requiredAccountConsentChecked,
                     onConsentChecked = { requiredAccountConsentChecked = it },
                     isBusy = requiredAccountConsentSubmitting || interactiveGoogleSignIn,
@@ -1542,6 +1544,8 @@ private fun CocLioApp(
 @Composable
 private fun GoogleLoginStartScreen(
     modifier: Modifier = Modifier,
+    appTitle: String,
+    appSubtitle: String,
     consentChecked: Boolean,
     onConsentChecked: (Boolean) -> Unit,
     isBusy: Boolean,
@@ -1565,11 +1569,17 @@ private fun GoogleLoginStartScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "COC-LIO",
+                    appTitle,
                     style = TextStyle(brush = animatedLedTextBrush()),
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 2.sp
+                )
+                Text(
+                    appSubtitle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
                     "CHÀO MỪNG ĐẾN VỚI CỘNG ĐỒNG COC-LIO",
