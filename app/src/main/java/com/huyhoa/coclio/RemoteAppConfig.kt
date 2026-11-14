@@ -26,7 +26,9 @@ data class RemoteDashboardBlock(
     val severity: String = "info",
     val actionLabel: String = "",
     val actionId: String = "",
-    val page: Int = 0
+    val page: Int = 0,
+    val spacingDp: Int = 8,
+    val children: List<RemoteDashboardBlock> = emptyList()
 )
 
 data class RemoteAppConfig(
@@ -333,7 +335,23 @@ object RemoteAppConfigManager {
 
     private fun parseDashboardBlocks(dashboard: JSONObject?): List<RemoteDashboardBlock> {
         val blocks = dashboard?.optJSONArray("blocks") ?: return emptyList()
-        val allowedTypes = setOf("text", "notice", "card", "button", "divider", "spacer")
+        val result = mutableListOf<RemoteDashboardBlock>()
+        for (index in 0 until minOf(blocks.length(), 8)) {
+            val item = blocks.optJSONObject(index) ?: continue
+            parseDashboardBlock(item, index, 0, null)?.let(result::add)
+        }
+        return result
+    }
+
+    private fun parseDashboardBlock(
+        item: JSONObject,
+        index: Int,
+        depth: Int,
+        inheritedPage: Int?
+    ): RemoteDashboardBlock? {
+        val allowedTypes = setOf(
+            "text", "notice", "card", "button", "divider", "spacer", "column", "row"
+        )
         val allowedActions = setOf(
             "import_json",
             "open_game",
@@ -342,35 +360,44 @@ object RemoteAppConfigManager {
             "open_history",
             "open_lookup"
         )
-        val result = mutableListOf<RemoteDashboardBlock>()
-        for (index in 0 until minOf(blocks.length(), 8)) {
-            val item = blocks.optJSONObject(index) ?: continue
-            val type = item.optString("type", "card")
-            if (type !in allowedTypes) continue
-            val action = item.optString("actionId", "")
-            val pageId = item.optString("pageId", "home")
-            val page = when (pageId) {
-                "all" -> -1
-                "home" -> 0
-                "buildings" -> 1
-                "history" -> 2
-                "community" -> 3
-                "settings" -> 4
-                "lookup" -> 5
-                else -> continue
-            }
-            result += RemoteDashboardBlock(
-                id = item.optString("id", "block_$index").take(40),
-                type = type,
-                title = item.optString("title", "").take(120),
-                message = item.optString("message", "").take(500),
-                severity = item.optString("severity", "info").takeIf { it in setOf("info", "success", "warning", "error") } ?: "info",
-                actionLabel = item.optString("actionLabel", "").take(48),
-                actionId = action.takeIf { it in allowedActions }.orEmpty(),
-                page = page
-            )
+        val type = item.optString("type", "card")
+        if (type !in allowedTypes) return null
+
+        val page = inheritedPage ?: when (item.optString("pageId", "home")) {
+            "all" -> -1
+            "home" -> 0
+            "buildings" -> 1
+            "history" -> 2
+            "community" -> 3
+            "settings" -> 4
+            "lookup" -> 5
+            else -> return null
         }
-        return result
+
+        val children = mutableListOf<RemoteDashboardBlock>()
+        val childArray = item.optJSONArray("children")
+        if (depth < 3 && childArray != null) {
+            for (childIndex in 0 until minOf(childArray.length(), 5)) {
+                val child = childArray.optJSONObject(childIndex) ?: continue
+                parseDashboardBlock(child, childIndex, depth + 1, page)?.let(children::add)
+            }
+        }
+
+        val action = item.optString("actionId", "")
+        return RemoteDashboardBlock(
+            id = item.optString("id", "block_$index").take(40),
+            type = type,
+            title = item.optString("title", "").take(120),
+            message = item.optString("message", "").take(500),
+            severity = item.optString("severity", "info")
+                .takeIf { it in setOf("info", "success", "warning", "error") }
+                ?: "info",
+            actionLabel = item.optString("actionLabel", "").take(48),
+            actionId = action.takeIf { it in allowedActions }.orEmpty(),
+            page = page,
+            spacingDp = item.optInt("spacingDp", 8).coerceIn(0, 24),
+            children = children
+        )
     }
 
     private fun color(json: JSONObject, key: String, fallback: Int): Int =
