@@ -1987,7 +1987,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, showBase: Bo
     }
     val remaining = item.remainingSecondsAt(snapshotTimestamp, nowEpoch)
     val levelText = when {
-        item.gearUp -> item.level?.let { "CẤP $it • GEAR-UP" } ?: "GEAR-UP"
+        item.gearUp -> item.level?.let { "CẤP $it • TẤN CÔNG NHANH" } ?: "GEAR-UP"
         item.level != null -> "CẤP ${item.level} → ${item.level + 1}"
         else -> "ĐANG NÂNG"
     }
@@ -2351,7 +2351,7 @@ private fun VillageGridItemCard(
                 }
                 if (item.gearUp) {
                     Spacer(Modifier.width(4.dp))
-                    Text("GEAR-UP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text("TẤN CÔNG NHANH", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
                 item.weaponLevel?.let {
                     Spacer(Modifier.width(4.dp))
