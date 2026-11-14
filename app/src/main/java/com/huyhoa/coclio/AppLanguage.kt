@@ -1085,6 +1085,13 @@ private val englishTranslations = mapOf(
     "Mã không hợp lệ. Hãy nhập mã người chơi hoặc bang hội dạng #ABC123." to "Invalid tag. Enter a player or Clan tag in the format #ABC123.",
     "Mã người chơi trong JSON không hợp lệ." to "The player tag in the JSON is invalid.",
     "JSON không có mã người chơi hợp lệ." to "The JSON does not contain a valid player tag.",
+    "Lấy JSON trực tiếp từ trò chơi để COC-LIO đọc cấp độ, công trình đang nâng và thời gian còn lại." to "Import JSON directly from the game so COC-LIO can read levels, ongoing upgrades and remaining time.",
+    "Nút mở trò chơi chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong trò chơi." to "The game button only opens the game. You must export and copy the JSON yourself inside the game.",
+    "Sao chép JSON trong trò chơi rồi dán vào ứng dụng để thêm làng." to "Copy JSON in the game, then paste it into the app to add a village.",
+    "Tìm hồ sơ người chơi hoặc bang hội bằng tên hoặc mã trong trò chơi." to "Find player or Clan profiles by in-game name or tag.",
+    "Bộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong trò chơi." to "The JSON countdown has ended. Import a new JSON to confirm the level in the game.",
+    "MỞ TRÒ CHƠI" to "OPEN GAME",
+    "QUẢN LÝ" to "ADMIN",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
     "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
@@ -1307,7 +1314,7 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Phân bố cúp giải đấu ") -> "League trophy distribution " + source.removePrefix("Phân bố cúp giải đấu ")
         source.startsWith("Hồi ") -> "Cooldown " + source.removePrefix("Hồi ")
         source.startsWith("Thông báo sẽ tự đóng sau ") -> {
-            val match = Regex("^Thông báo sẽ tự đóng sau (\\d+) giây\\. Trong thời gian đó, bạn có thể nhấn MỞ GAME để vào Clash of Clans\\.$").matchEntire(source)
+            val match = Regex("^Thông báo sẽ tự đóng sau (\\d+) giây\\. Trong thời gian đó, bạn có thể nhấn MỞ TRÒ CHƠI để vào Clash of Clans\\.$").matchEntire(source)
             match?.let { "The notification will close automatically after ${it.groupValues[1]} seconds. During that time, tap OPEN GAME to launch Clash of Clans." } ?: source
         }
         source.startsWith("Toàn bộ ") -> source
