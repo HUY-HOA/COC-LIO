@@ -116,6 +116,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -401,7 +405,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        RemoteAppConfigManager.loadCached(this)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                RemoteAppConfigManager.refresh(this@MainActivity)
+                while (true) {
+                    delay(60_000L)
+                    RemoteAppConfigManager.refresh(this@MainActivity)
+                }
+            }
+        }
         setContent {
+            val remoteConfig by RemoteAppConfigManager.config.collectAsState()
             var themeMode by remember { mutableStateOf(AppPreferences.themeMode(this@MainActivity)) }
             var languagePreference by remember { mutableStateOf(AppLanguageSettings.load(this@MainActivity)) }
             val deviceLanguage = LocalConfiguration.current.locales[0].language
@@ -412,29 +427,29 @@ class MainActivity : ComponentActivity() {
             }
             val colors = if (dark) {
                 darkColorScheme(
-                    primary = CocCyan,
+                    primary = Color(remoteConfig.darkPrimary),
                     onPrimary = Color(0xFF04101D),
-                    secondary = CocMagenta,
-                    tertiary = CocGold,
-                    background = CocBackground,
-                    surface = CocSurface,
-                    surfaceVariant = CocSurfaceAlt,
+                    secondary = Color(remoteConfig.darkSecondary),
+                    tertiary = Color(remoteConfig.darkTertiary),
+                    background = Color(remoteConfig.darkBackground),
+                    surface = Color(remoteConfig.darkSurface),
+                    surfaceVariant = Color(remoteConfig.darkSurfaceVariant),
                     onBackground = Color.White,
                     onSurface = Color.White,
-                    onSurfaceVariant = CocMuted
+                    onSurfaceVariant = Color(remoteConfig.darkOnSurfaceVariant)
                 )
             } else {
                 lightColorScheme(
-                    primary = Color(0xFF006A78),
+                    primary = Color(remoteConfig.lightPrimary),
                     onPrimary = Color.White,
-                    secondary = Color(0xFF8B3B85),
-                    tertiary = Color(0xFF8A5A00),
-                    background = Color(0xFFFFFFFF),
-                    surface = Color.White,
-                    surfaceVariant = Color(0xFFE8EEF6),
-                    onBackground = Color(0xFF172235),
-                    onSurface = Color(0xFF172235),
-                    onSurfaceVariant = Color(0xFF526176)
+                    secondary = Color(remoteConfig.lightSecondary),
+                    tertiary = Color(remoteConfig.lightTertiary),
+                    background = Color(remoteConfig.lightBackground),
+                    surface = Color(remoteConfig.lightSurface),
+                    surfaceVariant = Color(remoteConfig.lightSurfaceVariant),
+                    onBackground = Color(remoteConfig.lightOnBackground),
+                    onSurface = Color(remoteConfig.lightOnSurface),
+                    onSurfaceVariant = Color(remoteConfig.lightOnSurfaceVariant)
                 )
             }
             CompositionLocalProvider(
@@ -468,6 +483,7 @@ private fun CocLioApp(
     onThemeModeChanged: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val remoteAppConfig by RemoteAppConfigManager.config.collectAsState()
     val baseDensity = LocalDensity.current
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
     var displaySizeLevel by remember { mutableStateOf(AppPreferences.displaySizeLevel(context)) }
@@ -617,12 +633,15 @@ private fun CocLioApp(
         )
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.5f).coerceIn(0f, 1f)) }
+    val ledSpeedMultiplier = remoteAppConfig.ledSpeedMultiplier.coerceIn(0.5f, 3f)
+    val minLedSpeedMillis = (750f / ledSpeedMultiplier).roundToInt().coerceAtLeast(250)
+    val maxLedSpeedMillis = (15000f / ledSpeedMultiplier).roundToInt().coerceAtLeast(minLedSpeedMillis)
     val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) {
         0
     } else {
-        ((30000f - (ledSpeed.coerceIn(1, 100) / 100f) * 28500f) / 2f)
+        ((30000f - (ledSpeed.coerceIn(1, 100) / 100f) * 28500f) / 2f / ledSpeedMultiplier)
             .roundToInt()
-            .coerceIn(750, 15000)
+            .coerceIn(minLedSpeedMillis, maxLedSpeedMillis)
     }
     val ledProgress = remember { mutableStateOf(0f) }
     val currentLedSpeedMillis by rememberUpdatedState(ledSpeedMillis)
