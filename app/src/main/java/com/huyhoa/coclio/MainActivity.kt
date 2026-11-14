@@ -80,6 +80,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -1083,6 +1084,9 @@ private fun CocLioApp(
                     NavigationBarItem(
                         selected = selectedTab == item.page,
                         onClick = { selectedTab = item.page },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = Color.Transparent
+                        ),
                         icon = {
                             Box(
                                 modifier = Modifier
@@ -1648,9 +1652,10 @@ private fun GoogleLoginStartScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
                         .then(
                             if (consentChecked) {
-                                Modifier.ledRgbBorder(cornerRadiusDp = 8f, strokeWidthDp = 2.4f)
+                                Modifier.ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.2f)
                             } else {
                                 Modifier
                             }
