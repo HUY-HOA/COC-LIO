@@ -51,7 +51,8 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 - Đăng nhập Google được xác thực bằng Firebase Authentication. Hồ sơ Google được đồng bộ vào Firestore gồm Gmail, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email và thời điểm/số lần đăng nhập. Chỉ tài khoản quản lý được đọc danh sách hồ sơ; mỗi tài khoản thường chỉ đọc hồ sơ của chính mình. Lịch sử JSON vẫn lưu cục bộ và không đồng bộ đám mây.
 - Nhắc nâng cấp được lập lịch từ timer trong JSON. Android có thể trì hoãn tác vụ do chế độ tiết kiệm pin hoặc chính sách hệ thống.
 - Có tiện ích màn hình chính theo từng hồ sơ và từng làng; bố cục dọc mặc định 2 × 6 ô, danh sách tất cả công trình đang nâng cấp có thể cuộn, mỗi mục có đồng hồ đếm ngược và thanh tiến trình riêng.
-- Trong app, các thẻ công trình có dải LED neon chuyển động quanh viền; ảnh công trình giữ nguyên, không phủ hiệu ứng lên artwork. Các thẻ đang nâng có thanh tiến trình cập nhật theo đồng hồ.
+- Trong app, các thẻ công trình có dải LED neon chuyển động quanh viền, có tùy chọn tăng quầng sáng; ảnh công trình giữ nguyên, không phủ hiệu ứng lên artwork. Các thẻ đang nâng có thanh tiến trình cập nhật theo đồng hồ.
+- Thông báo tin nhắn cộng đồng hiển thị avatar ADMIN cho tài khoản quản lý và ảnh hồ sơ của thành viên khác khi ảnh có sẵn; lịch kiểm tra nền trên Firebase Spark vẫn có thể bị Android trì hoãn.
 
 Để bật đăng nhập Google, xem [docs/GOOGLE_SIGN_IN_SETUP.md](docs/GOOGLE_SIGN_IN_SETUP.md) và cấu hình secret `GOOGLE_WEB_CLIENT_ID`.
 
