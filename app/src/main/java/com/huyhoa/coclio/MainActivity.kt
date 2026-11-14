@@ -223,6 +223,10 @@ internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLedStroke(
 @Composable
 private fun animatedLedTextBrush(): Brush {
     val led = LocalLedTheme.current
+    if (!led.enabled) {
+        val color = MaterialTheme.colorScheme.onSurface
+        return Brush.linearGradient(listOf(color, color))
+    }
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
     val phase = (led.progress.value).rem(1f)
     return Brush.linearGradient(movingLedColors(palette, phase))
@@ -251,13 +255,15 @@ private fun LedFrameBox(
                 )
             }
             onDrawBehind {
-                val phase = led.progress.value.rem(1f)
-                drawLedStroke(
-                    path,
-                    Brush.sweepGradient(movingLedColors(palette, phase)),
-                    stroke,
-                    led.glowEnabled
-                )
+                if (led.enabled) {
+                    val phase = led.progress.value.rem(1f)
+                    drawLedStroke(
+                        path,
+                        Brush.sweepGradient(movingLedColors(palette, phase)),
+                        stroke,
+                        led.glowEnabled
+                    )
+                }
             }
         },
         contentAlignment = Alignment.Center,
@@ -272,7 +278,7 @@ fun Modifier.ledRgbBorder(
 ): Modifier {
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness.coerceIn(0f, 1f)) }
-    val active = palette.size >= 2 && strokeWidthDp > 0f
+    val active = led.enabled && palette.size >= 2 && strokeWidthDp > 0f
     val glowEnabled = led.glowEnabled
     return this.drawWithCache {
         val stroke = strokeWidthDp.dp.toPx()
@@ -341,13 +347,15 @@ private fun NeonPanel(
                 }
                 onDrawWithContent {
                     drawContent()
-                    val ledProgress = led.progress.value.rem(1f)
-                    drawLedStroke(
-                        path,
-                        Brush.sweepGradient(movingLedColors(palette, ledProgress)),
-                        stroke,
-                        led.glowEnabled
-                    )
+                    if (led.enabled) {
+                        val ledProgress = led.progress.value.rem(1f)
+                        drawLedStroke(
+                            path,
+                            Brush.sweepGradient(movingLedColors(palette, ledProgress)),
+                            stroke,
+                            led.glowEnabled
+                        )
+                    }
                 }
             }
             .clip(shape)
