@@ -146,33 +146,3 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
-
-      - name: Email APK build result
-        if: always()
-        continue-on-error: true
-        env:
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          BUILD_RESULT: ${{ job.status }}
-        run: |
-          if [[ -z "$GMAIL_APP_PASSWORD" ]]; then
-            echo "::warning::Thiếu GitHub Actions secret GMAIL_APP_PASSWORD; không thể gửi email kết quả build."
-            exit 0
-          fi
-          python3 - <<'PY'
-          import os
-          import smtplib
-          from email.message import EmailMessage
-
-          address = "phunghuyhoahkb@gmail.com"
-          success = os.environ.get("BUILD_RESULT") == "success"
-          result = "THÀNH CÔNG" if success else "THẤT BẠI"
-          message = EmailMessage()
-          message["From"] = f"COC-LIO Build <{address}>"
-          message["To"] = address
-          message["Subject"] = f"BUILD APK {result}"
-          message.set_content(f"BUILD APK {result}")
-
-          with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=25) as smtp:
-              smtp.login(address, os.environ["GMAIL_APP_PASSWORD"])
-              smtp.send_message(message)
-          PY
