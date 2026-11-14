@@ -34,78 +34,135 @@ fun RemoteDashboardBlocks(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 190.dp)
+            .heightIn(max = 220.dp)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         blocks.forEach { block ->
-            when (block.type) {
-                "divider" -> Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                "spacer" -> Spacer(Modifier.height(8.dp))
-                "text" -> {
+            RemoteUiBlock(block = block, onAction = onAction)
+        }
+    }
+}
+
+@Composable
+private fun RemoteUiBlock(
+    block: RemoteDashboardBlock,
+    onAction: (String) -> Unit
+) {
+    val spacing = block.spacingDp.dp
+    when (block.type) {
+        "divider" -> Divider(color = MaterialTheme.colorScheme.outlineVariant)
+        "spacer" -> Spacer(Modifier.height(spacing.coerceAtLeast(4.dp)))
+        "text" -> {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                if (block.title.isNotBlank()) {
+                    Text(
+                        block.title,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (block.message.isNotBlank()) {
+                    Text(
+                        block.message,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+        "button" -> {
+            if (block.actionId.isNotBlank() && block.actionLabel.isNotBlank()) {
+                Button(
+                    onClick = { onAction(block.actionId) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(block.actionLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        "column", "row" -> {
+            val content: @Composable () -> Unit = {
+                if (block.title.isNotBlank()) {
+                    Text(
+                        block.title,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (block.message.isNotBlank()) {
+                    Text(
+                        block.message,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp
+                    )
+                }
+                block.children.forEach { child ->
+                    RemoteUiBlock(child, onAction)
+                }
+            }
+            if (block.type == "row") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    content()
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    content()
+                }
+            }
+        }
+        "notice", "card" -> {
+            val accent = when (block.severity) {
+                "success" -> Color(0xFF42C98A)
+                "warning" -> Color(0xFFFFB74D)
+                "error" -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.primary
+            }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(13.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.96f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(accent.copy(alpha = 0.07f))
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    if (block.title.isNotBlank()) {
+                        Text(
+                            block.title,
+                            color = accent,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     if (block.message.isNotBlank()) {
                         Text(
-                            text = block.message,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp
+                            block.message,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 10.sp,
+                            lineHeight = 14.sp
                         )
                     }
-                }
-                "button" -> {
+                    block.children.forEach { child ->
+                        RemoteUiBlock(child, onAction)
+                    }
                     if (block.actionId.isNotBlank() && block.actionLabel.isNotBlank()) {
-                        Button(
-                            onClick = { onAction(block.actionId) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(block.actionLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-                "notice", "card" -> {
-                    val accent = when (block.severity) {
-                        "success" -> Color(0xFF42C98A)
-                        "warning" -> Color(0xFFFFB74D)
-                        "error" -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.primary
-                    }
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(13.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.96f)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(accent.copy(alpha = 0.07f))
-                                .padding(horizontal = 12.dp, vertical = 9.dp),
-                            verticalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            if (block.title.isNotBlank()) {
-                                Text(
-                                    block.title,
-                                    color = accent,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            if (block.message.isNotBlank()) {
-                                Text(
-                                    block.message,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 10.sp,
-                                    lineHeight = 14.sp
-                                )
-                            }
-                            if (block.actionId.isNotBlank() && block.actionLabel.isNotBlank()) {
-                                Row(modifier = Modifier.fillMaxWidth()) {
-                                    Button(onClick = { onAction(block.actionId) }) {
-                                        Text(block.actionLabel, fontSize = 10.sp)
-                                    }
-                                }
-                            }
+                        Button(onClick = { onAction(block.actionId) }) {
+                            Text(block.actionLabel, fontSize = 10.sp)
                         }
                     }
                 }
