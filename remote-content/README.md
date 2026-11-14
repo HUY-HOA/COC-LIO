@@ -17,7 +17,7 @@
 - `catalog`: tối đa 500 mục, khóa theo `dataId`; có `name`, `category`, `description`, `maxLevel`, `imageUrl`. Category hợp lệ: `defense`, `resources`, `traps`, `other`, `troops`, `heroes`, `spells`, `pets`, `equipment`. Chỉ tên/nhóm/cấp tối đa/ảnh thẻ được ghi đè; parser JSON và logic tiến trình nâng cấp vẫn là mã cài trong APK.
 - `guides`: tối đa 20 hướng dẫn, mỗi mục có `id`, `title`, `body`, `imageUrl`, `enabled`.
 - `links`: tối đa 20 liên kết, chỉ mở địa chỉ HTTPS.
-- `notificationTemplates`: mẫu tiêu đề/nội dung thông báo nhắc nâng cấp. Biến được hỗ trợ: `{item}`, `{village}`, `{tag}`, `{id}`, `{level}`, `{base}`, `{section}`.
+- `notificationTemplates`: mẫu tiêu đề/nội dung thông báo nhắc nâng cấp, tách riêng hai nhánh `vi` và `en` để giữ đúng ngôn ngữ ứng dụng. Mỗi nhánh có `title`, `text`, `body`. Biến được hỗ trợ: `{item}`, `{village}`, `{tag}`, `{id}`, `{level}`, `{base}`, `{section}`. Khi người dùng chọn ngôn ngữ hệ thống khác tiếng Việt/tiếng Anh, ứng dụng dùng tiếng Anh.
 
 ## Hình ảnh và quyền truy cập
 
