@@ -109,6 +109,8 @@ exports.recordAccountActivity = onCall({ region: REGION }, async (request) => {
 
   if (
     !profile.exists ||
+    Number(profile.get("requiredAccountDataConsentVersion") || 0) !== 1 ||
+    profile.get("accountDisabled") === true ||
     profile.get("dataSharingConsent") !== true ||
     Number(profile.get("activityDataConsentVersion") || 0) !== 6
   ) {
