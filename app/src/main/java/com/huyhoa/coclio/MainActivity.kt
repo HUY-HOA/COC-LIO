@@ -559,14 +559,16 @@ private fun CocLioApp(
         !requiredAccountConsentAccepted
     val existingFirebaseUser = FirebaseAuth.getInstance().currentUser
     val accountAwaitingConsent = pendingGoogleSignIn?.account ?: if (existingAccountNeedsConsent) {
-        existingFirebaseUser?.email?.let { email ->
-            GoogleAccountData(
-                email = email,
-                displayName = existingFirebaseUser.displayName,
-                givenName = null,
-                familyName = null,
-                profilePictureUri = existingFirebaseUser.photoUrl?.toString()
-            )
+        existingFirebaseUser?.let { user ->
+            user.email?.let { email ->
+                GoogleAccountData(
+                    email = email,
+                    displayName = user.displayName,
+                    givenName = null,
+                    familyName = null,
+                    profilePictureUri = user.photoUrl?.toString()
+                )
+            }
         }
     } else {
         null
