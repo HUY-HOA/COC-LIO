@@ -15,16 +15,7 @@
     "actionLabel": "",
     "actionId": ""
   },
-  "catalog": [
-    {
-      "dataId": 1000001,
-      "name": "Nhà chính",
-      "category": "other",
-      "description": "Mẫu minh họa; thay bằng dữ liệu đã xác minh.",
-      "maxLevel": 18,
-      "imageUrl": "https://example.com/town-hall.png"
-    }
-  ],
+  "catalog": [],
   "guides": [
     {
       "id": "import-json",
