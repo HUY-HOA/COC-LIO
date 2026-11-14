@@ -81,6 +81,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -477,6 +478,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun CocLioApp(
     languagePreference: String,
@@ -1080,10 +1082,11 @@ private fun CocLioApp(
         },
         bottomBar = {
             if (isGoogleSignedIn) {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ) {
+            CompositionLocalProvider(LocalRippleConfiguration provides null) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ) {
                 val navItems = remoteNavigationItems
                 navItems.forEach { item ->
                     NavigationBarItem(
@@ -1133,6 +1136,7 @@ private fun CocLioApp(
                             )
                         }
                     )
+                }
                 }
             }
             }
