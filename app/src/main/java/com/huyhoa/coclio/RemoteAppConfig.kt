@@ -29,6 +29,10 @@ data class RemoteDashboardBlock(
     val page: Int = 0,
     val spacingDp: Int = 8,
     val weight: Float = 1f,
+    val imageUrl: String = "",
+    val imageHeightDp: Int = 140,
+    val items: List<String> = emptyList(),
+    val externalUrl: String = "",
     val children: List<RemoteDashboardBlock> = emptyList()
 )
 
@@ -351,7 +355,8 @@ object RemoteAppConfigManager {
         inheritedPage: Int?
     ): RemoteDashboardBlock? {
         val allowedTypes = setOf(
-            "text", "notice", "card", "button", "divider", "spacer", "column", "row"
+            "text", "notice", "card", "button", "divider", "spacer", "column", "row",
+            "image", "list", "metric", "badge", "link"
         )
         val allowedActions = setOf(
             "import_json",
@@ -385,6 +390,15 @@ object RemoteAppConfigManager {
         }
 
         val action = item.optString("actionId", "")
+        val externalUrl = safeDashboardHttpsUrl(item.optString("url", ""))
+        val listItems = mutableListOf<String>()
+        val rawItems = item.optJSONArray("items")
+        if (rawItems != null) {
+            for (itemIndex in 0 until minOf(rawItems.length(), 8)) {
+                val value = rawItems.optString(itemIndex, "").trim().take(120)
+                if (value.isNotBlank()) listItems += value
+            }
+        }
         return RemoteDashboardBlock(
             id = item.optString("id", "block_$index").take(40),
             type = type,
@@ -398,9 +412,18 @@ object RemoteAppConfigManager {
             page = page,
             spacingDp = item.optInt("spacingDp", 8).coerceIn(0, 24),
             weight = item.optDouble("weight", 1.0).toFloat().takeIf { it.isFinite() }?.coerceIn(0.25f, 4f) ?: 1f,
+            imageUrl = safeDashboardHttpsUrl(item.optString("imageUrl", "")),
+            imageHeightDp = item.optInt("imageHeightDp", 140).coerceIn(60, 300),
+            items = listItems,
+            externalUrl = externalUrl,
             children = children
         )
     }
+
+    private fun safeDashboardHttpsUrl(value: String): String =
+        value.trim().takeIf {
+            it.length <= 2000 && it.startsWith("https://", ignoreCase = true)
+        }.orEmpty()
 
     private fun color(json: JSONObject, key: String, fallback: Int): Int =
         colorValue(json.optString(key, "")) ?: fallback
