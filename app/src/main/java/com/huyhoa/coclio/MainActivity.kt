@@ -621,6 +621,7 @@ private fun CocLioApp(
             communityNotificationsEnabled,
             updateNotificationsEnabled
         )
+        FirebaseMessagingTopicSubscriptions.sync(context, activeProfile, isGoogleSignedIn)
     }
     var deletedVillages by remember(activeProfile) {
         mutableStateOf(VillageStore.loadDeleted(context, activeProfile))
