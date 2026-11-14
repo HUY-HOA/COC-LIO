@@ -936,7 +936,7 @@ object FirebaseVillageDataSync {
 
         val playerTag = snapshot.tag.trim()
         require(playerTag.matches(Regex("^#[A-Za-z0-9]+$"))) {
-            "Player Tag trong JSON không hợp lệ."
+            "Mã người chơi trong JSON không hợp lệ."
         }
         val rawBytes = snapshot.rawJson.toByteArray(Charsets.UTF_8).size
         require(rawBytes in 1..700_000) {
@@ -2319,7 +2319,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 else -> "Chưa ghi nhận"
                             })
                             ProfileDataRow("Đồng bộ JSON Clash of Clans", if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.villageDataConsent) "Đã cho phép" else "Chưa cho phép")
-                            ProfileDataRow("Player Tag gần nhất", account.lastVillageTag.ifBlank { "Chưa ghi nhận" })
+                            ProfileDataRow("Mã người chơi gần nhất", account.lastVillageTag.ifBlank { "Chưa ghi nhận" })
                             ProfileDataRow("Tên làng gần nhất", account.lastVillageName.ifBlank { "Chưa ghi nhận" })
                             ProfileDataRow("Town Hall", if (account.lastVillageTownHallLevel > 0L) account.lastVillageTownHallLevel.toString() else "Chưa ghi nhận")
                             ProfileDataRow("Builder Hall", if (account.lastVillageBuilderHallLevel > 0L) account.lastVillageBuilderHallLevel.toString() else "Chưa ghi nhận")
