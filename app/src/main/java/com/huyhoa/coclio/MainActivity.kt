@@ -1003,8 +1003,14 @@ private fun CocLioApp(
             AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
         }
         AccountProfileStore.saveGoogleData(context, googleAccount)
+        val accountProfileExists = AccountPrivacyConsent.hasAccountProfile()
+        if (accountProfileExists) {
+            AccountPrivacyConsent.saveRequiredAccountDataConsent()
+        }
         GoogleAccountAuth.shareProfile(googleAccount)
-        AccountPrivacyConsent.saveRequiredAccountDataConsent()
+        if (!accountProfileExists) {
+            AccountPrivacyConsent.saveRequiredAccountDataConsent()
+        }
         FirebaseAccountAdministration.savePreferredName(profileName)
         AccountProfileStore.setActive(context, googleAccount.email)
         requiredAccountConsentAccepted = true
