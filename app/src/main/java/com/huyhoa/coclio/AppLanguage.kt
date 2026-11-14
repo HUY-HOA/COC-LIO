@@ -1043,6 +1043,7 @@ private val englishTranslations = mapOf(
 private fun translateAppText(source: String, language: AppUiLanguage): String {
     val normalizedSource = source.removePrefix("# ID: ").removePrefix("ID: ")
     if (normalizedSource != source) return translateAppText(normalizedSource, language)
+    RemoteAppConfigManager.config.value.translation(source, language)?.let { return it }
     if (language != AppUiLanguage.ENGLISH) return source
     englishTranslations[source]?.let { return it }
     return when {
