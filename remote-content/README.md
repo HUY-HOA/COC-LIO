@@ -14,7 +14,7 @@
 
 - `maintenance`: bật/tắt thông báo bảo trì và nội dung đi kèm. Đây là banner thông tin, không khóa app hay vô hiệu hóa đăng nhập.
 - `announcement`: thông báo nổi bật, mức `info`, `success`, `warning`, `error`, ảnh HTTPS và nút hành động.
-- `catalog`: tối đa 500 mục, khóa theo `dataId`; có `name`, `category`, `description`, `maxLevel`, `imageUrl`. Category hợp lệ: `defense`, `resources`, `traps`, `other`, `troops`, `heroes`, `spells`, `pets`, `equipment`. Chỉ tên/nhóm/cấp tối đa/ảnh thẻ được ghi đè; parser JSON và logic tiến trình nâng cấp vẫn là mã cài trong APK.
+- `catalog`: tối đa 500 mục, khóa theo `dataId`; có `name`, `category`, `description`, `maxLevel`, `imageUrl` và các trường tùy chọn `aliases`, `requirements`, `details`, `upgradeCost`, `upgradeDurationSeconds`. Category hợp lệ: `defense`, `resources`, `traps`, `other`, `troops`, `heroes`, `spells`, `pets`, `equipment`. Ứng dụng có thể cập nhật tên, nhóm, cấp tối đa, ảnh, tên gọi khác, yêu cầu, chi phí và thời gian nâng cấp hiển thị mà không cần APK mới. Các dữ liệu được giới hạn số lượng và độ dài; parser JSON, cách tính tiến trình thực tế và logic xác nhận hoàn thành vẫn thuộc APK.
 - `guides`: tối đa 20 hướng dẫn, mỗi mục có `id`, `title`, `body`, `imageUrl`, `enabled`.
 - `links`: tối đa 20 liên kết, chỉ mở địa chỉ HTTPS.
 - `notificationTemplates`: mẫu tiêu đề/nội dung thông báo nhắc nâng cấp, tách riêng hai nhánh `vi` và `en` để giữ đúng ngôn ngữ ứng dụng. Mỗi nhánh có `title`, `text`, `body`. Biến được hỗ trợ: `{item}`, `{village}`, `{tag}`, `{id}`, `{level}`, `{base}`, `{section}`. Khi người dùng chọn ngôn ngữ hệ thống khác tiếng Việt/tiếng Anh, ứng dụng dùng tiếng Anh.
