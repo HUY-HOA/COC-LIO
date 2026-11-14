@@ -393,7 +393,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         RemoteAppConfigManager.startRealtimeUpdates()
-        RemoteContentManager.startRealtimeUpdates(this)
+        RemoteContentManager.onHostStart(this)
     }
 
     override fun onStop() {
@@ -552,8 +552,7 @@ private fun CocLioApp(
         requiredAccountConsentLoadedForEmail == null &&
         !requiredAccountConsentSubmitting
     LaunchedEffect(isGoogleSignedIn) {
-        if (isGoogleSignedIn) RemoteContentManager.startRealtimeUpdates(context)
-        else RemoteContentManager.stopRealtimeUpdates()
+        RemoteContentManager.setAccessAllowed(context, isGoogleSignedIn)
     }
     val initialHistory = remember(activeProfile) { VillageStore.loadAll(context, activeProfile) }
 
