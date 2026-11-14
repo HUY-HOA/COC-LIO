@@ -1812,7 +1812,7 @@ object AppWidgetUpdater {
             if (snapshot == null) "COC-LIO • " + AppLanguageSettings.translate(context, "Chưa có dữ liệu")
             else (snapshot.villageName ?: snapshot.tag) +
                 (if (snapshot.villageName.isNullOrBlank()) "" else " • " + snapshot.tag) +
-                " • TH" + (snapshot.townHallLevel ?: "—") +
+                " • " + AppLanguageSettings.translate(context, "Nhà chính") + " " + (snapshot.townHallLevel ?: "—") +
                 (if (builderTotal == null) "" else " • " + AppLanguageSettings.translate(context, "Thợ rảnh") + " $buildersFree/$builderTotal")
         )
         views.setTextViewText(
