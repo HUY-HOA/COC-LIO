@@ -40,11 +40,12 @@ jobs:
       - name: Validate and publish Remote Config
         env:
           FIREBASE_PROJECT_ID: coc-lio-73de9
+          NODE_PATH: ${{ github.workspace }}/functions/node_modules
         run: |
           node <<'NODE'
           const fs = require("node:fs");
-          const { initializeApp, applicationDefault } = require("./functions/node_modules/firebase-admin/app");
-          const { getRemoteConfig } = require("./functions/node_modules/firebase-admin/remote-config");
+          const { initializeApp, applicationDefault } = require("firebase-admin/app");
+          const { getRemoteConfig } = require("firebase-admin/remote-config");
 
           async function main() {
             const source = JSON.parse(fs.readFileSync("remote-config/app.json", "utf8"));
