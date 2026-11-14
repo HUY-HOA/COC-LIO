@@ -2182,13 +2182,21 @@ private fun CommunityArchiveCard(
                             label = "LƯU TỆP"
                         )
                     }
-                    item.category == "text" && item.type == "json" && item.sharedJsonRaw.isNotBlank() -> {
-                        CommunitySaveTextButton(
-                            fileName = item.fileName.ifBlank { "chia_se.json" },
-                            textContent = item.sharedJsonRaw,
-                            mimeType = "application/json",
-                            label = "LƯU JSON"
-                        )
+                    item.category == "text" && item.type == "json" -> {
+                        if (item.sharedJsonRaw.isNotBlank()) {
+                            CommunitySaveTextButton(
+                                fileName = item.fileName.ifBlank { "chia_se.json" },
+                                textContent = item.sharedJsonRaw,
+                                mimeType = "application/json",
+                                label = "LƯU JSON"
+                            )
+                        } else {
+                            Text(
+                                "JSON gốc không có trong bản lưu cũ.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 8.sp
+                            )
+                        }
                     }
                     item.category == "text" && item.text.isNotBlank() -> {
                         val savedMessage = buildString {
