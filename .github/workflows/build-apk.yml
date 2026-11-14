@@ -172,6 +172,17 @@ jobs:
           MESSAGE="✅ BUILD APK THÀNH CÔNG"
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" --method POST -f body="$MESSAGE"
 
+      - name: Notify failed APK build on GitHub
+        if: failure() && github.event_name == 'issues'
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          MESSAGE="❌ BUILD APK THẤT BẠI. Xem log chi tiết: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" --method POST -f body="$MESSAGE"
+
       - name: Close build request issue
         if: always() && github.event_name == 'issues'
         shell: bash
