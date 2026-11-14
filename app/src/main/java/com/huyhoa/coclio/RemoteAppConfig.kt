@@ -28,6 +28,7 @@ data class RemoteDashboardBlock(
     val actionId: String = "",
     val page: Int = 0,
     val spacingDp: Int = 8,
+    val weight: Float = 1f,
     val children: List<RemoteDashboardBlock> = emptyList()
 )
 
@@ -396,6 +397,7 @@ object RemoteAppConfigManager {
             actionId = action.takeIf { it in allowedActions }.orEmpty(),
             page = page,
             spacingDp = item.optInt("spacingDp", 8).coerceIn(0, 24),
+            weight = item.optDouble("weight", 1.0).toFloat().takeIf { it.isFinite() }?.coerceIn(0.25f, 4f) ?: 1f,
             children = children
         )
     }
