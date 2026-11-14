@@ -263,8 +263,10 @@ private suspend fun checkCommunityMessages(
         val document = item.document
         val senderUid = document.getString("uid").orEmpty()
         if (senderUid == currentUid) return@forEach
-        val sender = if (document.getBoolean("senderIsAdmin") == true) "AILIO"
+        val senderIsAdmin = document.getBoolean("senderIsAdmin") == true
+        val sender = if (senderIsAdmin) "AILIO"
         else document.getString("displayName").orEmpty().ifBlank { AppLanguageSettings.translate(context, "Thành viên") }
+        val senderPhotoUrl = if (senderIsAdmin) "" else document.getString("photoUrl").orEmpty()
         val type = document.getString("type").orEmpty()
         val messageText = when (type) {
             "text" -> document.getString("text").orEmpty().trim()
@@ -277,7 +279,8 @@ private suspend fun checkCommunityMessages(
                 notificationId = ("community_" + document.id).hashCode(),
                 senderUid = senderUid,
                 senderName = sender,
-                messageText = messageText
+                messageText = messageText,
+                senderPhotoUrl = senderPhotoUrl
             )
         }
     }
