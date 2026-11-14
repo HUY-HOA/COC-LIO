@@ -143,6 +143,8 @@ private val englishTranslations = mapOf(
     "Điều chỉnh kích thước tổng thể của giao diện, nút và khoảng cách. Mức 3 (100%) là mặc định." to "Adjust the overall interface, button and spacing size. Level 3 (100%) is the default.",
     "Điều chỉnh cỡ chữ trong toàn ứng dụng. Mức 3 (100%) là mặc định." to "Adjust text size throughout the app. Level 3 (100%) is the default.",
     "LED RGB TÙY CHỈNH" to "CUSTOM RGB LED",
+    "Ánh sáng lan tỏa" to "Light bloom",
+    "Tạo vùng sáng mờ quanh viền LED" to "Create a soft glow around the LED border",
     "Bật hiệu ứng chuyển động" to "Enable animation",
     "Tốc độ chuyển màu" to "Color transition speed",
     "ĐỨNG YÊN" to "STILL",
