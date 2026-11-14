@@ -206,7 +206,7 @@ private fun movingLedColors(
     }
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLedStroke(
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLedStroke(
     path: Path,
     brush: Brush,
     strokeWidth: Float,
@@ -2433,8 +2433,8 @@ private fun HelperCompactCard(item: VillageItem, modifier: Modifier = Modifier) 
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            CategoryImage(item, 38)
-            Text(item.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, overflow = TextOverflow.Ellipsis)
+            CategoryImage(item, 44)
+            
             Text("Cấp ${item.level ?: "—"}", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Black)
             Text(
                 item.helperCooldownSeconds?.let { "Hồi ${formatDuration(it)}" } ?: "Sẵn sàng",
