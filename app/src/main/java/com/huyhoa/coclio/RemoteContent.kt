@@ -96,16 +96,14 @@ object RemoteContentManager {
         val editor = preferences.edit()
             .putInt("version", state.version)
 
-        val language = AppLanguageSettings.resolve(
-            AppLanguageSettings.load(context),
-            context.resources.configuration.locales[0].language
-        )
-        val languageKey = if (language == AppUiLanguage.ENGLISH) "en" else "vi"
-        val templates = state.notificationTemplates[languageKey].orEmpty()
-        listOf("title", "text", "body").forEach { key ->
-            val value = templates[key]
-            if (value.isNullOrBlank()) editor.remove("notification_$key")
-            else editor.putString("notification_$key", value)
+        listOf("vi", "en").forEach { languageKey ->
+            val templates = state.notificationTemplates[languageKey].orEmpty()
+            listOf("title", "text", "body").forEach { key ->
+                val preferenceKey = "notification_${languageKey}_$key"
+                val value = templates[key]
+                if (value.isNullOrBlank()) editor.remove(preferenceKey)
+                else editor.putString(preferenceKey, value)
+            }
         }
         editor.apply()
         mutableContent.value = state
