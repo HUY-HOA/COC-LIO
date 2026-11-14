@@ -19,6 +19,9 @@ import android.view.View
 import android.util.TypedValue
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
+import android.graphics.Typeface
+import android.graphics.Paint
+import android.graphics.Canvas
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -3042,11 +3045,17 @@ class CocLioMessagingService : FirebaseMessagingService() {
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val senderPerson = androidx.core.app.Person.Builder()
-            .setName(data["senderName"] ?: AppLanguageSettings.translate(this, "Thành viên"))
+        val senderIsAdmin = data["senderIsAdmin"]?.equals("true", ignoreCase = true) == true ||
+            data["senderName"]?.equals("AILIO", ignoreCase = true) == true
+        val senderName = if (senderIsAdmin) "AILIO" else data["senderName"] ?: AppLanguageSettings.translate(this, "Thành viên")
+        val senderPersonBuilder = androidx.core.app.Person.Builder()
+            .setName(senderName)
             .setKey(data["senderUid"] ?: "community")
             .setImportant(true)
-            .build()
+        if (isCommunity && senderIsAdmin) {
+            senderPersonBuilder.setIcon(createAdminNotificationAvatar(this))
+        }
+        val senderPerson = senderPersonBuilder.build()
         val currentPerson = androidx.core.app.Person.Builder()
             .setName(AppLanguageSettings.translate(this, "Bạn"))
             .setKey("coc-lio-current-user")
@@ -3099,6 +3108,26 @@ class CocLioMessagingService : FirebaseMessagingService() {
     }
 }
 
+private fun createAdminNotificationAvatar(context: Context): IconCompat {
+    val density = context.resources.displayMetrics.density
+    val size = (96f * density).toInt().coerceAtLeast(96)
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.rgb(38, 53, 77)
+    }
+    canvas.drawCircle(size / 2f, size / 2f, size * 0.48f, backgroundPaint)
+    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.rgb(255, 209, 102)
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+        textSize = size * 0.19f
+    }
+    val baseline = size / 2f - (textPaint.ascent() + textPaint.descent()) / 2f
+    canvas.drawText("ADMIN", size / 2f, baseline, textPaint)
+    return IconCompat.createWithBitmap(bitmap)
+}
+
 internal fun postCommunityChatBubbleNotification(
     context: Context,
     notificationId: Int,
@@ -3130,11 +3159,14 @@ internal fun postCommunityChatBubbleNotification(
         openIntent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
-    val sender = androidx.core.app.Person.Builder()
+    val senderPersonBuilder = androidx.core.app.Person.Builder()
         .setName(senderName.ifBlank { AppLanguageSettings.translate(context, "Thành viên") })
         .setKey(senderUid.ifBlank { "community" })
         .setImportant(true)
-        .build()
+    if (senderName.equals("AILIO", ignoreCase = true)) {
+        senderPersonBuilder.setIcon(createAdminNotificationAvatar(context))
+    }
+    val sender = senderPersonBuilder.build()
     val currentUser = FirebaseAuth.getInstance().currentUser
     val currentPerson = androidx.core.app.Person.Builder()
         .setName(AppLanguageSettings.translate(context, "Bạn"))
