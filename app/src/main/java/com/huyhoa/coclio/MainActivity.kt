@@ -1093,7 +1093,7 @@ private fun CocLioApp(
         val hadPendingSelection = pendingGoogleSignIn != null
         pendingGoogleSignIn = null
         if (hadPendingSelection && isGoogleSignedIn) {
-            snackbar.showAppSnackbar(context, "Bạn đã hủy xác nhận và giữ nguyên tài khoản đang sử dụng.")
+            scope.launch { snackbar.showAppSnackbar(context, "Bạn đã hủy xác nhận và giữ nguyên tài khoản đang sử dụng.") }
         } else {
             leaveGoogleAccount("Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất.")
         }
@@ -2799,7 +2799,7 @@ private fun ImportDialog(
     }
 }
 
-private fun formatTimestamp(timestamp: Long): String {
+internal fun formatTimestamp(timestamp: Long): String {
     return try {
         DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
             .withZone(ZoneId.systemDefault())
