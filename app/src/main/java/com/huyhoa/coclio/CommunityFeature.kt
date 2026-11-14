@@ -800,46 +800,87 @@ fun CommunityScreen(
                         loadingReleases = false
                     }
                 }
-            val archiveRegistration = if (isOwner && selectedSection == 2) {
+            val archiveRegistrations = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
+            if (isOwner && selectedSection == 2) {
                 loadingArchive = true
-                firestore.collection(communityArchiveCollection(archiveCategory))
-                    .orderBy("archivedAt", Query.Direction.DESCENDING)
-                    .addSnapshotListener { snapshot, error ->
-                        if (error != null) {
-                            archiveError = error.message ?: "Không thể tải kho đã gỡ."
-                            loadingArchive = false
-                        } else {
-                            archiveItems = snapshot?.documents.orEmpty().map { document ->
-                                CommunityArchiveItem(
-                                    id = document.id,
-                                    category = archiveCategory,
-                                    displayName = document.getString("displayName").orEmpty(),
-                                    text = document.getString("text").orEmpty(),
-                                    fileName = document.getString("fileName").orEmpty(),
-                                    storagePath = document.getString("storagePath").orEmpty(),
-                                    downloadUrl = document.getString("downloadUrl").orEmpty(),
-                                    fileSize = document.getLong("fileSize") ?: 0L,
-                                    createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
-                                    archivedAt = document.getTimestamp("archivedAt")?.toDate()?.time ?: 0L,
-                                    versionName = document.getString("versionName").orEmpty(),
-                                    notes = document.getString("notes").orEmpty(),
-                                    contentType = document.getString("contentType").orEmpty(),
-                                    contentData = document.getString("contentData").orEmpty()
-                                )
+                archiveError = null
+                fun mapArchiveDocuments(
+                    documents: List<com.google.firebase.firestore.DocumentSnapshot>,
+                    category: String
+                ): List<CommunityArchiveItem> = documents.map { document ->
+                    CommunityArchiveItem(
+                        id = document.id,
+                        category = category,
+                        displayName = document.getString("displayName").orEmpty(),
+                        text = document.getString("text").orEmpty(),
+                        fileName = document.getString("fileName").orEmpty(),
+                        storagePath = document.getString("storagePath").orEmpty(),
+                        downloadUrl = document.getString("downloadUrl").orEmpty(),
+                        fileSize = document.getLong("fileSize") ?: 0L,
+                        createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
+                        archivedAt = document.getTimestamp("archivedAt")?.toDate()?.time ?: 0L,
+                        versionName = document.getString("versionName").orEmpty(),
+                        notes = document.getString("notes").orEmpty(),
+                        contentType = document.getString("contentType").orEmpty(),
+                        contentData = document.getString("contentData").orEmpty()
+                    )
+                }
+
+                if (archiveCategory == "file") {
+                    var filesLoaded = false
+                    var apksLoaded = false
+                    var archivedFiles = emptyList<CommunityArchiveItem>()
+                    var archivedApks = emptyList<CommunityArchiveItem>()
+
+                    archiveRegistrations += firestore.collection("community_deleted_files")
+                        .orderBy("archivedAt", Query.Direction.DESCENDING)
+                        .addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                archiveError = error.message ?: "Không thể tải kho tệp đã gỡ."
+                                loadingArchive = false
+                            } else {
+                                archivedFiles = mapArchiveDocuments(snapshot?.documents.orEmpty(), "file")
+                                archiveItems = (archivedFiles + archivedApks).sortedByDescending { it.archivedAt }
+                                filesLoaded = true
+                                if (filesLoaded && apksLoaded) loadingArchive = false
                             }
-                            archiveError = null
-                            loadingArchive = false
                         }
-                    }
+
+                    archiveRegistrations += firestore.collection("app_update_archive")
+                        .orderBy("archivedAt", Query.Direction.DESCENDING)
+                        .addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                archiveError = error.message ?: "Không thể tải kho APK đã gỡ."
+                                loadingArchive = false
+                            } else {
+                                archivedApks = mapArchiveDocuments(snapshot?.documents.orEmpty(), "apk")
+                                archiveItems = (archivedFiles + archivedApks).sortedByDescending { it.archivedAt }
+                                apksLoaded = true
+                                if (filesLoaded && apksLoaded) loadingArchive = false
+                            }
+                        }
+                } else {
+                    archiveRegistrations += firestore.collection(communityArchiveCollection(archiveCategory))
+                        .orderBy("archivedAt", Query.Direction.DESCENDING)
+                        .addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                archiveError = error.message ?: "Không thể tải kho đã gỡ."
+                                loadingArchive = false
+                            } else {
+                                archiveItems = mapArchiveDocuments(snapshot?.documents.orEmpty(), archiveCategory)
+                                archiveError = null
+                                loadingArchive = false
+                            }
+                        }
+                }
             } else {
                 archiveItems = emptyList()
-                null
             }
             onDispose {
                 messageRegistration.remove()
                 sharedJsonRegistration.remove()
                 releaseRegistration.remove()
-                archiveRegistration?.remove()
+                archiveRegistrations.forEach { it.remove() }
             }
         }
     }
@@ -1244,8 +1285,7 @@ fun CommunityScreen(
                     listOf(
                         "text" to "TIN NHẮN",
                         "image" to "HÌNH ẢNH",
-                        "file" to "TỆP",
-                        "apk" to "APK CẬP NHẬT"
+                        "file" to "TỆP"
                     ).forEach { (category, label) ->
                         FilterChip(
                             selected = archiveCategory == category,
