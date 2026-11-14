@@ -3252,13 +3252,14 @@ private fun CommunityBubbleChatContent(
                                 else -> ""
                             }
                             if (text.isBlank()) return@mapNotNull null
+                            val senderIsAdmin = document.getBoolean("senderIsAdmin") ?: false
                             CommunityBubbleMessage(
                                 id = document.id,
                                 uid = uid,
-                                displayName = document.getString("displayName").orEmpty(),
+                                displayName = if (senderIsAdmin) "AILIO" else document.getString("displayName").orEmpty(),
                                 text = text,
                                 type = type,
-                                senderIsAdmin = document.getBoolean("senderIsAdmin") ?: false
+                                senderIsAdmin = senderIsAdmin
                             )
                         }
                         errorMessage = null
@@ -3343,7 +3344,6 @@ private fun CommunityBubbleChatContent(
                                 shape = RoundedCornerShape(14.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (mine) MaterialTheme.colorScheme.primaryContainer
-                                    else if (message.senderIsAdmin) Color(0xFF3A2A12)
                                     else MaterialTheme.colorScheme.surfaceVariant
                                 )
                             ) {
@@ -3351,7 +3351,7 @@ private fun CommunityBubbleChatContent(
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
                                     verticalArrangement = Arrangement.spacedBy(3.dp)
                                 ) {
-                                    if (!mine) {
+                                    if (!mine || message.senderIsAdmin) {
                                         Text(
                                             message.displayName.ifBlank {
                                                 AppLanguageSettings.translate(context, "Thành viên")
@@ -3398,6 +3398,7 @@ private fun CommunityBubbleChatContent(
                             val text = draft.trim()
                             val signedInUser = FirebaseAuth.getInstance().currentUser
                             if (signedInUser != null && text.isNotEmpty()) {
+                                val senderIsAdmin = FirebaseAccountAdministration.isOwner(signedInUser.email)
                                 sending = true
                                 errorMessage = null
                                 FirebaseFirestore.getInstance()
@@ -3405,9 +3406,9 @@ private fun CommunityBubbleChatContent(
                                     .add(
                                         mapOf(
                                             "uid" to signedInUser.uid,
-                                            "displayName" to (signedInUser.displayName ?: signedInUser.email ?: "Thành viên").take(80),
-                                            "senderIsAdmin" to FirebaseAccountAdministration.isOwner(signedInUser.email),
-                                            "photoUrl" to signedInUser.photoUrl?.toString().orEmpty().take(1000),
+                                            "displayName" to (if (senderIsAdmin) "AILIO" else signedInUser.displayName ?: signedInUser.email ?: "Thành viên").take(80),
+                                            "senderIsAdmin" to senderIsAdmin,
+                                            "photoUrl" to (if (senderIsAdmin) "" else signedInUser.photoUrl?.toString().orEmpty()).take(1000),
                                             "type" to "text",
                                             "text" to text.take(2000),
                                             "fileName" to "",
