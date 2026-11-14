@@ -1,0 +1,89 @@
+name: Publish COC-LIO Remote Config
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "remote-config/app.json"
+      - ".github/workflows/publish-remote-config.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coc-lio-remote-config-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Authenticate to Firebase project
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Install Firebase Admin SDK
+        run: npm install --prefix functions --omit=dev --no-package-lock --ignore-scripts
+
+      - name: Validate and publish Remote Config
+        env:
+          FIREBASE_PROJECT_ID: coc-lio-73de9
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const { initializeApp, applicationDefault } = require("./functions/node_modules/firebase-admin/app");
+          const { getRemoteConfig } = require("./functions/node_modules/firebase-admin/remote-config");
+
+          async function main() {
+            const source = JSON.parse(fs.readFileSync("remote-config/app.json", "utf8"));
+            if (source.schemaVersion !== 1 || !Number.isInteger(source.version) || source.version < 1) {
+              throw new Error("remote-config/app.json has an invalid schemaVersion or version.");
+            }
+
+            const app = initializeApp({
+              credential: applicationDefault(),
+              projectId: process.env.FIREBASE_PROJECT_ID
+            });
+            const remoteConfig = getRemoteConfig(app);
+            const template = await remoteConfig.getTemplate();
+            if (!template.parameters) template.parameters = {};
+
+            const key = "coclio_app_config_json";
+            const existing = template.parameters[key] || {};
+            const value = JSON.stringify(source);
+            template.parameters[key] = {
+              ...existing,
+              defaultValue: { value },
+              valueType: "STRING"
+            };
+
+            await remoteConfig.validateTemplate(template);
+            const published = await remoteConfig.publishTemplate(template);
+            const confirmed = published.parameters?.[key]?.defaultValue?.value;
+            if (confirmed !== value) {
+              throw new Error("Remote Config publish returned a template without the expected app configuration.");
+            }
+
+            console.log("Published Remote Config parameter:", key);
+            console.log("Source configuration version:", source.version);
+            console.log("Firebase template version:", published.version?.versionNumber || "confirmed");
+            console.log("Existing conditions and unrelated parameters were preserved.");
+          }
+
+          main().catch(error => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
