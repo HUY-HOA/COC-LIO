@@ -22,7 +22,12 @@ data class RemoteCatalogEntry(
     val category: String,
     val description: String,
     val maxLevel: Int?,
-    val imageUrl: String
+    val imageUrl: String,
+    val aliases: List<String> = emptyList(),
+    val requirements: List<String> = emptyList(),
+    val details: List<String> = emptyList(),
+    val upgradeDurationSeconds: Long? = null,
+    val upgradeCost: String = ""
 )
 
 data class RemoteGuide(
@@ -147,12 +152,23 @@ internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
                 .orEmpty()
             val maxLevel = (item["maxLevel"] as? Number)?.toInt()
                 ?.takeIf { it in 1..100 }
+            val aliases = safeRemoteStringList(item["aliases"], 10, 64)
+            val requirements = safeRemoteStringList(item["requirements"], 4, 100)
+            val details = safeRemoteStringList(item["details"], 6, 100)
+            val upgradeDurationSeconds = (item["upgradeDurationSeconds"] as? Number)
+                ?.toLong()?.takeIf { it in 1L..31_536_000L }
+            val upgradeCost = (item["upgradeCost"] as? String).orEmpty().trim().take(80)
             id to RemoteCatalogEntry(
                 name = name,
                 category = category,
                 description = (item["description"] as? String).orEmpty().take(240),
                 maxLevel = maxLevel,
-                imageUrl = safeRemoteHttpsUrl(item["imageUrl"])
+                imageUrl = safeRemoteHttpsUrl(item["imageUrl"]),
+                aliases = aliases,
+                requirements = requirements,
+                details = details,
+                upgradeDurationSeconds = upgradeDurationSeconds,
+                upgradeCost = upgradeCost
             )
         }
         ?.toMap()
@@ -207,6 +223,11 @@ internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
         notificationTemplates = templates
     )
 }
+
+private fun safeRemoteStringList(value: Any?, maxItems: Int, maxLength: Int): List<String> =
+    (value as? List<*>)?.take(maxItems)
+        ?.mapNotNull { (it as? String)?.trim()?.takeIf(String::isNotBlank)?.take(maxLength) }
+        .orEmpty()
 
 private fun safeRemoteHttpsUrl(value: Any?): String =
     (value as? String)?.trim()
