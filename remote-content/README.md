@@ -30,3 +30,18 @@ Các màu giao diện, LED, tên ứng dụng, điều hướng, bật/tắt tra
 ## Giới hạn cần build APK
 
 Đổi dữ liệu, thông báo, hướng dẫn, URL ảnh, tên/nhóm/cấp tối đa, mẫu nhắc và bố cục/điều hướng đã hỗ trợ có thể cập nhật mà không build lại. Thay đổi parser JSON, cách tính thời gian, thuật toán phân loại mới, quyền Android, dịch vụ nền, SDK, hành vi native hoặc loại thành phần UI mới vẫn cần APK mới. Không tải hay chạy Kotlin/Java, JavaScript, DEX hoặc bất kỳ mã nào từ Firestore/Remote Config.
+
+
+## Tự động đồng bộ từ GitHub
+
+Khi commit và push `remote-content/current.json` lên nhánh `main`, GitHub Actions chạy workflow **Publish COC-LIO Remote Content** để ghi toàn bộ nội dung vào `app_remote_content/current`.
+
+Quy trình kiểm tra JSON, giới hạn số mục, ghi tài liệu bằng Firebase Admin SDK, đọc lại tài liệu và so sánh với file nguồn. File trong repository là nguồn dữ liệu chính thức; nội dung được sửa trực tiếp trong Firestore có thể bị thay thế ở lần đồng bộ kế tiếp.
+
+Thiết lập một lần:
+
+1. GitHub Actions cần Secret `FIREBASE_SERVICE_ACCOUNT` đang được dùng bởi các quy trình Firebase khác.
+2. Tài khoản dịch vụ phải có quyền đọc và ghi tài liệu Firestore trong dự án `coc-lio-73de9`.
+3. Push thay đổi `remote-content/current.json`; xem kết quả tại GitHub Actions → **Publish COC-LIO Remote Content**.
+
+Nếu thiếu Secret hoặc quyền Firestore, workflow sẽ báo lỗi và tài liệu đang chạy không bị báo là đã cập nhật. Workflow này chỉ đồng bộ nội dung, không build APK.
