@@ -1,16 +1,11 @@
 package com.huyhoa.coclio
 
-import android.content.Context
-import kotlinx.coroutines.Dispatchers
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.net.URL
-import javax.net.ssl.HttpsURLConnection
 
 data class RemoteAppConfig(
     val enabled: Boolean = true,
@@ -42,69 +37,71 @@ data class RemoteAppConfig(
 }
 
 object RemoteAppConfigManager {
-    private const val PREFERENCES = "coc_lio_remote_config"
-    private const val KEY_CONFIG = "config_json"
-    private const val CONFIG_URL = "https://raw.githubusercontent.com/HUY-HOA-1/COC-LIO/main/remote-config/app.json"
-    private const val MAX_CONFIG_BYTES = 262144
+    private const val CONFIG_KEY = "coclio_app_config_json"
+    private const val DEFAULT_CONFIG_JSON = """
+{
+  "schemaVersion": 1,
+  "version": 1,
+  "enabled": true,
+  "theme": {
+    "darkPrimary": "#36F4FF",
+    "darkSecondary": "#FF4DDA",
+    "darkTertiary": "#FFD166",
+    "darkBackground": "#000000",
+    "darkSurface": "#0D152B",
+    "darkSurfaceVariant": "#14203B",
+    "darkOnSurfaceVariant": "#9EAFCE",
+    "lightPrimary": "#006A78",
+    "lightSecondary": "#8B3B85",
+    "lightTertiary": "#8A5A00",
+    "lightBackground": "#FFFFFF",
+    "lightSurface": "#FFFFFF",
+    "lightSurfaceVariant": "#E8EEF6",
+    "lightOnBackground": "#172235",
+    "lightOnSurface": "#172235",
+    "lightOnSurfaceVariant": "#526176"
+  },
+  "led": {
+    "speedMultiplier": 1.0
+  },
+  "translations": {
+    "vi": {},
+    "en": {}
+  }
+}
+"""
 
     private val mutableConfig = MutableStateFlow(RemoteAppConfig())
     val config: StateFlow<RemoteAppConfig> = mutableConfig.asStateFlow()
+    private var initialized = false
 
-    fun loadCached(context: Context) {
-        val cached = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-            .getString(KEY_CONFIG, null)
-            ?: return
-        runCatching { parse(cached) }
+    fun initialize() {
+        if (initialized) return
+        initialized = true
+
+        val remoteConfig = FirebaseRemoteConfig.getInstance()
+        val settings = FirebaseRemoteConfigSettings.Builder()
+            .setMinimumFetchIntervalInSeconds(60L)
+            .build()
+
+        remoteConfig.setConfigSettingsAsync(settings)
+        remoteConfig.setDefaultsAsync(mapOf(CONFIG_KEY to DEFAULT_CONFIG_JSON))
+            .addOnCompleteListener {
+                apply(remoteConfig.getString(CONFIG_KEY))
+                refresh()
+            }
+    }
+
+    fun refresh() {
+        val remoteConfig = FirebaseRemoteConfig.getInstance()
+        remoteConfig.fetchAndActivate().addOnCompleteListener {
+            apply(remoteConfig.getString(CONFIG_KEY))
+        }
+    }
+
+    private fun apply(raw: String) {
+        runCatching { parse(raw) }
             .onSuccess { mutableConfig.value = it }
-    }
-
-    suspend fun refresh(context: Context) {
-        val downloaded = runCatching {
-            withContext(Dispatchers.IO) { download() }
-        }.getOrNull() ?: return
-
-        val parsed = runCatching { parse(downloaded) }.getOrNull() ?: return
-        context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_CONFIG, downloaded)
-            .apply()
-        mutableConfig.value = parsed
-    }
-
-    private fun download(): String {
-        val url = URL("$CONFIG_URL?cacheBust=${System.currentTimeMillis()}")
-        val connection = (url.openConnection() as HttpsURLConnection).apply {
-            connectTimeout = 5000
-            readTimeout = 5000
-            requestMethod = "GET"
-            setRequestProperty("Accept", "application/json")
-            setRequestProperty("Cache-Control", "no-cache")
-            setRequestProperty("Pragma", "no-cache")
-            setRequestProperty("User-Agent", "COC-LIO-Android")
-        }
-
-        try {
-            if (connection.responseCode != HttpsURLConnection.HTTP_OK) {
-                throw IOException("Remote configuration unavailable.")
-            }
-            val output = ByteArrayOutputStream()
-            connection.inputStream.use { input ->
-                val buffer = ByteArray(8192)
-                var total = 0
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    total += count
-                    if (total > MAX_CONFIG_BYTES) {
-                        throw IOException("Remote configuration is too large.")
-                    }
-                    output.write(buffer, 0, count)
-                }
-            }
-            return output.toString(Charsets.UTF_8.name())
-        } finally {
-            connection.disconnect()
-        }
     }
 
     private fun parse(raw: String): RemoteAppConfig {
