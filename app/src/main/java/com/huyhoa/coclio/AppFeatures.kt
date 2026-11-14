@@ -414,9 +414,15 @@ object FirebaseMessagingTopicSubscriptions {
             user != null &&
             profile != "local" &&
             user.email?.equals(profile, ignoreCase = true) == true
+        val notificationPermissionGranted =
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) &&
+                NotificationManagerCompat.from(context).areNotificationsEnabled()
         val communityEnabled = profileMatches &&
+            notificationPermissionGranted &&
             AppPreferences.communityNotificationsEnabled(context, profile)
         val updatesEnabled = profileMatches &&
+            notificationPermissionGranted &&
             AppPreferences.updateNotificationsEnabled(context, profile)
         val messaging = FirebaseMessaging.getInstance()
         messaging.setAutoInitEnabled(communityEnabled || updatesEnabled)
