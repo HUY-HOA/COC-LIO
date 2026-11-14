@@ -962,40 +962,29 @@ private fun CocLioApp(
         }
     }
 
-    fun finishGoogleSignIn(googleAccount: GoogleAccountData) {
-        scope.launch {
-            try {
-                val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
-                val profileName = (
-                    savedName?.takeIf { it.isNotBlank() }
-                        ?: googleAccount.displayName?.takeIf { it.isNotBlank() }
-                        ?: googleAccount.email.substringBefore("@")
-                    ).take(40)
-                if (savedName.isNullOrBlank()) {
-                    AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
-                }
-                GoogleAccountAuth.shareProfile(googleAccount)
-                AccountPrivacyConsent.saveRequiredAccountDataConsent()
-                FirebaseAccountAdministration.savePreferredName(profileName)
-                AccountProfileStore.setActive(context, googleAccount.email)
-                requiredAccountConsentAccepted = true
-                requiredAccountConsentLoadedForEmail = googleAccount.email
-                requiredAccountConsentSubmitting = false
-                requiredAccountConsentReadError = null
-                activeProfile = googleAccount.email
-                interactiveGoogleSignIn = false
-                selectedTab = 0
-                googleAuthError = null
-                snackbar.showAppSnackbar(context, "Đã xác nhận dữ liệu cần thiết và đăng nhập Google thành công.")
-            } catch (error: Exception) {
-                requiredAccountConsentSubmitting = false
-                interactiveGoogleSignIn = false
-                snackbar.showAppSnackbar(context, 
-                    error.message?.takeIf { it.isNotBlank() }
-                        ?: "Không thể lưu xác nhận dữ liệu tài khoản. Hãy thử lại."
-                )
-            }
+    suspend fun finishGoogleSignIn(googleAccount: GoogleAccountData) {
+        val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
+        val profileName = (
+            savedName?.takeIf { it.isNotBlank() }
+                ?: googleAccount.displayName?.takeIf { it.isNotBlank() }
+                ?: googleAccount.email.substringBefore("@")
+            ).take(40)
+        if (savedName.isNullOrBlank()) {
+            AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
         }
+        GoogleAccountAuth.shareProfile(googleAccount)
+        AccountPrivacyConsent.saveRequiredAccountDataConsent()
+        FirebaseAccountAdministration.savePreferredName(profileName)
+        AccountProfileStore.setActive(context, googleAccount.email)
+        requiredAccountConsentAccepted = true
+        requiredAccountConsentLoadedForEmail = googleAccount.email
+        requiredAccountConsentSubmitting = false
+        requiredAccountConsentReadError = null
+        activeProfile = googleAccount.email
+        interactiveGoogleSignIn = false
+        selectedTab = 0
+        googleAuthError = null
+        snackbar.showAppSnackbar(context, "Đã xác nhận dữ liệu cần thiết và đăng nhập Google thành công.")
     }
 
     fun leaveGoogleAccount(message: String) {
@@ -1034,7 +1023,7 @@ private fun CocLioApp(
                 } else {
                     googleAuthError = error.message
                         ?.takeIf { it.isNotBlank() }
-                        ?: "Không thể đăng nhập Google. Hãy kiểm tra kết nối mạng và cấu hình OAuth."
+                        ?: "Không thể hoàn tất đăng nhập. Hãy kiểm tra quyền truy cập tài khoản và cấu hình Firebase."
                 }
             }
         }
