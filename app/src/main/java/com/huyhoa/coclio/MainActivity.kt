@@ -115,6 +115,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
@@ -511,7 +512,7 @@ private fun CocLioApp(
     var interactiveGoogleSignIn by remember { mutableStateOf(false) }
     var requiredAccountConsentLoadedForEmail by remember { mutableStateOf<String?>(null) }
     var requiredAccountConsentAccepted by remember { mutableStateOf(false) }
-    var requiredAccountConsentChecked by remember { mutableStateOf(false) }
+    var requiredAccountConsentChecked by rememberSaveable { mutableStateOf(false) }
     var requiredAccountConsentSubmitting by remember { mutableStateOf(false) }
     var requiredAccountConsentReadError by remember { mutableStateOf<String?>(null) }
     var villageDataSyncConsent by remember { mutableStateOf(false) }
@@ -828,12 +829,10 @@ private fun CocLioApp(
             .onSuccess { accepted ->
                 requiredAccountConsentAccepted = accepted
                 requiredAccountConsentLoadedForEmail = email
-                if (accepted) requiredAccountConsentChecked = false
             }
             .onFailure { error ->
                 requiredAccountConsentAccepted = false
                 requiredAccountConsentLoadedForEmail = email
-                requiredAccountConsentChecked = false
                 requiredAccountConsentReadError = error.message
                     ?.takeIf { it.isNotBlank() }
                     ?: "Không thể kiểm tra xác nhận dữ liệu tài khoản."
