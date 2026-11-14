@@ -1307,7 +1307,7 @@ fun CommunityScreen(
                             Text("TỔNG CỘNG: ${counts.total} BẢN GHI", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Black)
                             Text("Cộng đồng: ${counts.activeTotal}  •  Kho đã gỡ: ${counts.archivedTotal}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
                             Text(
-                                "Cộng đồng: ${counts.activeMessages} tin nhắn, ${counts.activeJsons} JSON, ${counts.activeApks} APK",
+                                "Cộng đồng: ${counts.activeMessages} mục tin nhắn/ảnh/tệp, ${counts.activeJsons} JSON riêng, ${counts.activeApks} APK",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp
                             )
