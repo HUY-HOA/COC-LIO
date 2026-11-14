@@ -95,3 +95,21 @@ With Realtime updates enabled, an app that is open and connected can receive a p
 Remote Config only changes values and UI structures that are already supported by the installed app. New Kotlin/Java code, new screen logic, new data parsing algorithms, new API integrations, database schema changes that require client code, Android permissions, notification/background services, home-screen widgets, native libraries, sign-in flows and security/privacy enforcement still require an APK build.
 
 Remote configuration must never contain passwords, private keys, access tokens, personal data, executable scripts or downloaded code. Remote UI actions are limited to the explicit allowlist compiled into the app. Do not use Remote Config to bypass Android permission prompts or user consent.
+
+
+## Tự động đồng bộ từ GitHub
+
+Không cần chép JSON vào Firebase Console mỗi lần thay đổi nữa. Khi commit và push `remote-config/app.json` lên nhánh `main`, GitHub Actions chạy workflow **Publish COC-LIO Remote Config** để cập nhật tham số `coclio_app_config_json`.
+
+Workflow lấy mẫu Remote Config hiện tại, chỉ thay giá trị mặc định của tham số COC-LIO, giữ lại các tham số khác và các điều kiện đang có, kiểm tra mẫu rồi mới phát hành. Việc phát hành dùng ETag của mẫu hiện tại để tránh ghi đè một thay đổi đồng thời.
+
+Thiết lập một lần:
+
+1. Bật Firebase Remote Config API cho dự án `coc-lio-73de9`.
+2. GitHub Actions cần Secret `FIREBASE_SERVICE_ACCOUNT` đang được dùng bởi các quy trình Firebase khác.
+3. Tài khoản dịch vụ phải có quyền **Firebase Remote Config Admin** (`roles/cloudconfig.admin`).
+4. Push thay đổi `remote-config/app.json`; xem kết quả tại GitHub Actions → **Publish COC-LIO Remote Config**.
+
+Nếu workflow báo thiếu quyền hoặc API chưa bật, cấu hình trên Firebase vẫn giữ phiên bản cũ; xem log của workflow để biết chính xác bước thất bại. Thay đổi trong Firebase Console có thể bị thay thế ở lần đồng bộ kế tiếp; vì vậy file trong repository là nguồn cấu hình chính thức.
+
+Workflow này chỉ phát hành dữ liệu cấu hình đã hỗ trợ, không build APK.
