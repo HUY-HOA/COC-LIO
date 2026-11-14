@@ -1359,7 +1359,7 @@ private fun CocLioApp(
                         textScale = appFontScale,
                         displaySizeLevel = displaySizeLevel,
                         onDisplaySizeLevelChanged = { level ->
-                            displaySizeLevel = level.coerceIn(1, 5)
+                            displaySizeLevel = level.coerceIn(1, 10)
                             AppPreferences.setDisplaySizeLevel(context, displaySizeLevel)
                             AppWidgetUpdater.updateAll(context)
                         },
