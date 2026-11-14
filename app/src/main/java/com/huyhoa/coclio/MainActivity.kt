@@ -1097,7 +1097,7 @@ private fun CocLioApp(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .then(
-                                        if (selectedTab == item.third) {
+                                        if (selectedTab == item.page) {
                                             Modifier.ledRgbBorder(cornerRadiusDp = 10f, strokeWidthDp = 1.8f)
                                         } else {
                                             Modifier
@@ -1116,7 +1116,7 @@ private fun CocLioApp(
                                     },
                                     contentDescription = item.title,
                                     modifier = Modifier.size(20.dp),
-                                    tint = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = if (selectedTab == item.page) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         },
@@ -1129,7 +1129,7 @@ private fun CocLioApp(
                                 softWrap = true,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                 overflow = TextOverflow.Clip,
-                                color = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (selectedTab == item.page) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     )
