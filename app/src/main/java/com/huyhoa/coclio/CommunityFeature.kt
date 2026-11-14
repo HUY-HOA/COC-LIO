@@ -1618,6 +1618,38 @@ fun CommunityScreen(
         )
     }
 
+    deleteSharedJson?.let { item ->
+        AlertDialog(
+            onDismissRequest = { if (!busy) deleteSharedJson = null },
+            title = { Text("Xóa JSON đã gửi?") },
+            text = {
+                Text("JSON này sẽ bị xóa khỏi danh sách chia sẻ và bài đăng JSON tương ứng trong Cộng đồng. Bản JSON trong Lịch sử và Đang lưu trên thiết bị vẫn được giữ.")
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy,
+                    onClick = {
+                        deleteSharedJson = null
+                        scope.launch {
+                            busy = true
+                            try {
+                                deleteSharedJsonFromCommunity(item.id)
+                                statusMessage = "Đã xóa JSON đã gửi khỏi Cộng đồng."
+                            } catch (error: Exception) {
+                                statusMessage = error.message ?: "Không thể xóa JSON đã gửi."
+                            } finally {
+                                busy = false
+                            }
+                        }
+                    }
+                ) { Text("XÓA JSON", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteSharedJson = null }, enabled = !busy) { Text("HỦY") }
+            }
+        )
+    }
+
     deleteMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { deleteMessage = null },
@@ -2048,7 +2080,7 @@ private fun CommunityMessageCard(
 private fun CommunitySharedJsonCard(
     item: CommunitySharedJson,
     enabled: Boolean,
-    onReceive: () -> Unit
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 17f),
@@ -2071,21 +2103,73 @@ private fun CommunitySharedJsonCard(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Chia sẻ bởi: ${item.displayName} • ${communityTime(item.createdAt)}",
+                "Đã gửi: ${communityTime(item.createdAt)}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 9.sp
             )
             Text(
-                "Dữ liệu JSON: ${formatCommunitySize(item.rawJson.toByteArray(Charsets.UTF_8).size.toLong())}",
+                "Dung lượng JSON: ${formatCommunitySize(item.rawJson.toByteArray(Charsets.UTF_8).size.toLong())}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 9.sp
             )
-            Button(
-                onClick = onReceive,
+            TextButton(
+                onClick = onDelete,
                 enabled = enabled,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.align(Alignment.End)
             ) {
-                Text("NHẬN JSON VÀ SỬ DỤNG", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("XÓA JSON ĐÃ GỬI", color = MaterialTheme.colorScheme.error, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommunityReceivedJsonCard(
+    item: ReceivedSharedJsonRecord,
+    enabled: Boolean,
+    onUse: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 17f),
+        shape = RoundedCornerShape(17.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                item.villageName.ifBlank { "JSON làng ${item.tag}" },
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                "Mã người chơi: ${item.tag}",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Chia sẻ bởi: ${item.senderName}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 9.sp
+            )
+            Text(
+                "Ngày dữ liệu: ${formatTimestamp(item.timestamp)} • Nhận: ${formatTimestamp(item.receivedAt)}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 9.sp
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onUse, enabled = enabled) {
+                    Text("NHẬP LẠI", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+                TextButton(onClick = onDelete, enabled = enabled) {
+                    Text("XÓA", color = MaterialTheme.colorScheme.error, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
