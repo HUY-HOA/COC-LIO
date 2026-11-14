@@ -674,7 +674,12 @@ private fun CocLioApp(
         }
     }
     val ledTheme = LedThemeState(
-        palette = remoteAppConfig.ledPalette.takeIf { it.size >= 2 }?.map { Color(it) } ?: paletteForLed(ledPreset),
+        palette = if (ledPreset == "rainbow") {
+            remoteAppConfig.ledPalette.takeIf { it.size >= 2 }?.map { Color(it) }
+                ?: paletteForLed(ledPreset)
+        } else {
+            paletteForLed(ledPreset)
+        },
         enabled = ledEnabled,
         speedMillis = ledSpeedMillis,
         brightness = ledBrightness.coerceIn(0f, 1f),
