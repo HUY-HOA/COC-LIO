@@ -1,0 +1,102 @@
+name: Publish COC-LIO Remote Content
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "remote-content/current.json"
+      - ".github/workflows/publish-remote-content.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coc-lio-remote-content-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Authenticate to Firebase project
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Install Firebase Admin SDK
+        run: npm install --prefix functions --omit=dev --no-package-lock --ignore-scripts
+
+      - name: Validate, publish and verify Firestore content
+        env:
+          FIREBASE_PROJECT_ID: coc-lio-73de9
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const { initializeApp, applicationDefault } = require("./functions/node_modules/firebase-admin/app");
+          const { getFirestore } = require("./functions/node_modules/firebase-admin/firestore");
+
+          function canonical(value) {
+            if (Array.isArray(value)) return value.map(canonical);
+            if (value && typeof value === "object") {
+              return Object.fromEntries(
+                Object.keys(value).sort().map(key => [key, canonical(value[key])])
+              );
+            }
+            return value;
+          }
+
+          async function main() {
+            const source = JSON.parse(fs.readFileSync("remote-content/current.json", "utf8"));
+            if (!Number.isInteger(source.version) || source.version < 1) {
+              throw new Error("remote-content/current.json has an invalid version.");
+            }
+            if (typeof source.enabled !== "boolean") {
+              throw new Error("Remote content must include a Boolean enabled field.");
+            }
+            for (const key of ["catalog", "guides", "links"]) {
+              if (!Array.isArray(source[key])) {
+                throw new Error(`Remote content field ${key} must be an array.`);
+              }
+            }
+            if (source.catalog.length > 500 || source.guides.length > 20 || source.links.length > 20) {
+              throw new Error("Remote content exceeds the supported item limits.");
+            }
+
+            const app = initializeApp({
+              credential: applicationDefault(),
+              projectId: process.env.FIREBASE_PROJECT_ID
+            });
+            const reference = getFirestore(app)
+              .collection("app_remote_content")
+              .doc("current");
+
+            await reference.set(source);
+            const saved = await reference.get();
+            if (!saved.exists || JSON.stringify(canonical(saved.data())) !== JSON.stringify(canonical(source))) {
+              throw new Error("Firestore verification failed: saved document does not match remote-content/current.json.");
+            }
+
+            console.log("Published Firestore document: app_remote_content/current");
+            console.log("Content version:", source.version);
+            console.log("Catalog entries:", source.catalog.length);
+            console.log("Guides:", source.guides.length);
+            console.log("Links:", source.links.length);
+            console.log("Firestore read-back verification passed.");
+          }
+
+          main().catch(error => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
