@@ -1336,6 +1336,25 @@ class UpgradeReminderWorker(
                 "Bộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
             )
         ).joinToString("\n")
+
+        val remoteTemplates = applicationContext.getSharedPreferences(
+            "coc_lio_remote_content",
+            Context.MODE_PRIVATE
+        )
+        fun remoteNotificationText(key: String, fallback: String): String {
+            val template = remoteTemplates.getString("notification_$key", null)
+                ?.takeIf { it.isNotBlank() && it.length <= 1800 }
+                ?: fallback
+            return template
+                .replace("{item}", localizedItem)
+                .replace("{village}", villageName)
+                .replace("{tag}", tag)
+                .replace("{id}", dataId.toString())
+                .replace("{level}", levelText)
+                .replace("{base}", baseText)
+                .replace("{section}", localizedSection)
+                .take(1800)
+        }
         val gameIntent = applicationContext.packageManager
             .getLaunchIntentForPackage("com.supercell.clashofclans")
             ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -1350,9 +1369,12 @@ class UpgradeReminderWorker(
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
-            .setContentTitle(AppLanguageSettings.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem")
-            .setContentText("$villageName • ID $dataId • $levelText")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(notificationBody))
+            .setContentTitle(remoteNotificationText(
+                "title",
+                AppLanguageSettings.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
+            ))
+            .setContentText(remoteNotificationText("text", "$villageName • ID $dataId • $levelText"))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(remoteNotificationText("body", notificationBody)))
             .setContentIntent(pendingIntent)
             .setAutoCancel(!alarmStyle)
             .setOngoing(alarmStyle)
