@@ -513,9 +513,9 @@ private fun CocLioApp(
     var firebaseGoogleEmail by remember { mutableStateOf(initialFirebaseGoogleEmail) }
     var initialAuthStateHandled by remember { mutableStateOf(false) }
     var interactiveGoogleSignIn by remember { mutableStateOf(false) }
+    var pendingGoogleSignIn by remember { mutableStateOf<GoogleAccountSelection?>(null) }
     var requiredAccountConsentLoadedForEmail by remember { mutableStateOf<String?>(null) }
     var requiredAccountConsentAccepted by remember { mutableStateOf(false) }
-    var requiredAccountConsentChecked by rememberSaveable { mutableStateOf(false) }
     var requiredAccountConsentSubmitting by remember { mutableStateOf(false) }
     var requiredAccountConsentReadError by remember { mutableStateOf<String?>(null) }
     var villageDataSyncConsent by remember { mutableStateOf(false) }
@@ -821,7 +821,6 @@ private fun CocLioApp(
         if (email.isNullOrBlank()) {
             requiredAccountConsentAccepted = false
             requiredAccountConsentLoadedForEmail = ""
-            requiredAccountConsentChecked = false
             requiredAccountConsentReadError = null
             return@LaunchedEffect
         }
@@ -980,6 +979,7 @@ private fun CocLioApp(
         if (savedName.isNullOrBlank()) {
             AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
         }
+        AccountProfileStore.saveGoogleData(context, googleAccount)
         GoogleAccountAuth.shareProfile(googleAccount)
         AccountPrivacyConsent.saveRequiredAccountDataConsent()
         FirebaseAccountAdministration.savePreferredName(profileName)
@@ -1012,28 +1012,69 @@ private fun CocLioApp(
 
 
     fun signInWithGoogle() {
-        if (!requiredAccountConsentChecked || requiredAccountConsentSubmitting) return
-        requiredAccountConsentSubmitting = true
+        if (requiredAccountConsentSubmitting || interactiveGoogleSignIn) return
         scope.launch {
             interactiveGoogleSignIn = true
+            googleAuthError = null
             try {
-                AccountActivityTracker.stopAndWait(context)
-                val googleAccount = GoogleAccountAuth.signIn(context)
-                AccountProfileStore.saveGoogleData(context, googleAccount)
-                finishGoogleSignIn(googleAccount)
-                googleAuthError = null
+                val selection = GoogleAccountAuth.selectAccount(context)
+                pendingGoogleSignIn = selection
+                interactiveGoogleSignIn = false
             } catch (error: Exception) {
                 interactiveGoogleSignIn = false
-                requiredAccountConsentSubmitting = false
                 if (error is GetCredentialCancellationException) {
                     googleAuthError = null
-                    snackbar.showAppSnackbar(context, "Bạn đã hủy đăng nhập Google.")
+                    snackbar.showAppSnackbar(context, "Bạn đã hủy chọn tài khoản Google.")
                 } else {
                     googleAuthError = error.message
                         ?.takeIf { it.isNotBlank() }
                         ?: "Không thể hoàn tất đăng nhập. Hãy kiểm tra quyền truy cập tài khoản và cấu hình Firebase."
                 }
             }
+        }
+    }
+
+    fun acceptAccountConsent() {
+        if (requiredAccountConsentSubmitting) return
+        requiredAccountConsentSubmitting = true
+        scope.launch {
+            try {
+                AccountActivityTracker.stopAndWait(context)
+                val selection = pendingGoogleSignIn
+                val googleAccount = if (selection != null) {
+                    GoogleAccountAuth.authenticateSelectedAccount(selection)
+                } else {
+                    val user = FirebaseAuth.getInstance().currentUser
+                        ?: throw IllegalStateException("Bạn cần chọn tài khoản Google trước.")
+                    GoogleAccountData(
+                        email = user.email?.trim()?.lowercase()
+                            ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ."),
+                        displayName = user.displayName?.trim()?.takeIf { it.isNotBlank() },
+                        givenName = null,
+                        familyName = null,
+                        profilePictureUri = user.photoUrl?.toString()
+                    )
+                }
+                finishGoogleSignIn(googleAccount)
+                pendingGoogleSignIn = null
+                googleAuthError = null
+            } catch (error: Exception) {
+                requiredAccountConsentSubmitting = false
+                googleAuthError = error.message
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Không thể hoàn tất xác nhận dữ liệu tài khoản. Hãy thử lại."
+            }
+        }
+    }
+
+    fun rejectAccountConsent() {
+        if (requiredAccountConsentSubmitting) return
+        val hadPendingSelection = pendingGoogleSignIn != null
+        pendingGoogleSignIn = null
+        if (hadPendingSelection && isGoogleSignedIn) {
+            snackbar.showAppSnackbar(context, "Bạn đã hủy xác nhận và giữ nguyên tài khoản đang sử dụng.")
+        } else {
+            leaveGoogleAccount("Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất.")
         }
     }
 
