@@ -648,7 +648,6 @@ fun CommunityScreen(
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
-    val autoTranslationEnabled = CommunityAutoTranslationPreferences.isEnabled(context)
     val scope = rememberCoroutineScope()
     val user = FirebaseAuth.getInstance().currentUser?.takeIf { isGoogleSignedIn }
     val isOwner = FirebaseAccountAdministration.isOwner(user?.email)
@@ -1070,7 +1069,6 @@ fun CommunityScreen(
                             message = message,
                             currentUid = user.uid,
                             isOwner = isOwner,
-                            autoTranslationEnabled = autoTranslationEnabled,
                             onDownload = { url, name -> downloadCommunityFile(context, url, name) },
                             onUseJson = { jsonId -> receiveSharedJson(jsonId) },
                             onDelete = { deleteMessage = message }
@@ -1387,7 +1385,6 @@ fun CommunityScreen(
                         items(archiveItems, key = { it.id }) { item ->
                             CommunityArchiveCard(
                                 item = item,
-                                autoTranslationEnabled = autoTranslationEnabled,
                                 onDownload = { url, name -> downloadCommunityFile(context, url, name) },
                                 onDelete = { deleteArchiveItem = item }
                             )
@@ -1475,7 +1472,6 @@ fun CommunityScreen(
                         CommunityReleaseCard(
                             release = release,
                             isOwner = isOwner,
-                            autoTranslationEnabled = autoTranslationEnabled,
                             onDownload = { url, name -> downloadCommunityFile(context, url, name) },
                             onDelete = { deleteRelease = release }
                         )
@@ -1819,7 +1815,6 @@ private fun CommunityMessageCard(
     message: CommunityMessage,
     currentUid: String,
     isOwner: Boolean,
-    autoTranslationEnabled: Boolean,
     onDownload: (String, String) -> Unit,
     onUseJson: (String) -> Unit,
     onDelete: () -> Unit
@@ -1886,16 +1881,7 @@ private fun CommunityMessageCard(
                     Text(communityTime(message.createdAt), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
                 if (message.text.isNotBlank()) {
-                    if (message.type == "text") {
-                        CommunityAutoTranslatedText(
-                            sourceText = message.text,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 12.sp,
-                            enabled = autoTranslationEnabled
-                        )
-                    } else {
-                        Text(message.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
-                    }
+                    Text(message.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                 }
                 if (message.type == "image") {
                     if (previewBitmap != null) {
@@ -2037,7 +2023,6 @@ private fun CommunitySharedJsonCard(
 @Composable
 private fun CommunityArchiveCard(
     item: CommunityArchiveItem,
-    autoTranslationEnabled: Boolean,
     onDownload: (String, String) -> Unit,
     onDelete: () -> Unit
 ) {
@@ -2064,12 +2049,7 @@ private fun CommunityArchiveCard(
                     fontWeight = FontWeight.Bold
                 )
                 if (item.notes.isNotBlank()) {
-                    CommunityAutoTranslatedText(
-                        sourceText = item.notes,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp,
-                        enabled = autoTranslationEnabled
-                    )
+                    Text(item.notes, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
                 }
             } else {
                 if (item.displayName.isNotBlank()) {
@@ -2108,16 +2088,7 @@ private fun CommunityArchiveCard(
                         Text(item.text, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                     }
                 } else if (item.text.isNotBlank()) {
-                    if (item.type == "text" || item.type.isBlank()) {
-                        CommunityAutoTranslatedText(
-                            sourceText = item.text,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 11.sp,
-                            enabled = autoTranslationEnabled
-                        )
-                    } else {
-                        Text(item.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
-                    }
+                    Text(item.text, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
                 }
             }
 
@@ -2264,7 +2235,6 @@ private fun CommunityArchiveCard(
 private fun CommunityReleaseCard(
     release: CommunityRelease,
     isOwner: Boolean,
-    autoTranslationEnabled: Boolean,
     onDownload: (String, String) -> Unit,
     onDelete: () -> Unit
 ) {
@@ -2279,12 +2249,7 @@ private fun CommunityReleaseCard(
                 Text("APK", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             }
             if (release.notes.isNotBlank()) {
-                CommunityAutoTranslatedText(
-                    sourceText = release.notes,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 11.sp,
-                    enabled = autoTranslationEnabled
-                )
+                Text(release.notes, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
             }
             Text(
                 "${release.fileName} · ${formatCommunitySize(release.fileSize)} · ${communityTime(release.createdAt)}",
