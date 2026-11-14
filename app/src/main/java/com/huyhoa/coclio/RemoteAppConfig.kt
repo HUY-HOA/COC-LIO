@@ -169,10 +169,16 @@ object RemoteAppConfigManager {
         remoteConfig.setDefaultsAsync(mapOf(CONFIG_KEY to DEFAULT_CONFIG_JSON))
             .addOnCompleteListener {
                 apply(remoteConfig.getString(CONFIG_KEY))
-                remoteConfig.fetchAndActivate().addOnCompleteListener {
-                    apply(remoteConfig.getString(CONFIG_KEY))
-                }
             }
+    }
+
+    fun startRealtimeUpdates() {
+        val remoteConfig = FirebaseRemoteConfig.getInstance()
+        if (listenerRegistration != null) return
+
+        remoteConfig.fetchAndActivate().addOnCompleteListener {
+            apply(remoteConfig.getString(CONFIG_KEY))
+        }
 
         listenerRegistration = remoteConfig.addOnConfigUpdateListener(
             object : ConfigUpdateListener {
