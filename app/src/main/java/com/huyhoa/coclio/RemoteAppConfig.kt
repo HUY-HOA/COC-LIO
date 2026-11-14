@@ -21,7 +21,8 @@ data class RemoteDashboardBlock(
     val message: String = "",
     val severity: String = "info",
     val actionLabel: String = "",
-    val actionId: String = ""
+    val actionId: String = "",
+    val page: Int = 0
 )
 
 data class RemoteAppConfig(
@@ -47,8 +48,15 @@ data class RemoteAppConfig(
     val translations: Map<String, Map<String, String>> = emptyMap(),
     val navigationItems: List<RemoteNavigationItem> = defaultRemoteNavigation(),
     val showImportButton: Boolean = true,
-    val dashboardBlocks: List<RemoteDashboardBlock> = emptyList()
+    val dashboardBlocks: List<RemoteDashboardBlock> = emptyList(),
+    val featureFlags: Map<String, Boolean> = emptyMap(),
+    val ledPalette: List<Int> = emptyList(),
+    val appTitle: String = "COC-LIO",
+    val appSubtitle: String = "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO"
 ) {
+    fun featureEnabled(id: String, fallback: Boolean = true): Boolean =
+        featureFlags[id] ?: fallback
+
     fun translation(source: String, language: AppUiLanguage): String? {
         if (!enabled) return null
         val key = if (language == AppUiLanguage.ENGLISH) "en" else "vi"
@@ -91,7 +99,35 @@ object RemoteAppConfigManager {
     "lightOnSurfaceVariant": "#526176"
   },
   "led": {
-    "speedMultiplier": 1.0
+    "speedMultiplier": 1.0,
+    "palette": ["#00E5FF", "#168BFF", "#6548FF", "#B33CFF", "#FF35B8", "#FF4A72", "#FFA43A", "#B7F34A", "#35E6A2"]
+  },
+  "navigation": {
+    "items": [
+      {"id": "home", "title": "Tổng quan", "enabled": true},
+      {"id": "buildings", "title": "Công trình Quân đội", "enabled": true},
+      {"id": "history", "title": "Kho JSON", "enabled": true},
+      {"id": "community", "title": "Cộng đồng", "enabled": true},
+      {"id": "lookup", "title": "Tra cứu ID", "enabled": true},
+      {"id": "settings", "title": "Cài đặt", "enabled": true}
+    ]
+  },
+  "features": {
+    "home": true,
+    "buildings": true,
+    "history": true,
+    "community": true,
+    "lookup": true,
+    "settings": true,
+    "importButton": true,
+    "dashboardBlocks": true
+  },
+  "dashboard": {
+    "blocks": []
+  },
+  "app": {
+    "title": "COC-LIO",
+    "subtitle": "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO"
   },
   "translations": {
     "vi": {},
@@ -148,7 +184,10 @@ object RemoteAppConfigManager {
         val translations = linkedMapOf<String, Map<String, String>>()
         val navigationItems = parseNavigation(root.optJSONObject("navigation"))
         val features = root.optJSONObject("features")
+        val featureFlags = parseFeatureFlags(features)
         val dashboardBlocks = parseDashboardBlocks(root.optJSONObject("dashboard"))
+        val app = root.optJSONObject("app") ?: JSONObject()
+        val ledPalette = parsePalette(led.optJSONArray("palette"))
 
         for (language in listOf("vi", "en")) {
             val languageJson = translationsJson?.optJSONObject(language) ?: continue
@@ -191,9 +230,35 @@ object RemoteAppConfigManager {
             ledSpeedMultiplier = speed,
             translations = translations,
             navigationItems = navigationItems,
-            showImportButton = features?.optBoolean("showImportButton", true) ?: true,
-            dashboardBlocks = dashboardBlocks
+            showImportButton = featureFlags["importButton"] ?: true,
+            dashboardBlocks = dashboardBlocks,
+            featureFlags = featureFlags,
+            ledPalette = ledPalette,
+            appTitle = app.optString("title", "COC-LIO").take(40),
+            appSubtitle = app.optString("subtitle", "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO").take(120)
         )
+    }
+
+    private fun parseFeatureFlags(features: JSONObject?): Map<String, Boolean> {
+        if (features == null) return emptyMap()
+        val allowed = setOf(
+            "home", "buildings", "history", "community", "lookup", "settings",
+            "importButton", "dashboardBlocks"
+        )
+        return allowed.associateWith { key ->
+            features.optBoolean(key, true)
+        }
+    }
+
+    private fun parsePalette(palette: org.json.JSONArray?): List<Int> {
+        if (palette == null) return emptyList()
+        val colors = mutableListOf<Int>()
+        for (index in 0 until minOf(palette.length(), 12)) {
+            val value = palette.optString(index, "")
+            val parsed = colorValue(value) ?: continue
+            colors += parsed
+        }
+        return colors.takeIf { it.size >= 2 } ?: emptyList()
     }
 
     private fun parseNavigation(navigation: JSONObject?): List<RemoteNavigationItem> {
@@ -246,6 +311,17 @@ object RemoteAppConfigManager {
             val type = item.optString("type", "card")
             if (type !in allowedTypes) continue
             val action = item.optString("actionId", "")
+            val pageId = item.optString("pageId", "home")
+            val page = when (pageId) {
+                "all" -> -1
+                "home" -> 0
+                "buildings" -> 1
+                "history" -> 2
+                "community" -> 3
+                "settings" -> 4
+                "lookup" -> 5
+                else -> continue
+            }
             result += RemoteDashboardBlock(
                 id = item.optString("id", "block_$index").take(40),
                 type = type,
@@ -253,20 +329,24 @@ object RemoteAppConfigManager {
                 message = item.optString("message", "").take(500),
                 severity = item.optString("severity", "info").takeIf { it in setOf("info", "success", "warning", "error") } ?: "info",
                 actionLabel = item.optString("actionLabel", "").take(48),
-                actionId = action.takeIf { it in allowedActions }.orEmpty()
+                actionId = action.takeIf { it in allowedActions }.orEmpty(),
+                page = page
             )
         }
         return result
     }
 
-    private fun color(json: JSONObject, key: String, fallback: Int): Int {
-        val raw = json.optString(key, "").removePrefix("#").uppercase()
+    private fun color(json: JSONObject, key: String, fallback: Int): Int =
+        colorValue(json.optString(key, "")) ?: fallback
+
+    private fun colorValue(value: String): Int? {
+        val raw = value.removePrefix("#").uppercase()
         val argb = when (raw.length) {
             6 -> "FF$raw"
             8 -> raw
-            else -> return fallback
+            else -> return null
         }
-        if (!argb.matches(Regex("[0-9A-F]{8}"))) return fallback
-        return runCatching { argb.toLong(16).toInt() }.getOrDefault(fallback)
+        if (!argb.matches(Regex("[0-9A-F]{8}"))) return null
+        return runCatching { argb.toLong(16).toInt() }.getOrNull()
     }
 }
