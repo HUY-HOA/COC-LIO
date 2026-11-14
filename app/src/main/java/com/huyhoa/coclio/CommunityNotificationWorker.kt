@@ -271,6 +271,8 @@ private suspend fun checkCommunityMessages(
         val messageText = when (type) {
             "text" -> document.getString("text").orEmpty().trim()
             "json" -> AppLanguageSettings.translate(context, "Đã chia sẻ dữ liệu JSON.")
+            "image" -> AppLanguageSettings.translate(context, "Đã gửi một hình ảnh.")
+            "file" -> AppLanguageSettings.translate(context, "Đã gửi một tệp.")
             else -> ""
         }
         if (messageText.isNotBlank()) {
@@ -280,6 +282,7 @@ private suspend fun checkCommunityMessages(
                 senderUid = senderUid,
                 senderName = sender,
                 messageText = messageText,
+                senderIsAdmin = senderIsAdmin,
                 senderPhotoUrl = senderPhotoUrl
             )
         }
