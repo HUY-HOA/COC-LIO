@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": 2,
+  "version": 3,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -25,7 +25,7 @@
     "lightOnSurfaceVariant": "#526176"
   },
   "led": {
-    "speedMultiplier": 1.0,
+    "speedMultiplier": 1,
     "palette": [
       "#00E5FF",
       "#168BFF",
@@ -40,12 +40,36 @@
   },
   "navigation": {
     "items": [
-      {"id": "home", "title": "Tổng quan", "enabled": true},
-      {"id": "buildings", "title": "Công trình Quân đội", "enabled": true},
-      {"id": "history", "title": "Kho JSON", "enabled": true},
-      {"id": "community", "title": "Cộng đồng", "enabled": true},
-      {"id": "lookup", "title": "Tra cứu ID", "enabled": true},
-      {"id": "settings", "title": "Cài đặt", "enabled": true}
+      {
+        "id": "home",
+        "title": "Tổng quan",
+        "enabled": true
+      },
+      {
+        "id": "buildings",
+        "title": "Thông tin",
+        "enabled": true
+      },
+      {
+        "id": "history",
+        "title": "Kho JSON",
+        "enabled": true
+      },
+      {
+        "id": "community",
+        "title": "Cộng đồng",
+        "enabled": true
+      },
+      {
+        "id": "lookup",
+        "title": "Tra cứu ID",
+        "enabled": true
+      },
+      {
+        "id": "settings",
+        "title": "Cài đặt",
+        "enabled": true
+      }
     ]
   },
   "features": {
