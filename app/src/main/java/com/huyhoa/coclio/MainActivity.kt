@@ -645,12 +645,12 @@ private fun CocLioApp(
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 1f).coerceIn(0f, 1f)) }
     val ledSpeedMultiplier = remoteAppConfig.ledSpeedMultiplier.coerceIn(0.5f, 3f)
-    val minLedSpeedMillis = (750f / ledSpeedMultiplier).roundToInt().coerceAtLeast(250)
-    val maxLedSpeedMillis = (15000f / ledSpeedMultiplier).roundToInt().coerceAtLeast(minLedSpeedMillis)
+    val minLedSpeedMillis = (375f / ledSpeedMultiplier).roundToInt().coerceAtLeast(125)
+    val maxLedSpeedMillis = (7500f / ledSpeedMultiplier).roundToInt().coerceAtLeast(minLedSpeedMillis)
     val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) {
         0
     } else {
-        ((30000f - (ledSpeed.coerceIn(1, 100) / 100f) * 28500f) / 2f / ledSpeedMultiplier)
+        ((30000f - (ledSpeed.coerceIn(1, 100) / 100f) * 28500f) / 4f / ledSpeedMultiplier)
             .roundToInt()
             .coerceIn(minLedSpeedMillis, maxLedSpeedMillis)
     }
