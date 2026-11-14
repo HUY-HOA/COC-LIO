@@ -1041,6 +1041,11 @@ fun CommunityScreen(
                 onClick = { selectedSection = 1; statusMessage = null },
                 label = { Text("CẬP NHẬT APK", fontSize = 10.sp) }
             )
+            FilterChip(
+                selected = selectedSection == 3,
+                onClick = { selectedSection = 3; statusMessage = null },
+                label = { Text("CHIA SẺ", fontSize = 10.sp) }
+            )
             if (isOwner) {
                 FilterChip(
                     selected = selectedSection == 2,
