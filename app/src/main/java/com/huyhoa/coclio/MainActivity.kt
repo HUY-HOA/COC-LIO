@@ -184,25 +184,33 @@ private fun paletteForLed(preset: String): List<Color> = when (preset) {
     else -> DefaultLedPalette
 }
 
-@Composable
-private fun animatedLedTextBrush(): Brush {
-    val led = LocalLedTheme.current
-    val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val phase = (led.progress.value).rem(1f)
-    val movingColors = List(32) { index ->
-        val position = ((index / 32f - phase + 1f) % 1f) * (palette.size - 1)
-        val startIndex = position.toInt().coerceIn(0, palette.size - 2)
-        val fraction = position - startIndex
+private fun movingLedColors(
+    palette: List<Color>,
+    phase: Float,
+    sampleCount: Int = 128
+): List<Color> {
+    val intervals = (palette.size - 1).coerceAtLeast(1)
+    return List(sampleCount) { index ->
+        val position = ((index / sampleCount.toFloat() - phase + 1f) % 1f) * intervals
+        val startIndex = position.toInt().coerceIn(0, intervals - 1)
+        val fraction = (position - startIndex).coerceIn(0f, 1f)
         val first = palette[startIndex]
         val second = palette[startIndex + 1]
         Color(
             red = first.red + (second.red - first.red) * fraction,
             green = first.green + (second.green - first.green) * fraction,
             blue = first.blue + (second.blue - first.blue) * fraction,
-            alpha = led.brightness
+            alpha = first.alpha + (second.alpha - first.alpha) * fraction
         )
     }
-    return Brush.linearGradient(movingColors)
+}
+
+@Composable
+private fun animatedLedTextBrush(): Brush {
+    val led = LocalLedTheme.current
+    val palette = led.palette.map { it.copy(alpha = led.brightness) }
+    val phase = (led.progress.value).rem(1f)
+    return Brush.linearGradient(movingLedColors(palette, phase))
 }
 
 @Composable
@@ -212,21 +220,6 @@ private fun LedFrameBox(
 ) {
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val phase = (led.progress.value).rem(1f)
-    val movingColors = List(48) { index ->
-        val position = ((index / 48f - phase + 1f) % 1f) * (palette.size - 1)
-        val startIndex = position.toInt().coerceIn(0, palette.size - 2)
-        val fraction = position - startIndex
-        val first = palette[startIndex]
-        val second = palette[startIndex + 1]
-        Color(
-            red = first.red + (second.red - first.red) * fraction,
-            green = first.green + (second.green - first.green) * fraction,
-            blue = first.blue + (second.blue - first.blue) * fraction,
-            alpha = led.brightness
-        )
-    }
-    val brush = Brush.sweepGradient(movingColors)
     Box(
         modifier = modifier.drawWithCache {
             val stroke = 3.dp.toPx()
@@ -243,7 +236,12 @@ private fun LedFrameBox(
                 )
             }
             onDrawBehind {
-                drawPath(path, brush, style = Stroke(width = stroke))
+                val phase = led.progress.value.rem(1f)
+                drawPath(
+                    path,
+                    Brush.sweepGradient(movingLedColors(palette, phase)),
+                    style = Stroke(width = stroke)
+                )
             }
         },
         contentAlignment = Alignment.Center,
@@ -257,29 +255,9 @@ fun Modifier.ledRgbBorder(
     strokeWidthDp: Float = 2.6f
 ): Modifier {
     val led = LocalLedTheme.current
+    val palette = led.palette.map { it.copy(alpha = led.brightness.coerceIn(0f, 1f)) }
+    val active = palette.size >= 2 && strokeWidthDp > 0f
     return this.drawWithCache {
-        val palette = led.palette.map { it.copy(alpha = led.brightness.coerceIn(0f, 1f)) }
-        val active = palette.size >= 2 && strokeWidthDp > 0f
-        val phase = (led.progress.value).rem(1f)
-        val intervals = (palette.size - 1).coerceAtLeast(1)
-        val colors = if (active) {
-            List(32) { index ->
-                val position = ((index / 32f - phase + 1f) % 1f) * intervals
-                val startIndex = position.toInt().coerceIn(0, intervals - 1)
-                val fraction = position - startIndex
-                val first = palette[startIndex]
-                val second = palette[startIndex + 1]
-                Color(
-                    red = first.red + (second.red - first.red) * fraction,
-                    green = first.green + (second.green - first.green) * fraction,
-                    blue = first.blue + (second.blue - first.blue) * fraction,
-                    alpha = led.brightness.coerceIn(0f, 1f)
-                )
-            }
-        } else {
-            palette
-        }
-        val brush = Brush.sweepGradient(colors)
         val stroke = strokeWidthDp.dp.toPx()
         val inset = stroke / 2f
         val path = Path().apply {
@@ -295,7 +273,14 @@ fun Modifier.ledRgbBorder(
         }
         onDrawWithContent {
             drawContent()
-            if (active) drawPath(path, brush, style = Stroke(width = stroke))
+            if (active) {
+                val phase = led.progress.value.rem(1f)
+                drawPath(
+                    path,
+                    Brush.sweepGradient(movingLedColors(palette, phase)),
+                    style = Stroke(width = stroke)
+                )
+            }
         }
     }
 }
@@ -343,22 +328,12 @@ private fun NeonPanel(
                     )
                 }
                 onDrawBehind {
-                    val ledProgress = (led.progress.value).rem(1f)
-                    val intervals = (palette.size - 1).coerceAtLeast(1)
-                    val movingColors = List(32) { index ->
-                        val position = ((index / 32f - ledProgress + 1f) % 1f) * intervals
-                        val startIndex = position.toInt().coerceIn(0, intervals - 1)
-                        val fraction = position - startIndex
-                        val first = palette[startIndex]
-                        val second = palette[startIndex + 1]
-                        Color(
-                            red = first.red + (second.red - first.red) * fraction,
-                            green = first.green + (second.green - first.green) * fraction,
-                            blue = first.blue + (second.blue - first.blue) * fraction,
-                            alpha = led.brightness
-                        )
-                    }
-                    drawPath(path, Brush.sweepGradient(movingColors), style = Stroke(width = stroke))
+                    val ledProgress = led.progress.value.rem(1f)
+                    drawPath(
+                        path,
+                        Brush.sweepGradient(movingLedColors(palette, ledProgress)),
+                        style = Stroke(width = stroke)
+                    )
                 }
             }
             .padding(innerPadding),
@@ -681,9 +656,12 @@ private fun CocLioApp(
                 withFrameNanos { frameTimeNanos ->
                     val speedForFrame = currentLedSpeedMillis
                     if (lastFrameNanos != 0L && speedForFrame > 0) {
-                        val elapsedMillis = ((frameTimeNanos - lastFrameNanos) / 1_000_000f)
-                            .coerceIn(0f, 100f)
-                        ledProgress.value = (ledProgress.value + elapsedMillis / speedForFrame.toFloat()).rem(1f)
+                        val elapsedNanos = (frameTimeNanos - lastFrameNanos).coerceAtLeast(0L)
+                        val progressDelta = elapsedNanos.toDouble() /
+                            (speedForFrame.toDouble() * 1_000_000.0)
+                        ledProgress.value = (ledProgress.value.toDouble() + progressDelta)
+                            .rem(1.0)
+                            .toFloat()
                     }
                     lastFrameNanos = frameTimeNanos
                 }
