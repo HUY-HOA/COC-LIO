@@ -1624,13 +1624,12 @@ private fun GoogleLoginStartScreen(
     modifier: Modifier = Modifier,
     appTitle: String,
     appSubtitle: String,
-    consentChecked: Boolean,
-    onConsentChecked: (Boolean) -> Unit,
+    selectedAccount: GoogleAccountData?,
     isBusy: Boolean,
-    hasAuthenticatedGoogleAccount: Boolean,
     readError: String?,
     onReject: () -> Unit,
-    onGoogleSignIn: () -> Unit
+    onGoogleSignIn: () -> Unit,
+    onConsentAccept: () -> Unit
 ) {
     Box(
         modifier = modifier.padding(10.dp),
@@ -1673,35 +1672,47 @@ private fun GoogleLoginStartScreen(
                     lineHeight = 16.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
+                if (selectedAccount != null) {
+                    Column(
                         modifier = Modifier
-                            .size(36.dp)
-                            .then(
-                                if (!consentChecked) {
-                                    Modifier.ledRgbBorder(cornerRadiusDp = 6f, strokeWidthDp = 2.2f)
-                                } else {
-                                    Modifier
-                                }
-                            ),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Checkbox(
-                            checked = consentChecked,
-                            onCheckedChange = onConsentChecked,
-                            enabled = !isBusy,
-                            modifier = Modifier.size(32.dp)
+                        Text(
+                            "TÀI KHOẢN GOOGLE ĐÃ CHỌN",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
                         )
+                        Text(
+                            selectedAccount.displayName?.takeIf { it.isNotBlank() } ?: selectedAccount.email,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        if (!selectedAccount.displayName.isNullOrBlank()) {
+                            Text(
+                                selectedAccount.email,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 11.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
                     }
                     Text(
                         "Tôi đồng ý chia sẻ dữ liệu tài khoản cần thiết để sử dụng COC-LIO.",
-                        modifier = Modifier.weight(1f),
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
                 if (!readError.isNullOrBlank()) {
@@ -1713,38 +1724,33 @@ private fun GoogleLoginStartScreen(
                     )
                 }
                 Button(
-                    onClick = onGoogleSignIn,
-                    enabled = consentChecked && !isBusy,
+                    onClick = if (selectedAccount == null) onGoogleSignIn else onConsentAccept,
+                    enabled = !isBusy,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .then(
-                            if (consentChecked) {
-                                Modifier.ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.2f)
-                            } else {
-                                Modifier
-                            }
-                        )
+                        .ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.2f)
                 ) {
                     Text(
                         when {
-                            isBusy -> "ĐANG ĐĂNG NHẬP..."
-                            hasAuthenticatedGoogleAccount -> "TIẾP TỤC"
+                            isBusy && selectedAccount != null -> "ĐANG XÁC NHẬN..."
+                            isBusy -> "ĐANG MỞ GOOGLE..."
+                            selectedAccount != null -> "ĐỒNG Ý & TIẾP TỤC"
                             else -> "ĐĂNG NHẬP GOOGLE"
                         }
                     )
                 }
-                if (hasAuthenticatedGoogleAccount) {
+                if (selectedAccount != null) {
                     TextButton(
                         onClick = onReject,
                         enabled = !isBusy
                     ) {
-                        Text("KHÔNG ĐỒNG Ý / ĐĂNG XUẤT", color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
+                        Text("KHÔNG ĐỒNG Ý / HỦY", color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
                     }
                 }
                 Text(
-                    "Dữ liệu hoạt động, thiết bị, phân tích, báo lỗi và đồng bộ JSON là các mục riêng; mặc định tắt và không được bật chỉ bằng ô xác nhận này.",
+                    "Dữ liệu hoạt động, thiết bị, phân tích, báo lỗi và đồng bộ JSON là các mục riêng; mặc định tắt và không được bật chỉ bằng sự đồng ý này.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
                     lineHeight = 13.sp,
