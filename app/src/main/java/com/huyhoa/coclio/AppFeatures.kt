@@ -177,6 +177,11 @@ data class GoogleAccountData(
     val profilePictureUri: String?
 )
 
+data class GoogleAccountSelection(
+    val account: GoogleAccountData,
+    val idToken: String
+)
+
 data class LocalProfileSummary(
     val email: String,
     val displayName: String?,
@@ -1036,7 +1041,7 @@ private fun installedSigningSha1(context: Context): String = runCatching {
 }.getOrElse { "không đọc được (" + it.javaClass.simpleName + ")" }
 
 object GoogleAccountAuth {
-    suspend fun signIn(context: Context): GoogleAccountData {
+    suspend fun selectAccount(context: Context): GoogleAccountSelection {
         val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
         require(clientId.isNotBlank() && clientId.contains(".apps.googleusercontent.com")) {
             "Đăng nhập Google chưa được cấu hình hoàn chỉnh. Vui lòng liên hệ quản lý ứng dụng."
@@ -1095,24 +1100,34 @@ object GoogleAccountAuth {
         val google = GoogleIdTokenCredential.createFrom(credential.data)
         val email = google.email?.trim()?.takeIf { it.contains("@") }
             ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ.")
-        val firebaseCredential = GoogleAuthProvider.getCredential(google.idToken, null)
+
+        return GoogleAccountSelection(
+            account = GoogleAccountData(
+                email = email.lowercase(),
+                displayName = google.displayName?.trim()?.takeIf { it.isNotBlank() },
+                givenName = google.givenName?.trim()?.takeIf { it.isNotBlank() },
+                familyName = google.familyName?.trim()?.takeIf { it.isNotBlank() },
+                profilePictureUri = google.profilePictureUri?.toString()
+            ),
+            idToken = google.idToken
+        )
+    }
+
+    suspend fun authenticateSelectedAccount(selection: GoogleAccountSelection): GoogleAccountData {
+        val firebaseCredential = GoogleAuthProvider.getCredential(selection.idToken, null)
         val authResult = FirebaseAuth.getInstance()
             .signInWithCredential(firebaseCredential)
             .awaitFirebaseResult()
         val firebaseUser = authResult.user
             ?: throw IllegalStateException("Không nhận được tài khoản Google sau khi xác thực.")
         firebaseUser.reload().awaitFirebaseResult()
+        val authenticatedEmail = firebaseUser.email?.trim()
+        if (!authenticatedEmail.equals(selection.account.email, ignoreCase = true)) {
+            FirebaseAuth.getInstance().signOut()
+            throw IllegalStateException("Tài khoản Google hiện tại không khớp với hồ sơ vừa chọn.")
+        }
         firebaseUser.getIdToken(true).awaitFirebaseResult()
-
-        val accountData = GoogleAccountData(
-            email = email.lowercase(),
-            displayName = google.displayName?.trim()?.takeIf { it.isNotBlank() },
-            givenName = google.givenName?.trim()?.takeIf { it.isNotBlank() },
-            familyName = google.familyName?.trim()?.takeIf { it.isNotBlank() },
-            profilePictureUri = google.profilePictureUri?.toString()
-        )
-
-        return accountData
+        return selection.account
     }
 
     suspend fun shareProfile(google: GoogleAccountData) {
