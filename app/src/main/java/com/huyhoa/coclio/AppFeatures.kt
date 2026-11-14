@@ -1219,8 +1219,10 @@ fun openClashOfClans(context: Context) {
     }
 }
 
+private const val UPGRADE_NOTIFICATION_TIMEOUT_MS = 25_000L
+
 private fun alarmVibrationPattern(): LongArray =
-    longArrayOf(0L, 650L, 350L, 650L, 350L)
+    longArrayOf(0L, 2_000L, 500L, 2_000L, 500L, 2_000L, 500L, 2_000L, 500L)
 
 private fun ensureUpgradeNotificationChannel(
     context: Context,
@@ -1352,7 +1354,7 @@ class UpgradeReminderWorker(
         val alarmStyle = AppPreferences.notificationStyle(applicationContext, profile) == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
-            if (alarmStyle) "_alarm_v5" else "_message"
+            if (alarmStyle) "_alarm_v6" else "_message"
         ensureUpgradeNotificationChannel(applicationContext, channelId, alarmStyle)
 
         val notificationKey = "$profile|$tag|$dataId|$endAt"
@@ -1440,6 +1442,7 @@ class UpgradeReminderWorker(
             .setAutoCancel(true)
             .setOngoing(false)
             .setOnlyAlertOnce(false)
+            .setTimeoutAfter(UPGRADE_NOTIFICATION_TIMEOUT_MS)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
         if (gameIntent != null) {
             val gamePendingIntent = PendingIntent.getActivity(
@@ -1476,7 +1479,7 @@ object UpgradeNotificationTester {
         val alarmStyle = style == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
-            if (alarmStyle) "_alarm_v5" else "_message"
+            if (alarmStyle) "_alarm_v6" else "_message"
         ensureUpgradeNotificationChannel(context, channelId, alarmStyle)
 
         val openApp = Intent(context, MainActivity::class.java)
@@ -1505,6 +1508,7 @@ object UpgradeNotificationTester {
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setOngoing(false)
+            .setTimeoutAfter(UPGRADE_NOTIFICATION_TIMEOUT_MS)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
         val testNotificationId = ("coc_lio_test_" + profile).hashCode()
         val gameIntent = context.packageManager
