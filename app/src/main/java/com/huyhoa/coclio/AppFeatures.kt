@@ -2755,7 +2755,10 @@ fun SettingsScreen(
                 Spacer(Modifier.weight(1f))
                 Text("CỰC NHANH", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
             }
-            Text("Độ sáng: ${(ledBrightness * 100f).roundToInt().coerceIn(0, 100)}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Độ sáng", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text("${(ledBrightness * 100f).roundToInt().coerceIn(0, 100)}%", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
             Slider(
                 value = (ledBrightness * 100f).roundToInt().coerceIn(0, 100).toFloat(),
                 onValueChange = { onLedBrightnessChanged(it.roundToInt().coerceIn(0, 100) / 100f) },
