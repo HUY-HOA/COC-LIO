@@ -58,9 +58,19 @@ object RemoteContentManager {
     private val mutableContent = MutableStateFlow(RemoteContentState())
     val content: StateFlow<RemoteContentState> = mutableContent.asStateFlow()
     private var listenerRegistration: ListenerRegistration? = null
+    @Volatile private var accessAllowed = false
+
+    fun setAccessAllowed(context: Context, allowed: Boolean) {
+        accessAllowed = allowed
+        if (allowed) startRealtimeUpdates(context) else stopRealtimeUpdates()
+    }
+
+    fun onHostStart(context: Context) {
+        if (accessAllowed) startRealtimeUpdates(context)
+    }
 
     fun startRealtimeUpdates(context: Context) {
-        if (FirebaseAuth.getInstance().currentUser == null || listenerRegistration != null) return
+        if (!accessAllowed || FirebaseAuth.getInstance().currentUser == null || listenerRegistration != null) return
 
         listenerRegistration = FirebaseFirestore.getInstance()
             .collection(COLLECTION)
