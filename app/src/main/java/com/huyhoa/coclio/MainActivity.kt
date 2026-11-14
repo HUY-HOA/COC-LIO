@@ -2657,7 +2657,6 @@ private fun HistoryScreen(
                 }
             }
         } else {
-            if (deletedVillages.isEmpty())        } else {
             if (deletedVillages.isEmpty()) {
                 item { InfoCard("Chưa có dữ liệu bị xóa", "Khi xóa một làng khỏi ĐANG LƯU, dữ liệu sẽ được lưu tại đây để khôi phục.") }
             } else {
