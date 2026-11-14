@@ -173,7 +173,7 @@ private data class ImportSummary(
 )
 
 val LocalLedTheme = staticCompositionLocalOf {
-    LedThemeState(DefaultLedPalette, true, 3000, 0.5f, mutableStateOf(0f))
+    LedThemeState(DefaultLedPalette, true, 3000, 1f, mutableStateOf(0f))
 }
 
 private fun paletteForLed(preset: String): List<Color> = when (preset) {
@@ -623,8 +623,15 @@ private fun CocLioApp(
             }
             if (prefs.getInt("settings_version", 0) < 2) {
                 val editor = prefs.edit()
-                if (!prefs.contains("brightness")) editor.putFloat("brightness", 0.5f)
+                if (!prefs.contains("brightness")) editor.putFloat("brightness", 1f)
                 editor.putInt("settings_version", 2).apply()
+            }
+            if (prefs.getInt("settings_version", 0) < 3) {
+                val editor = prefs.edit()
+                if (prefs.getFloat("brightness", 1f) == 0.5f) {
+                    editor.putFloat("brightness", 1f)
+                }
+                editor.putInt("settings_version", 3).apply()
             }
         }
     }
@@ -636,7 +643,7 @@ private fun CocLioApp(
             savedLedSpeed.coerceIn(0, 100)
         )
     }
-    var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 0.5f).coerceIn(0f, 1f)) }
+    var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 1f).coerceIn(0f, 1f)) }
     val ledSpeedMultiplier = remoteAppConfig.ledSpeedMultiplier.coerceIn(0.5f, 3f)
     val minLedSpeedMillis = (750f / ledSpeedMultiplier).roundToInt().coerceAtLeast(250)
     val maxLedSpeedMillis = (15000f / ledSpeedMultiplier).roundToInt().coerceAtLeast(minLedSpeedMillis)
