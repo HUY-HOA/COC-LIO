@@ -1095,6 +1095,29 @@ private val englishTranslations = mapOf(
     "TẤN CÔNG NHANH" to "GEAR-UP",
     "Đăng nhập gần nhất" to "Last sign-in",
     "Cập nhật hồ sơ" to "Profile updated",
+    "Trường dữ liệu" to "Data field",
+    "Giải chiến tranh" to "War League",
+    "Giải Thủ đô" to "Capital League",
+    "Đang chuẩn bị" to "Preparing",
+    "Đang chiến tranh" to "In war",
+    "Đã kết thúc" to "Ended",
+    "Không tham gia chiến tranh" to "Not in war",
+    "Đang hoạt động" to "Active",
+    "Không hoạt động" to "Inactive",
+    "Đang chờ" to "Pending",
+    "Đã hoàn tất" to "Completed",
+    "Thắng" to "Win",
+    "Thua" to "Loss",
+    "Hòa" to "Tie",
+    "Hạng Đồng" to "Bronze League",
+    "Hạng Bạc" to "Silver League",
+    "Hạng Vàng" to "Gold League",
+    "Hạng Pha lê" to "Crystal League",
+    "Hạng Cao thủ" to "Master League",
+    "Hạng Vô địch" to "Champion League",
+    "Hạng Titan" to "Titan League",
+    "Hạng Huyền thoại" to "Legend League",
+    "Chưa xếp hạng" to "Unranked",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
     "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
@@ -1330,6 +1353,19 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Cấp (\\d+) • Tấn công nhanh$").matchEntire(source)!!.let { "Level ${it.groupValues[1]} • GEAR-UP" }
         Regex("^CẤP (\\d+) • TẤN CÔNG NHANH$").matchEntire(source) != null ->
             Regex("^CẤP (\\d+) • TẤN CÔNG NHANH$").matchEntire(source)!!.let { "LEVEL ${it.groupValues[1]} • GEAR-UP" }
+        Regex("^Hạng (Đồng|Bạc|Vàng|Pha lê|Cao thủ|Vô địch|Titan) (I|II|III)$").matchEntire(source) != null ->
+            Regex("^Hạng (Đồng|Bạc|Vàng|Pha lê|Cao thủ|Vô địch|Titan) (I|II|III)$").matchEntire(source)!!.let {
+                val tier = when (it.groupValues[1]) {
+                    "Đồng" -> "Bronze"
+                    "Bạc" -> "Silver"
+                    "Vàng" -> "Gold"
+                    "Pha lê" -> "Crystal"
+                    "Cao thủ" -> "Master"
+                    "Vô địch" -> "Champion"
+                    else -> "Titan"
+                }
+                "$tier League ${it.groupValues[2]}"
+            }
         source.startsWith("CẤP ") -> "LEVEL " + source.removePrefix("CẤP ")
         source.startsWith("Bảng xếp hạng Nhà chính ") -> "Town Hall leaderboard " + source.removePrefix("Bảng xếp hạng Nhà chính ")
         source.startsWith("Chuỗi 3 sao Nhà chính ") -> "3-star streak by Town Hall " + source.removePrefix("Chuỗi 3 sao Nhà chính ")
