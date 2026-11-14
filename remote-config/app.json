@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "version": 1,
+  "enabled": true,
+  "theme": {
+    "darkPrimary": "#36F4FF",
+    "darkSecondary": "#FF4DDA",
+    "darkTertiary": "#FFD166",
+    "darkBackground": "#000000",
+    "darkSurface": "#0D152B",
+    "darkSurfaceVariant": "#14203B",
+    "darkOnSurfaceVariant": "#9EAFCE",
+    "lightPrimary": "#006A78",
+    "lightSecondary": "#8B3B85",
+    "lightTertiary": "#8A5A00",
+    "lightBackground": "#FFFFFF",
+    "lightSurface": "#FFFFFF",
+    "lightSurfaceVariant": "#E8EEF6",
+    "lightOnBackground": "#172235",
+    "lightOnSurface": "#172235",
+    "lightOnSurfaceVariant": "#526176"
+  },
+  "led": {
+    "speedMultiplier": 1.0
+  },
+  "translations": {
+    "vi": {},
+    "en": {}
+  }
+}
