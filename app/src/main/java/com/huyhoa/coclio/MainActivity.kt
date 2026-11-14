@@ -555,6 +555,23 @@ private fun CocLioApp(
     val isCheckingRequiredAccountConsent = firebaseGoogleEmail != null &&
         requiredAccountConsentLoadedForEmail == null &&
         !requiredAccountConsentSubmitting
+    val existingAccountNeedsConsent = firebaseGoogleEmail != null &&
+        requiredAccountConsentLoadedForEmail?.equals(firebaseGoogleEmail, ignoreCase = true) == true &&
+        !requiredAccountConsentAccepted
+    val existingFirebaseUser = FirebaseAuth.getInstance().currentUser
+    val accountAwaitingConsent = pendingGoogleSignIn?.account ?: if (existingAccountNeedsConsent) {
+        existingFirebaseUser?.email?.let { email ->
+            GoogleAccountData(
+                email = email,
+                displayName = existingFirebaseUser.displayName,
+                givenName = null,
+                familyName = null,
+                profilePictureUri = existingFirebaseUser.photoUrl?.toString()
+            )
+        }
+    } else {
+        null
+    }
     LaunchedEffect(isGoogleSignedIn) {
         RemoteContentManager.setAccessAllowed(context, isGoogleSignedIn)
     }
@@ -1183,8 +1200,8 @@ private fun CocLioApp(
             }
         }
     ) { innerPadding ->
-        if (!isGoogleSignedIn) {
-            if (isCheckingRequiredAccountConsent) {
+        if (!isGoogleSignedIn || pendingGoogleSignIn != null) {
+            if (isCheckingRequiredAccountConsent && pendingGoogleSignIn == null) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                     contentAlignment = Alignment.Center
@@ -1200,13 +1217,12 @@ private fun CocLioApp(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                     appTitle = remoteAppConfig.appTitle,
                     appSubtitle = remoteAppConfig.appSubtitle,
-                    consentChecked = requiredAccountConsentChecked,
-                    onConsentChecked = { requiredAccountConsentChecked = it },
+                    selectedAccount = accountAwaitingConsent,
                     isBusy = requiredAccountConsentSubmitting || interactiveGoogleSignIn,
-                    hasAuthenticatedGoogleAccount = firebaseGoogleEmail != null,
                     readError = requiredAccountConsentReadError,
-                    onReject = { leaveGoogleAccount("Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất.") },
-                    onGoogleSignIn = { signInWithGoogle() }
+                    onReject = { rejectAccountConsent() },
+                    onGoogleSignIn = { signInWithGoogle() },
+                    onConsentAccept = { acceptAccountConsent() }
                 )
             }
         } else {
