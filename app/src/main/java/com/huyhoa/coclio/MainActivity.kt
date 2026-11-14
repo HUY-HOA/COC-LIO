@@ -2274,11 +2274,11 @@ private fun CategoryScreen(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 68.dp),
+        columns = GridCells.Adaptive(minSize = 82.dp),
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (baseItems.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -2346,12 +2346,12 @@ private fun VillageGridItemCard(
     NeonPanel(
         modifier = Modifier.fillMaxWidth(),
         glow = if (item.tab == "army") CocMagenta else CocCyan,
-        innerPadding = 3.dp
+        innerPadding = 4.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(148.dp),
+                .height(122.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
@@ -2359,65 +2359,65 @@ private fun VillageGridItemCard(
                 AsyncImage(
                     model = remote.imageUrl,
                     contentDescription = remote.name,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(58.dp),
                     contentScale = ContentScale.Fit
                 )
             } else {
-                CategoryImage(item, 48)
+                CategoryImage(item, 58)
             }
-            Text(
-                remote?.name?.takeIf { it.isNotBlank() } ?: item.name,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
             Text(
                 item.level?.let { level ->
                     remote?.maxLevel?.let { maxLevel -> "CẤP $level/$maxLevel" } ?: "CẤP $level"
                 } ?: "—",
                 color = MaterialTheme.colorScheme.tertiary,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Black,
-                maxLines = 1
+                maxLines = 1,
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.14f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
             )
             Row(
-                modifier = Modifier.fillMaxWidth().height(20.dp),
+                modifier = Modifier.fillMaxWidth().height(18.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
                 if (item.count > 1) {
                     Text(
-                        "×${item.count}",
+                        "×" + item.count,
                         color = MaterialTheme.colorScheme.tertiary,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Black,
                         modifier = Modifier
                             .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp, vertical = 1.dp)
+                            .padding(horizontal = 7.dp, vertical = 1.dp)
                     )
                 }
                 if (item.gearUp) {
-                    Spacer(Modifier.width(4.dp))
-                    Text("TẤN CÔNG NHANH", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Spacer(Modifier.width(5.dp))
+                    Text("⚙", color = CocGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 item.weaponLevel?.let {
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(5.dp))
                     Text("V$it", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
             val remoteDetails = buildList {
                 remote?.description?.takeIf { it.isNotBlank() }?.let(::add)
-                remote?.aliases?.takeIf { it.isNotEmpty() }?.let { add("Tên khác: ${it.joinToString(", ")}") }
-                remote?.requirements?.takeIf { it.isNotEmpty() }?.let { add("Yêu cầu: ${it.joinToString(", ")}") }
+                remote?.requirements?.takeIf { it.isNotEmpty() }?.let { add("Yêu cầu: " + it.joinToString(", ")) }
                 remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let { add("Chi phí: $it") }
-                remote?.upgradeDurationSeconds?.let { add("Thời gian: ${formatDuration(it)}") }
+                remote?.upgradeDurationSeconds?.let { add("Thời gian: " + formatDuration(it)) }
                 remote?.details?.forEach(::add)
             }
             val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" } + remoteDetails).joinToString(" • ")
             if (detailText.isNotBlank()) {
-                Text(detailText, color = MaterialTheme.colorScheme.onSurface, fontSize = 8.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    detailText,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 7.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
