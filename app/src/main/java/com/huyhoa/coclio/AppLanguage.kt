@@ -1127,6 +1127,18 @@ private val englishTranslations = mapOf(
     "Bạn đã hủy xác nhận và giữ nguyên tài khoản đang sử dụng." to "You cancelled consent and kept the current account.",
     "Bạn cần chọn tài khoản Google trước." to "Select a Google account first.",
     "Không thể hoàn tất xác nhận dữ liệu tài khoản. Hãy thử lại." to "Unable to complete account data consent. Please try again.",
+    "CHIA SẺ" to "SHARING",
+    "ĐÃ GỬI" to "SENT",
+    "XÓA JSON ĐÃ GỬI" to "DELETE SENT JSON",
+    "Bạn chưa chia sẻ JSON nào." to "You haven't shared any JSON yet.",
+    "Bạn chưa nhận JSON nào từ người khác." to "You haven't received any JSON from others.",
+    "Xóa JSON đã gửi?" to "Delete sent JSON?",
+    "JSON này sẽ bị xóa khỏi danh sách chia sẻ và bài đăng JSON tương ứng trong Cộng đồng. Bản JSON trong Lịch sử và Đang lưu trên thiết bị vẫn được giữ." to "This JSON will be removed from your sharing list and its matching Community post. The copy in History and Saved on this device will remain.",
+    "Bạn chỉ có thể xóa JSON do chính mình chia sẻ." to "You can only delete JSON that you shared yourself.",
+    "Đã xóa JSON đã gửi khỏi Cộng đồng." to "Sent JSON was deleted from the Community.",
+    "Đã xóa JSON nhận được khỏi danh sách chia sẻ. Bản trong lịch sử vẫn được giữ." to "Received JSON was removed from the sharing list. Its copy in History is still kept.",
+    "NHẬP LẠI" to "IMPORT AGAIN",
+    "XÓA JSON" to "DELETE JSON",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
     "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
@@ -1419,6 +1431,12 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             val tag = source.removePrefix("Đã chuyển ").removeSuffix(" vào mục ĐÃ GỠ.")
             "Moved " + tag + " to REMOVED."
         }
+        source.startsWith("Đã gửi: ") -> "Sent: " + source.removePrefix("Đã gửi: ")
+        source.startsWith("Chia sẻ bởi: ") -> "Shared by: " + source.removePrefix("Chia sẻ bởi: ")
+        Regex("^Ngày dữ liệu: (.+) • Nhận: (.+)$").matchEntire(source) != null ->
+            Regex("^Ngày dữ liệu: (.+) • Nhận: (.+)$").matchEntire(source)!!.let {
+                "Data date: ${it.groupValues[1]} • Received: ${it.groupValues[2]}"
+            }
         source.startsWith("Độ sáng: ") -> "Brightness: " + source.removePrefix("Độ sáng: ")
         source.startsWith("COC-LIO ") && source.endsWith(" đã có bản cập nhật mới.") -> source.removeSuffix(" đã có bản cập nhật mới.") + " has a new update."
         source.startsWith("ID: ") -> source
