@@ -5,8 +5,8 @@
 ## Thiết lập một lần
 
 1. Mở Firebase project `coc-lio-73de9`, vào Firestore Database.
-2. Trong collection `app_remote_content`, tạo document có ID `current`.
-3. Dán nội dung mẫu trong `current.json` vào document. Dùng kiểu dữ liệu đúng như mẫu: Boolean, Number, String và Array/Map.
+2. Tạo collection `app_remote_content`, sau đó tạo document có ID `current`.
+3. Dùng `current.json` làm mẫu cấu trúc và tạo từng field trong document bằng Firestore Console. Không dán toàn bộ JSON vào một field String; giữ đúng kiểu Boolean, Number, String, Map và Array cho từng trường.
 4. Deploy nội dung `firestore.rules` của repository. Người dùng đã đăng nhập chỉ được đọc tài liệu này; chỉ tài khoản chủ COC-LIO được tạo, sửa hoặc xóa.
 5. Tăng trường `version` mỗi lần phát hành nội dung mới.
 
