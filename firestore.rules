@@ -417,7 +417,7 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
 
       allow update: if false;
-      allow delete: if isOwner();
+      allow delete: if isOwner() || isSelf(resource.data.uid);
     }
 
     match /community_messages/{messageId} {
@@ -551,7 +551,12 @@ service cloud.firestore {
           )
         );
 
-      allow delete: if isOwner();
+      allow delete: if isOwner() || (
+        isSelf(resource.data.uid)
+        && resource.data.type == 'json'
+        && resource.data.sharedJsonId is string
+        && resource.data.sharedJsonId.size() > 0
+      );
     }
 
     match /community_deleted_messages/{archiveId} {
