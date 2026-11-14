@@ -561,7 +561,10 @@ private fun CocLioApp(
     }
     var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
     var selectedTab by remember { mutableStateOf(0) }
-    val remoteNavigationItems = remoteAppConfig.navigationItems.filter { it.enabled }.take(6)
+    val remoteNavigationItems = remoteAppConfig.navigationItems
+        .filter { it.enabled && remoteAppConfig.featureEnabled(it.id) }
+        .take(6)
+        .ifEmpty { remoteAppConfig.navigationItems.firstOrNull()?.let { listOf(it.copy(enabled = true)) }.orEmpty() }
     LaunchedEffect(remoteNavigationItems, selectedTab) {
         if (remoteNavigationItems.none { it.page == selectedTab }) {
             selectedTab = remoteNavigationItems.firstOrNull()?.page ?: 0
@@ -667,7 +670,7 @@ private fun CocLioApp(
         }
     }
     val ledTheme = LedThemeState(
-        palette = paletteForLed(ledPreset),
+        palette = remoteAppConfig.ledPalette.takeIf { it.size >= 2 }?.map(::Color) ?: paletteForLed(ledPreset),
         enabled = ledEnabled,
         speedMillis = ledSpeedMillis,
         brightness = ledBrightness.coerceIn(0f, 1f),
@@ -1056,21 +1059,21 @@ private fun CocLioApp(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "COC-LIO",
+                        remoteAppConfig.appTitle,
                         style = TextStyle(brush = animatedLedTextBrush()),
                         fontSize = 23.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 2.sp
                     )
                     Text(
-                        "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO",
+                        remoteAppConfig.appSubtitle,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 8.sp,
                         letterSpacing = 0.3.sp,
                         maxLines = 1
                     )
                 }
-                if (remoteAppConfig.showImportButton) {
+                if (remoteAppConfig.featureEnabled("importButton", remoteAppConfig.showImportButton)) {
                     NeonButton(
                         text = if (isGoogleSignedIn) "＋ NHẬP JSON" else "ĐĂNG NHẬP",
                         onClick = { requestImportJson() }
@@ -1161,14 +1164,18 @@ private fun CocLioApp(
                 )
             }
         } else {
+        val visibleRemoteBlocks = remoteAppConfig.dashboardBlocks.filter {
+            (it.page == selectedTab || it.page == -1) &&
+                remoteAppConfig.featureEnabled("dashboardBlocks")
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (selectedTab == 0 && remoteAppConfig.dashboardBlocks.isNotEmpty()) {
+            if (visibleRemoteBlocks.isNotEmpty()) {
                 RemoteDashboardBlocks(
-                    blocks = remoteAppConfig.dashboardBlocks,
+                    blocks = visibleRemoteBlocks,
                     onAction = { action ->
                         when (action) {
                             "import_json" -> requestImportJson()
