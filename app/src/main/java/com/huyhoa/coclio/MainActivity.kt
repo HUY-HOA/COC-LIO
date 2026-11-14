@@ -370,19 +370,20 @@ private fun NeonPanel(
 private fun NeonButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val shape = RoundedCornerShape(14.dp)
     val led = LocalLedTheme.current
     val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val buttonFillPalette = led.palette.map { it.copy(alpha = 1f) }
+    val buttonFillPalette = led.palette.map { it.copy(alpha = if (enabled) 1f else 0.45f) }
     Box(
         modifier = modifier
             .shadow(5.dp, shape)
             .clip(shape)
             .background(Brush.horizontalGradient(buttonFillPalette.take(3)))
             .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -1703,24 +1704,17 @@ private fun GoogleLoginStartScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
-                Button(
+                NeonButton(
+                    text = when {
+                        isBusy && selectedAccount != null -> "ĐANG XÁC NHẬN..."
+                        isBusy -> "ĐANG MỞ GOOGLE..."
+                        selectedAccount != null -> "ĐỒNG Ý & TIẾP TỤC"
+                        else -> "ĐĂNG NHẬP GOOGLE"
+                    },
                     onClick = if (selectedAccount == null) onGoogleSignIn else onConsentAccept,
-                    enabled = !isBusy,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .ledRgbBorder(cornerRadiusDp = 12f, strokeWidthDp = 2.2f)
-                ) {
-                    Text(
-                        when {
-                            isBusy && selectedAccount != null -> "ĐANG XÁC NHẬN..."
-                            isBusy -> "ĐANG MỞ GOOGLE..."
-                            selectedAccount != null -> "ĐỒNG Ý & TIẾP TỤC"
-                            else -> "ĐĂNG NHẬP GOOGLE"
-                        }
-                    )
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isBusy
+                )
                 if (selectedAccount != null) {
                     TextButton(
                         onClick = onReject,
