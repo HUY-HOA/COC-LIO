@@ -813,14 +813,14 @@ private fun lookupFieldLabel(key: String): String = when (key) {
     "townHallLevel", "townhall_level", "townhallLevel" -> "Nhà chính"
     "builderHallLevel" -> "Nhà thợ"
     "clanLevel" -> "Cấp bang hội"
-    "members" -> "Số thành viên"
+    "members", "memberCount" -> "Số thành viên"
     "trophies" -> "Cúp"
     "stars", "totalStars" -> "Số sao"
     "destructionPercentage" -> "Phần trăm phá hủy"
     "attackWins" -> "Thắng tấn công"
     "defenseWins" -> "Thắng phòng thủ"
-    "donated" -> "Lính đã cho"
-    "received" -> "Lính đã nhận"
+    "donated", "troopsDonated" -> "Lính đã cho"
+    "received", "troopsReceived" -> "Lính đã nhận"
     "warWins" -> "Số trận thắng"
     "warWinStreak" -> "Chuỗi thắng"
     "capitalGoldTotal" -> "Vàng Thủ đô"
@@ -829,10 +829,14 @@ private fun lookupFieldLabel(key: String): String = when (key) {
     "globalRank" -> "Hạng toàn cầu"
     "localRank" -> "Hạng địa phương"
     "time", "battleTime", "endTime", "startTime", "preparationStartTime" -> "Thời gian"
-    "state" -> "Trạng thái"
+    "state", "status" -> "Trạng thái"
+    "result" -> "Kết quả"
     "opponent" -> "Đối thủ"
     "clan" -> "Bang hội"
-    "league" -> "Giải đấu"
+    "clanCapital" -> "Thủ đô bang hội"
+    "league", "leagueTier" -> "Giải đấu"
+    "warLeague" -> "Giải chiến tranh"
+    "capitalLeague" -> "Giải Thủ đô"
     "attacks" -> "Lượt tấn công"
     "defenses" -> "Lượt phòng thủ"
     "averageStars" -> "Số sao trung bình"
@@ -845,13 +849,34 @@ private fun lookupFieldLabel(key: String): String = when (key) {
     "pagination" -> "Phân trang"
     "hasMore" -> "Còn dữ liệu"
     "count" -> "Tổng số"
-    else -> key
-        .replace(Regex("([a-z])([A-Z])"), "\$1 \$2")
-        .replace('_', ' ')
-        .replaceFirstChar { it.uppercase() }
+    else -> "Trường dữ liệu"
 }
 
-private fun lookupScalarText(value: Any?, key: String): String = when (value) {
+private fun localizeLookupLeagueName(value: String): String {
+    val match = Regex(
+        "^(Bronze|Silver|Gold|Crystal|Master|Champion|Titan) League(?: (I|II|III))?$",
+        RegexOption.IGNORE_CASE
+    ).matchEntire(value.trim())
+    if (match != null) {
+        val tier = when (match.groupValues[1].lowercase()) {
+            "bronze" -> "Hạng Đồng"
+            "silver" -> "Hạng Bạc"
+            "gold" -> "Hạng Vàng"
+            "crystal" -> "Hạng Pha lê"
+            "master" -> "Hạng Cao thủ"
+            "champion" -> "Hạng Vô địch"
+            else -> "Hạng Titan"
+        }
+        return tier + match.groupValues[2].takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
+    }
+    return when (value.trim().lowercase()) {
+        "legend", "legend league" -> "Hạng Huyền thoại"
+        "unranked" -> "Chưa xếp hạng"
+        else -> value
+    }
+}
+
+private fun lookupScalarText(value: Any?, key: String, parentKey: String = ""): String = when (value) {
     null, JSONObject.NULL -> "Chưa có dữ liệu"
     is Boolean -> if (value) "Có" else "Không"
     is Number -> if (key.contains("destructionPercentage", true)) {
@@ -859,11 +884,37 @@ private fun lookupScalarText(value: Any?, key: String): String = when (value) {
     } else {
         value.toString()
     }
+    is String -> when (key.lowercase()) {
+        "state" -> when (value.lowercase()) {
+            "preparation" -> "Đang chuẩn bị"
+            "inwar" -> "Đang chiến tranh"
+            "warended" -> "Đã kết thúc"
+            "notinwar" -> "Không tham gia chiến tranh"
+            else -> value
+        }
+        "status" -> when (value.lowercase()) {
+            "active" -> "Đang hoạt động"
+            "inactive" -> "Không hoạt động"
+            "pending" -> "Đang chờ"
+            "completed" -> "Đã hoàn tất"
+            else -> value
+        }
+        "result" -> when (value.lowercase()) {
+            "win", "won" -> "Thắng"
+            "lose", "lost", "loss" -> "Thua"
+            "tie", "draw" -> "Hòa"
+            else -> value
+        }
+        "name" -> if (parentKey.lowercase() in setOf("league", "leaguetier", "warleague", "capitalleague")) {
+            localizeLookupLeagueName(value)
+        } else value
+        else -> value
+    }
     else -> value.toString()
 }
 
 @Composable
-private fun LookupJsonViewer(value: Any, depth: Int = 0) {
+private fun LookupJsonViewer(value: Any, depth: Int = 0, parentKey: String = "") {
     when (value) {
         is JSONObject -> {
             var visibleFields by remember(value) { mutableStateOf(40) }
@@ -878,7 +929,7 @@ private fun LookupJsonViewer(value: Any, depth: Int = 0) {
                             is JSONObject -> {
                                 Text(lookupFieldLabel(key), color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 if (depth < 3) {
-                                    LookupCard { LookupJsonViewer(child, depth + 1) }
+                                    LookupCard { LookupJsonViewer(child, depth + 1, key) }
                                 } else {
                                     Text("Có dữ liệu chi tiết.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                                 }
@@ -886,12 +937,12 @@ private fun LookupJsonViewer(value: Any, depth: Int = 0) {
                             is JSONArray -> {
                                 Text(lookupFieldLabel(key), color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 if (depth < 3) {
-                                    LookupJsonViewer(child, depth + 1)
+                                    LookupJsonViewer(child, depth + 1, key)
                                 } else {
                                     Text("Có " + child.length() + " mục dữ liệu.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                                 }
                             }
-                            else -> LookupValue(lookupFieldLabel(key), lookupScalarText(child, key))
+                            else -> LookupValue(lookupFieldLabel(key), lookupScalarText(child, key, parentKey))
                         }
                     }
                     if (keys.size > visibleFields) {
@@ -916,16 +967,16 @@ private fun LookupJsonViewer(value: Any, depth: Int = 0) {
                             is JSONObject -> LookupCard {
                                 Text("MỤC " + (index + 1), color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 if (depth < 3) {
-                                    LookupJsonViewer(item, depth + 1)
+                                    LookupJsonViewer(item, depth + 1, parentKey)
                                 } else {
                                     Text("Có dữ liệu chi tiết.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                                 }
                             }
                             is JSONArray -> {
                                 Text("Nhóm " + (index + 1), color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                if (depth < 3) LookupJsonViewer(item, depth + 1)
+                                if (depth < 3) LookupJsonViewer(item, depth + 1, parentKey)
                             }
-                            else -> LookupValue("Mục " + (index + 1), lookupScalarText(item, ""))
+                            else -> LookupValue("Mục " + (index + 1), lookupScalarText(item, "", parentKey))
                         }
                     }
                     if (value.length() > count) {
