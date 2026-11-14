@@ -1092,6 +1092,7 @@ private val englishTranslations = mapOf(
     "Bộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong trò chơi." to "The JSON countdown has ended. Import a new JSON to confirm the level in the game.",
     "MỞ TRÒ CHƠI" to "OPEN GAME",
     "QUẢN LÝ" to "ADMIN",
+    "TẤN CÔNG NHANH" to "GEAR-UP",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
     "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
@@ -1307,6 +1308,10 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("MỨC ") -> "LEVEL " + source.removePrefix("MỨC ")
         source.startsWith("Mở lần cuối: ") -> "Last opened: " + source.removePrefix("Mở lần cuối: ")
         source.startsWith("Đăng nhập ") -> "Signed in " + source.removePrefix("Đăng nhập ")
+        Regex("^Cấp (\\d+) • Tấn công nhanh$").matchEntire(source) != null ->
+            Regex("^Cấp (\\d+) • Tấn công nhanh$").matchEntire(source)!!.let { "Level ${it.groupValues[1]} • GEAR-UP" }
+        Regex("^CẤP (\\d+) • TẤN CÔNG NHANH$").matchEntire(source) != null ->
+            Regex("^CẤP (\\d+) • TẤN CÔNG NHANH$").matchEntire(source)!!.let { "LEVEL ${it.groupValues[1]} • GEAR-UP" }
         source.startsWith("CẤP ") -> "LEVEL " + source.removePrefix("CẤP ")
         source.startsWith("Bảng xếp hạng Nhà chính ") -> "Town Hall leaderboard " + source.removePrefix("Bảng xếp hạng Nhà chính ")
         source.startsWith("Chuỗi 3 sao Nhà chính ") -> "3-star streak by Town Hall " + source.removePrefix("Chuỗi 3 sao Nhà chính ")
