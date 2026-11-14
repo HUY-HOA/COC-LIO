@@ -271,13 +271,12 @@ private suspend fun checkCommunityMessages(
             else -> ""
         }
         if (messageText.isNotBlank()) {
-            val localizedMessageText = translateCommunityTextForApp(context, messageText) ?: messageText
             postCommunityChatBubbleNotification(
                 context = context,
                 notificationId = ("community_" + document.id).hashCode(),
                 senderUid = senderUid,
                 senderName = sender,
-                messageText = localizedMessageText
+                messageText = messageText
             )
         }
     }
@@ -307,11 +306,10 @@ private suspend fun checkAppUpdates(
         val versionName = document.getString("versionName").orEmpty().trim()
         if (versionName.isBlank() || !isNewerAppVersion(versionName, installedVersion)) return@forEach
         val notes = document.getString("notes").orEmpty().trim()
-        val localizedNotes = if (notes.isBlank()) "" else translateCommunityTextForApp(context, notes) ?: notes
-        val body = (if (localizedNotes.isBlank()) {
+        val body = (if (notes.isBlank()) {
             AppLanguageSettings.translate(context, "COC-LIO có bản cập nhật mới")
         } else {
-            "COC-LIO $versionName: $localizedNotes"
+            "COC-LIO $versionName: $notes"
         }).take(420)
         postUpdateNotification(
             context,
