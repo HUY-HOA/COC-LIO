@@ -2,6 +2,7 @@ package com.huyhoa.coclio
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -83,8 +84,11 @@ private fun RemoteUiBlock(
                 }
             }
         }
-        "column", "row" -> {
-            val content: @Composable () -> Unit = {
+        "column" -> {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(spacing)
+            ) {
                 if (block.title.isNotBlank()) {
                     Text(
                         block.title,
@@ -104,19 +108,36 @@ private fun RemoteUiBlock(
                     RemoteUiBlock(child, onAction)
                 }
             }
-            if (block.type == "row") {
+        }
+        "row" -> {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                if (block.title.isNotBlank()) {
+                    Text(
+                        block.title,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (block.message.isNotBlank()) {
+                    Text(
+                        block.message,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(spacing)
                 ) {
-                    content()
-                }
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(spacing)
-                ) {
-                    content()
+                    block.children.forEach { child ->
+                        Box(Modifier.weight(child.weight)) {
+                            RemoteUiBlock(child, onAction)
+                        }
+                    }
                 }
             }
         }
