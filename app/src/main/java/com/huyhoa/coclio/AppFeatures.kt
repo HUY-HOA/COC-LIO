@@ -177,7 +177,7 @@ data class GoogleAccountData(
     val profilePictureUri: String?
 )
 
-data class GoogleAccountSelection(
+class GoogleAccountSelection(
     val account: GoogleAccountData,
     val idToken: String
 )
