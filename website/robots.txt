@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://coc-lio-73de9.firebaseapp.com/sitemap.xml
