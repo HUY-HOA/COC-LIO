@@ -1,21 +1,51 @@
-# COC-LIO remote configuration
+# COC-LIO remote UI configuration
 
-This folder contains the JSON value used by the app's Firebase Remote Config parameter.
+This folder contains the JSON schema for the Firebase Remote Config parameter used by the Android app.
 
 ## One-time Firebase setup
 
-1. Open the Firebase project `coc-lio-73de9`.
-2. Open Remote Config.
-3. Add a parameter named `coclio_app_config_json`.
-4. Set its default value to the complete contents of `app.json` as a JSON string.
-5. Publish the changes.
+1. Open Firebase project `coc-lio-73de9`.
+2. Open **Remote Config**.
+3. Create a String parameter named `coclio_app_config_json`.
+4. Set its default value to the complete contents of `app.json`.
+5. Publish the parameter.
+6. In Google Cloud APIs, ensure **Firebase Remote Config Realtime API** is enabled so installed clients can receive updates while running.
 
-The Android app includes the same safe defaults locally. Once the first APK containing the remote configuration client is installed, it fetches the published parameter and checks for changes about every 65 seconds while the app is in the foreground.
+The APK includes matching local defaults. The first APK that contains this remote-config client must be built and installed once. After that, supported configuration updates can be published without rebuilding the APK.
 
-## Updating later
+## Remotely configurable UI
 
-Edit `app.json`, then replace the value of `coclio_app_config_json` in Firebase Remote Config with the updated JSON and publish it. No APK rebuild is needed for supported configuration changes.
+- App title and subtitle.
+- Light and dark theme colors.
+- LED color palette and animation speed multiplier.
+- Bottom navigation order, labels and visibility.
+- Feature switches for navigation pages, the JSON import shortcut and remote UI blocks.
+- Remote text, notices, cards, dividers, spacers and buttons on individual pages or all pages.
+- Existing Vietnamese and English strings through the `translations.vi` and `translations.en` dictionaries.
 
-Supported remote values are limited to theme colors, LED speed multiplier, and Vietnamese/English text overrides used by the app's translated text component. Values are validated and clamped in the app. This document does not provide a mechanism for downloading or executing code.
+### Remote UI blocks
 
-Do not place passwords, API secrets, personal data, or executable code in this configuration.
+Set `dashboard.blocks` to an ordered array. Each block can use one of these types:
+
+- `text`: short text line.
+- `notice` or `card`: title, message and optional action button.
+- `button`: a full-width action button.
+- `divider`: a separator.
+- `spacer`: vertical spacing.
+
+Use `pageId` values `home`, `buildings`, `history`, `community`, `settings`, `lookup` or `all`. Available action IDs are allowlisted in the APK: `import_json`, `open_game`, `open_settings`, `open_community`, `open_history`, and `open_lookup`. The app ignores unknown block types, page IDs and actions.
+
+### Publishing future changes
+
+1. Edit `app.json` in this repository.
+2. Copy the complete JSON into the Firebase parameter `coclio_app_config_json`.
+3. Increase the `version` value.
+4. Publish the Remote Config changes.
+
+With Realtime updates enabled, an app that is open and connected can receive a published update without waiting for the next fetch interval. If Realtime updates are unavailable, the app uses the last activated/default configuration and fetches again when it is next initialized. The production fallback fetch interval is 12 hours.
+
+## What still requires a new APK
+
+Remote Config only changes values and UI structures that are already supported by the installed app. New Kotlin/Java code, new screen logic, new data parsing algorithms, new API integrations, database schema changes that require client code, Android permissions, notification/background services, home-screen widgets, native libraries, sign-in flows and security/privacy enforcement still require an APK build.
+
+Remote configuration must never contain passwords, private keys, access tokens, personal data, executable scripts or downloaded code. Remote UI actions are limited to the explicit allowlist compiled into the app. Do not use Remote Config to bypass Android permission prompts or user consent.
