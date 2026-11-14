@@ -104,6 +104,17 @@ class CommunityNotificationWorker(
                 Context.MODE_PRIVATE
             )
             val firestore = FirebaseFirestore.getInstance()
+            val account = firestore.collection("users")
+                .document(user.uid)
+                .get()
+                .awaitNotificationResult()
+            if (
+                !account.exists() ||
+                account.getLong("requiredAccountDataConsentVersion") != AccountPrivacyConsent.REQUIRED_ACCOUNT_DATA_VERSION ||
+                account.getBoolean("accountDisabled") == true
+            ) {
+                return@withContext Result.success()
+            }
             if (communityEnabled) {
                 checkCommunityMessages(applicationContext, firestore, preferences, profile, user.uid)
             }
