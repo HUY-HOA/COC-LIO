@@ -160,7 +160,11 @@ private data class CommunityArchiveItem(
     val notes: String,
     val contentType: String = "",
     val contentData: String = "",
-    val sharedJsonId: String = ""
+    val sharedJsonId: String = "",
+    val type: String = "",
+    val sharedJsonRaw: String = "",
+    val sharedJsonPlayerTag: String = "",
+    val sharedJsonVillageName: String = ""
 )
 
 private fun communityArchiveCollection(category: String): String = when (category) {
@@ -870,7 +874,11 @@ fun CommunityScreen(
                         notes = document.getString("notes").orEmpty(),
                         contentType = document.getString("contentType").orEmpty(),
                         contentData = document.getString("contentData").orEmpty(),
-                        sharedJsonId = document.getString("sharedJsonId").orEmpty()
+                        sharedJsonId = document.getString("sharedJsonId").orEmpty(),
+                        type = document.getString("type").orEmpty(),
+                        sharedJsonRaw = (document.get("sharedJsonData") as? Map<*, *>)?.get("rawJson") as? String ?: "",
+                        sharedJsonPlayerTag = (document.get("sharedJsonData") as? Map<*, *>)?.get("playerTag") as? String ?: "",
+                        sharedJsonVillageName = (document.get("sharedJsonData") as? Map<*, *>)?.get("villageName") as? String ?: ""
                     )
                 }
 
@@ -1770,6 +1778,43 @@ private fun CommunitySaveAttachmentButton(
 }
 
 @Composable
+private fun CommunitySaveTextButton(
+    fileName: String,
+    textContent: String,
+    mimeType: String,
+    label: String
+) {
+    val context = LocalContext.current
+    val saveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(mimeType)
+    ) { destination ->
+        if (destination != null) {
+            val result = runCatching {
+                require(textContent.isNotBlank()) { "Nội dung trống." }
+                val output = context.contentResolver.openOutputStream(destination)
+                    ?: throw IllegalStateException("Không thể mở vị trí lưu.")
+                output.use { it.write(textContent.toByteArray(Charsets.UTF_8)) }
+            }
+            val message = if (result.isSuccess) {
+                AppLanguageSettings.translate(context, "Đã lưu tệp.")
+            } else {
+                AppLanguageSettings.translate(
+                    context,
+                    result.exceptionOrNull()?.message ?: "Không thể lưu tệp."
+                )
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+    TextButton(
+        onClick = { saveLauncher.launch(communitySafeFileName(fileName)) },
+        enabled = textContent.isNotBlank()
+    ) {
+        Text(label, fontSize = 9.sp)
+    }
+}
+
+@Composable
 private fun CommunityMessageCard(
     message: CommunityMessage,
     currentUid: String,
@@ -2002,15 +2047,22 @@ private fun CommunityArchiveCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            val title = when (item.category) {
-                "image" -> "HÌNH ẢNH ĐÃ GỠ"
-                "file" -> "TỆP ĐÃ GỠ"
-                "apk" -> "APK CẬP NHẬT ĐÃ GỠ"
+            val title = when {
+                item.category == "image" -> "HÌNH ẢNH ĐÃ GỠ"
+                item.category == "file" -> "TỆP ĐÃ GỠ"
+                item.category == "apk" -> "APK CẬP NHẬT ĐÃ GỠ"
+                item.type == "json" -> "JSON CHIA SẺ ĐÃ GỠ"
                 else -> "TIN NHẮN ĐÃ GỠ"
             }
             Text(title, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+
             if (item.category == "apk") {
-                Text("COC-LIO " + item.versionName, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "COC-LIO " + item.versionName,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 if (item.notes.isNotBlank()) {
                     CommunityAutoTranslatedText(
                         sourceText = item.notes,
@@ -2021,10 +2073,42 @@ private fun CommunityArchiveCard(
                 }
             } else {
                 if (item.displayName.isNotBlank()) {
-                    Text(item.displayName, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        item.displayName,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                if (item.text.isNotBlank()) {
-                    if (item.category == "text") {
+                if (item.type == "json") {
+                    val villageTitle = item.sharedJsonVillageName.ifBlank { "JSON làng" }
+                    Text(
+                        villageTitle,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (item.sharedJsonPlayerTag.isNotBlank()) {
+                        Text(
+                            "Player Tag: " + item.sharedJsonPlayerTag,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 9.sp
+                        )
+                    }
+                    Text(
+                        if (item.sharedJsonRaw.isNotBlank()) {
+                            "JSON: " + formatCommunitySize(item.sharedJsonRaw.toByteArray(Charsets.UTF_8).size.toLong())
+                        } else {
+                            "Bản lưu cũ chưa có dữ liệu JSON gốc."
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 9.sp
+                    )
+                    if (item.text.isNotBlank()) {
+                        Text(item.text, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    }
+                } else if (item.text.isNotBlank()) {
+                    if (item.type == "text" || item.type.isBlank()) {
                         CommunityAutoTranslatedText(
                             sourceText = item.text,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -2036,6 +2120,7 @@ private fun CommunityArchiveCard(
                     }
                 }
             }
+
             if (item.category == "image") {
                 val archivedImage = remember(item.contentData) {
                     if (item.contentData.isBlank()) null else runCatching {
@@ -2051,21 +2136,14 @@ private fun CommunityArchiveCard(
                         contentScale = ContentScale.Fit
                     )
                 } else {
-                    Text("Ảnh không còn dữ liệu xem trước.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                }
-                if (item.contentData.isNotBlank()) {
-                    CommunitySaveAttachmentButton(
-                        fileName = item.fileName.ifBlank { "anh.jpg" },
-                        contentType = item.contentType.ifBlank { "image/jpeg" },
-                        contentData = item.contentData,
-                        label = "LƯU ẢNH"
+                    Text(
+                        "Ảnh không còn dữ liệu xem trước.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 9.sp
                     )
-                } else if (item.downloadUrl.isNotBlank()) {
-                    TextButton(onClick = { onDownload(item.downloadUrl, item.fileName) }) {
-                        Text("LƯU ẢNH", fontSize = 9.sp)
-                    }
                 }
             }
+
             if (item.fileName.isNotBlank()) {
                 Text(
                     item.fileName + " · " + formatCommunitySize(item.fileSize),
@@ -2074,27 +2152,101 @@ private fun CommunityArchiveCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (item.category == "file" && item.contentData.isNotBlank()) {
-                    CommunitySaveAttachmentButton(
-                        fileName = item.fileName,
-                        contentType = item.contentType.ifBlank { "application/octet-stream" },
-                        contentData = item.contentData,
-                        label = "TẢI TỆP"
-                    )
-                }
             }
+
             Text(
                 "Đã gửi: " + communityTime(item.createdAt) + "  •  Đã gỡ: " + communityTime(item.archivedAt),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 8.sp
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                if (item.downloadUrl.isNotBlank()) {
-                    Text("Tệp đính kèm hiện chưa thể tải xuống", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                when {
+                    item.category == "image" && item.contentData.isNotBlank() -> {
+                        CommunitySaveAttachmentButton(
+                            fileName = item.fileName.ifBlank { "anh.jpg" },
+                            contentType = item.contentType.ifBlank { "image/jpeg" },
+                            contentData = item.contentData,
+                            label = "LƯU ẢNH"
+                        )
+                    }
+                    item.category == "file" && item.contentData.isNotBlank() -> {
+                        CommunitySaveAttachmentButton(
+                            fileName = item.fileName.ifBlank { "tep_tai_xuong" },
+                            contentType = item.contentType.ifBlank { "application/octet-stream" },
+                            contentData = item.contentData,
+                            label = "LƯU TỆP"
+                        )
+                    }
+                    item.category == "text" && item.type == "json" && item.sharedJsonRaw.isNotBlank() -> {
+                        CommunitySaveTextButton(
+                            fileName = item.fileName.ifBlank { "chia_se.json" },
+                            textContent = item.sharedJsonRaw,
+                            mimeType = "application/json",
+                            label = "LƯU JSON"
+                        )
+                    }
+                    item.category == "text" && item.text.isNotBlank() -> {
+                        val savedMessage = buildString {
+                            append(item.text)
+                            append("\n\n")
+                            append("Người gửi: ")
+                            append(item.displayName)
+                            append("\n")
+                            append("Ngày gửi: ")
+                            append(communityTime(item.createdAt))
+                        }
+                        CommunitySaveTextButton(
+                            fileName = item.fileName.takeIf { it.endsWith(".txt", true) }
+                                ?: "tin_nhan_${item.id.take(8)}.txt",
+                            textContent = savedMessage,
+                            mimeType = "text/plain",
+                            label = "LƯU TIN NHẮN"
+                        )
+                    }
+                    item.downloadUrl.isNotBlank() -> {
+                        TextButton(onClick = {
+                            onDownload(
+                                item.downloadUrl,
+                                item.fileName.ifBlank {
+                                    if (item.category == "apk") "COC-LIO.apk" else "tep_tai_xuong"
+                                }
+                            )
+                        }) {
+                            Text(
+                                when {
+                                    item.category == "apk" -> "LƯU APK"
+                                    item.category == "image" -> "LƯU ẢNH"
+                                    else -> "LƯU TỆP"
+                                },
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
                 }
+
                 TextButton(onClick = onDelete) {
                     Text("XÓA VĨNH VIỄN", color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
                 }
+            }
+
+            if (item.category == "apk" && item.downloadUrl.isBlank()) {
+                Text(
+                    "Bản lưu hiện chỉ có thông tin phiên bản, chưa có đường dẫn tải APK.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 8.sp
+                )
+            }
+            if (item.category == "text" && item.type == "json" && item.sharedJsonRaw.isBlank()) {
+                Text(
+                    "Không thể tải JSON gốc từ bản lưu cũ vì tài liệu JSON riêng không còn trong kho.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 8.sp
+                )
             }
         }
     }
