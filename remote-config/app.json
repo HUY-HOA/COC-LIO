@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": 3,
+  "version": 4,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -18,8 +18,8 @@
     "lightSecondary": "#8B3B85",
     "lightTertiary": "#8A5A00",
     "lightBackground": "#FFFFFF",
-    "lightSurface": "#FFFFFF",
-    "lightSurfaceVariant": "#E8EEF6",
+    "lightSurface": "#F1F5FB",
+    "lightSurfaceVariant": "#E4ECF6",
     "lightOnBackground": "#172235",
     "lightOnSurface": "#172235",
     "lightOnSurfaceVariant": "#526176"
