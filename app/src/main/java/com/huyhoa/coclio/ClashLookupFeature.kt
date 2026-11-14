@@ -152,7 +152,7 @@ private suspend fun loadClashKingProfile(candidate: ClashLookupCandidate): Clash
             }
             ClashLookupKind.CLAN -> {
                 val clan = readClashKingJson("/v2/clan/$encodedTag/cached") as? JSONObject
-                    ?: throw IllegalStateException("Chưa có hồ sơ Clan $tag trong kho dữ liệu ClashKing.")
+                    ?: throw IllegalStateException("Chưa có hồ sơ bang hội $tag trong kho dữ liệu ClashKing.")
                 val rankings = runCatching {
                     readClashKingJson("/v2/clan/$encodedTag/rankings") as? JSONObject
                 }.getOrNull()
@@ -490,7 +490,7 @@ fun ClashLookupScreen() {
                                 val encodedCurrent = URLEncoder.encode(data.profile.optString("tag"), "UTF-8")
                                 loadAction(
                                     ClashLookupAction(
-                                        "Thời gian ở Clan chung",
+                                        "Thời gian trong bang hội chung",
                                         "/v2/player/$encodedCurrent/join-leave/shared?tag=$encodedOther"
                                     )
                                 )
@@ -812,7 +812,7 @@ private fun lookupFieldLabel(key: String): String = when (key) {
     "name" -> "Tên"
     "townHallLevel", "townhall_level", "townhallLevel" -> "Nhà chính"
     "builderHallLevel" -> "Nhà thợ"
-    "clanLevel" -> "Cấp Clan"
+    "clanLevel" -> "Cấp bang hội"
     "members" -> "Số thành viên"
     "trophies" -> "Cúp"
     "stars", "totalStars" -> "Số sao"
@@ -963,7 +963,7 @@ private fun PlayerLookupCard(data: ClashLookupResponse) {
         LookupValue("Nhà chính", player.optInt("townHallLevel").takeIf { it > 0 }?.toString() ?: "Chưa có dữ liệu")
         LookupValue("Giải đấu", league?.optString("name")?.takeIf { it.isNotBlank() } ?: "Chưa có dữ liệu")
         LookupValue("Bang hội", clan?.optString("name")?.takeIf { it.isNotBlank() } ?: "Không có / chưa có dữ liệu")
-        clan?.optString("tag")?.takeIf { it.isNotBlank() }?.let { LookupValue("Mã Clan", it) }
+        clan?.optString("tag")?.takeIf { it.isNotBlank() }?.let { LookupValue("Mã bang hội", it) }
         ranks?.optJSONObject("homeVillage")?.let {
             LookupValue("Cúp nhà chính", it.optInt("trophies").takeIf { value -> value > 0 }?.toString() ?: "—")
             LookupValue("Hạng toàn cầu", it.optInt("globalRank").takeIf { value -> value > 0 }?.toString() ?: "—")
@@ -1010,7 +1010,7 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
             }
             Column {
                 Text(
-                    clan.optString("name", "Clan"),
+                    clan.optString("name", "Bang hội"),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -1026,9 +1026,9 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
                 lineHeight = 16.sp
             )
         }
-        LookupValue("Cấp Clan", clan.optInt("clanLevel").toString())
+        LookupValue("Cấp bang hội", clan.optInt("clanLevel").toString())
         LookupValue("Thành viên", clan.optInt("memberCount").toString())
-        LookupValue("Điểm Clan", clan.optInt("clanPoints").toString())
+        LookupValue("Điểm bang hội", clan.optInt("clanPoints").toString())
         LookupValue("Vị trí", location.ifBlank { "Chưa có dữ liệu" })
         LookupValue("Hạng chiến tranh", warLeague.ifBlank { "Chưa có dữ liệu" })
         LookupValue("Giải thủ đô", capitalLeague.ifBlank { "Chưa có dữ liệu" })
