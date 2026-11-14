@@ -613,15 +613,16 @@ private fun CocLioApp(
     var updateNotificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.updateNotificationsEnabled(context, activeProfile))
     }
-    LaunchedEffect(activeProfile, isGoogleSignedIn, communityNotificationsEnabled, updateNotificationsEnabled) {
+    LaunchedEffect(activeProfile, isGoogleSignedIn, requiredAccountConsentAccepted, communityNotificationsEnabled, updateNotificationsEnabled) {
+        val notificationsAllowed = isGoogleSignedIn && requiredAccountConsentAccepted
         CommunityNotificationScheduler.update(
             context,
             activeProfile,
-            isGoogleSignedIn,
+            notificationsAllowed,
             communityNotificationsEnabled,
             updateNotificationsEnabled
         )
-        FirebaseMessagingTopicSubscriptions.sync(context, activeProfile, isGoogleSignedIn)
+        FirebaseMessagingTopicSubscriptions.sync(context, activeProfile, notificationsAllowed)
     }
     var deletedVillages by remember(activeProfile) {
         mutableStateOf(VillageStore.loadDeleted(context, activeProfile))
