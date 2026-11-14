@@ -214,7 +214,7 @@ fun ClashLookupScreen() {
             fontWeight = FontWeight.Black
         )
         Text(
-            "Tìm hồ sơ người chơi hoặc bang hội bằng tên hoặc mã trong game.",
+            "Tìm hồ sơ người chơi hoặc bang hội bằng tên hoặc mã trong trò chơi.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 12.sp
         )
