@@ -3052,8 +3052,14 @@ class CocLioMessagingService : FirebaseMessagingService() {
             .setName(senderName)
             .setKey(data["senderUid"] ?: "community")
             .setImportant(true)
-        if (isCommunity && senderIsAdmin) {
-            senderPersonBuilder.setIcon(createAdminNotificationAvatar(this))
+        if (isCommunity) {
+            if (senderIsAdmin) {
+                senderPersonBuilder.setIcon(createAdminNotificationAvatar(this))
+            } else {
+                loadCommunitySenderIcon(data["senderPhotoUrl"].orEmpty())?.let {
+                    senderPersonBuilder.setIcon(it)
+                }
+            }
         }
         val senderPerson = senderPersonBuilder.build()
         val currentPerson = androidx.core.app.Person.Builder()
@@ -3128,12 +3134,39 @@ private fun createAdminNotificationAvatar(context: Context): IconCompat {
     return IconCompat.createWithBitmap(bitmap)
 }
 
+private fun loadCommunitySenderIcon(photoUrl: String): IconCompat? {
+    if (!photoUrl.startsWith("https://", ignoreCase = true)) return null
+    val connection = runCatching {
+        URL(photoUrl).openConnection() as? HttpURLConnection
+    }.getOrNull() ?: return null
+    return try {
+        connection.connectTimeout = 2500
+        connection.readTimeout = 2500
+        connection.instanceFollowRedirects = true
+        if (connection.responseCode !in 200..299) return null
+        if (connection.contentLengthLong > 1_048_576L) return null
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = 2
+            inPreferredConfig = Bitmap.Config.RGB_565
+        }
+        val bitmap = connection.inputStream.use { input ->
+            BitmapFactory.decodeStream(input, null, options)
+        } ?: return null
+        IconCompat.createWithBitmap(bitmap)
+    } catch (_: Exception) {
+        null
+    } finally {
+        connection.disconnect()
+    }
+}
+
 internal fun postCommunityChatBubbleNotification(
     context: Context,
     notificationId: Int,
     senderUid: String,
     senderName: String,
-    messageText: String
+    messageText: String,
+    senderPhotoUrl: String = ""
 ) {
     val notificationManager = NotificationManagerCompat.from(context)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -3165,6 +3198,10 @@ internal fun postCommunityChatBubbleNotification(
         .setImportant(true)
     if (senderName.equals("AILIO", ignoreCase = true)) {
         senderPersonBuilder.setIcon(createAdminNotificationAvatar(context))
+    } else {
+        loadCommunitySenderIcon(senderPhotoUrl)?.let {
+            senderPersonBuilder.setIcon(it)
+        }
     }
     val sender = senderPersonBuilder.build()
     val currentUser = FirebaseAuth.getInstance().currentUser
