@@ -1341,8 +1341,14 @@ class UpgradeReminderWorker(
             "coc_lio_remote_content",
             Context.MODE_PRIVATE
         )
+        val notificationLanguage = if (
+            AppLanguageSettings.resolve(
+                AppLanguageSettings.load(applicationContext),
+                applicationContext.resources.configuration.locales[0].language
+            ) == AppUiLanguage.ENGLISH
+        ) "en" else "vi"
         fun remoteNotificationText(key: String, fallback: String): String {
-            val template = remoteTemplates.getString("notification_$key", null)
+            val template = remoteTemplates.getString("notification_${notificationLanguage}_$key", null)
                 ?.takeIf { it.isNotBlank() && it.length <= 1800 }
                 ?: fallback
             return template
