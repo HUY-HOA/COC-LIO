@@ -2387,9 +2387,6 @@ fun SettingsScreen(
     val context = LocalContext.current
     var showAdminAccounts by remember(accountEmail, isAdmin) { mutableStateOf(false) }
     var selectedSizeSetting by remember { mutableStateOf(0) }
-    var communityAutoTranslationEnabled by remember {
-        mutableStateOf(CommunityAutoTranslationPreferences.isEnabled(context))
-    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -2531,25 +2528,6 @@ fun SettingsScreen(
                     )
                 }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Tự động dịch",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Switch(
-                    checked = communityAutoTranslationEnabled,
-                    onCheckedChange = { enabled ->
-                        communityAutoTranslationEnabled = enabled
-                        CommunityAutoTranslationPreferences.setEnabled(context, enabled)
-                    }
-                )
-            }
             Text(
                 when (languagePreference) {
                     "system" -> if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
@@ -2562,12 +2540,6 @@ fun SettingsScreen(
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp
-            )
-            Text(
-                "Tự động dịch tin nhắn và ghi chú cập nhật trong Cộng đồng theo ngôn ngữ ứng dụng. Bản gốc vẫn hiển thị cùng bản dịch. Lần đầu cần mạng để tải mô hình dịch; nội dung được xử lý trên thiết bị.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 9.sp,
-                lineHeight = 13.sp
             )
             Text(
                 "Lựa chọn ngôn ngữ được lưu trên thiết bị này.",
@@ -3365,19 +3337,11 @@ private fun CommunityBubbleChatContent(
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
-                                    if (message.type == "text") {
-                                        CommunityAutoTranslatedText(
-                                            sourceText = message.text,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontSize = 11.sp
-                                        )
-                                    } else {
-                                        Text(
-                                            message.text,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontSize = 11.sp
-                                        )
-                                    }
+                                    Text(
+                                        message.text,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 11.sp
+                                    )
                                 }
                             }
                         }
