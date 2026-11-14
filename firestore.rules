@@ -606,6 +606,11 @@ service cloud.firestore {
       allow read, write: if isOwner();
     }
 
+    match /app_remote_content/{contentId} {
+      allow get, list: if signedIn();
+      allow create, update, delete: if isOwner();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
