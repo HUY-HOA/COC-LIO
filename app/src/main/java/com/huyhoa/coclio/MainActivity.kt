@@ -2581,7 +2581,7 @@ private fun HistoryScreen(
                                     modifier = Modifier.size(11.dp)
                                 )
                                 Text(
-                                    "${snapshot.tag.removePrefix("#")}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
+                                    "${snapshot.tag.removePrefix("#")}  •  Nhà chính ${snapshot.townHallLevel ?: "—"}  •  Nhà thợ ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
                                     color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurface,
                                     fontSize = 10.sp,
                                     maxLines = 1,
@@ -2625,7 +2625,7 @@ private fun HistoryScreen(
                                     Text("ĐANG XEM", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Black)
                                 }
                             }
-                            Text("${snapshot.tag}  •  ${formatTimestamp(snapshot.timestamp)}  •  TH ${snapshot.townHallLevel ?: "—"}  •  BH ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("${snapshot.tag}  •  ${formatTimestamp(snapshot.timestamp)}  •  Nhà chính ${snapshot.townHallLevel ?: "—"}  •  Nhà thợ ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -2638,7 +2638,7 @@ private fun HistoryScreen(
                     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
                         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(received.villageName.ifBlank { "JSON làng ${received.tag}" }, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("Player Tag: ${received.tag}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("Mã người chơi: ${received.tag}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             Text("Chia sẻ bởi: ${received.senderName}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
                             Text("Dữ liệu: ${formatTimestamp(received.timestamp)} • Nhận: ${formatTimestamp(received.receivedAt)}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                             Row(
@@ -2665,7 +2665,7 @@ private fun HistoryScreen(
                     NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocRed) {
                         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(received.villageName.ifBlank { "JSON làng ${received.tag}" }, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("Player Tag: ${received.tag} • ${received.senderName}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                            Text("Mã người chơi: ${received.tag} • ${received.senderName}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
                             Text("Đã gỡ: ${formatTimestamp(deleted.deletedAt)}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
