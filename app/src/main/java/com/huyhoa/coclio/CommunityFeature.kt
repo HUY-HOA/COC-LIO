@@ -224,7 +224,7 @@ private suspend fun cleanupExpiredCommunityAttachments(retentionDays: Int) {
         for (chunk in expiredMessages.chunked(100)) {
             val batch = firestore.batch()
             for (document in chunk) {
-                val archiveData = document.data.toMutableMap()
+                val archiveData = document.data.orEmpty().toMutableMap()
                 archiveData["originalId"] = document.id
                 archiveData["archivedBy"] = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
                 archiveData["archivedAt"] = FieldValue.serverTimestamp()
@@ -1217,8 +1217,10 @@ fun CommunityScreen(
                                             val removed = cleanupCommunityArchive()
                                             statusMessage = if (removed > 0) {
                                                 "Đã lưu thiết lập và dọn $removed mục hết hạn."
+                                            } else if (attachmentAutoDeleteEnabled && attachmentDays != null) {
+                                                "Đã bật tự động xóa ảnh/tệp sau $attachmentDays ngày."
                                             } else {
-                                                "Đã lưu thiết lập lưu trữ và tự động xóa."
+                                                "Đã lưu thiết lập. Tự động xóa ảnh/tệp đang tắt."
                                             }
                                         } catch (error: Exception) {
                                             statusMessage = error.message ?: "Không thể lưu thời hạn lưu trữ."
