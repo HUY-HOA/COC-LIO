@@ -1083,6 +1083,8 @@ private val englishTranslations = mapOf(
     "Mã người chơi gần nhất" to "Most recent Player Tag",
     "Mã người chơi: " to "Player Tag: ",
     "Mã không hợp lệ. Hãy nhập mã người chơi hoặc bang hội dạng #ABC123." to "Invalid tag. Enter a player or Clan tag in the format #ABC123.",
+    "Mã người chơi trong JSON không hợp lệ." to "The player tag in the JSON is invalid.",
+    "JSON không có mã người chơi hợp lệ." to "The JSON does not contain a valid player tag.",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
     "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
@@ -1140,6 +1142,14 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
                 }
                 (englishTranslations[match.groupValues[1]] ?: match.groupValues[1]) + ": " + detail
             }
+        Regex("^(.+)  •  Nhà chính (.+)  •  Nhà thợ (.+)  •  (\\d+) mục$").matchEntire(source) != null ->
+            Regex("^(.+)  •  Nhà chính (.+)  •  Nhà thợ (.+)  •  (\\d+) mục$").matchEntire(source)!!.let {
+                "${it.groupValues[1]}  •  Town Hall ${it.groupValues[2]}  •  Builder Hall ${it.groupValues[3]}  •  ${it.groupValues[4]} items"
+            }
+        Regex("^(.+)  •  Nhà chính (.+)  •  Nhà thợ (.+)  •  (\\d+) mốc  •  (\\d+) đang nâng$").matchEntire(source) != null ->
+            Regex("^(.+)  •  Nhà chính (.+)  •  Nhà thợ (.+)  •  (\\d+) mốc  •  (\\d+) đang nâng$").matchEntire(source)!!.let {
+                "${it.groupValues[1]}  •  Town Hall ${it.groupValues[2]}  •  Builder Hall ${it.groupValues[3]}  •  ${it.groupValues[4]} snapshots  •  ${it.groupValues[5]} upgrades in progress"
+            }
         Regex("^(.+) cấp (\\d+)$").matchEntire(source) != null ->
             Regex("^(.+) cấp (\\d+)$").matchEntire(source)!!.let { match ->
                 (englishTranslations[match.groupValues[1]] ?: match.groupValues[1]) + " level " + match.groupValues[2]
@@ -1166,8 +1176,8 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Thông báo báo thức tự đóng sau (\\d+) giây$").matchEntire(source)!!.let { "Alarm notification closes after ${it.groupValues[1]} seconds" }
         Regex("^ClashKing trả về lỗi HTTP (.+)\\.$").matchEntire(source) != null ->
             Regex("^ClashKing trả về lỗi HTTP (.+)\\.$").matchEntire(source)!!.let { "ClashKing returned HTTP error ${it.groupValues[1]}." }
-        Regex("^Chưa có hồ sơ Clan (.+) trong kho dữ liệu ClashKing\\.$").matchEntire(source) != null ->
-            Regex("^Chưa có hồ sơ Clan (.+) trong kho dữ liệu ClashKing\\.$").matchEntire(source)!!.let { "No Clan profile for ${it.groupValues[1]} is available in the ClashKing database." }
+        Regex("^Chưa có hồ sơ bang hội (.+) trong kho dữ liệu ClashKing\\.$").matchEntire(source) != null ->
+            Regex("^Chưa có hồ sơ bang hội (.+) trong kho dữ liệu ClashKing\\.$").matchEntire(source)!!.let { "No Clan profile for ${it.groupValues[1]} is available in the ClashKing database." }
         Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source) != null ->
             Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source)!!.let {
                 "Update ${it.groupValues[1]} will be moved to the archive. The old APK file will be retained but will not be accessible."
@@ -1200,10 +1210,10 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Thống kê Ranked TH(\\d+) – Giải (\\d+)$").matchEntire(source)!!.let { "Ranked statistics TH${it.groupValues[1]} – League ${it.groupValues[2]}" }
         Regex("^Hạng khu vực (.+)$").matchEntire(source) != null ->
             "Regional rank " + source.removePrefix("Hạng khu vực ")
-        Regex("^Nhà chính (\\d+)  •  Clan (.+)$").matchEntire(source) != null ->
-            Regex("^Nhà chính (\\d+)  •  Clan (.+)$").matchEntire(source)!!.let { "Town Hall ${it.groupValues[1]}  •  Clan ${it.groupValues[2]}" }
-        Regex("^Cấp Clan (\\d+)  •  (\\d+) thành viên$").matchEntire(source) != null ->
-            Regex("^Cấp Clan (\\d+)  •  (\\d+) thành viên$").matchEntire(source)!!.let { "Clan Level ${it.groupValues[1]}  •  ${it.groupValues[2]} members" }
+        Regex("^Nhà chính (\\d+)  •  Bang hội (.+)$").matchEntire(source) != null ->
+            Regex("^Nhà chính (\\d+)  •  Bang hội (.+)$").matchEntire(source)!!.let { "Town Hall ${it.groupValues[1]}  •  Clan ${it.groupValues[2]}" }
+        Regex("^Cấp bang hội (\\d+)  •  (\\d+) thành viên$").matchEntire(source) != null ->
+            Regex("^Cấp bang hội (\\d+)  •  (\\d+) thành viên$").matchEntire(source)!!.let { "Clan Level ${it.groupValues[1]}  •  ${it.groupValues[2]} members" }
         Regex("^(\\d+) thành viên$").matchEntire(source) != null ->
             Regex("^(\\d+) thành viên$").matchEntire(source)!!.let { "${it.groupValues[1]} members" }
         Regex("^(\\d+) mục đang nâng • Thợ rảnh (\\d+)/(\\d+)$").matchEntire(source) != null ->
@@ -1315,8 +1325,9 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("  •  Đã gỡ: ") -> "  •  Removed: " + source.removePrefix("  •  Đã gỡ: ")
         source.startsWith("Đã tải ") -> "Loaded " + source.removePrefix("Đã tải ")
         source.startsWith("Nhà chính ") -> "Town Hall " + source.removePrefix("Nhà chính ")
+        source.startsWith("Nhà thợ ") -> "Builder Hall " + source.removePrefix("Nhà thợ ")
         source.startsWith("Cấp Nhà chính ") -> "Town Hall Level " + source.removePrefix("Cấp Nhà chính ")
-        source.startsWith("Cấp Clan ") -> "Clan Level " + source.removePrefix("Cấp Clan ")
+        source.startsWith("Cấp bang hội ") -> "Clan Level " + source.removePrefix("Cấp bang hội ")
         source.startsWith("Cấp ") -> "Level " + source.removePrefix("Cấp ")
         source.startsWith("Có ") -> "Has " + source.removePrefix("Có ")
         source.startsWith("MỤC ") -> "SECTION " + source.removePrefix("MỤC ")
@@ -1334,7 +1345,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             "Moved " + tag + " to REMOVED."
         }
         source.startsWith("Độ sáng: ") -> "Brightness: " + source.removePrefix("Độ sáng: ")
-        source.startsWith("Player Tag: ") -> source
         source.startsWith("COC-LIO ") && source.endsWith(" đã có bản cập nhật mới.") -> source.removeSuffix(" đã có bản cập nhật mới.") + " has a new update."
         source.startsWith("ID: ") -> source
         else -> {
