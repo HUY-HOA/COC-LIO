@@ -561,6 +561,12 @@ private fun CocLioApp(
     }
     var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
     var selectedTab by remember { mutableStateOf(0) }
+    val remoteNavigationItems = remoteAppConfig.navigationItems.filter { it.enabled }.take(6)
+    LaunchedEffect(remoteNavigationItems, selectedTab) {
+        if (remoteNavigationItems.none { it.page == selectedTab }) {
+            selectedTab = remoteNavigationItems.firstOrNull()?.page ?: 0
+        }
+    }
     var communityInitialSection by remember { mutableStateOf(0) }
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
@@ -1064,10 +1070,12 @@ private fun CocLioApp(
                         maxLines = 1
                     )
                 }
-                NeonButton(
-                    text = if (isGoogleSignedIn) "＋ NHẬP JSON" else "ĐĂNG NHẬP",
-                    onClick = { requestImportJson() }
-                )
+                if (remoteAppConfig.showImportButton) {
+                    NeonButton(
+                        text = if (isGoogleSignedIn) "＋ NHẬP JSON" else "ĐĂNG NHẬP",
+                        onClick = { requestImportJson() }
+                    )
+                }
             }
             }
         },
@@ -1077,18 +1085,11 @@ private fun CocLioApp(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
                 contentColor = MaterialTheme.colorScheme.onSurface
             ) {
-                val navItems = listOf(
-                    Triple("home", "Tổng quan", 0),
-                    Triple("buildings", "Công trình Quân đội", 1),
-                    Triple("history", "Kho JSON", 2),
-                    Triple("community", "Cộng đồng", 3),
-                    Triple("lookup", "Tra cứu ID", 5),
-                    Triple("settings", "Cài đặt", 4)
-                )
+                val navItems = remoteNavigationItems
                 navItems.forEach { item ->
                     NavigationBarItem(
-                        selected = selectedTab == item.third,
-                        onClick = { selectedTab = item.third },
+                        selected = selectedTab == item.page,
+                        onClick = { selectedTab = item.page },
                         icon = {
                             Box(
                                 modifier = Modifier
@@ -1103,7 +1104,7 @@ private fun CocLioApp(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = when (item.first) {
+                                    imageVector = when (item.id) {
                                         "home" -> Icons.Filled.Home
                                         "buildings" -> Icons.Filled.Business
                                         "history" -> Icons.Filled.History
@@ -1111,7 +1112,7 @@ private fun CocLioApp(
                                         "lookup" -> Icons.Filled.Tag
                                         else -> Icons.Filled.Settings
                                     },
-                                    contentDescription = item.second,
+                                    contentDescription = item.title,
                                     modifier = Modifier.size(20.dp),
                                     tint = if (selectedTab == item.third) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1119,7 +1120,7 @@ private fun CocLioApp(
                         },
                         label = {
                             Text(
-                                item.second,
+                                item.title,
                                 fontSize = 9.sp,
                                 lineHeight = 10.sp,
                                 maxLines = 2,
@@ -1160,18 +1161,38 @@ private fun CocLioApp(
                 )
             }
         } else {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.TopCenter
+                .padding(innerPadding)
         ) {
+            if (selectedTab == 0 && remoteAppConfig.dashboardBlocks.isNotEmpty()) {
+                RemoteDashboardBlocks(
+                    blocks = remoteAppConfig.dashboardBlocks,
+                    onAction = { action ->
+                        when (action) {
+                            "import_json" -> requestImportJson()
+                            "open_game" -> openClashOfClans(context)
+                            "open_settings" -> selectedTab = 4
+                            "open_community" -> selectedTab = 3
+                            "open_history" -> selectedTab = 2
+                            "open_lookup" -> selectedTab = 5
+                        }
+                    }
+                )
+            }
             Box(
                 modifier = Modifier
-                    .widthIn(max = 1100.dp)
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.TopCenter
             ) {
-            Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = 1100.dp)
+                        .fillMaxSize()
+                ) {
+                    Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
                 when (page) {
                     0 -> current?.let {
                         OverviewScreen(snapshot = it)
@@ -1411,6 +1432,7 @@ private fun CocLioApp(
                     )
                     }
 
+            }
             }
             }
         }
