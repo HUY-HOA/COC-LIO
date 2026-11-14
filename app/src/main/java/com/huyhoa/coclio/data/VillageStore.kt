@@ -349,6 +349,16 @@ object ReceivedSharedJsonStore {
         }.sortedByDescending { it.deletedAt }
     }
 
+    fun deleteReceived(context: Context, jsonId: String, profile: String = "local"): Boolean {
+        if (jsonId.isBlank()) return false
+        val existing = loadReceived(context, profile)
+        if (existing.none { it.id == jsonId }) return false
+        val updated = JSONArray()
+        existing.filterNot { it.id == jsonId }.forEach { updated.put(encode(it)) }
+        preferences(context).edit().putString(receivedKey(profile), updated.toString()).apply()
+        return true
+    }
+
     fun moveToDeleted(context: Context, jsonId: String, profile: String = "local"): Boolean {
         val record = loadReceived(context, profile).firstOrNull { it.id == jsonId } ?: return false
         val active = JSONArray()
