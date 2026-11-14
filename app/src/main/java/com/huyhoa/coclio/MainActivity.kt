@@ -590,9 +590,6 @@ private fun CocLioApp(
     var notificationStyle by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationStyle(context, activeProfile))
     }
-    var alarmDurationSeconds by remember(activeProfile) {
-        mutableStateOf(AppPreferences.alarmDurationSeconds(context, activeProfile))
-    }
     var communityNotificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.communityNotificationsEnabled(context, activeProfile))
     }
@@ -747,7 +744,7 @@ private fun CocLioApp(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle, alarmDurationSeconds)
+            val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle)
             scope.launch {
                 snackbar.showAppSnackbar(context, 
                     if (sent) "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem."
@@ -1391,7 +1388,6 @@ private fun CocLioApp(
                             ledPrefs.edit().putFloat("brightness", ledBrightness).apply()
                         },
                         notificationStyle = notificationStyle,
-                        alarmDurationSeconds = alarmDurationSeconds,
                         communityNotificationsEnabled = communityNotificationsEnabled,
                         updateNotificationsEnabled = updateNotificationsEnabled,
                         onCommunityNotificationsChanged = { enabled ->
@@ -1440,17 +1436,13 @@ private fun CocLioApp(
                             notificationStyle = style
                             UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
                         },
-                        onAlarmDurationChanged = { seconds ->
-                            AppPreferences.setAlarmDurationSeconds(context, activeProfile, seconds)
-                            alarmDurationSeconds = AppPreferences.alarmDurationSeconds(context, activeProfile)
-                        },
                         onTestNotification = {
                             if (Build.VERSION.SDK_INT >= 33 &&
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                             ) {
                                 testNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             } else {
-                                val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle, alarmDurationSeconds)
+                                val sent = UpgradeNotificationTester.show(context, activeProfile, notificationStyle)
                                 scope.launch {
                                     snackbar.showAppSnackbar(context, 
                                         if (sent) "Đã gửi thông báo thử. Hãy kéo thanh thông báo xuống để xem."
