@@ -58,14 +58,20 @@ jobs:
       - name: Deploy website only
         run: firebase deploy --only hosting --project coc-lio-73de9 --non-interactive --message "Deploy COC-LIO public information pages"
 
-      - name: Verify public pages
+      - name: Verify public pages and page contents
         shell: bash
         run: |
           set -euo pipefail
-          for path in "/" "/privacy" "/terms" "/robots.txt" "/sitemap.xml"; do
+          verify_page() {
+            local path="$1"
+            local expected="$2"
             echo "Checking https://coc-lio-73de9.firebaseapp.com${path}"
-            curl --fail --location --silent --show-error --retry 8 --retry-delay 5 --retry-all-errors               "https://coc-lio-73de9.firebaseapp.com${path}" -o /tmp/coclio-page
-            test -s /tmp/coclio-page
-          done
-          grep -q "Chính sách quyền riêng tư" /tmp/coclio-page || true
-          echo "Các URL công khai phản hồi HTTP thành công."
+            curl --fail --location --silent --show-error --retry 8 --retry-delay 5 --retry-all-errors "https://coc-lio-73de9.firebaseapp.com${path}" -o /tmp/coclio-page
+            grep -Fq "$expected" /tmp/coclio-page
+          }
+          verify_page "/" "Theo dõi tiến trình làng Clash of Clans"
+          verify_page "/privacy" "Chính sách quyền riêng tư"
+          verify_page "/terms" "Điều khoản sử dụng"
+          verify_page "/robots.txt" "Sitemap: https://coc-lio-73de9.firebaseapp.com/sitemap.xml"
+          verify_page "/sitemap.xml" "https://coc-lio-73de9.firebaseapp.com/privacy"
+          echo "Tất cả 5 URL công khai và nội dung chính đã được xác minh."
