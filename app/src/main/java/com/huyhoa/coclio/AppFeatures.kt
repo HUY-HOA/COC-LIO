@@ -2739,8 +2739,8 @@ fun SettingsScreen(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Tăng quầng sáng LED (Glow)", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
-                    Text("Bật/tắt để so sánh độ phát sáng quanh viền", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                    Text(AppLanguageSettings.translate(context, "Ánh sáng lan tỏa"), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                    Text(AppLanguageSettings.translate(context, "Tạo vùng sáng mờ quanh viền LED"), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
                 Switch(checked = ledGlowEnabled, onCheckedChange = onLedGlowEnabledChanged)
             }
