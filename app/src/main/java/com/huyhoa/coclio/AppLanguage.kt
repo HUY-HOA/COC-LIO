@@ -1129,6 +1129,22 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Google vẫn từ chối xác thực sau khi làm mới phiên\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế: (.+)\\. Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án\\.$").matchEntire(source)!!.let {
                 "Google still rejected authentication after refreshing the session. Web Client ID embedded in APK: ${it.groupValues[1]}. Actual SHA-1: ${it.groupValues[2]}. Check the Android OAuth Client against this SHA-1 and use the Web application Client ID from the same project."
             }
+        Regex("^Thao tác này chỉ xóa hồ sơ users/(.+), dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore\\. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication\\. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication\\. Bài đăng Cộng đồng không bị xóa\\.$").matchEntire(source) != null ->
+            Regex("^Thao tác này chỉ xóa hồ sơ users/(.+), dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore\\. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication\\. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication\\. Bài đăng Cộng đồng không bị xóa\\.$").matchEntire(source)!!.let {
+                "This only deletes the users/${it.groupValues[1]} profile, the village-synced JSON data and the profile's entitlements from Firestore. It does NOT delete the sign-in account in Firebase Authentication. Use this only after deleting that account from Authentication. Community posts are not deleted."
+            }
+        Regex("^TỔNG CỘNG: (\\d+) BẢN GHI$").matchEntire(source) != null ->
+            Regex("^TỔNG CỘNG: (\\d+) BẢN GHI$").matchEntire(source)!!.let { "TOTAL: ${it.groupValues[1]} RECORDS" }
+        Regex("^Cộng đồng: (\\d+)  •  Kho đã gỡ: (\\d+)$").matchEntire(source) != null ->
+            Regex("^Cộng đồng: (\\d+)  •  Kho đã gỡ: (\\d+)$").matchEntire(source)!!.let { "Community: ${it.groupValues[1]}  •  Removed archive: ${it.groupValues[2]}" }
+        Regex("^Cộng đồng: (\\d+) mục tin nhắn/ảnh/tệp, (\\d+) JSON riêng, (\\d+) APK$").matchEntire(source) != null ->
+            Regex("^Cộng đồng: (\\d+) mục tin nhắn/ảnh/tệp, (\\d+) JSON riêng, (\\d+) APK$").matchEntire(source)!!.let {
+                "Community: ${it.groupValues[1]} message/image/file items, ${it.groupValues[2]} separate JSON records, ${it.groupValues[3]} APKs"
+            }
+        Regex("^Kho đã gỡ: (\\d+) tin nhắn, (\\d+) ảnh, (\\d+) tệp và APK$").matchEntire(source) != null ->
+            Regex("^Kho đã gỡ: (\\d+) tin nhắn, (\\d+) ảnh, (\\d+) tệp và APK$").matchEntire(source)!!.let {
+                "Removed archive: ${it.groupValues[1]} messages, ${it.groupValues[2]} images, ${it.groupValues[3]} files and APKs"
+            }
         source.startsWith("không đọc được") ->
             "Unable to read" + source.removePrefix("không đọc được")
         Regex("^(.+) • cần nhập lại để xác nhận cấp độ mới$").matchEntire(source) != null ->
