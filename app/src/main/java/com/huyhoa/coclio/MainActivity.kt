@@ -393,10 +393,12 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         RemoteAppConfigManager.startRealtimeUpdates()
+        RemoteContentManager.startRealtimeUpdates(this)
     }
 
     override fun onStop() {
         RemoteAppConfigManager.stopRealtimeUpdates()
+        RemoteContentManager.stopRealtimeUpdates()
         super.onStop()
     }
 
@@ -482,6 +484,7 @@ private fun CocLioApp(
 ) {
     val context = LocalContext.current
     val remoteAppConfig by RemoteAppConfigManager.config.collectAsState()
+    val remoteContent by RemoteContentManager.content.collectAsState()
     val baseDensity = LocalDensity.current
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
     var displaySizeLevel by remember { mutableStateOf(AppPreferences.displaySizeLevel(context)) }
@@ -548,6 +551,10 @@ private fun CocLioApp(
     val isCheckingRequiredAccountConsent = firebaseGoogleEmail != null &&
         requiredAccountConsentLoadedForEmail == null &&
         !requiredAccountConsentSubmitting
+    LaunchedEffect(isGoogleSignedIn) {
+        if (isGoogleSignedIn) RemoteContentManager.startRealtimeUpdates(context)
+        else RemoteContentManager.stopRealtimeUpdates()
+    }
     val initialHistory = remember(activeProfile) { VillageStore.loadAll(context, activeProfile) }
 
     var history by remember { mutableStateOf(initialHistory) }
@@ -1189,6 +1196,25 @@ private fun CocLioApp(
                     }
                 )
             }
+            RemoteServiceNotices(
+                content = remoteContent,
+                onAction = { action ->
+                    when (action) {
+                        "import_json" -> requestImportJson()
+                        "open_game" -> openClashOfClans(context)
+                        "open_settings" -> selectedTab = 4
+                        "open_community" -> selectedTab = 3
+                        "open_history" -> selectedTab = 2
+                        "open_lookup" -> selectedTab = 5
+                    }
+                }
+            )
+            if (selectedTab == 0 && (remoteContent.guides.isNotEmpty() || remoteContent.links.isNotEmpty())) {
+                RemoteGuidesSection(
+                    guides = remoteContent.guides,
+                    links = remoteContent.links
+                )
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1209,7 +1235,10 @@ private fun CocLioApp(
                         onOpenGame = { openClashOfClans(context) }
                     )
                     1 -> current?.let {
-                        BuildingsAndArmyScreen(snapshot = it)
+                        BuildingsAndArmyScreen(
+                            snapshot = it,
+                            remoteCatalog = remoteContent.catalog
+                        )
                     } ?: EmptyWelcome(
                         onImport = { requestImportJson() },
                         onOpenGame = { openClashOfClans(context) }
@@ -2057,7 +2086,10 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, showBase: Bo
 }
 
 @Composable
-private fun BuildingsAndArmyScreen(snapshot: VillageSnapshot) {
+private fun BuildingsAndArmyScreen(
+    snapshot: VillageSnapshot,
+    remoteCatalog: Map<Int, RemoteCatalogEntry>
+) {
     var selectedGroup by remember(snapshot.tag, snapshot.timestamp) {
         mutableStateOf("buildings")
     }
@@ -2116,6 +2148,7 @@ private fun BuildingsAndArmyScreen(snapshot: VillageSnapshot) {
             snapshot = snapshot,
             tab = selectedGroup,
             selectedBase = selectedBase,
+            remoteCatalog = remoteCatalog,
             modifier = Modifier.weight(1f)
         )
     }
@@ -2126,6 +2159,7 @@ private fun CategoryScreen(
     snapshot: VillageSnapshot,
     tab: String,
     selectedBase: String,
+    remoteCatalog: Map<Int, RemoteCatalogEntry>,
     modifier: Modifier = Modifier
 ) {
     var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
@@ -2146,20 +2180,26 @@ private fun CategoryScreen(
     )
 
     val baseItems = snapshot.items.filter { it.base == selectedBase && it.tab == tab }
-    fun buildingCategory(item: VillageItem): String = when {
-        item.sectionKey == "traps" || item.sectionKey == "traps2" -> "traps"
-        item.dataId in resourceIds -> "resources"
-        item.dataId in defenseIds -> "defense"
-        else -> "other"
-    }
-    fun armyCategory(item: VillageItem): String = when (item.sectionKey) {
-        "units", "units2", "siege_machines" -> "troops"
-        "heroes", "heroes2" -> "heroes"
-        "spells" -> "spells"
-        "pets" -> "pets"
-        "equipment" -> "equipment"
-        else -> "other"
-    }
+    fun buildingCategory(item: VillageItem): String =
+        remoteCatalog[item.dataId]?.category
+            ?.takeIf { it in setOf("defense", "resources", "traps", "other") }
+            ?: when {
+                item.sectionKey == "traps" || item.sectionKey == "traps2" -> "traps"
+                item.dataId in resourceIds -> "resources"
+                item.dataId in defenseIds -> "defense"
+                else -> "other"
+            }
+    fun armyCategory(item: VillageItem): String =
+        remoteCatalog[item.dataId]?.category
+            ?.takeIf { it in setOf("troops", "heroes", "spells", "pets", "equipment", "other") }
+            ?: when (item.sectionKey) {
+                "units", "units2", "siege_machines" -> "troops"
+                "heroes", "heroes2" -> "heroes"
+                "spells" -> "spells"
+                "pets" -> "pets"
+                "equipment" -> "equipment"
+                else -> "other"
+            }
 
     val filterChoices = if (tab == "buildings") {
         listOf(
@@ -2248,7 +2288,7 @@ private fun CategoryScreen(
                     if (item.timerSeconds != null) {
                         UpgradeCard(item, snapshot.timestamp)
                     } else {
-                        VillageGridItemCard(item)
+                        VillageGridItemCard(item, remoteCatalog[item.dataId])
                     }
                 }
             }
@@ -2257,7 +2297,10 @@ private fun CategoryScreen(
 }
 
 @Composable
-private fun VillageGridItemCard(item: VillageItem) {
+private fun VillageGridItemCard(
+    item: VillageItem,
+    remote: RemoteCatalogEntry? = null
+) {
     NeonPanel(
         modifier = Modifier.fillMaxWidth(),
         glow = if (item.tab == "army") CocMagenta else CocCyan,
@@ -2266,13 +2309,32 @@ private fun VillageGridItemCard(item: VillageItem) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(116.dp),
+                .height(132.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            CategoryImage(item, 48)
+            if (remote?.imageUrl?.isNotBlank() == true) {
+                AsyncImage(
+                    model = remote.imageUrl,
+                    contentDescription = remote.name,
+                    modifier = Modifier.size(48.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                CategoryImage(item, 48)
+            }
             Text(
-                item.level?.let { "CẤP $it" } ?: "—",
+                remote?.name?.takeIf { it.isNotBlank() } ?: item.name,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                item.level?.let { level ->
+                    remote?.maxLevel?.let { maxLevel -> "CẤP $level/$maxLevel" } ?: "CẤP $level"
+                } ?: "—",
                 color = MaterialTheme.colorScheme.tertiary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Black,
