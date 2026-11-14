@@ -1310,9 +1310,9 @@ class UpgradeReminderWorker(
         val levelText = AppLanguageSettings.translate(
             applicationContext,
             if (level >= 0) {
-                if (gearUp) "Cấp $level • GEAR-UP" else "Cấp $level → ${level + 1}"
+                if (gearUp) "Cấp $level • Tấn công nhanh" else "Cấp $level → ${level + 1}"
             } else {
-                if (gearUp) "GEAR-UP" else "Chưa rõ cấp độ"
+                if (gearUp) "Tấn công nhanh" else "Chưa rõ cấp độ"
             }
         )
         val baseText = AppLanguageSettings.translate(
@@ -1660,7 +1660,7 @@ private class UpgradeWidgetListFactory(
             views.setViewVisibility(R.id.row_icon, View.GONE)
         }
         val levelText = when {
-            entry.gearUp -> entry.level?.let { "CẤP $it • GEAR-UP" } ?: "GEAR-UP"
+            entry.gearUp -> entry.level?.let { "CẤP $it • TẤN CÔNG NHANH" } ?: "Tấn công nhanh"
             entry.level != null -> "CẤP ${entry.level} → ${entry.level + 1}"
             else -> "ĐANG NÂNG"
         }
