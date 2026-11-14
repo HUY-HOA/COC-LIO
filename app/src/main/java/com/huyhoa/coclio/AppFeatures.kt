@@ -336,7 +336,7 @@ object AppPreferences {
                 .putInt("text_scale_version", 1)
                 .apply()
         }
-        val savedScale = preferences.getFloat("text_scale", 1f).coerceIn(0.8f, 1.2f)
+        val savedScale = preferences.getFloat("text_scale", 1f).coerceIn(0.8f, 1.25f)
         val normalizedScale = textScaleForLevel(textScaleLevel(savedScale))
         if (savedScale != normalizedScale) {
             preferences.edit().putFloat("text_scale", normalizedScale).apply()
@@ -344,21 +344,11 @@ object AppPreferences {
         return normalizedScale
     }
 
-    fun textScaleLevel(scale: Float): Int = when {
-        scale < 0.85f -> 1
-        scale < 0.95f -> 2
-        scale < 1.05f -> 3
-        scale < 1.15f -> 4
-        else -> 5
-    }
+    fun textScaleLevel(scale: Float): Int =
+        (((scale.coerceIn(0.8f, 1.25f) - 0.8f) / 0.05f).roundToInt() + 1).coerceIn(1, 10)
 
-    fun textScaleForLevel(level: Int): Float = when (level.coerceIn(1, 5)) {
-        1 -> 0.8f
-        2 -> 0.9f
-        3 -> 1f
-        4 -> 1.1f
-        else -> 1.2f
-    }
+    fun textScaleForLevel(level: Int): Float =
+        0.8f + (level.coerceIn(1, 10) - 1) * 0.05f
 
     fun themeMode(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -369,24 +359,34 @@ object AppPreferences {
             .edit().putString("theme_mode", mode).apply()
     }
 
-    fun displaySizeLevel(context: Context): Int =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getInt("display_size_level", 3).coerceIn(1, 5)
+    fun displaySizeLevel(context: Context): Int {
+        val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (preferences.getInt("display_size_level_version", 0) < 1) {
+            val initialLevel = if (preferences.contains("display_size_level")) {
+                (preferences.getInt("display_size_level", 3).coerceIn(1, 5) - 1) * 2 + 1
+            } else {
+                5
+            }
+            preferences.edit()
+                .putInt("display_size_level", initialLevel)
+                .putInt("display_size_level_version", 1)
+                .apply()
+        }
+        return preferences.getInt("display_size_level", 5).coerceIn(1, 10)
+    }
 
     fun setDisplaySizeLevel(context: Context, level: Int) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putInt("display_size_level", level.coerceIn(1, 5)).apply()
+            .edit()
+            .putInt("display_size_level", level.coerceIn(1, 10))
+            .putInt("display_size_level_version", 1)
+            .apply()
     }
 
     fun displaySizeScale(context: Context): Float = displaySizeScale(displaySizeLevel(context))
 
-    fun displaySizeScale(level: Int): Float = when (level.coerceIn(1, 5)) {
-        1 -> 0.80f
-        2 -> 0.90f
-        3 -> 1.00f
-        4 -> 1.10f
-        else -> 1.20f
-    }
+    fun displaySizeScale(level: Int): Float =
+        0.8f + (level.coerceIn(1, 10) - 1) * 0.05f
 
     fun setTextScale(context: Context, scale: Float) {
         val normalizedScale = textScaleForLevel(textScaleLevel(scale))
