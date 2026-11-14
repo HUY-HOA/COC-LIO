@@ -327,18 +327,6 @@ object AppPreferences {
             .edit().putString(key(profile, "notification_style"), style).apply()
     }
 
-    fun alarmDurationSeconds(context: Context, profile: String): Int {
-        val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getInt(key(profile, "alarm_duration_seconds"), 10)
-        return if (saved in listOf(5, 10, 15, 20, 25)) saved else 10
-    }
-
-    fun setAlarmDurationSeconds(context: Context, profile: String, seconds: Int) {
-        val selected = if (seconds in listOf(5, 10, 15, 20, 25)) seconds else 10
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putInt(key(profile, "alarm_duration_seconds"), selected).apply()
-    }
-
     fun textScale(context: Context): Float {
         val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (preferences.getInt("text_scale_version", 0) < 1) {
@@ -1153,28 +1141,19 @@ fun openClashOfClans(context: Context) {
     }
 }
 
-private fun alarmVibrationPattern(durationSeconds: Int): LongArray {
-    val seconds = if (durationSeconds in listOf(5, 10, 15, 20, 25)) durationSeconds else 10
-    return LongArray(seconds * 2 + 1) { index ->
-        when {
-            index == 0 -> 0L
-            index % 2 == 1 -> 650L
-            else -> 350L
-        }
-    }
-}
+private fun alarmVibrationPattern(): LongArray =
+    longArrayOf(0L, 650L, 350L, 650L, 350L)
 
 private fun ensureUpgradeNotificationChannel(
     context: Context,
     channelId: String,
-    alarmStyle: Boolean,
-    alarmDurationSeconds: Int
+    alarmStyle: Boolean
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val manager = context.getSystemService(NotificationManager::class.java)
     val channelName = AppLanguageSettings.translate(
         context,
-        if (alarmStyle) "Nhắc nâng cấp kiểu báo thức • ${alarmDurationSeconds}s" else "Tin nhắn nâng cấp"
+        if (alarmStyle) "Nhắc nâng cấp kiểu báo thức" else "Tin nhắn nâng cấp"
     )
     val channel = NotificationChannel(
         channelId,
@@ -1184,7 +1163,7 @@ private fun ensureUpgradeNotificationChannel(
     channel.description = AppLanguageSettings.translate(
         context,
         if (alarmStyle) {
-            "Thông báo báo thức tự đóng sau ${alarmDurationSeconds} giây"
+            "Thông báo nhắc nâng cấp bằng âm thanh và rung theo cài đặt Android"
         } else {
             "Nhắc khi bộ đếm nâng cấp trong JSON đã hết thời gian"
         }
@@ -1192,7 +1171,7 @@ private fun ensureUpgradeNotificationChannel(
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) channel.setAllowBubbles(true)
     channel.enableVibration(true)
     if (alarmStyle) {
-        channel.vibrationPattern = alarmVibrationPattern(alarmDurationSeconds)
+        channel.vibrationPattern = alarmVibrationPattern()
     }
     channel.setSound(
         if (alarmStyle) Settings.System.DEFAULT_ALARM_ALERT_URI
@@ -1207,8 +1186,7 @@ private fun ensureUpgradeNotificationChannel(
 
 private fun applyLegacyNotificationSettings(
     builder: NotificationCompat.Builder,
-    alarmStyle: Boolean,
-    alarmDurationSeconds: Int
+    alarmStyle: Boolean
 ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) return
     builder
@@ -1217,7 +1195,7 @@ private fun applyLegacyNotificationSettings(
             else Settings.System.DEFAULT_NOTIFICATION_URI
         )
         .setVibrate(
-            if (alarmStyle) alarmVibrationPattern(alarmDurationSeconds)
+            if (alarmStyle) alarmVibrationPattern()
             else longArrayOf(0, 250)
         )
 }
@@ -1294,11 +1272,10 @@ class UpgradeReminderWorker(
         val iconUrl = inputData.getString("icon_url")
         val endAt = inputData.getLong("end_at", 0L)
         val alarmStyle = AppPreferences.notificationStyle(applicationContext, profile) == "alarm"
-        val alarmDurationSeconds = AppPreferences.alarmDurationSeconds(applicationContext, profile)
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
-            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v4" else "_message"
-        ensureUpgradeNotificationChannel(applicationContext, channelId, alarmStyle, alarmDurationSeconds)
+            if (alarmStyle) "_alarm_v5" else "_message"
+        ensureUpgradeNotificationChannel(applicationContext, channelId, alarmStyle)
 
         val notificationKey = "$profile|$tag|$dataId|$endAt"
         val notificationId = notificationKey.hashCode()
@@ -1382,11 +1359,10 @@ class UpgradeReminderWorker(
             .setContentText(remoteNotificationText("text", "$villageName • ID $dataId • $levelText"))
             .setStyle(NotificationCompat.BigTextStyle().bigText(remoteNotificationText("body", notificationBody)))
             .setContentIntent(pendingIntent)
-            .setAutoCancel(!alarmStyle)
-            .setOngoing(alarmStyle)
+            .setAutoCancel(true)
+            .setOngoing(false)
             .setOnlyAlertOnce(false)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
-        if (alarmStyle) notificationBuilder.setTimeoutAfter(alarmDurationSeconds * 1_000L)
         if (gameIntent != null) {
             val gamePendingIntent = PendingIntent.getActivity(
                 applicationContext,
@@ -1397,19 +1373,16 @@ class UpgradeReminderWorker(
             notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(applicationContext, "MỞ GAME"), gamePendingIntent)
         }
         if (iconBitmap != null) notificationBuilder.setLargeIcon(iconBitmap)
-        applyLegacyNotificationSettings(notificationBuilder, alarmStyle, alarmDurationSeconds)
+        applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
         val notification = notificationBuilder.build()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             return@withContext Result.success()
         }
-        val posted = runCatching {
+        runCatching {
             NotificationManagerCompat.from(applicationContext)
                 .notify(notificationId, notification)
-        }.isSuccess
-        if (posted && alarmStyle && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            scheduleUpgradeNotificationDismissal(applicationContext, notificationId, alarmDurationSeconds)
         }
         Result.success()
     }
@@ -1420,14 +1393,13 @@ object UpgradeNotificationTester {
     fun show(
         context: Context,
         profile: String,
-        style: String,
-        alarmDurationSeconds: Int = AppPreferences.alarmDurationSeconds(context, profile)
+        style: String
     ): Boolean = runCatching {
         val alarmStyle = style == "alarm"
         val profileCode = profile.hashCode().toUInt().toString(16)
         val channelId = "upgrade_" + profileCode +
-            if (alarmStyle) "_alarm_${alarmDurationSeconds}s_v4" else "_message"
-        ensureUpgradeNotificationChannel(context, channelId, alarmStyle, alarmDurationSeconds)
+            if (alarmStyle) "_alarm_v5" else "_message"
+        ensureUpgradeNotificationChannel(context, channelId, alarmStyle)
 
         val openApp = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -1453,8 +1425,8 @@ object UpgradeNotificationTester {
             .setContentText(AppLanguageSettings.translate(context, if (alarmStyle) "Đang thử kiểu báo thức" else "Đang thử kiểu tin nhắn"))
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setContentIntent(pendingIntent)
-            .setAutoCancel(!alarmStyle)
-            .setOngoing(alarmStyle)
+            .setAutoCancel(true)
+            .setOngoing(false)
             .setPriority(if (alarmStyle) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
         val testNotificationId = ("coc_lio_test_" + profile).hashCode()
         val gameIntent = context.packageManager
@@ -1469,8 +1441,7 @@ object UpgradeNotificationTester {
             )
             notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(context, "MỞ GAME"), gamePendingIntent)
         }
-        applyLegacyNotificationSettings(notificationBuilder, alarmStyle, alarmDurationSeconds)
-        if (alarmStyle) notificationBuilder.setTimeoutAfter(alarmDurationSeconds * 1_000L)
+        applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
         val notification = notificationBuilder.build()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -1479,39 +1450,8 @@ object UpgradeNotificationTester {
         }
         NotificationManagerCompat.from(context).cancel(testNotificationId)
         NotificationManagerCompat.from(context).notify(testNotificationId, notification)
-        if (alarmStyle) {
-            scheduleUpgradeNotificationDismissal(context, testNotificationId, alarmDurationSeconds)
-        }
         true
     }.getOrDefault(false)
-}
-
-private fun scheduleUpgradeNotificationDismissal(context: Context, notificationId: Int, durationSeconds: Int) {
-    val data = Data.Builder()
-        .putInt("notification_id", notificationId)
-        .build()
-    val request = OneTimeWorkRequestBuilder<UpgradeNotificationDismissWorker>()
-        .setInitialDelay(durationSeconds.toLong(), TimeUnit.SECONDS)
-        .setInputData(data)
-        .build()
-    WorkManager.getInstance(context).enqueueUniqueWork(
-        "coc_lio_notification_dismiss_$notificationId",
-        ExistingWorkPolicy.REPLACE,
-        request
-    )
-}
-
-class UpgradeNotificationDismissWorker(
-    context: Context,
-    parameters: WorkerParameters
-) : CoroutineWorker(context, parameters) {
-    override suspend fun doWork(): Result {
-        val notificationId = inputData.getInt("notification_id", Int.MIN_VALUE)
-        if (notificationId != Int.MIN_VALUE) {
-            NotificationManagerCompat.from(applicationContext).cancel(notificationId)
-        }
-        return Result.success()
-    }
 }
 
 class WidgetRefreshWorker(
@@ -2355,7 +2295,6 @@ fun SettingsScreen(
     onLedSpeedChanged: (Int) -> Unit,
     onLedBrightnessChanged: (Float) -> Unit,
     notificationStyle: String,
-    alarmDurationSeconds: Int,
     communityNotificationsEnabled: Boolean,
     updateNotificationsEnabled: Boolean,
     onCommunityNotificationsChanged: (Boolean) -> Unit,
@@ -2366,7 +2305,6 @@ fun SettingsScreen(
     onOpenGame: () -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
     onNotificationStyleChanged: (String) -> Unit,
-    onAlarmDurationChanged: (Int) -> Unit,
     onTestNotification: () -> Unit,
     onTextScaleChanged: (Float) -> Unit
 ) {
@@ -2773,32 +2711,6 @@ fun SettingsScreen(
                     selected = notificationStyle == "alarm",
                     onClick = { onNotificationStyleChanged("alarm") },
                     label = { Text("Báo thức") }
-                )
-            }
-            if (notificationStyle == "alarm") {
-                Text(
-                    "Thời gian hiển thị báo thức",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp
-                )
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    listOf(5, 10, 15, 20, 25).forEach { seconds ->
-                        FilterChip(
-                            selected = alarmDurationSeconds == seconds,
-                            onClick = { onAlarmDurationChanged(seconds) },
-                            label = { Text("${seconds}s", fontSize = 10.sp) }
-                        )
-                    }
-                }
-                Text(
-                    "Thông báo sẽ tự đóng sau ${alarmDurationSeconds} giây. Trong thời gian đó, bạn có thể nhấn MỞ GAME để vào Clash of Clans.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp
                 )
             }
             Button(
