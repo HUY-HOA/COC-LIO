@@ -33,6 +33,13 @@ Set `dashboard.blocks` to an ordered array. Each block can use one of these type
 - `divider`: a separator.
 - `spacer`: vertical spacing.
 - `row` and `column`: layout containers with a `children` array of nested blocks. Row children can set `weight` to control their relative widths. Nesting is limited to three levels and five children per container.
+- `image`: an HTTPS image with optional caption and `imageHeightDp` (60–300).
+- `list`: a short list using the `items` string array (up to eight entries).
+- `metric`: a large value in `message` with a label in `title`.
+- `badge`: a compact status label using the `title` or `message` and `severity`.
+- `link`: an external HTTPS link using `url` and `actionLabel` (or `title`).
+
+Remote images and links are restricted to HTTPS URLs. Dashboard content is data-only; it cannot supply scripts, arbitrary actions or executable code.
 
 Use `pageId` values `home`, `buildings`, `history`, `community`, `settings`, `lookup` or `all`. Available action IDs are allowlisted in the APK: `import_json`, `open_game`, `open_settings`, `open_community`, `open_history`, and `open_lookup`. The app ignores unknown block types, page IDs and actions.
 
