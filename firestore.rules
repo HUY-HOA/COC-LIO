@@ -13,9 +13,10 @@ service cloud.firestore {
 
     function signedIn() {
       return verifiedAccount()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requiredAccountDataConsentVersion', 0) == 1
         && (
-          !exists(/databases/$(database)/documents/users/$(request.auth.uid))
-          || !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['accountDisabled'])
+          !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['accountDisabled'])
           || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountDisabled != true
         );
     }
@@ -37,7 +38,7 @@ service cloud.firestore {
       allow get: if isOwner() || isVerifiedSelf(userId);
       allow list: if isOwner();
 
-      allow create: if isSelf(userId)
+      allow create: if isVerifiedSelf(userId)
         && request.resource.data.keys().hasOnly([
           'uid',
           'email',
@@ -86,7 +87,18 @@ service cloud.firestore {
 
       allow update: if isOwner()
         || (
-          isSelf(userId)
+          isVerifiedSelf(userId)
+          && (
+            resource.data.get('requiredAccountDataConsentVersion', 0) == 1
+            || (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                'requiredAccountDataConsentVersion',
+                'requiredAccountDataConsentAt'
+              ])
+              && request.resource.data.requiredAccountDataConsentVersion == 1
+              && request.resource.data.requiredAccountDataConsentAt == request.time
+            )
+          )
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'email',
             'displayName',
