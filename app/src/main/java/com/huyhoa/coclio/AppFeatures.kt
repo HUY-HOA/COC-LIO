@@ -3023,7 +3023,7 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                             alpha = led.brightness
                         )
                     }
-                    drawPath(path, Brush.sweepGradient(colors), style = Stroke(width = stroke))
+                    drawLedStroke(path, Brush.sweepGradient(colors), stroke, led.glowEnabled)
                 }
             }
             .padding(8.dp),
