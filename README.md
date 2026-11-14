@@ -47,7 +47,7 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 
 ## Cài đặt, nhắc nâng cấp và tiện ích
 
-- Có tab **Cài đặt** thứ năm để chọn hồ sơ Google, quyền thông báo và kiểu nhắc tin nhắn hoặc báo thức.
+- Có tab **Cài đặt** để chọn hồ sơ Google, quyền thông báo và kiểu nhắc tin nhắn hoặc báo thức.
 - Đăng nhập Google được xác thực bằng tài khoản Google. Hồ sơ cơ bản gồm email, tên và ảnh đại diện được đồng bộ để duy trì tài khoản; người dùng cần xác nhận dữ liệu tài khoản trước khi sử dụng tính năng trực tuyến. Chỉ tài khoản quản lý được đọc danh sách hồ sơ; mỗi tài khoản thường chỉ đọc hồ sơ của chính mình. Lịch sử nhập JSON đầy đủ vẫn lưu cục bộ; chỉ bản JSON mới nhất theo từng Player Tag được đồng bộ lên tài khoản khi người dùng bật lựa chọn riêng.
 - Nhắc nâng cấp được lập lịch từ timer trong JSON. Android có thể trì hoãn tác vụ do chế độ tiết kiệm pin hoặc chính sách hệ thống.
 - Có tiện ích màn hình chính theo từng hồ sơ và từng làng; bố cục dọc mặc định 2 × 4 ô, danh sách tất cả công trình đang nâng cấp có thể cuộn, mỗi mục có đồng hồ đếm ngược và thanh tiến trình riêng.
