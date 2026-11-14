@@ -564,6 +564,7 @@ private val englishTranslations = mapOf(
     "Linh thú" to "Pets",
     "Trang bị anh hùng" to "Hero Equipment",
     "Tin nhắn và ghi chú cập nhật được tự động dịch theo ngôn ngữ ứng dụng khi có thể; bản gốc vẫn được giữ." to "Messages and update notes are automatically translated into the app language when available; the original text is preserved.",
+    "Tự động dịch tin nhắn và ghi chú cập nhật trong Cộng đồng theo ngôn ngữ ứng dụng. Bản gốc vẫn hiển thị cùng bản dịch. Lần đầu cần mạng để tải mô hình dịch; nội dung được xử lý trên thiết bị." to "Automatically translate Community messages and update notes into the app language. The original text remains visible alongside the translation. An internet connection is needed the first time to download the translation model; text is processed on your device.",
     "Không thể kiểm tra xác nhận dữ liệu tài khoản." to "Unable to verify account data consent.",
     "Đã tạo mốc dữ liệu đầu tiên" to "Created the first data snapshot",
     "Đã lưu dữ liệu cho " to "Saved data for ",
