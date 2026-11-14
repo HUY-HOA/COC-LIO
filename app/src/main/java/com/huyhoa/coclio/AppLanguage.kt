@@ -1093,6 +1093,8 @@ private val englishTranslations = mapOf(
     "MỞ TRÒ CHƠI" to "OPEN GAME",
     "QUẢN LÝ" to "ADMIN",
     "TẤN CÔNG NHANH" to "GEAR-UP",
+    "Đăng nhập gần nhất" to "Last sign-in",
+    "Cập nhật hồ sơ" to "Profile updated",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
     "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
