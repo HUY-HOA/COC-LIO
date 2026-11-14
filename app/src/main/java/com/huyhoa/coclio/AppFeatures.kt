@@ -2897,7 +2897,7 @@ fun SettingsScreen(
                 lineHeight = 14.sp
             )
             Text(
-                "Thời điểm nhắc lấy từ bộ đếm thời gian trong JSON đã nhập. Android vẫn có thể trì hoãn nếu tắt quyền thông báo, hạn chế pin hoặc đặt chế độ Không làm phiền.",
+                "Thông báo nhắc tự ẩn sau 25 giây. Thời gian banner nổi và âm thanh thực tế còn phụ thuộc Android, kênh thông báo và thiết bị.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp,
                 lineHeight = 16.sp
