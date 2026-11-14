@@ -1,7 +1,11 @@
 {
   "schemaVersion": 1,
-  "version": 1,
+  "version": 2,
   "enabled": true,
+  "app": {
+    "title": "COC-LIO",
+    "subtitle": "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO"
+  },
   "theme": {
     "darkPrimary": "#36F4FF",
     "darkSecondary": "#FF4DDA",
@@ -21,7 +25,41 @@
     "lightOnSurfaceVariant": "#526176"
   },
   "led": {
-    "speedMultiplier": 1.0
+    "speedMultiplier": 1.0,
+    "palette": [
+      "#00E5FF",
+      "#168BFF",
+      "#6548FF",
+      "#B33CFF",
+      "#FF35B8",
+      "#FF4A72",
+      "#FFA43A",
+      "#B7F34A",
+      "#35E6A2"
+    ]
+  },
+  "navigation": {
+    "items": [
+      {"id": "home", "title": "Tổng quan", "enabled": true},
+      {"id": "buildings", "title": "Công trình Quân đội", "enabled": true},
+      {"id": "history", "title": "Kho JSON", "enabled": true},
+      {"id": "community", "title": "Cộng đồng", "enabled": true},
+      {"id": "lookup", "title": "Tra cứu ID", "enabled": true},
+      {"id": "settings", "title": "Cài đặt", "enabled": true}
+    ]
+  },
+  "features": {
+    "home": true,
+    "buildings": true,
+    "history": true,
+    "community": true,
+    "lookup": true,
+    "settings": true,
+    "importButton": true,
+    "dashboardBlocks": true
+  },
+  "dashboard": {
+    "blocks": []
   },
   "translations": {
     "vi": {},
