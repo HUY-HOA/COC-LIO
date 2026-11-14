@@ -1390,7 +1390,7 @@ class UpgradeReminderWorker(
                 gameIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(applicationContext, "MỞ GAME"), gamePendingIntent)
+            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(applicationContext, "MỞ TRÒ CHƠI"), gamePendingIntent)
         }
         if (iconBitmap != null) notificationBuilder.setLargeIcon(iconBitmap)
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
@@ -1459,7 +1459,7 @@ object UpgradeNotificationTester {
                 gameIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(context, "MỞ GAME"), gamePendingIntent)
+            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(context, "MỞ TRÒ CHƠI"), gamePendingIntent)
         }
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
         val notification = notificationBuilder.build()
