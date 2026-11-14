@@ -1510,7 +1510,7 @@ fun CommunityScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        "Player Tag: ${snapshot.tag} · ${communityTime(snapshot.timestamp * 1000L)}",
+                                        "Mã người chơi: ${snapshot.tag} · ${communityTime(snapshot.timestamp * 1000L)}",
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 9.sp
                                     )
@@ -1994,7 +1994,7 @@ private fun CommunitySharedJsonCard(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                "Player Tag: ${item.playerTag}",
+                "Mã người chơi: ${item.playerTag}",
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
@@ -2070,7 +2070,7 @@ private fun CommunityArchiveCard(
                     )
                     if (item.sharedJsonPlayerTag.isNotBlank()) {
                         Text(
-                            "Player Tag: " + item.sharedJsonPlayerTag,
+                            "Mã người chơi: " + item.sharedJsonPlayerTag,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 9.sp
                         )
