@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Chính sách quyền riêng tư của ứng dụng Android COC-LIO.">
+  <meta name="theme-color" content="#101827">
+  <link rel="canonical" href="https://coc-lio-73de9.firebaseapp.com/privacy">
+  <title>Chính sách quyền riêng tư — COC-LIO</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1220;--panel:#121e30;--line:#263b55;--text:#eef5ff;--muted:#b4c3d7;--cyan:#48e8e8}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.75 system-ui,-apple-system,"Segoe UI",sans-serif}.wrap{width:min(900px,calc(100% - 32px));margin:auto}
+    header{padding:22px 0;border-bottom:1px solid var(--line)}header a, a{color:var(--cyan);text-decoration:none}header a:hover,a:hover{text-decoration:underline}.brand{font-weight:850;letter-spacing:.12em}
+    main{padding:38px 0 56px}h1{font-size:clamp(1.9rem,5vw,2.7rem);line-height:1.2;margin:14px 0}h2{font-size:1.2rem;margin:30px 0 8px;color:#bdefff}p,li{color:var(--muted)}ul{padding-left:24px}.meta{color:#8fa8c5;font-size:.92rem}.callout{padding:16px 18px;border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:10px;background:var(--panel);margin:22px 0}
+    footer{border-top:1px solid var(--line);padding:20px 0 32px;color:var(--muted);font-size:.9rem}
+  </style>
+</head>
+<body>
+  <header><div class="wrap"><a class="brand" href="/">COC-LIO</a> · <a href="/">Trang chủ</a></div></header>
+  <main class="wrap">
+    <p class="meta">Có hiệu lực từ ngày 14 tháng 11 năm 2026 · Cập nhật lần cuối: 14 tháng 11 năm 2026</p>
+    <h1>Chính sách quyền riêng tư</h1>
+    <p>Chính sách này giải thích cách ứng dụng Android COC-LIO (“ứng dụng”, “chúng tôi”) xử lý dữ liệu khi bạn sử dụng ứng dụng. COC-LIO là dự án độc lập hỗ trợ người chơi theo dõi tiến trình Clash of Clans từ dữ liệu JSON do chính người chơi xuất.</p>
+
+    <h2>1. Dữ liệu tài khoản Google</h2>
+    <p>Nếu bạn chọn đăng nhập Google và xác nhận thông báo dữ liệu tài khoản trong ứng dụng, COC-LIO sử dụng Firebase Authentication để xác thực và có thể lưu hồ sơ tài khoản trong Firebase Cloud Firestore. Thông tin hồ sơ gồm mã người dùng Firebase (UID), địa chỉ email, tên hiển thị, tên riêng, họ, ảnh hồ sơ, trạng thái xác minh email, nhà cung cấp đăng nhập, số lần đăng nhập và thời điểm tạo/cập nhật hồ sơ hoặc đăng nhập gần nhất.</p>
+    <p>Dữ liệu tài khoản này được dùng để đăng nhập, duy trì hồ sơ, hỗ trợ người dùng và thực hiện các chức năng quản lý tài khoản. Người dùng thông thường chỉ được đọc hồ sơ của chính mình; tài khoản quản lý được phân quyền có thể xem hồ sơ phục vụ quản trị và hỗ trợ.</p>
+
+    <h2>2. Dữ liệu làng Clash of Clans</h2>
+    <p>Khi bạn nhập JSON, ứng dụng phân tích và lưu dữ liệu làng, lịch sử so sánh và thông tin nâng cấp trên thiết bị. Việc nhập JSON không tự động đồng nghĩa với việc tải JSON lên máy chủ.</p>
+    <p>Nếu bạn chủ động bật đồng bộ dữ liệu làng, ứng dụng có thể gửi bản JSON bạn đã nhập lên Cloud Firestore. Bản đồng bộ gồm Player Tag, tên làng (nếu có), thời điểm của bản chụp, nội dung JSON gốc, dung lượng JSON, số lượng mục dữ liệu và một số thông tin tóm tắt như cấp Nhà chính, cấp Nhà thợ xây và số mục/nâng cấp. Dữ liệu được lưu trong hồ sơ của tài khoản và không được công khai cho cộng đồng. Theo thiết kế hiện tại, bản mới nhất của từng Player Tag sẽ thay thế bản trước đó.</p>
+    <p>Chỉ bật đồng bộ khi bạn hiểu và đồng ý việc gửi nội dung JSON lên Firebase. Bạn không nên nhập dữ liệu của người khác nếu chưa được họ cho phép.</p>
+
+    <h2>3. Dữ liệu hoạt động và thiết bị tùy chọn</h2>
+    <p>Nếu bạn chủ động đồng ý chia sẻ dữ liệu hoạt động/bảo mật, ứng dụng có thể ghi nhận sự kiện mở ứng dụng, trạng thái hoạt động định kỳ, thời điểm chạy nền và thời lượng phiên; cùng một số thông tin kỹ thuật gồm hãng sản xuất, model, nhãn hiệu, mã thiết bị do Android cung cấp, kiến trúc CPU được hỗ trợ, ngôn ngữ, múi giờ, độ phân giải/kích thước màn hình, mật độ điểm ảnh, loại kết nối mạng, phiên bản Android và phiên bản ứng dụng. Các dữ liệu này được dùng để quản lý phiên, kiểm tra tương thích và hỗ trợ kỹ thuật.</p>
+    <p>Ứng dụng không yêu cầu quyền truy cập vị trí chính xác, danh bạ, SMS, nhật ký cuộc gọi, micro, camera, IMEI hoặc số sê-ri thiết bị. Loại kết nối mạng được ghi nhận nếu bạn bật chia sẻ dữ liệu hoạt động; đây không phải dữ liệu vị trí.</p>
+
+    <h2>4. Phân tích, báo lỗi và hiệu năng tùy chọn</h2>
+    <p>Nếu bạn bật riêng tùy chọn phân tích, Firebase Analytics có thể nhận các sự kiện tổng quát như đăng nhập Google, đăng xuất và nhập JSON (chỉ ghi nhận việc có hay không có bản dữ liệu trước đó; không gửi email, Player Tag hoặc nội dung JSON vào các sự kiện này).</p>
+    <p>Nếu bạn bật riêng tùy chọn chẩn đoán, Firebase Crashlytics và Firebase Performance Monitoring có thể thu thập thông tin về sự cố và hiệu năng để giúp phát hiện lỗi. Các tính năng phân tích và chẩn đoán được cấu hình tắt mặc định trong ứng dụng và chỉ được bật theo lựa chọn của bạn.</p>
+
+    <h2>5. Dịch vụ bên thứ ba</h2>
+    <p>COC-LIO sử dụng các dịch vụ của Google Firebase cho xác thực, lưu trữ dữ liệu và các tính năng phân tích/chẩn đoán mà bạn lựa chọn bật. Việc xử lý của Google tuân theo chính sách và điều khoản riêng của Google:</p>
+    <ul>
+      <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Chính sách quyền riêng tư của Google</a>.</li>
+      <li><a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Quyền riêng tư và bảo mật trong Firebase</a>.</li>
+    </ul>
+    <p>Ứng dụng có thể tải hình ảnh công trình và tài sản trò chơi từ nguồn dữ liệu công khai để hiển thị. Yêu cầu tải các tài nguyên này có thể được nhà cung cấp nội dung/hạ tầng ghi nhận theo chính sách riêng của họ; ứng dụng không gửi nội dung JSON làng qua các yêu cầu tải hình ảnh đó.</p>
+
+    <h2>6. Mục đích sử dụng và chia sẻ dữ liệu</h2>
+    <p>Dữ liệu được dùng để cung cấp chức năng đăng nhập, lưu hồ sơ, đồng bộ theo lựa chọn của bạn, vận hành các tính năng quản lý và cải thiện độ ổn định khi bạn bật các tùy chọn tương ứng. Chúng tôi không bán dữ liệu cá nhân. Dữ liệu không được đăng công khai; việc xử lý bởi Google Firebase là cần thiết cho các tính năng tương ứng. Quyền truy cập hồ sơ và dữ liệu đồng bộ được giới hạn theo quy tắc bảo mật của dự án.</p>
+
+    <h2>7. Lưu trữ, thời hạn và yêu cầu xóa dữ liệu</h2>
+    <p>Dữ liệu làng được lưu trên thiết bị cho đến khi bạn xóa dữ liệu ứng dụng hoặc gỡ cài đặt. Hồ sơ tài khoản và dữ liệu đã đồng bộ trên Firebase có thể tiếp tục tồn tại sau khi đăng xuất hoặc gỡ ứng dụng. Bản JSON đồng bộ được giữ theo từng Player Tag cho đến khi được thay thế hoặc xóa theo yêu cầu hợp lệ.</p>
+    <p>Hiện ứng dụng chưa cung cấp nút tự xóa toàn bộ dữ liệu đám mây. Bạn có thể gửi yêu cầu truy cập, chỉnh sửa hoặc xóa dữ liệu liên quan đến tài khoản tới <a href="mailto:phunghuyhoahaikba@gmail.com">phunghuyhoahaikba@gmail.com</a>. Vui lòng gửi từ địa chỉ email liên quan đến tài khoản để chúng tôi xác minh yêu cầu. Một số bản ghi có thể được giữ lại trong thời gian cần thiết để bảo vệ an toàn, xử lý tranh chấp hoặc tuân thủ nghĩa vụ pháp lý.</p>
+
+    <h2>8. Bảo vệ dữ liệu</h2>
+    <p>Ứng dụng sử dụng xác thực Firebase và quy tắc bảo mật Firestore để giới hạn quyền truy cập theo tài khoản. Không có hệ thống truyền hoặc lưu trữ nào bảo đảm an toàn tuyệt đối; bạn nên bảo vệ tài khoản Google và không chia sẻ thiết bị đã đăng nhập với người không được phép.</p>
+
+    <h2>9. Quyền lựa chọn của bạn</h2>
+    <ul>
+      <li>Bạn có thể không đăng nhập Google và tiếp tục sử dụng các chức năng xử lý dữ liệu cục bộ có sẵn.</li>
+      <li>Đồng bộ JSON, chia sẻ dữ liệu hoạt động, phân tích và chẩn đoán là các lựa chọn riêng; mặc định tắt.</li>
+      <li>Bạn có thể thay đổi lựa chọn đồng ý trong phần cài đặt của ứng dụng. Khi tắt một lựa chọn, ứng dụng sẽ ngừng thu thập/sử dụng dữ liệu tương ứng trong các lần xử lý tiếp theo; dữ liệu đã gửi trước đó không tự động bị xóa và có thể được yêu cầu xóa qua email hỗ trợ.</li>
+    </ul>
+
+    <h2>10. Trẻ em và thay đổi chính sách</h2>
+    <p>COC-LIO không được thiết kế để yêu cầu trẻ em cung cấp dữ liệu cá nhân. Nếu bạn cho rằng dữ liệu của trẻ em đã được gửi lên dịch vụ, vui lòng liên hệ để yêu cầu xem xét và xử lý. Chính sách này có thể được cập nhật khi chức năng hoặc cách xử lý dữ liệu thay đổi; phiên bản mới sẽ được đăng tại địa chỉ này cùng ngày cập nhật.</p>
+
+    <h2>11. Liên hệ</h2>
+    <p>Mọi câu hỏi hoặc yêu cầu về quyền riêng tư: <a href="mailto:phunghuyhoahaikba@gmail.com">phunghuyhoahaikba@gmail.com</a>.</p>
+    <p><a href="/">Quay lại trang chủ COC-LIO</a></p>
+  </main>
+  <footer><div class="wrap">© 2026 COC-LIO · <a href="/terms">Điều khoản sử dụng</a></div></footer>
+</body>
+</html>
