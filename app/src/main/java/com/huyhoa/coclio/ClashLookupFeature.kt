@@ -74,7 +74,7 @@ private fun normalizeClashTag(value: String): String {
         if (it.startsWith("#")) it else "#$it"
     }
     require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(tag)) {
-        "Mã không hợp lệ. Hãy nhập tag người chơi hoặc Clan dạng #ABC123."
+        "Mã không hợp lệ. Hãy nhập mã người chơi hoặc bang hội dạng #ABC123."
     }
     return tag
 }
@@ -208,13 +208,13 @@ fun ClashLookupScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            "TRA CỨU TÀI KHOẢN & CLAN",
+            "TRA CỨU NGƯỜI CHƠI & BANG HỘI",
             color = MaterialTheme.colorScheme.primary,
             fontSize = 19.sp,
             fontWeight = FontWeight.Black
         )
         Text(
-            "Tìm hồ sơ người chơi hoặc Clan bằng tên hoặc mã tag trong game.",
+            "Tìm hồ sơ người chơi hoặc bang hội bằng tên hoặc mã trong game.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 12.sp
         )
@@ -239,7 +239,7 @@ fun ClashLookupScreen() {
                     searchNextCursor = null
                     error = null
                 },
-                label = { Text("CLAN") }
+                label = { Text("BANG HỘI") }
             )
         }
         OutlinedTextField(
@@ -252,7 +252,7 @@ fun ClashLookupScreen() {
                 error = null
             },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(if (kind == ClashLookupKind.PLAYER) "Tên hoặc Player Tag" else "Tên hoặc Clan Tag") },
+            label = { Text(if (kind == ClashLookupKind.PLAYER) "Tên hoặc mã người chơi" else "Tên hoặc mã bang hội") },
             placeholder = { Text("Nhập tên hoặc #ABC123") },
             singleLine = true,
             enabled = !loading
@@ -348,7 +348,7 @@ fun ClashLookupScreen() {
             }
         }
         Text(
-            "Có thể tìm bằng tên người chơi, tên Clan hoặc Player Tag / Clan Tag. Không cần nhập Supercell ID hay email.",
+            "Có thể tìm bằng tên người chơi, tên bang hội hoặc mã người chơi / mã bang hội. Không cần nhập Supercell ID hay email.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp
         )
@@ -387,13 +387,13 @@ fun ClashLookupScreen() {
                     if (candidate.kind == ClashLookupKind.PLAYER) {
                         Text(
                             "Nhà chính " + candidate.profile.optInt("townHallLevel") +
-                                "  •  Clan " + candidate.profile.optJSONObject("clan")?.optString("name").orEmpty().ifBlank { "Không có" },
+                                "  •  Bang hội " + candidate.profile.optJSONObject("clan")?.optString("name").orEmpty().ifBlank { "Không có" },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 10.sp
                         )
                     } else {
                         Text(
-                            "Cấp Clan " + candidate.profile.optInt("clanLevel") +
+                            "Cấp bang hội " + candidate.profile.optInt("clanLevel") +
                                 "  •  " + candidate.profile.optInt("members") + " thành viên",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 10.sp
@@ -465,7 +465,7 @@ fun ClashLookupScreen() {
             if (data.kind == ClashLookupKind.PLAYER) {
                 LookupCard {
                     Text(
-                        "SO SÁNH THỜI GIAN Ở CLAN",
+                        "SO SÁNH THỜI GIAN TRONG BANG HỘI",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
@@ -474,7 +474,7 @@ fun ClashLookupScreen() {
                         value = comparePlayerTagInput,
                         onValueChange = { comparePlayerTagInput = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Player Tag thứ hai") },
+                        label = { Text("Mã người chơi thứ hai") },
                         placeholder = { Text("#ABC123") },
                         singleLine = true
                     )
@@ -627,7 +627,7 @@ fun ClashLookupScreen() {
                 value = leagueTierInput,
                 onValueChange = { leagueTierInput = it.filter(Char::isDigit).take(10) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Mã cấp giải đấu (League Tier ID)") },
+                label = { Text("Mã cấp bậc giải đấu") },
                 singleLine = true
             )
             val leagueTier = leagueTierInput.toIntOrNull()
@@ -667,7 +667,7 @@ fun ClashLookupScreen() {
                 value = locationInput,
                 onValueChange = { locationInput = it.filter(Char::isDigit).take(10) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Mã khu vực / quốc gia (Location ID)") },
+                label = { Text("Mã khu vực / quốc gia") },
                 singleLine = true
             )
             val location = locationInput.toIntOrNull()
@@ -675,7 +675,7 @@ fun ClashLookupScreen() {
                 OutlinedButton(
                     onClick = {
                         location?.let {
-                            loadAction(ClashLookupAction("Top quyên góp Clan", "/v2/leaderboard/$it/clan/donations?limit=50"))
+                            loadAction(ClashLookupAction("Top quyên góp bang hội", "/v2/leaderboard/$it/clan/donations?limit=50"))
                         }
                     },
                     modifier = Modifier.weight(1f),
@@ -684,7 +684,7 @@ fun ClashLookupScreen() {
                 OutlinedButton(
                     onClick = {
                         location?.let {
-                            loadAction(ClashLookupAction("Top thắng chiến tranh Clan", "/v2/leaderboard/$it/clan/war-wins?limit=50"))
+                            loadAction(ClashLookupAction("Top số trận thắng chiến tranh bang hội", "/v2/leaderboard/$it/clan/war-wins?limit=50"))
                         }
                     },
                     modifier = Modifier.weight(1f),
@@ -694,7 +694,7 @@ fun ClashLookupScreen() {
             OutlinedButton(
                 onClick = {
                     location?.let {
-                        loadAction(ClashLookupAction("Top vàng Thủ đô Clan", "/v2/leaderboard/$it/clan/capital-gold?limit=50"))
+                        loadAction(ClashLookupAction("Top vàng Thủ đô bang hội", "/v2/leaderboard/$it/clan/capital-gold?limit=50"))
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -704,7 +704,7 @@ fun ClashLookupScreen() {
 
         LookupCard {
             Text(
-                "Nguồn dữ liệu: ClashKing · Creator Code: ClashKing",
+                "Nguồn dữ liệu: ClashKing · Mã nhà sáng tạo: ClashKing",
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp
@@ -735,14 +735,14 @@ private fun globalClashActions(): List<ClashLookupAction> = listOf(
     ClashLookupAction("Số liệu toàn cầu", "/v2/counts"),
     ClashLookupAction("Số lượng Nhà chính", "/v2/counts/players/town-halls"),
     ClashLookupAction("Số lượng giải đấu", "/v2/counts/players/league-tiers"),
-    ClashLookupAction("Số lượng Clan theo khu vực", "/v2/counts/clans/locations"),
-    ClashLookupAction("Số lượng Clan theo CWL", "/v2/counts/clans/cwl-leagues"),
-    ClashLookupAction("Số lượng Clan theo giải thủ đô", "/v2/counts/clans/capital-leagues"),
-    ClashLookupAction("Phân bố quy mô Clan", "/v2/counts/clans/member-bins"),
+    ClashLookupAction("Số lượng bang hội theo khu vực", "/v2/counts/clans/locations"),
+    ClashLookupAction("Số lượng bang hội theo CWL", "/v2/counts/clans/cwl-leagues"),
+    ClashLookupAction("Số lượng bang hội theo giải Thủ đô", "/v2/counts/clans/capital-leagues"),
+    ClashLookupAction("Phân bố quy mô bang hội", "/v2/counts/clans/member-bins"),
     ClashLookupAction("Lịch mùa giải hiện tại", "/v2/dates/current"),
     ClashLookupAction("Lịch cuối tuần đột kích", "/v2/dates/raid-weekends"),
     ClashLookupAction("Lịch các mùa giải", "/v2/dates/seasons"),
-    ClashLookupAction("Top chuỗi thắng Clan", "/v2/leaderboard/clan/win-streak?limit=50"),
+    ClashLookupAction("Top chuỗi thắng bang hội", "/v2/leaderboard/clan/win-streak?limit=50"),
     ClashLookupAction("Tỷ lệ sao chiến tranh", "/v2/stats/wars/hitrates?interval=month"),
     ClashLookupAction("Tổng kết chiến tranh", "/v2/stats/wars/summary?interval=month"),
     ClashLookupAction("Hiệu suất chiến tranh", "/v2/stats/war"),
@@ -762,12 +762,12 @@ private fun clashLookupActions(data: ClashLookupResponse): List<ClashLookupActio
             ClashLookupAction("Thống kê chiến tranh", "/v2/player/$tag/war/stats"),
             ClashLookupAction("Chi tiết từng lượt đánh chiến tranh", "/v2/player/$tag/war/attacks"),
             ClashLookupAction("Lịch sử CWL", "/v2/player/$tag/cwl/history?limit=15"),
-            ClashLookupAction("Lịch sử vào/rời Clan", "/v2/player/$tag/join-leave?limit=40"),
-            ClashLookupAction("Thống kê thời gian ở Clan", "/v2/player/$tag/join-leave/totals"),
+            ClashLookupAction("Lịch sử gia nhập/rời bang hội", "/v2/player/$tag/join-leave?limit=40"),
+            ClashLookupAction("Thống kê thời gian trong bang hội", "/v2/player/$tag/join-leave/totals"),
             ClashLookupAction("Lịch sử thay đổi hồ sơ", "/v2/player/$tag/history/changes"),
             ClashLookupAction("Lịch sử quyên góp", "/v2/player/$tag/history/stats?type=donated&limit=30"),
             ClashLookupAction("Lịch sử nhận lính", "/v2/player/$tag/history/stats?type=received&limit=30"),
-            ClashLookupAction("Lịch sử Clan Games", "/v2/player/$tag/history/stats?type=clan_games&limit=30"),
+            ClashLookupAction("Lịch sử Trò chơi bang hội", "/v2/player/$tag/history/stats?type=clan_games&limit=30"),
             ClashLookupAction("Lịch sử vàng Thủ đô", "/v2/player/$tag/history/stats?type=capital_gold_donated&limit=30"),
             ClashLookupAction("Lịch sử cúp Nhà chính", "/v2/player/$tag/leaderboard-history/player_home_trophies"),
             ClashLookupAction("Lịch sử cúp Nhà thợ", "/v2/player/$tag/leaderboard-history/player_builder_base_trophies"),
@@ -789,15 +789,15 @@ private fun clashLookupActions(data: ClashLookupResponse): List<ClashLookupActio
             ClashLookupAction("Nhóm CWL", "/v2/cwl/$tag/group"),
             ClashLookupAction("Thứ hạng CWL", "/v2/cwl/$tag/ranking-history"),
             ClashLookupAction("Lịch sử thành viên", "/v2/clan/$tag/join-leave?limit=50"),
-            ClashLookupAction("Thay đổi hồ sơ Clan", "/v2/clan/$tag/history/changes?limit=30"),
+            ClashLookupAction("Thay đổi hồ sơ bang hội", "/v2/clan/$tag/history/changes?limit=30"),
             ClashLookupAction("Lịch sử bảng xếp hạng", "/v2/clan/$tag/history/leaderboards"),
-            ClashLookupAction("Tổng kết hạng Clan nhà chính", "/v2/clan/$tag/history/leaderboards/summary?type=clan_home_points"),
-            ClashLookupAction("Tổng kết hạng Clan Nhà thợ", "/v2/clan/$tag/history/leaderboards/summary?type=clan_builder_base_points"),
-            ClashLookupAction("Tổng kết hạng Thủ đô Clan", "/v2/clan/$tag/history/leaderboards/summary?type=clan_capital_points"),
-            ClashLookupAction("Lịch sử Legend của Clan", "/v2/clan/$tag/history/legends?limit=30"),
-            ClashLookupAction("Top Legend của Clan", "/v2/clan/$tag/history/legends/summary?top=20"),
-            ClashLookupAction("Kỷ lục Clan", "/v2/clan/$tag/records"),
-            ClashLookupAction("Bảng xếp hạng Clan", "/v2/clan/$tag/rankings")
+            ClashLookupAction("Tổng kết xếp hạng bang hội Nhà chính", "/v2/clan/$tag/history/leaderboards/summary?type=clan_home_points"),
+            ClashLookupAction("Tổng kết xếp hạng bang hội Nhà thợ", "/v2/clan/$tag/history/leaderboards/summary?type=clan_builder_base_points"),
+            ClashLookupAction("Tổng kết xếp hạng bang hội Thủ đô", "/v2/clan/$tag/history/leaderboards/summary?type=clan_capital_points"),
+            ClashLookupAction("Lịch sử Legend của bang hội", "/v2/clan/$tag/history/legends?limit=30"),
+            ClashLookupAction("Top Legend của bang hội", "/v2/clan/$tag/history/legends/summary?top=20"),
+            ClashLookupAction("Kỷ lục bang hội", "/v2/clan/$tag/records"),
+            ClashLookupAction("Bảng xếp hạng bang hội", "/v2/clan/$tag/rankings")
         )
     }
 }
@@ -831,7 +831,7 @@ private fun lookupFieldLabel(key: String): String = when (key) {
     "time", "battleTime", "endTime", "startTime", "preparationStartTime" -> "Thời gian"
     "state" -> "Trạng thái"
     "opponent" -> "Đối thủ"
-    "clan" -> "Clan"
+    "clan" -> "Bang hội"
     "league" -> "Giải đấu"
     "attacks" -> "Lượt tấn công"
     "defenses" -> "Lượt phòng thủ"
@@ -962,7 +962,7 @@ private fun PlayerLookupCard(data: ClashLookupResponse) {
         Text(player.optString("tag"), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
         LookupValue("Nhà chính", player.optInt("townHallLevel").takeIf { it > 0 }?.toString() ?: "Chưa có dữ liệu")
         LookupValue("Giải đấu", league?.optString("name")?.takeIf { it.isNotBlank() } ?: "Chưa có dữ liệu")
-        LookupValue("Clan", clan?.optString("name")?.takeIf { it.isNotBlank() } ?: "Không có / chưa có dữ liệu")
+        LookupValue("Bang hội", clan?.optString("name")?.takeIf { it.isNotBlank() } ?: "Không có / chưa có dữ liệu")
         clan?.optString("tag")?.takeIf { it.isNotBlank() }?.let { LookupValue("Mã Clan", it) }
         ranks?.optJSONObject("homeVillage")?.let {
             LookupValue("Cúp nhà chính", it.optInt("trophies").takeIf { value -> value > 0 }?.toString() ?: "—")
@@ -1003,7 +1003,7 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
             if (badge.isNotBlank()) {
                 AsyncImage(
                     model = badge,
-                    contentDescription = AppLanguageSettings.translate(LocalContext.current, "Huy hiệu Clan"),
+                    contentDescription = AppLanguageSettings.translate(LocalContext.current, "Huy hiệu bang hội"),
                     modifier = Modifier.size(64.dp)
                 )
                 Spacer(Modifier.width(12.dp))
@@ -1040,10 +1040,10 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
         LookupValue("Nhật ký chiến tranh", if (clan.optBoolean("publicWarLog")) "Công khai" else "Riêng tư")
         if (rankings != null) {
             Spacer(Modifier.height(4.dp))
-            Text("XẾP HẠNG CLAN", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("XẾP HẠNG BANG HỘI", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             ClanRankingCategory("Nhà chính", rankings.optJSONObject("homeVillage"))
             ClanRankingCategory("Nhà thợ", rankings.optJSONObject("builderBase"))
-            ClanRankingCategory("Thủ đô Clan", rankings.optJSONObject("clanCapital"))
+            ClanRankingCategory("Thủ đô bang hội", rankings.optJSONObject("clanCapital"))
             ClanRankingCategory("Quyên góp", rankings.optJSONObject("donations"))
             ClanRankingCategory("Nhận quyên góp", rankings.optJSONObject("donationsReceived"))
             ClanRankingCategory("Chiến thắng chiến tranh", rankings.optJSONObject("warWins"))
@@ -1069,7 +1069,7 @@ private fun ClanLookupCard(data: ClashLookupResponse) {
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        "TH" + member.optInt("townHallLevel"),
+                        "Nhà chính " + member.optInt("townHallLevel"),
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 10.sp
                     )
