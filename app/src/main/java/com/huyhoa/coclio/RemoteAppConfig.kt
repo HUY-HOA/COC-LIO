@@ -78,8 +78,12 @@ object RemoteAppConfigManager {
     private const val DEFAULT_CONFIG_JSON = """
 {
   "schemaVersion": 1,
-  "version": 1,
+  "version": 2,
   "enabled": true,
+  "app": {
+    "title": "COC-LIO",
+    "subtitle": "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO"
+  },
   "theme": {
     "darkPrimary": "#36F4FF",
     "darkSecondary": "#FF4DDA",
@@ -100,7 +104,17 @@ object RemoteAppConfigManager {
   },
   "led": {
     "speedMultiplier": 1.0,
-    "palette": ["#00E5FF", "#168BFF", "#6548FF", "#B33CFF", "#FF35B8", "#FF4A72", "#FFA43A", "#B7F34A", "#35E6A2"]
+    "palette": [
+      "#00E5FF",
+      "#168BFF",
+      "#6548FF",
+      "#B33CFF",
+      "#FF35B8",
+      "#FF4A72",
+      "#FFA43A",
+      "#B7F34A",
+      "#35E6A2"
+    ]
   },
   "navigation": {
     "items": [
@@ -125,15 +139,12 @@ object RemoteAppConfigManager {
   "dashboard": {
     "blocks": []
   },
-  "app": {
-    "title": "COC-LIO",
-    "subtitle": "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO"
-  },
   "translations": {
     "vi": {},
     "en": {}
   }
 }
+
 """
 
     private val mutableConfig = MutableStateFlow(RemoteAppConfig())
