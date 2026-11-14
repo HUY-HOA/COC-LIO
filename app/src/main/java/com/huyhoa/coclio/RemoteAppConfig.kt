@@ -77,7 +77,7 @@ data class RemoteAppConfig(
 
 private fun defaultRemoteNavigation() = listOf(
     RemoteNavigationItem("home", "Tổng quan", 0),
-    RemoteNavigationItem("buildings", "Công trình Quân đội", 1),
+    RemoteNavigationItem("buildings", "Thông tin", 1),
     RemoteNavigationItem("history", "Kho JSON", 2),
     RemoteNavigationItem("community", "Cộng đồng", 3),
     RemoteNavigationItem("lookup", "Tra cứu ID", 5),
@@ -89,7 +89,7 @@ object RemoteAppConfigManager {
     private const val DEFAULT_CONFIG_JSON = """
 {
   "schemaVersion": 1,
-  "version": 2,
+  "version": 3,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -130,7 +130,7 @@ object RemoteAppConfigManager {
   "navigation": {
     "items": [
       {"id": "home", "title": "Tổng quan", "enabled": true},
-      {"id": "buildings", "title": "Công trình Quân đội", "enabled": true},
+      {"id": "buildings", "title": "Thông tin", "enabled": true},
       {"id": "history", "title": "Kho JSON", "enabled": true},
       {"id": "community", "title": "Cộng đồng", "enabled": true},
       {"id": "lookup", "title": "Tra cứu ID", "enabled": true},
@@ -324,9 +324,12 @@ object RemoteAppConfigManager {
             val page = pages[id] ?: continue
             if (!seen.add(id)) continue
             val fallback = defaults[id] ?: continue
-            val title = item.optString("title", fallback.title)
-                .takeIf { it.isNotBlank() && it.length <= 48 }
-                ?: fallback.title
+            val remoteTitle = item.optString("title", fallback.title)
+            val title = if (id == "buildings" && remoteTitle == "Công trình Quân đội") {
+                "Thông tin"
+            } else {
+                remoteTitle.takeIf { it.isNotBlank() && it.length <= 48 } ?: fallback.title
+            }
             result += RemoteNavigationItem(
                 id = id,
                 title = title,
