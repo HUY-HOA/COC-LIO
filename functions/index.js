@@ -210,13 +210,14 @@ exports.notifyCommunityMessage = onDocumentCreated(
     if (!snapshot) return;
 
     const data = snapshot.data() || {};
-    const sender = String(data.displayName || "Thành viên").slice(0, 80);
+    const senderIsAdmin = data.senderIsAdmin === true;
+    const sender = senderIsAdmin ? "AILIO" : String(data.displayName || "Thành viên").slice(0, 80);
     const text = String(data.text || "").trim();
     const type = String(data.type || "text");
 
     let content = text;
-    if (!content && type === "image") content = "Đã chia sẻ một hình ảnh.";
-    if (!content && type === "file") content = "Đã chia sẻ một tệp.";
+    if (!content && type === "image") content = "Đã gửi một hình ảnh.";
+    if (!content && type === "file") content = "Đã gửi một tệp.";
     if (!content) return;
 
     await messaging.send({
@@ -226,6 +227,9 @@ exports.notifyCommunityMessage = onDocumentCreated(
         messageId: event.params.messageId,
         senderUid: String(data.uid || ""),
         senderName: sender,
+        senderIsAdmin: String(senderIsAdmin),
+        senderPhotoUrl: senderIsAdmin ? "" : String(data.photoUrl || ""),
+        messageText: content.slice(0, 2000),
         title: "Cộng đồng COC-LIO",
         body: (sender + ": " + content).slice(0, 450)
       },
