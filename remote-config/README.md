@@ -32,7 +32,7 @@ Set `dashboard.blocks` to an ordered array. Each block can use one of these type
 - `button`: a full-width action button.
 - `divider`: a separator.
 - `spacer`: vertical spacing.
-- `row` and `column`: layout containers with a `children` array of nested blocks. Nesting is limited to three levels and five children per container.
+- `row` and `column`: layout containers with a `children` array of nested blocks. Row children can set `weight` to control their relative widths. Nesting is limited to three levels and five children per container.
 
 Use `pageId` values `home`, `buildings`, `history`, `community`, `settings`, `lookup` or `all`. Available action IDs are allowlisted in the APK: `import_json`, `open_game`, `open_settings`, `open_community`, `open_history`, and `open_lookup`. The app ignores unknown block types, page IDs and actions.
 
