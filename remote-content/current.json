@@ -43,8 +43,15 @@
     }
   ],
   "notificationTemplates": {
-    "title": "Đến giờ hoàn thành • {item}",
-    "text": "{village} • ID {id} • {level}",
-    "body": "{village} ({tag})\nCăn cứ: {base}\nNhóm: {section}\nCông trình: {item}\nID: {id}\nDự kiến: {level}\nBộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
+    "vi": {
+      "title": "Đến giờ hoàn thành • {item}",
+      "text": "{village} • ID {id} • {level}",
+      "body": "{village} ({tag})\nCăn cứ: {base}\nNhóm: {section}\nCông trình: {item}\nID: {id}\nDự kiến: {level}\nBộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
+    },
+    "en": {
+      "title": "Upgrade complete • {item}",
+      "text": "{village} • ID {id} • {level}",
+      "body": "{village} ({tag})\nBase: {base}\nGroup: {section}\nItem: {item}\nID: {id}\nExpected: {level}\nThe JSON countdown has ended. Import fresh JSON to confirm the in-game level."
+    }
   }
 }
