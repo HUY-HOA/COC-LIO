@@ -375,7 +375,7 @@ private suspend fun <T> Task<T>.awaitCommunityResult(): T =
     }
 
 
- suspend fun deleteSharedJsonFromCommunity(jsonId: String) {
+suspend fun deleteSharedJsonFromCommunity(jsonId: String) {
     require(jsonId.isNotBlank()) { "Không tìm thấy mã JSON." }
     val user = FirebaseAuth.getInstance().currentUser
         ?: throw IllegalStateException("Bạn cần đăng nhập Google trước.")
