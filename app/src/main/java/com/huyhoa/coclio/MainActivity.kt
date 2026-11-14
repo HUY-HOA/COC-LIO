@@ -390,6 +390,16 @@ private fun NeonButton(
 }
 
 class MainActivity : ComponentActivity() {
+    override fun onStart() {
+        super.onStart()
+        RemoteAppConfigManager.startRealtimeUpdates()
+    }
+
+    override fun onStop() {
+        RemoteAppConfigManager.stopRealtimeUpdates()
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         AccountActivityTracker.start(this)
