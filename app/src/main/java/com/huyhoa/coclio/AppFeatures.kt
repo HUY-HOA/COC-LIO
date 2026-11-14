@@ -785,6 +785,16 @@ object AccountPrivacyConsent {
         return profile.getLong("requiredAccountDataConsentVersion") == REQUIRED_ACCOUNT_DATA_VERSION
     }
 
+    suspend fun hasAccountProfile(): Boolean {
+        val user = FirebaseAuth.getInstance().currentUser ?: return false
+        return FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .get()
+            .awaitFirebaseResult()
+            .exists()
+    }
+
     suspend fun saveRequiredAccountDataConsent() {
         val user = FirebaseAuth.getInstance().currentUser
             ?: throw IllegalStateException("Bạn cần đăng nhập Google để xác nhận dữ liệu tài khoản.")
