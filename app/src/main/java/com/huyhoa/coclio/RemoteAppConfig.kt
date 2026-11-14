@@ -251,6 +251,10 @@ object RemoteAppConfigManager {
             .takeIf { it.isFinite() }
             ?.coerceIn(0.5f, 3f)
             ?: 1f
+        val darkBackground = color(theme, "darkBackground", defaults.darkBackground)
+        val configuredDarkSurface = color(theme, "darkSurface", defaults.darkSurface)
+        val lightBackground = color(theme, "lightBackground", defaults.lightBackground)
+        val configuredLightSurface = color(theme, "lightSurface", defaults.lightSurface)
 
         return RemoteAppConfig(
             enabled = true,
@@ -258,15 +262,15 @@ object RemoteAppConfigManager {
             darkPrimary = color(theme, "darkPrimary", defaults.darkPrimary),
             darkSecondary = color(theme, "darkSecondary", defaults.darkSecondary),
             darkTertiary = color(theme, "darkTertiary", defaults.darkTertiary),
-            darkBackground = color(theme, "darkBackground", defaults.darkBackground),
-            darkSurface = color(theme, "darkSurface", defaults.darkSurface),
+            darkBackground = darkBackground,
+            darkSurface = configuredDarkSurface.takeUnless { it == darkBackground } ?: defaults.darkSurface,
             darkSurfaceVariant = color(theme, "darkSurfaceVariant", defaults.darkSurfaceVariant),
             darkOnSurfaceVariant = color(theme, "darkOnSurfaceVariant", defaults.darkOnSurfaceVariant),
             lightPrimary = color(theme, "lightPrimary", defaults.lightPrimary),
             lightSecondary = color(theme, "lightSecondary", defaults.lightSecondary),
             lightTertiary = color(theme, "lightTertiary", defaults.lightTertiary),
-            lightBackground = color(theme, "lightBackground", defaults.lightBackground),
-            lightSurface = color(theme, "lightSurface", defaults.lightSurface),
+            lightBackground = lightBackground,
+            lightSurface = configuredLightSurface.takeUnless { it == lightBackground } ?: defaults.lightSurface,
             lightSurfaceVariant = color(theme, "lightSurfaceVariant", defaults.lightSurfaceVariant),
             lightOnBackground = color(theme, "lightOnBackground", defaults.lightOnBackground),
             lightOnSurface = color(theme, "lightOnSurface", defaults.lightOnSurface),
