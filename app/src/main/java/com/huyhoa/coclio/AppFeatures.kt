@@ -693,6 +693,25 @@ object FirebaseAccountAdministration {
             )
             .awaitFirebaseResult()
     }
+
+    suspend fun deleteStoredAccountProfile(uid: String) {
+        require(uid.isNotBlank()) { "Thiếu mã tài khoản cần xóa." }
+        val owner = FirebaseAuth.getInstance().currentUser
+            ?: throw IllegalStateException("Bạn cần đăng nhập tài khoản quản lý.")
+        require(isOwner(owner.email)) { "Chỉ chủ sở hữu COC-LIO mới được xóa hồ sơ tài khoản." }
+        require(uid != owner.uid) { "Không thể xóa hồ sơ tài khoản quản lý đang sử dụng." }
+
+        val firestore = FirebaseFirestore.getInstance()
+        val userReference = firestore.collection("users").document(uid)
+        val snapshots = userReference.collection("village_snapshots").get().awaitFirebaseResult()
+        for (chunk in snapshots.documents.chunked(400)) {
+            val batch = firestore.batch()
+            chunk.forEach { batch.delete(it.reference) }
+            batch.commit().awaitFirebaseResult()
+        }
+        firestore.collection("licenses").document(uid).delete().awaitFirebaseResult()
+        userReference.delete().awaitFirebaseResult()
+    }
 }
 
 data class AccountPrivacyChoice(
@@ -1948,6 +1967,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
     var loading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var pendingDelete by remember { mutableStateOf<AdminGoogleAccount?>(null) }
+    var pendingProfileRemoval by remember { mutableStateOf<AdminGoogleAccount?>(null) }
     var deleting by remember { mutableStateOf(false) }
 
     fun refreshAccounts() {
@@ -2020,6 +2040,48 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
         )
     }
 
+    pendingProfileRemoval?.let { account ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { if (!deleting) pendingProfileRemoval = null },
+            title = { Text("Xóa hồ sơ Firebase cũ?") },
+            text = {
+                Text(
+                    "Thao tác này chỉ xóa hồ sơ users/${account.uid}, dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication. Bài đăng Cộng đồng không bị xóa.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !deleting,
+                    onClick = {
+                        scope.launch {
+                            deleting = true
+                            errorMessage = null
+                            try {
+                                FirebaseAccountAdministration.deleteStoredAccountProfile(account.uid)
+                                pendingProfileRemoval = null
+                                expandedAccounts = expandedAccounts - account.uid
+                                accounts = FirebaseAccountAdministration.loadAccounts(context)
+                            } catch (error: Exception) {
+                                errorMessage = error.message ?: "Không thể xóa hồ sơ Firebase cũ."
+                            } finally {
+                                deleting = false
+                            }
+                        }
+                    }
+                ) {
+                    Text(if (deleting) "ĐANG XÓA…" else "XÓA HỒ SƠ")
+                }
+            },
+            dismissButton = {
+                TextButton(enabled = !deleting, onClick = { pendingProfileRemoval = null }) {
+                    Text("HỦY")
+                }
+            }
+        )
+    }
+
     FeaturePanel {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -2043,7 +2105,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             fontSize = 12.sp
         )
         Text(
-            "Chỉ tài khoản quản lý mới xem được. Danh sách lấy từ hồ sơ tài khoản đã đăng nhập; ứng dụng không tự đối chiếu trạng thái toàn bộ tài khoản Google.",
+            "Danh sách lấy từ hồ sơ Firestore. Nếu bạn đã xóa tài khoản trong Firebase Authentication nhưng dòng này vẫn còn, hãy dùng XÓA HỒ SƠ sau khi kiểm tra đúng UID. Nút này chỉ xóa hồ sơ Firestore, không xóa tài khoản Authentication.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp,
             lineHeight = 15.sp
@@ -2133,6 +2195,19 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 enabled = !deleting
                             ) {
                                 Text(if (account.accountDisabled) "KÍCH HOẠT LẠI" else "VÔ HIỆU HÓA", color = if (account.accountDisabled) MaterialTheme.colorScheme.primary else Color(0xFFFF5D91), fontSize = 9.sp)
+                            }
+                        }
+                    }
+                    if (!account.isAdmin) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = { pendingProfileRemoval = account },
+                                enabled = !deleting
+                            ) {
+                                Text("XÓA HỒ SƠ FIREBASE", color = Color(0xFFFF5D91), fontSize = 9.sp)
                             }
                         }
                     }
