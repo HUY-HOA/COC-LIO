@@ -1,0 +1,50 @@
+{
+  "enabled": true,
+  "version": 1,
+  "maintenance": {
+    "enabled": false,
+    "title": "",
+    "message": ""
+  },
+  "announcement": {
+    "enabled": false,
+    "title": "",
+    "message": "",
+    "severity": "info",
+    "imageUrl": "",
+    "actionLabel": "",
+    "actionId": ""
+  },
+  "catalog": [
+    {
+      "dataId": 1000001,
+      "name": "Nhà chính",
+      "category": "other",
+      "description": "Mẫu minh họa; thay bằng dữ liệu đã xác minh.",
+      "maxLevel": 18,
+      "imageUrl": "https://example.com/town-hall.png"
+    }
+  ],
+  "guides": [
+    {
+      "id": "import-json",
+      "enabled": true,
+      "title": "Cách nhập JSON",
+      "body": "Mở Clash of Clans, xuất dữ liệu làng dưới dạng JSON, sao chép rồi dán vào COC-LIO.",
+      "imageUrl": ""
+    }
+  ],
+  "links": [
+    {
+      "id": "official-help",
+      "enabled": true,
+      "label": "Trợ giúp chính thức",
+      "url": "https://support.supercell.com/clash-of-clans/"
+    }
+  ],
+  "notificationTemplates": {
+    "title": "Đến giờ hoàn thành • {item}",
+    "text": "{village} • ID {id} • {level}",
+    "body": "{village} ({tag})\nCăn cứ: {base}\nNhóm: {section}\nCông trình: {item}\nID: {id}\nDự kiến: {level}\nBộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
+  }
+}
