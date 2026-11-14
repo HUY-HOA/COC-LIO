@@ -15,10 +15,7 @@ service cloud.firestore {
       return verifiedAccount()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requiredAccountDataConsentVersion', 0) == 1
-        && (
-          !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['accountDisabled'])
-          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountDisabled != true
-        );
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountDisabled', false) != true;
     }
 
     function isOwner() {
@@ -88,6 +85,7 @@ service cloud.firestore {
       allow update: if isOwner()
         || (
           isVerifiedSelf(userId)
+          && resource.data.get('accountDisabled', false) != true
           && (
             resource.data.get('requiredAccountDataConsentVersion', 0) == 1
             || (
