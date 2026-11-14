@@ -161,27 +161,59 @@ jobs:
           compression-level: 0
           retention-days: 30
 
-      - name: Notify successful APK build on GitHub
-        if: success() && github.event_name == 'issues'
+      - name: Email successful APK build
+        if: success()
         continue-on-error: true
-        shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
-          MESSAGE="✅ BUILD APK THÀNH CÔNG"
-          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" --method POST -f body="$MESSAGE"
+          if [[ -z "$GMAIL_APP_PASSWORD" ]]; then
+            echo "::warning::Thiếu GitHub Actions secret GMAIL_APP_PASSWORD; email build thành công chưa được gửi."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import os
+          import smtplib
+          from email.message import EmailMessage
 
-      - name: Notify failed APK build on GitHub
-        if: failure() && github.event_name == 'issues'
+          address = "phunghuyhoahkb@gmail.com"
+          message = EmailMessage()
+          message["From"] = f"COC-LIO Build <{address}>"
+          message["To"] = address
+          message["Subject"] = "BUILD APK THÀNH CÔNG"
+          message.set_content("BUILD APK THÀNH CÔNG")
+
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=25) as smtp:
+              smtp.login(address, os.environ["GMAIL_APP_PASSWORD"])
+              smtp.send_message(message)
+          PY
+
+      - name: Email failed APK build
+        if: failure()
         continue-on-error: true
-        shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
-          MESSAGE="❌ BUILD APK THẤT BẠI. Xem log chi tiết: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" --method POST -f body="$MESSAGE"
+          if [[ -z "$GMAIL_APP_PASSWORD" ]]; then
+            echo "::warning::Thiếu GitHub Actions secret GMAIL_APP_PASSWORD; email build thất bại chưa được gửi."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import os
+          import smtplib
+          from email.message import EmailMessage
+
+          address = "phunghuyhoahkb@gmail.com"
+          message = EmailMessage()
+          message["From"] = f"COC-LIO Build <{address}>"
+          message["To"] = address
+          message["Subject"] = "BUILD APK THẤT BẠI"
+          message.set_content("BUILD APK THẤT BẠI")
+
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=25) as smtp:
+              smtp.login(address, os.environ["GMAIL_APP_PASSWORD"])
+              smtp.send_message(message)
+          PY
 
       - name: Close build request issue
         if: always() && github.event_name == 'issues'
