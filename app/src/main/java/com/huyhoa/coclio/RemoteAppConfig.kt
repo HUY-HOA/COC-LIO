@@ -51,7 +51,7 @@ data class RemoteAppConfig(
     val lightTertiary: Int = 0xFF8A5A00.toInt(),
     val lightBackground: Int = 0xFFFFFFFF.toInt(),
     val lightSurface: Int = 0xFFF1F5FB.toInt(),
-    val lightSurfaceVariant: Int = 0xFFE8EEF6.toInt(),
+    val lightSurfaceVariant: Int = 0xFFE4ECF6.toInt(),
     val lightOnBackground: Int = 0xFF172235.toInt(),
     val lightOnSurface: Int = 0xFF172235.toInt(),
     val lightOnSurfaceVariant: Int = 0xFF526176.toInt(),
