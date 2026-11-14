@@ -50,7 +50,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text as MaterialText
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -537,9 +536,7 @@ fun CommunityScreen(
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
-    var autoTranslationEnabled by remember {
-        mutableStateOf(CommunityAutoTranslationPreferences.isEnabled(context))
-    }
+    val autoTranslationEnabled = CommunityAutoTranslationPreferences.isEnabled(context)
     val scope = rememberCoroutineScope()
     val user = FirebaseAuth.getInstance().currentUser?.takeIf { isGoogleSignedIn }
     val isOwner = FirebaseAccountAdministration.isOwner(user?.email)
@@ -819,16 +816,6 @@ fun CommunityScreen(
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("CỘNG ĐỒNG COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
             Text("Trò chuyện, chia sẻ hình ảnh và cập nhật COC-LIO cùng mọi thành viên.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Tự động dịch", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
-                Switch(
-                    checked = autoTranslationEnabled,
-                    onCheckedChange = {
-                        autoTranslationEnabled = it
-                        CommunityAutoTranslationPreferences.setEnabled(context, it)
-                    }
-                )
-            }
         }
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
