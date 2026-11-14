@@ -148,6 +148,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -400,6 +401,39 @@ object AppPreferences {
         val normalizedScale = textScaleForLevel(textScaleLevel(scale))
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putFloat("text_scale", normalizedScale).apply()
+    }
+}
+
+object FirebaseMessagingTopicSubscriptions {
+    private const val COMMUNITY_TOPIC = "coc_lio_community"
+    private const val UPDATES_TOPIC = "coc_lio_updates"
+
+    suspend fun sync(context: Context, profile: String, signedIn: Boolean) {
+        val user = FirebaseAuth.getInstance().currentUser
+        val profileMatches = signedIn &&
+            user != null &&
+            profile != "local" &&
+            user.email?.equals(profile, ignoreCase = true) == true
+        val communityEnabled = profileMatches &&
+            AppPreferences.communityNotificationsEnabled(context, profile)
+        val updatesEnabled = profileMatches &&
+            AppPreferences.updateNotificationsEnabled(context, profile)
+        val messaging = FirebaseMessaging.getInstance()
+        messaging.setAutoInitEnabled(communityEnabled || updatesEnabled)
+        runCatching {
+            (if (communityEnabled) {
+                messaging.subscribeToTopic(COMMUNITY_TOPIC)
+            } else {
+                messaging.unsubscribeFromTopic(COMMUNITY_TOPIC)
+            }).awaitFirebaseResult()
+        }
+        runCatching {
+            (if (updatesEnabled) {
+                messaging.subscribeToTopic(UPDATES_TOPIC)
+            } else {
+                messaging.unsubscribeFromTopic(UPDATES_TOPIC)
+            }).awaitFirebaseResult()
+        }
     }
 }
 
@@ -3045,9 +3079,10 @@ class CocLioMessagingService : FirebaseMessagingService() {
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val senderIsAdmin = data["senderIsAdmin"]?.equals("true", ignoreCase = true) == true ||
-            data["senderName"]?.equals("AILIO", ignoreCase = true) == true
+        val senderIsAdmin = isCommunity &&
+            data["senderIsAdmin"]?.equals("true", ignoreCase = true) == true
         val senderName = if (senderIsAdmin) "AILIO" else data["senderName"] ?: AppLanguageSettings.translate(this, "Thành viên")
+        val messageText = if (isCommunity) data["messageText"] ?: body else body
         val senderPersonBuilder = androidx.core.app.Person.Builder()
             .setName(senderName)
             .setKey(data["senderUid"] ?: "community")
@@ -3069,11 +3104,11 @@ class CocLioMessagingService : FirebaseMessagingService() {
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
-            .setContentText(body)
+            .setContentText(if (isCommunity) (senderName + ": " + messageText).take(420) else body)
             .setStyle(
                 if (isCommunity) {
                     NotificationCompat.MessagingStyle(currentPerson)
-                        .addMessage(body, System.currentTimeMillis(), senderPerson)
+                        .addMessage(messageText, System.currentTimeMillis(), senderPerson)
                 } else {
                     NotificationCompat.BigTextStyle().bigText(body)
                 }
@@ -3166,6 +3201,7 @@ internal fun postCommunityChatBubbleNotification(
     senderUid: String,
     senderName: String,
     messageText: String,
+    senderIsAdmin: Boolean = false,
     senderPhotoUrl: String = ""
 ) {
     val notificationManager = NotificationManagerCompat.from(context)
@@ -3196,7 +3232,7 @@ internal fun postCommunityChatBubbleNotification(
         .setName(senderName.ifBlank { AppLanguageSettings.translate(context, "Thành viên") })
         .setKey(senderUid.ifBlank { "community" })
         .setImportant(true)
-    if (senderName.equals("AILIO", ignoreCase = true)) {
+    if (senderIsAdmin) {
         senderPersonBuilder.setIcon(createAdminNotificationAvatar(context))
     } else {
         loadCommunitySenderIcon(senderPhotoUrl)?.let {
