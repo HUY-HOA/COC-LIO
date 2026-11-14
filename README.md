@@ -5,8 +5,9 @@ AILIO là thương hiệu phát triển dự án Android COC-LIO, ứng dụng t
 ## Nguyên tắc hoạt động
 
 - Không đăng nhập Supercell ID, không yêu cầu API key.
-- Không cần máy chủ, database đám mây hoặc kết nối mạng để phân tích.
-- JSON được phân tích và lưu cục bộ trên điện thoại.
+- Phân tích JSON, lưu lịch sử nhập và theo dõi tiến trình cơ bản được thực hiện cục bộ trên điện thoại.
+- Các tính năng trực tuyến như đăng nhập Google, hồ sơ tài khoản, Cộng đồng, tra cứu dữ liệu, tải ảnh tài sản và đồng bộ JSON cần kết nối Internet; một số tính năng sử dụng Firebase hoặc dịch vụ dữ liệu bên ngoài.
+- Không cần kết nối mạng để phân tích JSON đã có và xem dữ liệu đã lưu cục bộ; những nội dung cần tải từ Internet có thể chưa hiển thị khi ngoại tuyến.
 - Mỗi lần nhập là một ảnh chụp dữ liệu tại thời điểm game xuất JSON.
 - Lần nhập đầu tạo mốc ban đầu; lần nhập kế tiếp cùng Player Tag được so sánh để tìm thay đổi.
 
@@ -21,7 +22,7 @@ AILIO là thương hiệu phát triển dự án Android COC-LIO, ứng dụng t
 
 ## Dữ liệu đang được đọc
 
-Nhà chính: công trình, bẫy, quân đội, máy công thành, anh hùng, phép thuật, thú cưng, trang bị và trợ thủ.
+Nhà chính: công trình, bẫy, quân đội, máy công thành, anh hùng, thần chú, thú cưng, trang bị và trợ thủ.
 
 Builder Base: công trình, bẫy, quân đội và anh hùng.
 
@@ -38,12 +39,11 @@ GitHub Actions tạo APK Release có chữ ký khi quy trình build được kí
 - Quy tắc đọc JSON tham khảo hướng dẫn nhập/xuất làng của ClashClock và tài liệu theo dõi nâng cấp cộng đồng.
 - Tên theo ID hiện dùng bảng đối chiếu cộng đồng cho JSON export. ID chưa biết vẫn được giữ lại và hiển thị dưới dạng mã số.
 - Cấp độ, tên và dữ liệu có thể thay đổi khi Supercell cập nhật game; bảng đối chiếu cần được rà soát sau các bản cập nhật.
-- Ảnh công trình theo từng cấp, bẫy, quân đội, anh hùng, phép thuật, thú cưng, máy công thành và trang bị được tải từ kho dữ liệu công khai `clash-of-clans-data`. Ứng dụng kiểm tra URL ảnh và dùng bộ nhớ đệm Coil để tải mượt hơn; lần đầu cần Internet. Dữ liệu JSON và lịch sử vẫn được lưu trên điện thoại.
+- Ảnh công trình theo từng cấp, bẫy, quân đội, anh hùng, thần chú, thú cưng, máy công thành và trang bị được tải từ kho dữ liệu công khai `clash-of-clans-data`. Ứng dụng kiểm tra URL ảnh và dùng bộ nhớ đệm Coil để tải mượt hơn; lần đầu cần Internet. Dữ liệu JSON và lịch sử vẫn được lưu trên điện thoại.
 - Viền neon, ánh sáng nền và hiệu ứng chuyển ảnh chỉ áp dụng lên giao diện xung quanh; ảnh game gốc không bị chỉnh màu hay biến đổi.
 - Việc sử dụng hình ảnh Supercell phải tuân thủ Fan Content Policy, bao gồm giới hạn phi thương mại và thông báo rõ đây là nội dung không chính thức.
 
 COC-LIO là dự án cộng đồng không chính thức, không liên kết hoặc được Supercell chứng thực. Clash of Clans và tài sản trong game thuộc về chủ sở hữu tương ứng.
-
 
 ## Cài đặt, nhắc nâng cấp và tiện ích
 
@@ -52,7 +52,8 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 - Nhắc nâng cấp được lập lịch từ timer trong JSON. Android có thể trì hoãn tác vụ do chế độ tiết kiệm pin hoặc chính sách hệ thống.
 - Có tiện ích màn hình chính theo từng hồ sơ và từng làng; bố cục dọc mặc định 2 × 6 ô, danh sách tất cả công trình đang nâng cấp có thể cuộn, mỗi mục có đồng hồ đếm ngược và thanh tiến trình riêng.
 - Trong app, các thẻ công trình có dải LED neon chuyển động quanh viền, có tùy chọn **Ánh sáng lan tỏa**; ảnh công trình giữ nguyên, không phủ hiệu ứng lên artwork. Các thẻ đang nâng có thanh tiến trình cập nhật theo đồng hồ.
-- Trong Cộng đồng, tài khoản quản lý hiển thị tên AILIO và avatar ADMIN; thành viên khác giữ tên và ảnh Google. Thông báo nâng cấp tự kết thúc sau 25 giây; Android vẫn quyết định thời gian banner nổi và âm thanh thực tế. Thông báo Cộng đồng: ứng dụng đã đăng ký chủ đề FCM theo công tắc, nhưng máy chủ gửi sự kiện chưa triển khai trên Firebase Spark; WorkManager vẫn kiểm tra dự phòng khoảng 15 phút/lần và có thể bị Android trì hoãn.
+- Trong Cộng đồng, tài khoản quản lý hiển thị tên AILIO và avatar ADMIN; thành viên khác giữ tên và ảnh Google. Thông báo nâng cấp được đặt thời hạn tự đóng 25 giây; thời gian banner nổi và âm thanh thực tế vẫn do Android, kênh thông báo và thiết bị quyết định.
+- Thông báo Cộng đồng hiện chưa có máy chủ gửi FCM được triển khai trên Firebase Spark. APK có phần đăng ký chủ đề FCM nhưng đăng ký này không tự gửi thông báo. WorkManager kiểm tra dự phòng khoảng 15 phút/lần; Android có thể trì hoãn tác vụ nền.
 
 Để bật đăng nhập Google, xem [docs/GOOGLE_SIGN_IN_SETUP.md](docs/GOOGLE_SIGN_IN_SETUP.md) và cấu hình secret `GOOGLE_WEB_CLIENT_ID`.
 
@@ -67,7 +68,6 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 ## Google và giấy phép
 
 Google Sign-In được dùng để xác thực tài khoản. Analytics, Crashlytics và Performance chỉ thu thập khi người dùng bật lựa chọn tương ứng. Chủ tài khoản có màn hình quản lý hồ sơ; người dùng thường chỉ xem hồ sơ của chính mình. Đồng bộ bản JSON mới nhất theo Player Tag có thể bật riêng. FCM hiện mới có đăng ký chủ đề ở APK, chưa có máy chủ gửi tin; cấp phép trực tuyến và xuất BigQuery chưa hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
-
 
 ## Thu thập dữ liệu tùy chọn và chế độ miễn phí
 
