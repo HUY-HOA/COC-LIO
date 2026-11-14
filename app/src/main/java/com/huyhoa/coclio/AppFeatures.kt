@@ -2381,10 +2381,12 @@ fun SettingsScreen(
     ledPreset: String,
     ledSpeed: Int,
     ledBrightness: Float,
+    ledGlowEnabled: Boolean,
     onLedEnabledChanged: (Boolean) -> Unit,
     onLedPresetChanged: (String) -> Unit,
     onLedSpeedChanged: (Int) -> Unit,
     onLedBrightnessChanged: (Float) -> Unit,
+    onLedGlowEnabledChanged: (Boolean) -> Unit,
     notificationStyle: String,
     communityNotificationsEnabled: Boolean,
     updateNotificationsEnabled: Boolean,
@@ -2691,6 +2693,13 @@ fun SettingsScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Bật hiệu ứng chuyển động", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, modifier = Modifier.weight(1f))
                 Switch(checked = ledEnabled, onCheckedChange = onLedEnabledChanged)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Tăng quầng sáng LED (Glow)", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                    Text("Bật/tắt để so sánh độ phát sáng quanh viền", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                }
+                Switch(checked = ledGlowEnabled, onCheckedChange = onLedGlowEnabledChanged)
             }
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
