@@ -59,6 +59,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
@@ -2626,7 +2627,7 @@ fun SettingsScreen(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    "MỨC $activeSizeLevel/5 · $activeSizePercent%",
+                    "MỨC $activeSizeLevel/10 · $activeSizePercent%",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Black
@@ -2634,21 +2635,38 @@ fun SettingsScreen(
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                (1..5).forEach { level ->
-                    FilterChip(
-                        selected = activeSizeLevel == level,
-                        onClick = {
-                            if (selectedSizeSetting == 0) {
-                                onDisplaySizeLevelChanged(level)
-                            } else {
-                                onTextScaleChanged(AppPreferences.textScaleForLevel(level))
-                            }
-                        },
-                        modifier = Modifier.weight(1f).heightIn(min = 38.dp),
-                        label = { Text(level.toString(), fontSize = 10.sp) }
-                    )
+                (1..10).forEach { level ->
+                    val selected = activeSizeLevel == level
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(
+                                if (selected) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                            .clickable {
+                                if (selectedSizeSetting == 0) {
+                                    onDisplaySizeLevelChanged(level)
+                                } else {
+                                    onTextScaleChanged(AppPreferences.textScaleForLevel(level))
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            level.toString(),
+                            modifier = Modifier.fillMaxWidth(),
+                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 10.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -2666,9 +2684,9 @@ fun SettingsScreen(
             }
             Text(
                 if (selectedSizeSetting == 0)
-                    "Điều chỉnh kích thước tổng thể của giao diện, nút và khoảng cách. Mức 3 (100%) là mặc định."
+                    "Điều chỉnh kích thước tổng thể của giao diện, nút và khoảng cách. Mức 5 (100%) là mặc định."
                 else
-                    "Điều chỉnh cỡ chữ trong toàn ứng dụng. Mức 3 (100%) là mặc định.",
+                    "Điều chỉnh cỡ chữ trong toàn ứng dụng. Mức 5 (100%) là mặc định.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 lineHeight = 14.sp
