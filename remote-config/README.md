@@ -20,7 +20,7 @@ The APK includes matching local defaults. The first APK that contains this remot
 - LED color palette and animation speed multiplier.
 - Bottom navigation order, labels and visibility.
 - Feature switches for navigation pages, the JSON import shortcut and remote UI blocks.
-- Remote text, notices, cards, dividers, spacers and buttons on individual pages or all pages.
+- Remote text, notices, cards, dividers, spacers, buttons, rows and columns on individual pages or all pages. Rows and columns can contain nested blocks, allowing the order and grouping of remote panels to be rearranged.
 - Existing Vietnamese and English strings through the `translations.vi` and `translations.en` dictionaries.
 
 ### Remote UI blocks
@@ -32,6 +32,7 @@ Set `dashboard.blocks` to an ordered array. Each block can use one of these type
 - `button`: a full-width action button.
 - `divider`: a separator.
 - `spacer`: vertical spacing.
+- `row` and `column`: layout containers with a `children` array of nested blocks. Nesting is limited to three levels and five children per container.
 
 Use `pageId` values `home`, `buildings`, `history`, `community`, `settings`, `lookup` or `all`. Available action IDs are allowlisted in the APK: `import_json`, `open_game`, `open_settings`, `open_community`, `open_history`, and `open_lookup`. The app ignores unknown block types, page IDs and actions.
 
