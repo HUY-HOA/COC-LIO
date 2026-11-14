@@ -80,8 +80,10 @@ import coil.compose.AsyncImage
 import com.google.android.gms.tasks.Task
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -89,7 +91,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -158,7 +159,8 @@ private data class CommunityArchiveItem(
     val versionName: String,
     val notes: String,
     val contentType: String = "",
-    val contentData: String = ""
+    val contentData: String = "",
+    val sharedJsonId: String = ""
 )
 
 private fun communityArchiveCollection(category: String): String = when (category) {
@@ -168,89 +170,154 @@ private fun communityArchiveCollection(category: String): String = when (categor
     else -> "community_deleted_messages"
 }
 
-private fun communityArchiveExpiry(archivedAt: Long, value: Int, unit: String): Timestamp {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = archivedAt
-        add(if (unit == "months") Calendar.MONTH else Calendar.DAY_OF_YEAR, value)
+private val COMMUNITY_ARCHIVE_COLLECTIONS = listOf(
+    "community_deleted_messages",
+    "community_deleted_images",
+    "community_deleted_files",
+    "app_update_archive"
+)
+
+private data class CommunityStorageCounts(
+    val activeMessages: Long,
+    val activeJsons: Long,
+    val activeApks: Long,
+    val archivedMessages: Long,
+    val archivedImages: Long,
+    val archivedFiles: Long,
+    val archivedApks: Long
+) {
+    val activeTotal: Long get() = activeMessages + activeJsons + activeApks
+    val archivedTotal: Long get() = archivedMessages + archivedImages + archivedFiles + archivedApks
+    val total: Long get() = activeTotal + archivedTotal
+}
+
+private suspend fun countCommunityDocuments(collectionName: String): Long {
+    val result = FirebaseFirestore.getInstance()
+        .collection(collectionName)
+        .count()
+        .get(AggregateSource.SERVER)
+        .awaitCommunityResult()
+    return result.count
+}
+
+private suspend fun loadCommunityStorageCounts(): CommunityStorageCounts = CommunityStorageCounts(
+    activeMessages = countCommunityDocuments("community_messages"),
+    activeJsons = countCommunityDocuments("community_shared_jsons"),
+    activeApks = countCommunityDocuments("app_updates"),
+    archivedMessages = countCommunityDocuments("community_deleted_messages"),
+    archivedImages = countCommunityDocuments("community_deleted_images"),
+    archivedFiles = countCommunityDocuments("community_deleted_files"),
+    archivedApks = countCommunityDocuments("app_update_archive")
+)
+
+private suspend fun deleteArchiveDocuments(
+    documents: List<com.google.firebase.firestore.DocumentSnapshot>
+): Int {
+    if (documents.isEmpty()) return 0
+    val firestore = FirebaseFirestore.getInstance()
+    for (chunk in documents.chunked(200)) {
+        val batch = firestore.batch()
+        val linkedJsonIds = mutableSetOf<String>()
+        for (document in chunk) {
+            document.getString("sharedJsonId").orEmpty()
+                .takeIf { it.isNotBlank() }
+                ?.let { linkedJsonIds.add(it) }
+            batch.delete(document.reference)
+        }
+        linkedJsonIds.forEach { jsonId ->
+            batch.delete(firestore.collection("community_shared_jsons").document(jsonId))
+        }
+        batch.commit().awaitCommunityResult()
     }
-    return Timestamp(calendar.time)
+    return documents.size
+}
+
+private suspend fun deleteExpiredDocuments(
+    collectionName: String,
+    cutoff: Timestamp,
+    deleteLinkedJson: Boolean = false
+): Int {
+    val firestore = FirebaseFirestore.getInstance()
+    var deleted = 0
+    while (true) {
+        val expired = firestore.collection(collectionName)
+            .whereLessThanOrEqualTo("createdAt", cutoff)
+            .limit(200)
+            .get()
+            .awaitCommunityResult()
+        if (expired.isEmpty) break
+        for (chunk in expired.documents.chunked(200)) {
+            val batch = firestore.batch()
+            val linkedJsonIds = mutableSetOf<String>()
+            for (document in chunk) {
+                if (deleteLinkedJson) {
+                    document.getString("sharedJsonId").orEmpty()
+                        .takeIf { it.isNotBlank() }
+                        ?.let { linkedJsonIds.add(it) }
+                }
+                batch.delete(document.reference)
+            }
+            linkedJsonIds.forEach { jsonId ->
+                batch.delete(firestore.collection("community_shared_jsons").document(jsonId))
+            }
+            batch.commit().awaitCommunityResult()
+            deleted += chunk.size
+        }
+    }
+    return deleted
 }
 
 private suspend fun cleanupCommunityArchive(): Int {
     val firestore = FirebaseFirestore.getInstance()
-    val collections = listOf(
-        "community_deleted_messages",
-        "community_deleted_images",
-        "community_deleted_files",
-        "app_update_archive"
-    )
     var removed = 0
-    for (collectionName in collections) {
+    for (collectionName in COMMUNITY_ARCHIVE_COLLECTIONS) {
         while (true) {
             val expired = firestore.collection(collectionName)
                 .whereLessThanOrEqualTo("expiresAt", Timestamp.now())
-                .limit(100)
+                .limit(200)
                 .get()
                 .awaitCommunityResult()
             if (expired.isEmpty) break
-            for (document in expired.documents) {
-                document.reference.delete().awaitCommunityResult()
-                removed++
-            }
+            removed += deleteArchiveDocuments(expired.documents)
         }
     }
     return removed
 }
 
-private suspend fun cleanupExpiredCommunityAttachments(retentionDays: Int) {
+private suspend fun cleanupExpiredCommunityRecords(retentionDays: Int): Int {
     require(retentionDays in 1..1200)
-    val firestore = FirebaseFirestore.getInstance()
-    val cutoffMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(retentionDays.toLong())
-    val attachmentTypes = listOf(
-        "image" to "community_deleted_images",
-        "file" to "community_deleted_files"
+    val cutoff = Timestamp(
+        Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(retentionDays.toLong()))
     )
+    var removed = 0
+    removed += deleteExpiredDocuments("community_messages", cutoff, deleteLinkedJson = true)
+    removed += deleteExpiredDocuments("community_shared_jsons", cutoff)
+    removed += deleteExpiredDocuments("app_updates", cutoff)
+    for (collectionName in COMMUNITY_ARCHIVE_COLLECTIONS) {
+        removed += deleteExpiredDocuments(
+            collectionName,
+            cutoff,
+            deleteLinkedJson = collectionName == "community_deleted_messages"
+        )
+    }
+    removed += cleanupCommunityArchive()
+    return removed
+}
 
-    for ((type, archiveCollection) in attachmentTypes) {
-        val activeSnapshot = firestore.collection("community_messages")
-            .whereEqualTo("type", type)
-            .get()
-            .awaitCommunityResult()
-        val expiredMessages = activeSnapshot.documents.filter { document ->
-            val createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: Long.MAX_VALUE
-            createdAt <= cutoffMillis
-        }
-
-        for (chunk in expiredMessages.chunked(100)) {
-            val batch = firestore.batch()
-            for (document in chunk) {
-                val archiveData = document.data.orEmpty().toMutableMap()
-                archiveData["originalId"] = document.id
-                archiveData["archivedBy"] = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
-                archiveData["archivedAt"] = FieldValue.serverTimestamp()
-                archiveData["expiresAt"] = Timestamp.now()
-                batch.set(
-                    firestore.collection(archiveCollection).document(document.id),
-                    archiveData
-                )
-                batch.delete(document.reference)
-            }
-            if (chunk.isNotEmpty()) batch.commit().awaitCommunityResult()
-        }
-
-        val archiveSnapshot = firestore.collection(archiveCollection)
-            .get()
-            .awaitCommunityResult()
-        val expiredArchives = archiveSnapshot.documents.filter { document ->
-            val createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: Long.MAX_VALUE
-            createdAt <= cutoffMillis
-        }
-        for (chunk in expiredArchives.chunked(400)) {
-            val batch = firestore.batch()
-            for (document in chunk) batch.delete(document.reference)
-            if (chunk.isNotEmpty()) batch.commit().awaitCommunityResult()
+private suspend fun deleteAllCommunityArchives(): Int {
+    val firestore = FirebaseFirestore.getInstance()
+    var deleted = 0
+    for (collectionName in COMMUNITY_ARCHIVE_COLLECTIONS) {
+        while (true) {
+            val snapshot = firestore.collection(collectionName)
+                .limit(200)
+                .get()
+                .awaitCommunityResult()
+            if (snapshot.isEmpty) break
+            deleted += deleteArchiveDocuments(snapshot.documents)
         }
     }
+    return deleted
 }
 
 class CommunityArchiveCleanupWorker(
@@ -259,7 +326,7 @@ class CommunityArchiveCleanupWorker(
 ) : CoroutineWorker(appContext, workerParams) {
     override suspend fun doWork(): Result {
         val user = FirebaseAuth.getInstance().currentUser ?: return Result.success()
-        if (!user.isEmailVerified || user.email?.equals("phunghuyhoahaikba@gmail.com", ignoreCase = true) != true) {
+        if (!user.isEmailVerified || user.email?.equals("phunghuyhoahkb@gmail.com", ignoreCase = true) != true) {
             return Result.success()
         }
         return try {
@@ -268,43 +335,22 @@ class CommunityArchiveCleanupWorker(
                 .document("community_archive_settings")
                 .get()
                 .awaitCommunityResult()
-            if (settings.getBoolean("attachmentAutoDeleteEnabled") == true) {
-                val retentionDays = (settings.getLong("attachmentAutoDeleteDays") ?: 30L).toInt()
-                if (retentionDays in 1..1200) {
-                    cleanupExpiredCommunityAttachments(retentionDays)
-                }
+            val autoDeleteEnabled = settings.getBoolean("communityAutoDeleteEnabled")
+                ?: settings.getBoolean("attachmentAutoDeleteEnabled")
+                ?: false
+            val retentionDays = (
+                settings.getLong("communityAutoDeleteDays")
+                    ?: settings.getLong("attachmentAutoDeleteDays")
+                    ?: 30L
+                ).toInt()
+            if (autoDeleteEnabled && retentionDays in 1..1200) {
+                cleanupExpiredCommunityRecords(retentionDays)
+            } else {
+                cleanupCommunityArchive()
             }
-            cleanupCommunityArchive()
             Result.success()
         } catch (_: Exception) {
             Result.retry()
-        }
-    }
-}
-
-private suspend fun updateCommunityArchiveRetention(keepForever: Boolean, value: Int, unit: String) {
-    val firestore = FirebaseFirestore.getInstance()
-    val collections = listOf(
-        "community_deleted_messages",
-        "community_deleted_images",
-        "community_deleted_files",
-        "app_update_archive"
-    )
-    for (collectionName in collections) {
-        val snapshot = firestore.collection(collectionName).get().awaitCommunityResult()
-        for (chunk in snapshot.documents.chunked(400)) {
-            val batch = firestore.batch()
-            for (document in chunk) {
-                val expiry: Any = if (keepForever) {
-                    FieldValue.delete()
-                } else {
-                    val archivedAt = document.getTimestamp("archivedAt")?.toDate()?.time
-                        ?: System.currentTimeMillis()
-                    communityArchiveExpiry(archivedAt, value, unit)
-                }
-                batch.update(document.reference, "expiresAt", expiry)
-            }
-            if (chunk.isNotEmpty()) batch.commit().awaitCommunityResult()
         }
     }
 }
@@ -632,11 +678,12 @@ fun CommunityScreen(
     var loadingArchive by remember { mutableStateOf(false) }
     var archiveError by remember { mutableStateOf<String?>(null) }
     var archiveCategory by remember { mutableStateOf("text") }
-    var archiveKeepForever by remember { mutableStateOf(true) }
-    var archiveRetentionValue by remember { mutableStateOf("30") }
-    var archiveRetentionUnit by remember { mutableStateOf("days") }
-    var attachmentAutoDeleteEnabled by remember { mutableStateOf(false) }
-    var attachmentAutoDeleteDays by remember { mutableStateOf("30") }
+    var communityAutoDeleteEnabled by remember { mutableStateOf(false) }
+    var communityAutoDeleteDays by remember { mutableStateOf("30") }
+    var communityStorageCounts by remember { mutableStateOf<CommunityStorageCounts?>(null) }
+    var communityStorageCountError by remember { mutableStateOf<String?>(null) }
+    var communityCountRefreshKey by remember { mutableStateOf(0) }
+    var showDeleteAllArchiveConfirmation by remember { mutableStateOf(false) }
     val messageListState = rememberLazyListState()
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -822,7 +869,8 @@ fun CommunityScreen(
                         versionName = document.getString("versionName").orEmpty(),
                         notes = document.getString("notes").orEmpty(),
                         contentType = document.getString("contentType").orEmpty(),
-                        contentData = document.getString("contentData").orEmpty()
+                        contentData = document.getString("contentData").orEmpty(),
+                        sharedJsonId = document.getString("sharedJsonId").orEmpty()
                     )
                 }
 
@@ -893,27 +941,42 @@ fun CommunityScreen(
                     .document("community_archive_settings")
                     .get()
                     .awaitCommunityResult()
-                archiveKeepForever = settings.getBoolean("keepForever") ?: true
-                archiveRetentionValue = (settings.getLong("retentionValue") ?: 30L).toString()
-                archiveRetentionUnit = settings.getString("retentionUnit") ?: "days"
-                attachmentAutoDeleteEnabled = settings.getBoolean("attachmentAutoDeleteEnabled") ?: false
-                attachmentAutoDeleteDays = (settings.getLong("attachmentAutoDeleteDays") ?: 30L).toString()
+                communityAutoDeleteEnabled = settings.getBoolean("communityAutoDeleteEnabled")
+                    ?: settings.getBoolean("attachmentAutoDeleteEnabled")
+                    ?: false
+                communityAutoDeleteDays = (
+                    settings.getLong("communityAutoDeleteDays")
+                        ?: settings.getLong("attachmentAutoDeleteDays")
+                        ?: 30L
+                    ).toString()
                 val request = PeriodicWorkRequestBuilder<CommunityArchiveCleanupWorker>(1, TimeUnit.DAYS).build()
                 WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                     "community_archive_cleanup",
                     ExistingPeriodicWorkPolicy.KEEP,
                     request
                 )
-                if (attachmentAutoDeleteEnabled) {
-                    val retentionDays = attachmentAutoDeleteDays.toIntOrNull()
-                    if (retentionDays != null && retentionDays in 1..1200) {
-                        cleanupExpiredCommunityAttachments(retentionDays)
-                    }
+                val retentionDays = communityAutoDeleteDays.toIntOrNull()
+                val removed = if (communityAutoDeleteEnabled && retentionDays != null && retentionDays in 1..1200) {
+                    cleanupExpiredCommunityRecords(retentionDays)
+                } else {
+                    cleanupCommunityArchive()
                 }
-                val removed = cleanupCommunityArchive()
-                if (removed > 0) statusMessage = "Đã tự dọn $removed mục lưu trữ hết hạn."
+                communityCountRefreshKey += 1
+                if (removed > 0) statusMessage = "Đã tự xóa $removed bản ghi cộng đồng/kho đã gỡ hết hạn."
             } catch (error: Exception) {
                 statusMessage = error.message ?: "Không thể kiểm tra thời hạn lưu trữ."
+            }
+        }
+    }
+
+    LaunchedEffect(user?.uid, selectedSection, communityCountRefreshKey) {
+        if (user != null && isOwner && selectedSection == 2) {
+            communityStorageCountError = null
+            try {
+                communityStorageCounts = loadCommunityStorageCounts()
+            } catch (error: Exception) {
+                communityStorageCounts = null
+                communityStorageCountError = error.message ?: "Không thể đọc số lượng bản ghi trên Firestore."
             }
         }
     }
@@ -1155,79 +1218,39 @@ fun CommunityScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Text("THỜI HẠN LƯU KHO", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        Text("TỰ ĐỘNG XÓA TOÀN BỘ CỘNG ĐỒNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             FilterChip(
-                                selected = archiveKeepForever,
-                                onClick = { archiveKeepForever = true },
-                                label = { Text("GIỮ MÃI", fontSize = 9.sp) }
-                            )
-                            FilterChip(
-                                selected = !archiveKeepForever,
-                                onClick = { archiveKeepForever = false },
-                                label = { Text("TỰ ĐỘNG XÓA", fontSize = 9.sp) }
-                            )
-                        }
-                        if (!archiveKeepForever) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                OutlinedTextField(
-                                    value = archiveRetentionValue,
-                                    onValueChange = { archiveRetentionValue = it.filter(Char::isDigit).take(4) },
-                                    modifier = Modifier.weight(1f),
-                                    singleLine = true,
-                                    label = { Text("Số lượng") }
-                                )
-                                FilterChip(
-                                    selected = archiveRetentionUnit == "days",
-                                    onClick = { archiveRetentionUnit = "days" },
-                                    label = { Text("NGÀY", fontSize = 9.sp) }
-                                )
-                                FilterChip(
-                                    selected = archiveRetentionUnit == "months",
-                                    onClick = { archiveRetentionUnit = "months" },
-                                    label = { Text("THÁNG", fontSize = 9.sp) }
-                                )
-                            }
-                        }
-                        Text(
-                            if (archiveKeepForever) "Dữ liệu đã gỡ được giữ lại cho đến khi quản lý xóa vĩnh viễn."
-                            else "Áp dụng thời hạn cho các bản ghi trong kho đã gỡ.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 9.sp
-                        )
-                        Text("TỰ ĐỘNG XÓA ẢNH VÀ TỆP", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FilterChip(
-                                selected = !attachmentAutoDeleteEnabled,
-                                onClick = { attachmentAutoDeleteEnabled = false },
+                                selected = !communityAutoDeleteEnabled,
+                                onClick = { communityAutoDeleteEnabled = false },
                                 label = { Text("TẮT", fontSize = 9.sp) }
                             )
                             FilterChip(
-                                selected = attachmentAutoDeleteEnabled,
-                                onClick = { attachmentAutoDeleteEnabled = true },
+                                selected = communityAutoDeleteEnabled,
+                                onClick = { communityAutoDeleteEnabled = true },
                                 label = { Text("BẬT", fontSize = 9.sp) }
                             )
                         }
                         OutlinedTextField(
-                            value = attachmentAutoDeleteDays,
-                            onValueChange = { attachmentAutoDeleteDays = it.filter(Char::isDigit).take(4) },
+                            value = communityAutoDeleteDays,
+                            onValueChange = { communityAutoDeleteDays = it.filter(Char::isDigit).take(4) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            label = { Text("Số ngày trước khi xóa") }
+                            label = { Text("Số ngày giữ nội dung") }
                         )
                         Text(
-                            if (attachmentAutoDeleteEnabled) "Ảnh và tệp trong Cộng đồng, kể cả mục đã gỡ, sẽ bị xóa khỏi Firestore sau số ngày tính từ lúc đăng. Ứng dụng quản lý sẽ dọn định kỳ; thời điểm xóa có thể trễ khi máy ngoại tuyến hoặc Android hạn chế chạy nền."
-                            else "Đang tắt tự động xóa ảnh và tệp. Bật chức năng rồi nhập số ngày từ 1 đến 1200 để áp dụng.",
+                            if (communityAutoDeleteEnabled) {
+                                "Tin nhắn, JSON, ảnh, tệp, APK và bản đã gỡ sẽ bị xóa khỏi Firestore khi đủ số ngày tính từ lúc đăng. Ứng dụng quản lý sẽ tự dọn định kỳ; thời điểm xóa có thể trễ khi máy ngoại tuyến hoặc Android hạn chế chạy nền."
+                            } else {
+                                "Đang tắt tự động xóa. Nội dung trong Cộng đồng và Kho đã gỡ sẽ không bị xóa theo thời hạn mới."
+                            },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 9.sp
                         )
                         Button(
                             onClick = {
-                                val value = archiveRetentionValue.toIntOrNull()
-                                val attachmentDays = attachmentAutoDeleteDays.toIntOrNull()
-                                if (!archiveKeepForever && (value == null || value !in 1..1200)) {
-                                    statusMessage = "Nhập thời hạn lưu kho từ 1 đến 1200 ngày hoặc tháng."
-                                } else if (attachmentAutoDeleteEnabled && (attachmentDays == null || attachmentDays !in 1..1200)) {
+                                val days = communityAutoDeleteDays.toIntOrNull()
+                                if (communityAutoDeleteEnabled && (days == null || days !in 1..1200)) {
                                     statusMessage = "Nhập số ngày tự động xóa từ 1 đến 1200."
                                 } else {
                                     scope.launch {
@@ -1238,33 +1261,28 @@ fun CommunityScreen(
                                                 .document("community_archive_settings")
                                                 .set(
                                                     mapOf(
-                                                        "keepForever" to archiveKeepForever,
-                                                        "retentionValue" to (value ?: 0),
-                                                        "retentionUnit" to archiveRetentionUnit,
-                                                        "attachmentAutoDeleteEnabled" to attachmentAutoDeleteEnabled,
-                                                        "attachmentAutoDeleteDays" to (attachmentDays ?: 30),
+                                                        "communityAutoDeleteEnabled" to communityAutoDeleteEnabled,
+                                                        "communityAutoDeleteDays" to (days ?: 30),
+                                                        "attachmentAutoDeleteEnabled" to communityAutoDeleteEnabled,
+                                                        "attachmentAutoDeleteDays" to (days ?: 30),
                                                         "updatedAt" to FieldValue.serverTimestamp()
-                                                    )
+                                                    ),
+                                                    SetOptions.merge()
                                                 )
                                                 .awaitCommunityResult()
-                                            updateCommunityArchiveRetention(
-                                                archiveKeepForever,
-                                                value ?: 0,
-                                                archiveRetentionUnit
-                                            )
-                                            if (attachmentAutoDeleteEnabled && attachmentDays != null) {
-                                                cleanupExpiredCommunityAttachments(attachmentDays)
-                                            }
-                                            val removed = cleanupCommunityArchive()
-                                            statusMessage = if (removed > 0) {
-                                                "Đã lưu thiết lập và dọn $removed mục hết hạn."
-                                            } else if (attachmentAutoDeleteEnabled && attachmentDays != null) {
-                                                "Đã bật tự động xóa ảnh/tệp sau $attachmentDays ngày."
+                                            val removed = if (communityAutoDeleteEnabled && days != null) {
+                                                cleanupExpiredCommunityRecords(days)
                                             } else {
-                                                "Đã lưu thiết lập. Tự động xóa ảnh/tệp đang tắt."
+                                                cleanupCommunityArchive()
+                                            }
+                                            communityCountRefreshKey += 1
+                                            statusMessage = if (communityAutoDeleteEnabled) {
+                                                "Đã lưu. Tự động xóa toàn bộ nội dung sau $days ngày; đã dọn $removed bản ghi hết hạn."
+                                            } else {
+                                                "Đã lưu. Tự động xóa toàn bộ cộng đồng đã tắt; đã dọn $removed mục lưu trữ đến hạn cũ."
                                             }
                                         } catch (error: Exception) {
-                                            statusMessage = error.message ?: "Không thể lưu thời hạn lưu trữ."
+                                            statusMessage = error.message ?: "Không thể lưu thiết lập tự động xóa."
                                         } finally {
                                             busy = false
                                         }
@@ -1276,6 +1294,45 @@ fun CommunityScreen(
                         ) {
                             Text("LƯU THIẾT LẬP")
                         }
+                    }
+                }
+                Card(
+                    modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 12f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text("BẢN GHI CÒN LƯU TRONG FIREBASE", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        if (communityStorageCounts != null) {
+                            val counts = communityStorageCounts!!
+                            Text("TỔNG CỘNG: ${counts.total} BẢN GHI", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                            Text("Cộng đồng: ${counts.activeTotal}  •  Kho đã gỡ: ${counts.archivedTotal}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                            Text(
+                                "Cộng đồng: ${counts.activeMessages} tin nhắn, ${counts.activeJsons} JSON, ${counts.activeApks} APK",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp
+                            )
+                            Text(
+                                "Kho đã gỡ: ${counts.archivedMessages} tin nhắn, ${counts.archivedImages} ảnh, ${counts.archivedFiles + counts.archivedApks} tệp và APK",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp
+                            )
+                        } else if (communityStorageCountError != null) {
+                            Text(communityStorageCountError!!, color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
+                        } else {
+                            Text("Đang kiểm tra dữ liệu trên máy chủ…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { communityCountRefreshKey += 1 },
+                            enabled = !busy,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("LÀM MỚI SỐ LIỆU")
+                        }
+                        Text(
+                            "Bộ đếm lấy tổng số tài liệu thật từ các mục Cộng đồng và Kho đã gỡ trên Firestore; không tính hồ sơ, cài đặt và dữ liệu khác của ứng dụng.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 8.sp
+                        )
                     }
                 }
                 Row(
@@ -1293,6 +1350,14 @@ fun CommunityScreen(
                             label = { Text(label, fontSize = 9.sp) }
                         )
                     }
+                }
+                Button(
+                    onClick = { showDeleteAllArchiveConfirmation = true },
+                    enabled = !busy && (communityStorageCounts?.archivedTotal ?: 0L) > 0L,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("XÓA VĨNH VIỄN TẤT CẢ")
                 }
                 if (loadingArchive) {
                     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -1503,21 +1568,23 @@ fun CommunityScreen(
                                 "contentType" to message.contentType,
                                 "fileSize" to message.fileSize,
                                 "contentData" to message.contentData,
+                                "sharedJsonId" to message.sharedJsonId,
                                 "createdAt" to Timestamp(Date(message.createdAt)),
                                 "archivedBy" to FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
                                 "archivedAt" to FieldValue.serverTimestamp()
                             )
-                            if (!archiveKeepForever) {
-                                val retention = archiveRetentionValue.toIntOrNull() ?: 30
-                                archiveData["expiresAt"] = communityArchiveExpiry(
-                                    System.currentTimeMillis(),
-                                    retention,
-                                    archiveRetentionUnit
-                                )
+                            val sharedJsonReference = message.sharedJsonId.takeIf { it.isNotBlank() }
+                                ?.let { firestore.collection("community_shared_jsons").document(it) }
+                            if (sharedJsonReference != null) {
+                                val sharedJsonDocument = sharedJsonReference.get().awaitCommunityResult()
+                                if (sharedJsonDocument.exists()) {
+                                    archiveData["sharedJsonData"] = sharedJsonDocument.data.orEmpty()
+                                }
                             }
                             val batch = firestore.batch()
                             batch.set(firestore.collection(archiveCollection).document(message.id), archiveData)
                             batch.delete(firestore.collection("community_messages").document(message.id))
+                            if (sharedJsonReference != null) batch.delete(sharedJsonReference)
                             batch.commit().awaitCommunityResult()
                             statusMessage = "Đã gỡ và lưu vào Kho đã gỡ."
                         } catch (error: Exception) {
@@ -1553,14 +1620,6 @@ fun CommunityScreen(
                                 "archivedBy" to FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
                                 "archivedAt" to FieldValue.serverTimestamp()
                             )
-                            if (!archiveKeepForever) {
-                                val retention = archiveRetentionValue.toIntOrNull() ?: 30
-                                archiveData["expiresAt"] = communityArchiveExpiry(
-                                    System.currentTimeMillis(),
-                                    retention,
-                                    archiveRetentionUnit
-                                )
-                            }
                             val batch = firestore.batch()
                             batch.set(firestore.collection("app_update_archive").document(release.id), archiveData)
                             batch.delete(firestore.collection("app_updates").document(release.id))
@@ -1576,22 +1635,60 @@ fun CommunityScreen(
         )
     }
 
+    if (showDeleteAllArchiveConfirmation) {
+        AlertDialog(
+            onDismissRequest = { if (!busy) showDeleteAllArchiveConfirmation = false },
+            title = { Text("Xóa vĩnh viễn toàn bộ Kho đã gỡ?") },
+            text = { Text("Tất cả tin nhắn, ảnh, tệp và APK trong Kho đã gỡ sẽ bị xóa khỏi Firestore. Nội dung đang còn trong Cộng đồng sẽ không bị ảnh hưởng. Thao tác này không thể hoàn tác.") },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy,
+                    onClick = {
+                        showDeleteAllArchiveConfirmation = false
+                        scope.launch {
+                            busy = true
+                            try {
+                                val deleted = deleteAllCommunityArchives()
+                                communityCountRefreshKey += 1
+                                statusMessage = "Đã xóa vĩnh viễn $deleted mục trong Kho đã gỡ."
+                            } catch (error: Exception) {
+                                statusMessage = error.message ?: "Không thể xóa toàn bộ Kho đã gỡ."
+                            } finally {
+                                busy = false
+                            }
+                        }
+                    }
+                ) { Text("XÓA TẤT CẢ", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllArchiveConfirmation = false }) { Text("HỦY") }
+            }
+        )
+    }
+
     deleteArchiveItem?.let { item ->
         AlertDialog(
             onDismissRequest = { deleteArchiveItem = null },
             title = { Text("Xóa vĩnh viễn khỏi kho?") },
-            text = { Text("Bản ghi dữ liệu này sẽ bị xóa vĩnh viễn. Tệp đính kèm cũ không bị xóa và hiện vẫn không thể truy cập.") },
+            text = { Text("Bản ghi và dữ liệu đính kèm/JSON được lưu bên trong bản ghi này sẽ bị xóa vĩnh viễn khỏi Firestore.") },
             confirmButton = {
                 TextButton(onClick = {
                     deleteArchiveItem = null
                     scope.launch {
                         try {
-                            FirebaseFirestore.getInstance()
-                                .collection(communityArchiveCollection(item.category))
-                                .document(item.id)
-                                .delete()
-                                .awaitCommunityResult()
-                            statusMessage = "Đã xóa vĩnh viễn khỏi kho."
+                            val firestore = FirebaseFirestore.getInstance()
+                            val batch = firestore.batch()
+                            if (item.sharedJsonId.isNotBlank()) {
+                                batch.delete(
+                                    firestore.collection("community_shared_jsons").document(item.sharedJsonId)
+                                )
+                            }
+                            batch.delete(
+                                firestore.collection(communityArchiveCollection(item.category)).document(item.id)
+                            )
+                            batch.commit().awaitCommunityResult()
+                            communityCountRefreshKey += 1
+                            statusMessage = "Đã xóa vĩnh viễn bản ghi và dữ liệu JSON liên quan khỏi Firebase."
                         } catch (error: Exception) {
                             statusMessage = error.message ?: "Không thể xóa vĩnh viễn."
                         }
