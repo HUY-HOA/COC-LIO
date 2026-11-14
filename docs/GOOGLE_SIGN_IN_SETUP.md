@@ -12,6 +12,19 @@ COC-LIO dùng Credential Manager để lấy Google ID token, sau đó dùng tok
 
 Tài liệu Google: https://support.google.com/cloud/answer/15549945
 
+## Khi chỉ tài khoản chủ sở hữu đăng nhập được
+
+Mã Android không khóa đăng nhập theo email chủ sở hữu. Chủ sở hữu chỉ có quyền quản trị bổ sung; người dùng thường được tạo và đọc hồ sơ theo UID của chính họ.
+
+Kiểm tra theo thứ tự sau:
+
+1. **Google OAuth Audience:** chọn đúng dự án `coc-lio-73de9`, vào Google Auth Platform → Audience. Ứng dụng phải là **External** nếu người dùng dùng Gmail bên ngoài tổ chức và **Publishing status = In production** nếu cần cho mọi tài khoản Google đăng nhập. Khi để **Testing**, chỉ tài khoản trong danh sách Test users được phép tiếp tục.
+2. **Nếu Google đã trả về ứng dụng nhưng COC-LIO báo lỗi lưu hồ sơ hoặc `PERMISSION_DENIED`:** cần deploy Firestore Rules mới nhất. GitHub Actions có workflow **Deploy COC-LIO Firestore Rules** tại [đây](https://github.com/HUY-HOA-1/COC-LIO/actions/workflows/deploy-firestore-rules.yml). Workflow chỉ deploy `firestore.rules`, không build APK; nó cần GitHub Actions Secret `FIREBASE_SERVICE_ACCOUNT` hợp lệ cho dự án `coc-lio-73de9`.
+3. **Kiểm tra tài khoản bị vô hiệu hóa:** nếu tài liệu `users/{uid}` có `accountDisabled = true`, ứng dụng sẽ từ chối tài khoản đó theo chủ ý quản lý.
+4. **Phân biệt lỗi:** lỗi xuất hiện trước khi chọn/hoàn tất tài khoản Google thường thuộc Google OAuth Audience hoặc OAuth Client; lỗi sau khi Google xác thực nhưng khi tạo hồ sơ thường thuộc Firestore Rules hoặc hồ sơ bị vô hiệu hóa.
+
+Không nới lỏng Firestore Rules thành quyền ghi chung cho mọi người. Quy tắc hiện tại cho phép mỗi tài khoản tạo hồ sơ mang UID của chính mình, chỉ đọc hồ sơ của mình; chỉ chủ sở hữu mới được liệt kê hồ sơ tất cả người dùng.
+
 ## OAuth Client và chữ ký APK
 
 COC-LIO dùng hai loại OAuth Client trong **cùng một dự án Google Cloud**:
