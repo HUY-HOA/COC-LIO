@@ -1,6 +1,10 @@
 package com.huyhoa.coclio
 
+import com.google.firebase.remoteconfig.ConfigUpdate
+import com.google.firebase.remoteconfig.ConfigUpdateListener
+import com.google.firebase.remoteconfig.ConfigUpdateListenerRegistration
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigException
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -150,6 +154,7 @@ object RemoteAppConfigManager {
     private val mutableConfig = MutableStateFlow(RemoteAppConfig())
     val config: StateFlow<RemoteAppConfig> = mutableConfig.asStateFlow()
     private var initialized = false
+    private var listenerRegistration: ConfigUpdateListenerRegistration? = null
 
     fun initialize() {
         if (initialized) return
@@ -157,22 +162,37 @@ object RemoteAppConfigManager {
 
         val remoteConfig = FirebaseRemoteConfig.getInstance()
         val settings = FirebaseRemoteConfigSettings.Builder()
-            .setMinimumFetchIntervalInSeconds(60L)
+            .setMinimumFetchIntervalInSeconds(43_200L)
             .build()
 
         remoteConfig.setConfigSettingsAsync(settings)
         remoteConfig.setDefaultsAsync(mapOf(CONFIG_KEY to DEFAULT_CONFIG_JSON))
             .addOnCompleteListener {
                 apply(remoteConfig.getString(CONFIG_KEY))
-                refresh()
+                remoteConfig.fetchAndActivate().addOnCompleteListener {
+                    apply(remoteConfig.getString(CONFIG_KEY))
+                }
             }
+
+        listenerRegistration = remoteConfig.addOnConfigUpdateListener(
+            object : ConfigUpdateListener {
+                override fun onUpdate(configUpdate: ConfigUpdate) {
+                    if (CONFIG_KEY in configUpdate.updatedKeys) {
+                        remoteConfig.activate().addOnCompleteListener {
+                            apply(remoteConfig.getString(CONFIG_KEY))
+                        }
+                    }
+                }
+
+                override fun onError(error: FirebaseRemoteConfigException) {
+                }
+            }
+        )
     }
 
-    fun refresh() {
-        val remoteConfig = FirebaseRemoteConfig.getInstance()
-        remoteConfig.fetchAndActivate().addOnCompleteListener {
-            apply(remoteConfig.getString(CONFIG_KEY))
-        }
+    fun stopRealtimeUpdates() {
+        listenerRegistration?.remove()
+        listenerRegistration = null
     }
 
     private fun apply(raw: String) {
