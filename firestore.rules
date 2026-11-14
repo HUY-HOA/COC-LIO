@@ -1,3 +1,4 @@
+// Deploy updated community retention and permanent-delete rules.
 rules_version = '2';
 
 service cloud.firestore {
