@@ -704,6 +704,7 @@ fun CommunityScreen(
     var deleteRelease by remember { mutableStateOf<CommunityRelease?>(null) }
     var deleteArchiveItem by remember { mutableStateOf<CommunityArchiveItem?>(null) }
     var deleteSharedJson by remember { mutableStateOf<CommunitySharedJson?>(null) }
+    var deleteReceivedJson by remember { mutableStateOf<ReceivedSharedJsonRecord?>(null) }
     var archiveItems by remember { mutableStateOf<List<CommunityArchiveItem>>(emptyList()) }
     var loadingArchive by remember { mutableStateOf(false) }
     var archiveError by remember { mutableStateOf<String?>(null) }
@@ -1501,7 +1502,7 @@ fun CommunityScreen(
                                         received.id
                                     )
                                 },
-                                onDelete = { onDeleteReceivedJson(received.id) }
+                                onDelete = { deleteReceivedJson = received }
                             )
                         }
                     }
@@ -1614,6 +1615,28 @@ fun CommunityScreen(
                 TextButton(onClick = { showJsonPicker = false }, enabled = !busy) {
                     Text("ĐÓNG")
                 }
+            }
+        )
+    }
+
+    deleteReceivedJson?.let { item ->
+        AlertDialog(
+            onDismissRequest = { if (!busy) deleteReceivedJson = null },
+            title = { Text("Xóa JSON đã nhận?") },
+            text = {
+                Text("Chỉ xóa bản JSON trong danh sách ĐÃ NHẬN trên thiết bị này. Bản trong Lịch sử và JSON gốc của người chia sẻ vẫn được giữ.")
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy,
+                    onClick = {
+                        deleteReceivedJson = null
+                        onDeleteReceivedJson(item.id)
+                    }
+                ) { Text("XÓA", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteReceivedJson = null }, enabled = !busy) { Text("HỦY") }
             }
         )
     }
