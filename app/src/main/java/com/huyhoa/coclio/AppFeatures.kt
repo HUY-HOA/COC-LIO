@@ -2535,7 +2535,12 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Tự động dịch", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    "Tự động dịch",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
                 Switch(
                     checked = communityAutoTranslationEnabled,
                     onCheckedChange = { enabled ->
