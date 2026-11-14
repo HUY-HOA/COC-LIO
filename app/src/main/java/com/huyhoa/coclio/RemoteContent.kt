@@ -47,7 +47,7 @@ data class RemoteContentState(
     val catalog: Map<Int, RemoteCatalogEntry> = emptyMap(),
     val guides: List<RemoteGuide> = emptyList(),
     val links: List<RemoteContentLink> = emptyList(),
-    val notificationTemplates: Map<String, String> = emptyMap()
+    val notificationTemplates: Map<String, Map<String, String>> = emptyMap()
 )
 
 object RemoteContentManager {
@@ -96,8 +96,14 @@ object RemoteContentManager {
         val editor = preferences.edit()
             .putInt("version", state.version)
 
+        val language = AppLanguageSettings.resolve(
+            AppLanguageSettings.load(context),
+            context.resources.configuration.locales[0].language
+        )
+        val languageKey = if (language == AppUiLanguage.ENGLISH) "en" else "vi"
+        val templates = state.notificationTemplates[languageKey].orEmpty()
         listOf("title", "text", "body").forEach { key ->
-            val value = state.notificationTemplates[key]
+            val value = templates[key]
             if (value.isNullOrBlank()) editor.remove("notification_$key")
             else editor.putString("notification_$key", value)
         }
@@ -179,11 +185,16 @@ internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
         .orEmpty()
 
     val templatesRaw = data["notificationTemplates"] as? Map<*, *>
-    val templates = listOf("title", "text", "body").mapNotNull { key ->
-        val value = (templatesRaw?.get(key) as? String)?.trim()
-            ?.takeIf { it.isNotBlank() && it.length <= 1800 }
+    val templates = listOf("vi", "en").mapNotNull { language ->
+        val languageData = templatesRaw?.get(language) as? Map<*, *>
             ?: return@mapNotNull null
-        key to value
+        val values = listOf("title", "text", "body").mapNotNull { key ->
+            val value = (languageData[key] as? String)?.trim()
+                ?.takeIf { it.isNotBlank() && it.length <= 1800 }
+                ?: return@mapNotNull null
+            key to value
+        }.toMap()
+        language to values
     }.toMap()
 
     return RemoteContentState(
