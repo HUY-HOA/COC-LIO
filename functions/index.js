@@ -110,7 +110,7 @@ exports.recordAccountActivity = onCall({ region: REGION }, async (request) => {
   if (
     !profile.exists ||
     profile.get("dataSharingConsent") !== true ||
-    Number(profile.get("activityDataConsentVersion") || 0) !== 5
+    Number(profile.get("activityDataConsentVersion") || 0) !== 6
   ) {
     return { recorded: false, reason: "consent-required" };
   }
