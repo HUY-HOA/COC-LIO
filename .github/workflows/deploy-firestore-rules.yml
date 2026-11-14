@@ -2,6 +2,9 @@ name: Deploy COC-LIO Firestore Rules
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - "firestore.rules"
 
 permissions:
   contents: read
