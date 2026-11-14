@@ -2556,11 +2556,6 @@ private fun HistoryScreen(
                         onClick = onOpenSharedJsonFeed,
                         label = { Text("CHIA SẺ", fontSize = 9.sp, maxLines = 1) }
                     )
-                    FilterChip(
-                        selected = selectedSection == "deleted",
-                        onClick = { selectedSection = "deleted" },
-                        label = { Text("ĐÃ XÓA", fontSize = 9.sp, maxLines = 1) }
-                    )
                 }
             }
         }
@@ -2652,27 +2647,6 @@ private fun HistoryScreen(
                                 }
                             }
                             Text("${snapshot.tag}  •  ${formatTimestamp(snapshot.timestamp)}  •  Nhà chính ${snapshot.townHallLevel ?: "—"}  •  Nhà thợ ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                }
-            }
-        } else {
-            if (deletedVillages.isEmpty()) {
-                item { InfoCard("Chưa có dữ liệu bị xóa", "Khi xóa một làng khỏi ĐANG LƯU, dữ liệu sẽ được lưu tại đây để khôi phục.") }
-            } else {
-                items(deletedVillages, key = { it.id }) { deleted ->
-                    NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocRed) {
-                        Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(deleted.villageName ?: deleted.tag, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("${deleted.tag} • ${deleted.snapshots.size} mốc • ${formatTimestamp(deleted.deletedAt)}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                TextButton(onClick = { onRestore(deleted.id) }) {
-                                    Text("KHÔI PHỤC JSON", color = CocGreen, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                                }
-                                TextButton(onClick = { pendingPermanentDelete = deleted }) {
-                                    Text("XÓA VĨNH VIỄN", color = CocRed, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                                }
-                            }
                         }
                     }
                 }
