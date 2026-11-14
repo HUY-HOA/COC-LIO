@@ -2454,6 +2454,14 @@ fun SettingsScreen(
                         label = { Text(label, fontSize = 10.sp) }
                     )
                 }
+                FilterChip(
+                    selected = communityAutoTranslationEnabled,
+                    onClick = {
+                        communityAutoTranslationEnabled = !communityAutoTranslationEnabled
+                        CommunityAutoTranslationPreferences.setEnabled(context, communityAutoTranslationEnabled)
+                    },
+                    label = { Text("Tự động dịch", fontSize = 10.sp) }
+                )
             }
             Text(
                 when (languagePreference) {
@@ -2469,39 +2477,16 @@ fun SettingsScreen(
                 fontSize = 10.sp
             )
             Text(
+                "Tự động dịch tin nhắn và ghi chú cập nhật trong Cộng đồng theo ngôn ngữ ứng dụng. Bản gốc vẫn hiển thị cùng bản dịch. Lần đầu cần mạng để tải mô hình dịch; nội dung được xử lý trên thiết bị.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 9.sp,
+                lineHeight = 13.sp
+            )
+            Text(
                 "Lựa chọn ngôn ngữ được lưu trên thiết bị này.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 9.sp
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    Text(
-                        "Tự động dịch",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "Tự động dịch tin nhắn và ghi chú cập nhật trong Cộng đồng theo ngôn ngữ ứng dụng. Bản gốc vẫn hiển thị cùng bản dịch. Lần đầu cần mạng để tải mô hình dịch; nội dung được xử lý trên thiết bị.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 9.sp,
-                        lineHeight = 13.sp
-                    )
-                }
-                Switch(
-                    checked = communityAutoTranslationEnabled,
-                    onCheckedChange = { enabled ->
-                        communityAutoTranslationEnabled = enabled
-                        CommunityAutoTranslationPreferences.setEnabled(context, enabled)
-                    }
-                )
-            }
         }
 
         val currentFontLevel = AppPreferences.textScaleLevel(textScale)
