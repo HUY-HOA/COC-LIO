@@ -150,7 +150,7 @@ object VillageParser {
 
         val tag = root.optString("tag", "").trim()
         if (tag.isBlank() || !tag.startsWith("#")) {
-            throw IllegalArgumentException("JSON không có Player Tag hợp lệ.")
+            throw IllegalArgumentException("JSON không có mã người chơi hợp lệ.")
         }
 
         val rawTimestamp = root.optLong("timestamp", 0L)
