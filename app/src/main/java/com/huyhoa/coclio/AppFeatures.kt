@@ -886,6 +886,8 @@ object AccountActivityTracker {
                 .get()
                 .awaitFirebaseResult()
             profile.exists() &&
+                profile.getLong("requiredAccountDataConsentVersion") == AccountPrivacyConsent.REQUIRED_ACCOUNT_DATA_VERSION &&
+                profile.getBoolean("accountDisabled") != true &&
                 profile.getBoolean("dataSharingConsent") == true &&
                 profile.getLong("activityDataConsentVersion") == AccountPrivacyConsent.CURRENT_VERSION
         }.getOrDefault(false)
@@ -900,6 +902,8 @@ object AccountActivityTracker {
             val profile = profileRef.get().awaitFirebaseResult()
             if (
                 !profile.exists() ||
+                profile.getLong("requiredAccountDataConsentVersion") != AccountPrivacyConsent.REQUIRED_ACCOUNT_DATA_VERSION ||
+                profile.getBoolean("accountDisabled") == true ||
                 profile.getBoolean("dataSharingConsent") != true ||
                 profile.getLong("activityDataConsentVersion") != AccountPrivacyConsent.CURRENT_VERSION
             ) {
