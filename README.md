@@ -1,6 +1,6 @@
-# COC-LIO
+# AILIO · COC-LIO
 
-Ứng dụng Android theo dõi tiến trình làng Clash of Clans từ JSON do chính game xuất ra.
+AILIO là thương hiệu phát triển dự án Android COC-LIO, ứng dụng theo dõi tiến trình làng Clash of Clans từ JSON do chính game xuất ra.
 
 ## Nguyên tắc hoạt động
 
@@ -17,7 +17,7 @@
 3. Chọn Cài đặt khác.
 4. Kéo xuống mục xuất dữ liệu làng (JSON).
 5. Chọn Sao chép.
-6. Mở COC-LIO, chọn Nhập JSON rồi Dán clipboard hoặc chọn tệp.
+6. Mở COC-LIO, chọn Nhập JSON, dán JSON đã sao chép rồi nhấn Phân tích.
 
 ## Dữ liệu đang được đọc
 
@@ -31,7 +31,7 @@ Trường timer được tính theo timestamp của bản xuất cộng số gi�
 
 ## Build APK
 
-Mỗi lần push lên nhánh main hoặc chạy workflow thủ công, GitHub Actions build APK debug. Mã phiên bản tăng theo số lần chạy workflow. APK được lưu dưới dạng artifact của lần chạy trong 14 ngày.
+GitHub Actions tạo APK Release có chữ ký khi quy trình build được kích hoạt theo yêu cầu. APK được lưu dưới dạng artifact của lần chạy trong 1 ngày. Dùng cùng khóa ký Release cho các bản cập nhật để có thể cài đè phiên bản cũ.
 
 ## Nguồn dữ liệu và giới hạn
 
@@ -48,11 +48,11 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 ## Cài đặt, nhắc nâng cấp và tiện ích
 
 - Có tab **Cài đặt** thứ năm để chọn hồ sơ Google, quyền thông báo và kiểu nhắc tin nhắn hoặc báo thức.
-- Đăng nhập Google được xác thực bằng Firebase Authentication. Hồ sơ Google được đồng bộ vào Firestore gồm Gmail, tên hiển thị, tên riêng, họ, ảnh đại diện, trạng thái xác minh email và thời điểm/số lần đăng nhập. Chỉ tài khoản quản lý được đọc danh sách hồ sơ; mỗi tài khoản thường chỉ đọc hồ sơ của chính mình. Lịch sử JSON vẫn lưu cục bộ và không đồng bộ đám mây.
+- Đăng nhập Google được xác thực bằng tài khoản Google. Hồ sơ cơ bản gồm email, tên và ảnh đại diện được đồng bộ để duy trì tài khoản; người dùng cần xác nhận dữ liệu tài khoản trước khi sử dụng tính năng trực tuyến. Chỉ tài khoản quản lý được đọc danh sách hồ sơ; mỗi tài khoản thường chỉ đọc hồ sơ của chính mình. Lịch sử nhập JSON đầy đủ vẫn lưu cục bộ; chỉ bản JSON mới nhất theo từng Player Tag được đồng bộ lên tài khoản khi người dùng bật lựa chọn riêng.
 - Nhắc nâng cấp được lập lịch từ timer trong JSON. Android có thể trì hoãn tác vụ do chế độ tiết kiệm pin hoặc chính sách hệ thống.
 - Có tiện ích màn hình chính theo từng hồ sơ và từng làng; bố cục dọc mặc định 2 × 6 ô, danh sách tất cả công trình đang nâng cấp có thể cuộn, mỗi mục có đồng hồ đếm ngược và thanh tiến trình riêng.
 - Trong app, các thẻ công trình có dải LED neon chuyển động quanh viền, có tùy chọn **Ánh sáng lan tỏa**; ảnh công trình giữ nguyên, không phủ hiệu ứng lên artwork. Các thẻ đang nâng có thanh tiến trình cập nhật theo đồng hồ.
-- Thông báo tin nhắn cộng đồng hiển thị avatar ADMIN cho tài khoản quản lý và ảnh hồ sơ của thành viên khác khi ảnh có sẵn. Trên Firebase Spark, FCM đã có phần đăng ký chủ đề nhưng máy chủ gửi sự kiện chưa triển khai; WorkManager vẫn là phương án kiểm tra dự phòng khoảng 15 phút/lần.
+- Trong Cộng đồng, tài khoản quản lý hiển thị tên AILIO và avatar ADMIN; thành viên khác giữ tên và ảnh Google. Thông báo nâng cấp tự kết thúc sau 25 giây; Android vẫn quyết định thời gian banner nổi và âm thanh thực tế. Thông báo Cộng đồng: ứng dụng đã đăng ký chủ đề FCM theo công tắc, nhưng máy chủ gửi sự kiện chưa triển khai trên Firebase Spark; WorkManager vẫn kiểm tra dự phòng khoảng 15 phút/lần và có thể bị Android trì hoãn.
 
 Để bật đăng nhập Google, xem [docs/GOOGLE_SIGN_IN_SETUP.md](docs/GOOGLE_SIGN_IN_SETUP.md) và cấu hình secret `GOOGLE_WEB_CLIENT_ID`.
 
@@ -66,7 +66,7 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 
 ## Google và giấy phép
 
-Google Sign-In đã được nối với Firebase Authentication. Ứng dụng ghi nhận các sự kiện đăng nhập, đăng xuất và nhập JSON qua Firebase Analytics; hồ sơ Google và lịch sử đăng nhập được đồng bộ vào Firestore. Tài khoản chủ sở hữu có màn hình quản lý danh sách hồ sơ; người dùng thường chỉ xem tên, Gmail và ảnh đại diện của mình. Hệ thống cấp phép trực tuyến, đồng bộ lịch sử JSON, Cloud Messaging và xuất BigQuery chưa được hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
+Google Sign-In được dùng để xác thực tài khoản. Analytics, Crashlytics và Performance chỉ thu thập khi người dùng bật lựa chọn tương ứng. Chủ tài khoản có màn hình quản lý hồ sơ; người dùng thường chỉ xem hồ sơ của chính mình. Đồng bộ bản JSON mới nhất theo Player Tag có thể bật riêng. FCM hiện mới có đăng ký chủ đề ở APK, chưa có máy chủ gửi tin; cấp phép trực tuyến và xuất BigQuery chưa hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
 
 
 ## Thu thập dữ liệu tùy chọn và chế độ miễn phí
