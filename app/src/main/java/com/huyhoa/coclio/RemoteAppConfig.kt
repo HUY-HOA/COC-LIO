@@ -7,6 +7,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 
+data class RemoteNavigationItem(
+    val id: String,
+    val title: String,
+    val page: Int,
+    val enabled: Boolean = true
+)
+
+data class RemoteDashboardBlock(
+    val id: String,
+    val type: String,
+    val title: String = "",
+    val message: String = "",
+    val severity: String = "info",
+    val actionLabel: String = "",
+    val actionId: String = ""
+)
+
 data class RemoteAppConfig(
     val enabled: Boolean = true,
     val version: Int = 0,
@@ -27,7 +44,10 @@ data class RemoteAppConfig(
     val lightOnSurface: Int = 0xFF172235.toInt(),
     val lightOnSurfaceVariant: Int = 0xFF526176.toInt(),
     val ledSpeedMultiplier: Float = 1f,
-    val translations: Map<String, Map<String, String>> = emptyMap()
+    val translations: Map<String, Map<String, String>> = emptyMap(),
+    val navigationItems: List<RemoteNavigationItem> = defaultRemoteNavigation(),
+    val showImportButton: Boolean = true,
+    val dashboardBlocks: List<RemoteDashboardBlock> = emptyList()
 ) {
     fun translation(source: String, language: AppUiLanguage): String? {
         if (!enabled) return null
@@ -35,6 +55,15 @@ data class RemoteAppConfig(
         return translations[key]?.get(source)
     }
 }
+
+private fun defaultRemoteNavigation() = listOf(
+    RemoteNavigationItem("home", "Tổng quan", 0),
+    RemoteNavigationItem("buildings", "Công trình Quân đội", 1),
+    RemoteNavigationItem("history", "Kho JSON", 2),
+    RemoteNavigationItem("community", "Cộng đồng", 3),
+    RemoteNavigationItem("lookup", "Tra cứu ID", 5),
+    RemoteNavigationItem("settings", "Cài đặt", 4)
+)
 
 object RemoteAppConfigManager {
     private const val CONFIG_KEY = "coclio_app_config_json"
@@ -117,6 +146,9 @@ object RemoteAppConfigManager {
         val led = root.optJSONObject("led") ?: JSONObject()
         val translationsJson = root.optJSONObject("translations")
         val translations = linkedMapOf<String, Map<String, String>>()
+        val navigationItems = parseNavigation(root.optJSONObject("navigation"))
+        val features = root.optJSONObject("features")
+        val dashboardBlocks = parseDashboardBlocks(root.optJSONObject("dashboard"))
 
         for (language in listOf("vi", "en")) {
             val languageJson = translationsJson?.optJSONObject(language) ?: continue
@@ -157,8 +189,74 @@ object RemoteAppConfigManager {
             lightOnSurface = color(theme, "lightOnSurface", defaults.lightOnSurface),
             lightOnSurfaceVariant = color(theme, "lightOnSurfaceVariant", defaults.lightOnSurfaceVariant),
             ledSpeedMultiplier = speed,
-            translations = translations
+            translations = translations,
+            navigationItems = navigationItems,
+            showImportButton = features?.optBoolean("showImportButton", true) ?: true,
+            dashboardBlocks = dashboardBlocks
         )
+    }
+
+    private fun parseNavigation(navigation: JSONObject?): List<RemoteNavigationItem> {
+        val items = navigation?.optJSONArray("items") ?: return defaultRemoteNavigation()
+        val pages = mapOf(
+            "home" to 0,
+            "buildings" to 1,
+            "history" to 2,
+            "community" to 3,
+            "settings" to 4,
+            "lookup" to 5
+        )
+        val defaults = defaultRemoteNavigation().associateBy { it.id }
+        val result = mutableListOf<RemoteNavigationItem>()
+        val seen = mutableSetOf<String>()
+        for (index in 0 until minOf(items.length(), 6)) {
+            val item = items.optJSONObject(index) ?: continue
+            val id = item.optString("id", "")
+            val page = pages[id] ?: continue
+            if (!seen.add(id)) continue
+            val fallback = defaults[id] ?: continue
+            val title = item.optString("title", fallback.title)
+                .takeIf { it.isNotBlank() && it.length <= 48 }
+                ?: fallback.title
+            result += RemoteNavigationItem(
+                id = id,
+                title = title,
+                page = page,
+                enabled = item.optBoolean("enabled", true)
+            )
+        }
+        if (result.none { it.enabled }) return defaultRemoteNavigation()
+        return result
+    }
+
+    private fun parseDashboardBlocks(dashboard: JSONObject?): List<RemoteDashboardBlock> {
+        val blocks = dashboard?.optJSONArray("blocks") ?: return emptyList()
+        val allowedTypes = setOf("text", "notice", "card", "button", "divider", "spacer")
+        val allowedActions = setOf(
+            "import_json",
+            "open_game",
+            "open_settings",
+            "open_community",
+            "open_history",
+            "open_lookup"
+        )
+        val result = mutableListOf<RemoteDashboardBlock>()
+        for (index in 0 until minOf(blocks.length(), 8)) {
+            val item = blocks.optJSONObject(index) ?: continue
+            val type = item.optString("type", "card")
+            if (type !in allowedTypes) continue
+            val action = item.optString("actionId", "")
+            result += RemoteDashboardBlock(
+                id = item.optString("id", "block_$index").take(40),
+                type = type,
+                title = item.optString("title", "").take(120),
+                message = item.optString("message", "").take(500),
+                severity = item.optString("severity", "info").takeIf { it in setOf("info", "success", "warning", "error") } ?: "info",
+                actionLabel = item.optString("actionLabel", "").take(48),
+                actionId = action.takeIf { it in allowedActions }.orEmpty()
+            )
+        }
+        return result
     }
 
     private fun color(json: JSONObject, key: String, fallback: Int): Int {
