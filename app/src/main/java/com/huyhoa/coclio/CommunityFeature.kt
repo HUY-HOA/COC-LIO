@@ -1441,6 +1441,7 @@ fun CommunityScreen(
                     }
                 }
             }
+        }
     }
 
     if (showJsonPicker) {
