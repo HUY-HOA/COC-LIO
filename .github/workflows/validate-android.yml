@@ -9,6 +9,8 @@ on:
       - "app/src/main/assets/coc_upgrade/*.json"
       - "app/src/test/**/*.kt"
       - ".github/workflows/validate-android.yml"
+      - ".github/scripts/validate_coc_catalog.py"
+      - "remote-content/catalog/*.json"
 
 permissions:
   contents: read
@@ -24,6 +26,9 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Validate game data JSON and ID mappings
+        run: python3 .github/scripts/validate_coc_catalog.py
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
