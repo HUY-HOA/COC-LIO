@@ -1385,7 +1385,7 @@ fun CommunityScreen(
                             try {
                                 val deleted = deleteAllCommunityArchives()
                                 communityCountRefreshKey += 1
-                                statusMessage = "Đã xóa toàn bộ lưu trữ Firebase: $deleted bản ghi."
+                                statusMessage = "Đã xóa toàn bộ lưu trữ Firebase."
                             } catch (error: Exception) {
                                 statusMessage = error.message ?: "Không thể xóa toàn bộ Kho đã gỡ."
                             } finally {
