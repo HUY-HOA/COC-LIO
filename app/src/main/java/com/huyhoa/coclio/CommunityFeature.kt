@@ -101,8 +101,6 @@ import com.huyhoa.coclio.data.VillageSnapshot
 import com.huyhoa.coclio.data.ReceivedSharedJsonRecord
 
 private const val COMMUNITY_APK_MIME = "application/vnd.android.package-archive"
-private const val COMMUNITY_MAX_FILE_BYTES = 15L * 1024L * 1024L
-private const val COMMUNITY_MAX_APK_BYTES = 150L * 1024L * 1024L
 private const val COMMUNITY_MAX_EMBEDDED_BYTES = 350 * 1024
 private const val COMMUNITY_MAX_INPUT_BYTES = 25 * 1024 * 1024
 
