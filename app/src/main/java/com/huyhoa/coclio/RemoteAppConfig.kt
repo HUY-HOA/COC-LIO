@@ -371,11 +371,9 @@ object RemoteAppConfigManager {
         val type = item.optString("type", "card")
         if (type !in allowedTypes) return null
 
-        val page = inheritedPage ?: when (item.optString("pageId", "home")) {
+        val page = inheritedPage ?: when (item.optString("pageId", "json")) {
             "all" -> -1
-            "home" -> 0
-            "buildings" -> 1
-            "history" -> 2
+            "home", "buildings", "history", "json" -> 2
             "community" -> 3
             "settings" -> 4
             "lookup" -> 5
