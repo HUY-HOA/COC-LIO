@@ -266,6 +266,12 @@ object CocAssets {
         93000002 to "prospector"
     )
 
+    private val guardians = mapOf(
+        107000008 to "logger",
+        107000000 to "longshot",
+        107000001 to "smasher"
+    )
+
     fun imageUrl(item: VillageItem): String? {
         val level = item.level?.takeIf { it > 0 } ?: 1
         val folder = when (item.sectionKey) {
@@ -279,6 +285,7 @@ object CocAssets {
             "heroes", "heroes2" -> heroes[item.dataId]
             "spells" -> spells[item.dataId]
             "pets" -> pets[item.dataId]
+            "guardians" -> guardians[item.dataId]?.let { "home/guardians/$it" }
             "equipment" -> equipment[item.dataId]?.let { "home/hero-equipment/$it" }
             "helpers" -> helpers[item.dataId]?.let { "home/other/helpers/$it" }
             else -> null
