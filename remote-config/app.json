@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": 4,
+  "version": 5,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -52,7 +52,7 @@
       },
       {
         "id": "history",
-        "title": "Kho JSON",
+        "title": "JSON",
         "enabled": true
       },
       {
