@@ -14,7 +14,7 @@
 
 - `maintenance`: bật/tắt thông báo bảo trì và nội dung đi kèm. Đây là banner thông tin, không khóa app hay vô hiệu hóa đăng nhập.
 - `announcement`: thông báo nổi bật, mức `info`, `success`, `warning`, `error`, ảnh HTTPS và nút hành động.
-- `catalog`: tối đa 500 mục, khóa theo `dataId`; có `name`, `category`, `description`, `maxLevel`, `imageUrl` và các trường tùy chọn `rarity` (`common`, `rare`, `epic`, `legendary`), `aliases`, `requirements`, `details`, `upgradeCost`, `upgradeDurationSeconds`. Màn danh mục hiển thị nhãn độ hiếm theo màu và cho phép mở hồ sơ chi tiết từng mục. Với trang bị anh hùng, ứng dụng có sẵn phân loại Thường/Sử thi; dữ liệu catalog từ xa có thể bổ sung hoặc ghi đè độ hiếm. Category hợp lệ: `defense`, `resources`, `traps`, `other`, `troops`, `heroes`, `spells`, `pets`, `equipment`. Ứng dụng có thể cập nhật tên, nhóm, cấp tối đa, ảnh, tên gọi khác, yêu cầu, chi phí và thời gian nâng cấp hiển thị mà không cần APK mới. Các dữ liệu được giới hạn số lượng và độ dài; parser JSON, cách tính tiến trình thực tế và logic xác nhận hoàn thành vẫn thuộc APK.
+- `catalog`: tối đa 500 mục, khóa theo `dataId`; có `name`, `category`, `description`, `maxLevel`, `imageUrl` và các trường tùy chọn `rarity` (`common`, `rare`, `epic`, `legendary`), `abilityType` (`active`, `passive`), `levelDetails` (bảng chỉ số theo từng cấp), `aliases`, `requirements`, `details`, `upgradeCost`, `upgradeDurationSeconds`. Thẻ quân lính hiển thị tên, cấp hiện tại/tối đa và số lượng; hồ sơ chi tiết đọc chỉ số theo đúng cấp hiện có trong JSON làng. Trang bị anh hùng có nhãn độ hiếm Thường màu xanh và Sử thi màu tím; cấp tối đa hiện theo cấp Lò rèn. Nhãn Huyền thoại màu vàng chỉ xuất hiện khi dữ liệu thực sự có độ hiếm này. Category hợp lệ: `defense`, `resources`, `traps`, `other`, `troops`, `heroes`, `spells`, `pets`, `equipment`. Ứng dụng có thể cập nhật tên, nhóm, cấp tối đa, ảnh, tên gọi khác, yêu cầu, chi phí và thời gian nâng cấp hiển thị mà không cần APK mới. Các dữ liệu được giới hạn số lượng và độ dài; parser JSON, cách tính tiến trình thực tế và logic xác nhận hoàn thành vẫn thuộc APK.
 - `guides`: tối đa 20 hướng dẫn, mỗi mục có `id`, `title`, `body`, `imageUrl`, `enabled`.
 - `links`: tối đa 20 liên kết, chỉ mở địa chỉ HTTPS.
 - `notificationTemplates`: mẫu tiêu đề/nội dung thông báo nhắc nâng cấp, tách riêng hai nhánh `vi` và `en` để giữ đúng ngôn ngữ ứng dụng. Mỗi nhánh có `title`, `text`, `body`. Biến được hỗ trợ: `{item}`, `{village}`, `{tag}`, `{id}`, `{level}`, `{base}`, `{section}`. Khi người dùng chọn ngôn ngữ hệ thống khác tiếng Việt/tiếng Anh, ứng dụng dùng tiếng Anh.
@@ -42,6 +42,11 @@ Thiết lập một lần:
 
 1. GitHub Actions cần Secret `FIREBASE_SERVICE_ACCOUNT` đang được dùng bởi các quy trình Firebase khác.
 2. Tài khoản dịch vụ phải có quyền đọc và ghi tài liệu Firestore trong dự án `coc-lio-73de9`.
-3. Push thay đổi `remote-content/current.json`; xem kết quả tại GitHub Actions → **Publish COC-LIO Remote Content**.
+3. Push thay đổi `remote-content/current.json` hoặc `remote-content/catalog/`; xem kết quả tại GitHub Actions → **Publish COC-LIO Remote Content**.
 
 Nếu thiếu Secret hoặc quyền Firestore, workflow sẽ báo lỗi và tài liệu đang chạy không bị báo là đã cập nhật. Workflow này chỉ đồng bộ nội dung, không build APK.
+
+
+## Nguồn dữ liệu quân lính và trang bị
+
+Danh mục các nhóm quân lính, Anh hùng, Thần chú, Linh thú, Máy công thành và 43 trang bị Anh hùng được lưu theo các tệp phân mảnh trong `remote-content/catalog/`. Dữ liệu chỉ số theo cấp được chuẩn hóa từ dự án dữ liệu cộng đồng [clash-of-clans-data](https://github.com/chiefpansancolt/clash-of-clans-data), dự án này ghi nguồn dữ liệu trò chơi từ Clash of Clans Wiki. Đây không phải API chính thức của Supercell; chỉ số có thể thay đổi sau bản cập nhật game, vì vậy cần đối chiếu trong game khi có thay đổi.
