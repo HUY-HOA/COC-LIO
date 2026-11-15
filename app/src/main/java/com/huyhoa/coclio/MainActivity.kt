@@ -331,9 +331,10 @@ internal fun LedBrandTitle(
         return
     }
 
-    val palette = led.palette.ifEmpty { listOf(CocCyan) }
-    val coreBrush = Brush.horizontalGradient(movingLedColors(palette.map { it.copy(alpha = 1f) }, 0f))
-    val glowColor = palette.first().copy(alpha = 0.24f)
+    val palette = led.palette.ifEmpty { listOf(CocCyan) }.map { it.copy(alpha = 1f) }
+    val animatedColors = movingLedColors(palette, led.progress.value.rem(1f))
+    val coreBrush = Brush.horizontalGradient(animatedColors)
+    val glowColor = animatedColors.first().copy(alpha = 0.24f)
     val glowBlur = with(LocalDensity.current) {
         outlineWidthDp.coerceIn(0.1f, 2f).dp.toPx() * 1.8f
     }
@@ -498,7 +499,7 @@ private fun NeonPanel(
 ) {
     val shape = RoundedCornerShape(18.dp)
     val led = LocalLedTheme.current
-    val palette = led.palette.map { it.copy(alpha = led.brightness) }
+    val palette = led.palette.map { it.copy(alpha = 1f) }
     Column(
         modifier = modifier
             .shadow(5.dp, shape)
