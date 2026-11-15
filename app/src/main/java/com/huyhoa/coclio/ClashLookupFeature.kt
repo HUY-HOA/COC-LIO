@@ -146,7 +146,7 @@ private suspend fun searchClashKing(
     } else {
         clashSearchTerms(term)
     }
-    val requestTerms = if (cursor == null) variants.take(6) else variants.take(1)
+    val requestTerms = if (cursor == null) variants.take(8) else variants.take(1)
     val responses = requestTerms.map { searchTerm ->
         async {
             runCatching {
@@ -199,12 +199,29 @@ private suspend fun searchClashKing(
             runCatching { normalizeClashTag(it.profile.optString("tag")) }.getOrNull() == exactTag
         }
     } else {
-        allCandidates.filter {
-            clashNameMatchesSearch(it.profile.optString("name"), term)
+        allCandidates.filter { candidate ->
+            val profile = candidate.profile
+            val identityValues = listOf(
+                profile.optString("tag"),
+                profile.optString("id"),
+                profile.optString("clanId"),
+                profile.optString("clan_id"),
+                profile.optString("playerId"),
+                profile.optString("player_id")
+            )
+            clashNameMatchesSearch(profile.optString("name"), term) ||
+                identityValues.any { value ->
+                    value.isNotBlank() &&
+                        (normalizeClashSearchText(value) == normalizeClashSearchText(term) ||
+                            value.equals(term.trim(), ignoreCase = true))
+                }
         }
     }
 
-    val primaryResponse = successful.firstOrNull { it.third == requestTerms.first() }
+    val matchedTags = matchedCandidates.map { it.profile.optString("tag").uppercase(Locale.ROOT) }.toSet()
+    val primaryResponse = successful.firstOrNull { response ->
+        response.first.any { it.profile.optString("tag").uppercase(Locale.ROOT) in matchedTags }
+    } ?: successful.firstOrNull { it.third == requestTerms.first() }
         ?: successful.first()
     ClashLookupSearchPage(
         matchedCandidates,
