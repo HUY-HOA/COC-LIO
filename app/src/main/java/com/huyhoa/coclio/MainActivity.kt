@@ -2543,7 +2543,11 @@ private fun VillageItemDetailDialog(
     } else {
         remote?.maxLevel
     }
-    val itemName = remote?.name?.takeIf { it.isNotBlank() } ?: item.name
+    val itemName = if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
+        remote?.name?.takeIf { it.isNotBlank() } ?: item.name
+    } else {
+        item.name
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -2642,7 +2646,7 @@ private fun VillageItemDetailDialog(
                             fontWeight = FontWeight.Black
                         )
                         stats.forEachIndexed { index, value ->
-                            VillageItemDetailField("Chỉ số \${index + 1}", value)
+                            VillageItemDetailField("Chỉ số ${index + 1}", value)
                         }
                     }
                 }
