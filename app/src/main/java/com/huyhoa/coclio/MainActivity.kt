@@ -663,7 +663,6 @@ private fun CocLioApp(
     themeMode: String,
     onThemeModeChanged: (String) -> Unit
 ) {
-    val context = LocalContext.current
     val remoteAppConfig by RemoteAppConfigManager.config.collectAsState()
     val remoteContent by RemoteContentManager.content.collectAsState()
     val baseDensity = LocalDensity.current
@@ -1802,26 +1801,19 @@ private fun GoogleLoginStartScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
-                    "Google sẽ chia sẻ email, tên và ảnh hồ sơ của bạn với COC-LIO khi bạn chấp thuận trên màn hình Google. COC-LIO sử dụng các thông tin này để xác thực, tạo và duy trì tài khoản, quản lý tài khoản và hiển thị danh tính thành viên. Mã tài khoản được tạo trong Firebase; hồ sơ được lưu trong Firestore.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp,
+                    "DỮ LIỆU TÀI KHOẢN ĐƯỢC SỬ DỤNG",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                TextButton(
-                    onClick = {
-                        runCatching {
-                            context.startActivity(
-                                android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse("https://coc-lio-73de9.firebaseapp.com/privacy")
-                                )
-                            )
-                        }
-                    }
-                ) {
-                    Text("CHÍNH SÁCH QUYỀN RIÊNG TƯ", fontSize = 10.sp)
-                }
+                Text(
+                    "Chỉ khi bạn chọn và chấp thuận đăng nhập Google, COC-LIO nhận email, tên, họ và ảnh hồ sơ. Firebase tạo mã UID; Firestore lưu UID, email, tên, ảnh, trạng thái xác minh email, nhà cung cấp Google, số lần và thời điểm đăng nhập, thời điểm tạo/cập nhật hồ sơ và mốc xác nhận dữ liệu. Dữ liệu này dùng để xác thực, duy trì tài khoản và hiển thị danh tính thành viên.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
                 if (!readError.isNullOrBlank()) {
                     Text(
                         readError,
@@ -1837,7 +1829,7 @@ private fun GoogleLoginStartScreen(
                     enabled = !isBusy
                 )
                 Text(
-                    "Đăng nhập Google không tự bật dữ liệu hoạt động, thiết bị, phân tích, báo lỗi hoặc đồng bộ JSON. Các mục này là lựa chọn riêng và mặc định tắt.",
+                    "Đăng nhập Google không tự bật ghi nhận hoạt động/thiết bị, phân tích, báo lỗi/hiệu năng hoặc đồng bộ JSON. Các mục này mặc định tắt và chỉ được xử lý khi bạn bật riêng trong Cài đặt.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
                     lineHeight = 13.sp,
