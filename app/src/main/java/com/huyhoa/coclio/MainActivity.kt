@@ -2617,11 +2617,34 @@ private fun VillageItemDetailDialog(
                     VillageItemDetailField("Thời gian hồi trợ thủ", formatDuration(it))
                 }
 
-                remote?.description?.takeIf { it.isNotBlank() }?.let {
+                remote?.description?.takeIf {
+                    it.isNotBlank() && LocalAppLanguage.current == AppUiLanguage.ENGLISH
+                }?.let {
                     VillageItemDetailField("Mô tả", it)
                 }
-                remote?.requirements?.takeIf { it.isNotEmpty() }?.let {
+                remote?.requirements?.takeIf {
+                    it.isNotEmpty() && LocalAppLanguage.current == AppUiLanguage.ENGLISH
+                }?.let {
                     VillageItemDetailField("Yêu cầu", it.joinToString("\n"))
+                }
+                remote?.abilityType?.takeIf { it.isNotBlank() }?.let {
+                    VillageItemDetailField(
+                        "Loại kỹ năng",
+                        if (it == "active") "Chủ động" else "Bị động"
+                    )
+                }
+                item.level?.let { level ->
+                    remote?.levelDetails?.get(level)?.takeIf { it.isNotEmpty() }?.let { stats ->
+                        Text(
+                            "THÔNG SỐ Ở CẤP HIỆN TẠI",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        stats.forEachIndexed { index, value ->
+                            VillageItemDetailField("Chỉ số \${index + 1}", value)
+                        }
+                    }
                 }
                 remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let {
                     VillageItemDetailField("Chi phí nâng cấp", it)
