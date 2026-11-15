@@ -369,7 +369,7 @@ private val englishTranslations = mapOf(
     "Tổng quan" to "Overview",
     "Thông tin" to "Information",
     "Công trình Quân đội" to "Information",
-    "Kho JSON" to "JSON Storage",
+    "Kho JSON" to "JSON",
     "Cộng đồng" to "Community",
     "Tra cứu ID" to "ID Lookup",
     "Cài đặt" to "Settings",
@@ -609,7 +609,7 @@ private val englishTranslations = mapOf(
     "Không tìm thấy mã JSON được chia sẻ." to "Shared JSON code not found.",
     "JSON chia sẻ không còn dữ liệu." to "The shared JSON is no longer available.",
     "JSON chia sẻ vượt quá giới hạn cho phép." to "The shared JSON exceeds the allowed limit.",
-    "Đã nhận JSON. Bản nhận được đã được lưu riêng trong Kho JSON; bản nhập vẫn có trong lịch sử." to "JSON received. The received copy was saved separately in JSON Storage; the imported copy remains in history.",
+    "Đã nhận JSON. Bản nhận được đã được lưu trong mục Chia sẻ của JSON; bản nhập vẫn có trong lịch sử." to "JSON received. The received copy was saved in the Sharing section of JSON; the imported copy remains in history.",
     "Không thể nhận JSON được chia sẻ." to "Unable to receive the shared JSON.",
     "Không thể tải JSON cộng đồng." to "Unable to load community JSON.",
     "Không thể tải danh sách cập nhật." to "Unable to load the update list.",
@@ -1473,7 +1473,7 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             .replaceFirst("Toàn bộ ", "All ")
         source.startsWith("JSON từ ") -> source
             .replaceFirst("JSON từ ", "JSON from ")
-            .replace(" sẽ bị xóa khỏi Kho JSON và không thể khôi phục.", " will be deleted from JSON Storage and cannot be recovered.")
+            .replace(" sẽ bị xóa khỏi JSON và không thể khôi phục.", " will be deleted from JSON and cannot be recovered.")
             .replace(" Bản nhập trong LỊCH SỬ vẫn được giữ.", " Imports in HISTORY will be kept.")
         source.startsWith("Dữ liệu: ") -> "Data: " + source.removePrefix("Dữ liệu: ").replace(" • Nhận: ", " • Received: ")
         source.startsWith("Đã gỡ: ") -> "Removed: " + source.removePrefix("Đã gỡ: ")
