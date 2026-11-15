@@ -92,49 +92,48 @@ class CommunityNotificationWorker(
 ) : CoroutineWorker(context, parameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         notificationWorkerMutex.withLock {
-        val profile = inputData.getString("profile").orEmpty()
-        val user = FirebaseAuth.getInstance().currentUser
-            ?: return@withContext Result.success()
-        if (profile.isBlank() || user.email?.equals(profile, ignoreCase = true) != true) {
-            return@withContext Result.success()
-        }
-
-        val communityEnabled = AppPreferences.communityNotificationsEnabled(applicationContext, profile)
-        val updatesEnabled = AppPreferences.updateNotificationsEnabled(applicationContext, profile)
-        if (!communityEnabled && !updatesEnabled) return@withContext Result.success()
-
-        try {
-            val preferences = applicationContext.getSharedPreferences(
-                "coc_lio_notification_watermarks",
-                Context.MODE_PRIVATE
-            )
-            val firestore = FirebaseFirestore.getInstance()
-            val account = firestore.collection("users")
-                .document(user.uid)
-                .get()
-                .awaitNotificationResult()
-            if (
-                !account.exists() ||
-                account.getLong("requiredAccountDataConsentVersion") != AccountPrivacyConsent.REQUIRED_ACCOUNT_DATA_VERSION ||
-                account.getBoolean("accountDisabled") == true
-            ) {
+            val profile = inputData.getString("profile").orEmpty()
+            val user = FirebaseAuth.getInstance().currentUser
+                ?: return@withContext Result.success()
+            if (profile.isBlank() || user.email?.equals(profile, ignoreCase = true) != true) {
                 return@withContext Result.success()
             }
-            if (communityEnabled) {
-                checkCommunityMessages(applicationContext, firestore, preferences, profile, user.uid)
+
+            val communityEnabled = AppPreferences.communityNotificationsEnabled(applicationContext, profile)
+            val updatesEnabled = AppPreferences.updateNotificationsEnabled(applicationContext, profile)
+            if (!communityEnabled && !updatesEnabled) return@withContext Result.success()
+
+            try {
+                val preferences = applicationContext.getSharedPreferences(
+                    "coc_lio_notification_watermarks",
+                    Context.MODE_PRIVATE
+                )
+                val firestore = FirebaseFirestore.getInstance()
+                val account = firestore.collection("users")
+                    .document(user.uid)
+                    .get()
+                    .awaitNotificationResult()
+                if (
+                    !account.exists() ||
+                    account.getLong("requiredAccountDataConsentVersion") != AccountPrivacyConsent.REQUIRED_ACCOUNT_DATA_VERSION ||
+                    account.getBoolean("accountDisabled") == true
+                ) {
+                    return@withContext Result.success()
+                }
+                if (communityEnabled) {
+                    checkCommunityMessages(applicationContext, firestore, preferences, profile, user.uid)
+                }
+                if (updatesEnabled) {
+                    checkAppUpdates(applicationContext, firestore, preferences, profile)
+                }
+                Result.success()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                Result.retry()
             }
-            if (updatesEnabled) {
-                checkAppUpdates(applicationContext, firestore, preferences, profile)
-            }
-            Result.success()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            Result.retry()
-        }
         }
     }
-}
 
 private data class NotificationDocument(
     val document: DocumentSnapshot,
