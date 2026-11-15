@@ -2207,7 +2207,14 @@ private fun CategoryScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val upgradeCatalog = remember(context) { CocUpgradeCatalog.all(context) }
+    var upgradeCatalog by remember(context) {
+        mutableStateOf<Map<Int, CocUpgradeEntry>>(emptyMap())
+    }
+    LaunchedEffect(context) {
+        upgradeCatalog = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            CocUpgradeCatalog.all(context)
+        }
+    }
     var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf("all")
     }
