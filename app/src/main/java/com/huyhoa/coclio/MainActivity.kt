@@ -1506,18 +1506,11 @@ private fun CocLioApp(
                                 scope.launch { snackbar.showAppSnackbar(context, "Đã xóa vĩnh viễn dữ liệu JSON.") }
                             }
                         },
-                        onShare = { snapshot ->
-                            scope.launch {
-                                runCatching { shareVillageJsonToCommunity(snapshot) }
-                                    .onSuccess { snackbar.showAppSnackbar(context, it) }
-                                    .onFailure { error ->
-                                        snackbar.showAppSnackbar(context, error.message ?: "Không thể chia sẻ JSON.")
-                                    }
-                            }
-                        }
                     )
                     3 -> CommunityScreen(
                         isGoogleSignedIn = isGoogleSignedIn,
+                        jsonOptions = history,
+                        onShareJson = { snapshot -> shareVillageJsonToCommunity(snapshot) },
                         onImportJson = { rawJson, senderUid, senderName, tag, villageName, timestamp, jsonId ->
                             val parsed = runCatching { VillageParser.parse(rawJson) }.getOrNull()
                             if (parsed != null) {
@@ -2604,8 +2597,7 @@ private fun HistoryScreen(
     onTogglePin: (String) -> Unit,
     onDelete: (String) -> Unit,
     onRestore: (String) -> Unit,
-    onDeletePermanently: (String) -> Unit,
-    onShare: (VillageSnapshot) -> Unit
+    onDeletePermanently: (String) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -2738,14 +2730,6 @@ private fun HistoryScreen(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                TextButton(onClick = { onShare(snapshot) }) {
-                                    Text("CHIA SẺ JSON", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                }
                             }
                         }
                     }
