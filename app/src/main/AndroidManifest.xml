@@ -40,12 +40,6 @@
                 android:resource="@xml/upgrade_widget_info" />
         </receiver>
         <activity
-            android:name=".CocLioBubbleActivity"
-            android:allowEmbedded="true"
-            android:resizeableActivity="true"
-            android:exported="false"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
-        <activity
             android:name=".MainActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize"
             android:resizeableActivity="true"
