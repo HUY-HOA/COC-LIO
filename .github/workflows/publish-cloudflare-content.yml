@@ -148,7 +148,7 @@ jobs:
             const catalogDirectory = "remote-content/catalog";
             const shardNames = fs.existsSync(catalogDirectory)
               ? fs.readdirSync(catalogDirectory)
-                  .filter(name => /^part-\\d{2}\\.json$/.test(name))
+                  .filter(name => /^part-\d{2}\.json$/.test(name))
                   .sort()
               : [];
             const seenIds = new Set();

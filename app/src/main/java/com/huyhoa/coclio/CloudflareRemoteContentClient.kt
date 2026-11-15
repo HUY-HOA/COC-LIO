@@ -78,7 +78,7 @@ internal object CloudflareRemoteContentClient {
         val root = JSONObject(raw)
         require(root.optInt("version", 0) >= 1)
         require(root.opt("catalog") is JSONArray)
-        require(root.optJSONArray("catalog")?.length() ?: 0 <= 500)
+        require((root.optJSONArray("catalog")?.length() ?: 0) <= 500)
         parseRemoteContent(root.toSafeMap())
     }.getOrNull()
 
