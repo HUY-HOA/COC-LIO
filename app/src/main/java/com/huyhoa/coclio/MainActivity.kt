@@ -88,6 +88,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text as MaterialText
@@ -2206,6 +2207,9 @@ private fun CategoryScreen(
     var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf("all")
     }
+    var selectedRarity by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
+        mutableStateOf("all")
+    }
     var selectedItem by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf<VillageItem?>(null)
     }
@@ -2272,10 +2276,30 @@ private fun CategoryScreen(
         }
     }
 
-    val filtered = when {
+    fun rarityFor(item: VillageItem): String? =
+        remoteCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
+            ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
+
+    val equipmentItems = baseItems.filter { armyCategory(it) == "equipment" }
+    val rarityChoices = listOf(
+        "all" to "TẤT CẢ",
+        "common" to "THƯỜNG",
+        "rare" to "HIẾM",
+        "epic" to "SỬ THI",
+        "legendary" to "HUYỀN THOẠI"
+    ).filter { (key, _) ->
+        key == "all" || equipmentItems.any { rarityFor(it) == key }
+    }
+
+    val categoryFiltered = when {
         selectedFilter == "all" -> baseItems
         tab == "buildings" -> baseItems.filter { buildingCategory(it) == selectedFilter }
         else -> baseItems.filter { armyCategory(it) == selectedFilter }
+    }
+    val filtered = if (tab == "army" && selectedFilter == "equipment" && selectedRarity != "all") {
+        categoryFiltered.filter { rarityFor(it) == selectedRarity }
+    } else {
+        categoryFiltered
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -2288,16 +2312,40 @@ private fun CategoryScreen(
     ) {
         if (baseItems.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    filterChoices.forEach { (key, label) ->
-                        FilterChip(
-                            selected = selectedFilter == key,
-                            onClick = { selectedFilter = key },
-                            label = { Text(label, fontSize = 10.sp) }
-                        )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        filterChoices.forEach { (key, label) ->
+                            FilterChip(
+                                selected = selectedFilter == key,
+                                onClick = {
+                                    selectedFilter = key
+                                    selectedRarity = "all"
+                                },
+                                label = { Text(label, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+                    if (tab == "army" && selectedFilter == "equipment" && rarityChoices.size > 1) {
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            rarityChoices.forEach { (key, label) ->
+                                val count = if (key == "all") {
+                                    equipmentItems.size
+                                } else {
+                                    equipmentItems.count { rarityFor(it) == key }
+                                }
+                                FilterChip(
+                                    selected = selectedRarity == key,
+                                    onClick = { selectedRarity = key },
+                                    label = { Text("$label ($count)", fontSize = 10.sp) }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -2313,10 +2361,19 @@ private fun CategoryScreen(
                 InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
             }
         } else {
-            val grouped = filtered.groupBy { it.sectionKey }
+            val grouped = if (tab == "army" && selectedFilter == "equipment") {
+                filtered.groupBy { equipmentHero(it.dataId) ?: "Khác" }
+            } else {
+                filtered.groupBy { it.sectionKey }
+            }
             grouped.forEach { (sectionKey, rows) ->
                 item(key = "section_$sectionKey", span = { GridItemSpan(maxLineSpan) }) {
-                    SectionTitle(rows.first().sectionLabel.uppercase(), rows.sumOf { it.count }.toString())
+                    val title = if (tab == "army" && selectedFilter == "equipment") {
+                        sectionKey.uppercase()
+                    } else {
+                        rows.first().sectionLabel.uppercase()
+                    }
+                    SectionTitle(title, rows.sumOf { it.count }.toString())
                 }
                 val orderedRows = rows.filter { it.timerSeconds == null }.sortedWith(
                     compareBy<VillageItem> { it.count > 1 }
@@ -2373,9 +2430,17 @@ private fun VillageGridItemCard(
         item.name
     }
 
+    val rarityGlow = when (rarity) {
+        "common" -> Color(0xFF55B9FF)
+        "rare" -> Color(0xFF39D8D0)
+        "epic" -> Color(0xFFB77AFF)
+        "legendary" -> Color(0xFFFFC857)
+        else -> null
+    }
+
     NeonPanel(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        glow = if (item.tab == "army") CocMagenta else CocCyan,
+        glow = rarityGlow ?: if (item.tab == "army") CocMagenta else CocCyan,
         innerPadding = 4.dp
     ) {
         Column(
@@ -2451,6 +2516,161 @@ private fun VillageGridItemCard(
     }
 }
 
+
+private val EquipmentDescriptionsVi = mapOf(
+    90000048 to "Triệu hồi một Đại khổng lồ chiến đấu bên cạnh Nữ hoàng Cung thủ.",
+    90000002 to "Triệu hồi một nhóm Cung thủ tàng hình.",
+    90000000 to "Triệu hồi một nhóm Man di được tăng sức mạnh cuồng nộ.",
+    90000035 to "Tăng máu và sát thương tổng cộng 3 lần khi đồng minh bị hạ gục.",
+    90000043 to "Gây sát thương và làm chậm mọi mục tiêu mà nó chạm vào.",
+    90000008 to "Tạo ra động đất mạnh, phá hủy Tường và gây sát thương lên Công trình.",
+    90000040 to "Định kỳ gây sát thương lên mọi mục tiêu xung quanh Nhà vô địch Hoàng gia.",
+    90000016 to "Tạo chuỗi sát thương điện qua các công trình xung quanh mục tiêu của Công tước Rồng; sát thương giảm 20% sau mỗi lần lan.",
+    90000004 to "Đại hộ vệ và tất cả quân đồng minh ở gần trở nên miễn nhiễm sát thương.",
+    90000052 to "Từ từ hồi máu và bùng cháy gây sát thương khi Công tước Rồng bị hạ gục.",
+    90000022 to "Ném một quả cầu lửa phát nổ lớn vào Phòng thủ gần nhất.",
+    90000057 to "Phun lửa cực nóng gây sát thương lên kẻ địch và Công trình.",
+    90000050 to "Bắn những mảnh băng về phía Phòng thủ gần nhất để đóng băng chúng.",
+    90000015 to "Mũi tên băng làm chậm mục tiêu trúng đòn.",
+    90000017 to "Bắn một mũi tên khổng lồ xuyên qua toàn bộ ngôi làng.",
+    90000010 to "Vua Man di trở nên khổng lồ, gây sát thương diện rộng và giảm sát thương phải nhận.",
+    90000012 to "Ban hiệu ứng Tăng tốc cho Nhà vô địch Hoàng gia.",
+    90000020 to "Triệu hồi một nhóm Healer hỗ trợ hồi máu.",
+    90000034 to "Hồi máu cho Đại hộ vệ và tất cả quân đồng minh ở gần.",
+    90000042 to "Triệu hồi các tay sai bay hỗ trợ Hoàng tử Tiểu quỷ.",
+    90000019 to "Giúp quân đồng minh ở gần vượt Tường, di chuyển nhanh hơn và nhận ít sát thương hơn.",
+    90000009 to "Triệu hồi một nhóm Kỵ sĩ Heo.",
+    90000003 to "Khiến Nữ hoàng Cung thủ tàng hình và tăng sức tấn công của cô ấy.",
+    90000041 to "Triệu hồi các Khinh khí cầu Dung nham hỗ trợ tấn công.",
+    90000005 to "Quân đồng minh ở gần được tăng thêm máu.",
+    90000039 to "Triệu hồi các bản sao của Nữ hoàng Cung thủ.",
+    90000044 to "Tạo lá chắn bảo vệ, tạm thời chặn gần như toàn bộ sát thương.",
+    90000049 to "Triệu hồi các thiên thạch liên tục tấn công Phòng thủ gần nhất.",
+    90000059 to "Sát thương cộng thêm của Mũi tên Monolith giảm khi triển khai quân vượt các mốc 180 và 250 đơn vị nhà ở.",
+    90000047 to "Tăng tốc độ, tầm đánh và sức mạnh của một số đòn tấn công đầu tiên của Hoàng tử Tiểu quỷ.",
+    90000061 to "Thu hồi Hoàng tử Tiểu quỷ và quân đồng minh ở gần về thanh triển khai để gọi ra vị trí khác, kèm thêm máu và Tăng tốc.",
+    90000024 to "Quân đồng minh ở gần được tăng sát thương.",
+    90000001 to "Ban hiệu ứng Cuồng nộ cho Vua Man di.",
+    90000060 to "Kẻ địch đánh trúng Công tước Rồng sẽ phải nhận đòn phản công.",
+    90000053 to "Lướt qua trung tâm ngôi làng, phun lửa và né tránh các đòn tấn công.",
+    90000013 to "Một vài lần phóng lao tiếp theo sẽ mạnh hơn và có tầm bắn xa hơn.",
+    90000007 to "Hồi một lượng máu lớn bổ sung cho Nhà vô địch Hoàng gia.",
+    90000006 to "Ném khiên bật qua các công trình Phòng thủ và gây sát thương.",
+    90000032 to "Triệu hồi rắn chiến đấu bên cạnh khi Anh hùng bị tấn công.",
+    90000014 to "Bắn một quả cầu gai nảy giữa các Công trình.",
+    90000051 to "Vượt qua Tường và tăng tốc độ di chuyển, tốc độ đánh sau khi được triển khai.",
+    90000056 to "Phát ra sóng xung kích làm choáng và gây sát thương lên kẻ địch cùng Công trình xung quanh.",
+    90000011 to "Mỗi lần Vua Man di tấn công, ông sẽ tự hồi máu."
+)
+
+private val EquipmentStatLabelsVi = mapOf(
+    "hitpoint increase" to "Tăng máu",
+    "hp recovery increase" to "Tăng hồi phục HP",
+    "summoned barbarians" to "Số Man di được triệu hồi",
+    "barbarian damage increase" to "Tăng sát thương Man di",
+    "barbarian speed increase" to "Tăng tốc độ Man di",
+    "invisibility duration" to "Thời gian tàng hình",
+    "summoned archers" to "Số Cung thủ được triệu hồi",
+    "archer invisibility duration" to "Thời gian tàng hình của Cung thủ",
+    "summoned healers" to "Số Healer được triệu hồi",
+    "healer level" to "Cấp Healer",
+    "summoned hog riders" to "Số Kỵ sĩ Heo được triệu hồi",
+    "hog rider level" to "Cấp Kỵ sĩ Heo",
+    "henchmen level" to "Cấp tay sai",
+    "henchmen count" to "Số tay sai",
+    "lavaloon level" to "Cấp Khinh khí cầu Dung nham",
+    "summoned lavaloons" to "Số Khinh khí cầu Dung nham được triệu hồi",
+    "giant giant level" to "Cấp Đại khổng lồ",
+    "max health increase" to "Tăng máu tối đa",
+    "max damage increase" to "Tăng sát thương tối đa",
+    "aura dps" to "Sát thương mỗi giây của hào quang",
+    "aura damage per hit" to "Sát thương hào quang mỗi đòn",
+    "aura attack speed" to "Tốc độ đánh của hào quang",
+    "aura radius" to "Bán kính hào quang",
+    "damage radius" to "Bán kính sát thương",
+    "projectile damage" to "Sát thương đạn",
+    "projectile damage per target" to "Sát thương đạn trên mỗi mục tiêu",
+    "damage per shot increase" to "Tăng sát thương mỗi phát bắn",
+    "number of targets" to "Số mục tiêu",
+    "number of attacks" to "Số đòn đánh",
+    "slow down duration" to "Thời gian làm chậm",
+    "slow down percent" to "Tỷ lệ làm chậm",
+    "slow down" to "Mức làm chậm",
+    "damage reduction increase" to "Tăng giảm sát thương",
+    "damage increase percent" to "Tỷ lệ tăng sát thương",
+    "damage increase" to "Tăng sát thương",
+    "damage on defeat" to "Sát thương khi bị hạ gục",
+    "ability total damage" to "Tổng sát thương kỹ năng",
+    "ability attack speed increase" to "Tăng tốc độ đánh của kỹ năng",
+    "ability radius" to "Bán kính kỹ năng",
+    "ability type" to "Loại kỹ năng",
+    "speed increase" to "Tăng tốc độ",
+    "attack range" to "Tầm tấn công",
+    "damage area" to "Phạm vi sát thương",
+    "damage per second increase" to "Tăng sát thương mỗi giây",
+    "projectile damage increase" to "Tăng sát thương đạn",
+    "clone duration" to "Thời gian tồn tại bản sao",
+    "clones" to "Số bản sao",
+    "clone dps" to "Sát thương mỗi giây của bản sao",
+    "clone health" to "Máu bản sao",
+    "cooldown time" to "Thời gian hồi chiêu",
+    "extra damage below180" to "Sát thương cộng thêm khi dưới 180 đơn vị nhà ở",
+    "extra damage181 to250" to "Sát thương cộng thêm từ 181 đến 250 đơn vị nhà ở",
+    "extra damage251 plus" to "Sát thương cộng thêm khi trên 250 đơn vị nhà ở",
+    "portal tile radius" to "Bán kính cổng (ô)",
+    "healing on redeploy" to "Lượng hồi máu khi triển khai lại",
+    "haste on redeploy" to "Tốc độ khi triển khai lại",
+    "recall capacity" to "Sức chứa khi thu hồi",
+    "heal per counter" to "Lượng hồi máu mỗi lần phản công",
+    "counter damage" to "Sát thương phản công",
+    "max summoned snakes" to "Số rắn tối đa được triệu hồi",
+    "snake level" to "Cấp rắn",
+    "building damage percent" to "Tỷ lệ sát thương lên Công trình",
+    "troop damage percent" to "Tỷ lệ sát thương lên quân",
+    "max hp increase" to "Tăng HP tối đa",
+    "hp increase percent" to "Tỷ lệ tăng HP",
+    "stun duration" to "Thời gian choáng",
+    "heal per hit" to "Lượng hồi máu mỗi đòn đánh",
+    "invisibility" to "Thời gian tàng hình",
+    "chain damage decay" to "Mức giảm sát thương dây chuyền",
+    "chain distance" to "Khoảng cách dây chuyền",
+    "max counter range" to "Tầm phản công tối đa",
+    "counter cooldown" to "Thời gian hồi phản công",
+    "barbarian rage duration" to "Thời gian cuồng nộ của Man di"
+)
+
+private fun localizedCatalogField(label: String, value: String, isEnglish: Boolean): Pair<String, String> {
+    if (isEnglish) return label to value
+    val translatedLabel = EquipmentStatLabelsVi[label.trim().lowercase()] ?: label
+    val translatedValue = when (value.trim().lowercase()) {
+        "ground" -> "Mặt đất"
+        "air" -> "Trên không"
+        "ground & air" -> "Mặt đất và trên không"
+        "active" -> "Chủ động"
+        "passive" -> "Bị động"
+        else -> value
+    }
+    return translatedLabel to translatedValue
+}
+
+private fun localizedCatalogText(value: String, isEnglish: Boolean): String {
+    if (isEnglish) return value
+    Regex("(?i)^Blacksmith level (\\d+)$").matchEntire(value.trim())?.let {
+        return "Lò rèn cấp ${it.groupValues[1]}"
+    }
+    Regex("(?i)^Buy in (.+?) event for ([\\d,]+) (.+)$").matchEntire(value.trim())?.let {
+        val medals = it.groupValues[3].replace("Medals", "huy hiệu", ignoreCase = true)
+        return "Nhận trong sự kiện ${it.groupValues[1]} với ${it.groupValues[2]} $medals"
+    }
+    Regex("(?i)^Purchasable from the Trader for ([\\d,]+) Gems$").matchEntire(value.trim())?.let {
+        return "Có thể mua tại Thương nhân với ${it.groupValues[1]} Ngọc"
+    }
+    return when (value.trim()) {
+        "Available by default" -> "Có sẵn mặc định"
+        else -> value
+    }
+}
+
 private val EpicEquipmentIds = setOf(
     90000010, 90000013, 90000014, 90000015, 90000019, 90000022,
     90000032, 90000035, 90000039, 90000040, 90000041, 90000048,
@@ -2521,11 +2741,12 @@ private fun ItemRarityBadge(rarity: String) {
     Text(
         label,
         color = tint,
-        fontSize = 8.sp,
+        fontSize = 9.sp,
         fontWeight = FontWeight.Black,
         modifier = Modifier
-            .background(tint.copy(alpha = 0.14f), RoundedCornerShape(7.dp))
-            .padding(horizontal = 7.dp, vertical = 2.dp)
+            .background(tint.copy(alpha = 0.17f), RoundedCornerShape(7.dp))
+            .border(1.dp, tint.copy(alpha = 0.55f), RoundedCornerShape(7.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp)
     )
 }
 
@@ -2543,10 +2764,22 @@ private fun VillageItemDetailDialog(
     } else {
         remote?.maxLevel
     }
-    val itemName = if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
+    val isEnglish = LocalAppLanguage.current == AppUiLanguage.ENGLISH
+    val itemName = if (isEnglish) {
         remote?.name?.takeIf { it.isNotBlank() } ?: item.name
     } else {
         item.name
+    }
+    val description = if (isEnglish) {
+        remote?.description?.takeIf { it.isNotBlank() }
+    } else {
+        EquipmentDescriptionsVi[item.dataId]
+            ?: remote?.description?.takeIf { it.isNotBlank() }
+    }
+    val levelDetails = remote?.levelDetails.orEmpty()
+    val statsMaxLevel = (maxLevel ?: levelDetails.keys.maxOrNull() ?: 1).coerceAtLeast(1)
+    var selectedStatsLevel by remember(item.identity, statsMaxLevel) {
+        mutableStateOf((item.level ?: levelDetails.keys.minOrNull() ?: 1).coerceIn(1, statsMaxLevel))
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -2608,6 +2841,7 @@ private fun VillageItemDetailDialog(
                     maxLevel?.let { "$level / $it" } ?: level.toString()
                 } ?: "Chưa có dữ liệu"
                 VillageItemDetailField("Cấp hiện tại / tối đa", levelText)
+                maxLevel?.let { VillageItemDetailField("Giới hạn cấp hiện tại", it.toString()) }
                 VillageItemDetailField("Số lượng", item.count.toString())
                 if (item.gearUp) VillageItemDetailField("Trạng thái", "Đã ghép công trình")
                 item.weaponLevel?.let { VillageItemDetailField("Cấp vũ khí", it.toString()) }
@@ -2621,15 +2855,17 @@ private fun VillageItemDetailDialog(
                     VillageItemDetailField("Thời gian hồi trợ thủ", formatDuration(it))
                 }
 
-                remote?.description?.takeIf {
-                    it.isNotBlank() && LocalAppLanguage.current == AppUiLanguage.ENGLISH
-                }?.let {
+                description?.let {
                     VillageItemDetailField("Mô tả", it)
                 }
-                remote?.requirements?.takeIf {
-                    it.isNotEmpty() && LocalAppLanguage.current == AppUiLanguage.ENGLISH
-                }?.let {
-                    VillageItemDetailField("Yêu cầu", it.joinToString("\n"))
+                remote?.aliases?.takeIf { it.isNotEmpty() }?.let {
+                    VillageItemDetailField("Tên gọi khác", it.joinToString(", "))
+                }
+                remote?.requirements?.takeIf { it.isNotEmpty() }?.let { requirements ->
+                    VillageItemDetailField(
+                        "Yêu cầu mở khóa",
+                        requirements.joinToString("\n") { localizedCatalogText(it, isEnglish) }
+                    )
                 }
                 remote?.abilityType?.takeIf { it.isNotBlank() }?.let {
                     VillageItemDetailField(
@@ -2637,16 +2873,46 @@ private fun VillageItemDetailDialog(
                         if (it == "active") "Chủ động" else "Bị động"
                     )
                 }
-                item.level?.let { level ->
-                    remote?.levelDetails?.get(level)?.takeIf { it.isNotEmpty() }?.let { stats ->
-                        Text(
-                            "THÔNG SỐ Ở CẤP HIỆN TẠI",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black
+                if (levelDetails.isNotEmpty()) {
+                    Text(
+                        "THÔNG SỐ THEO CẤP",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    VillageItemDetailField("Cấp đang xem", "$selectedStatsLevel / $statsMaxLevel")
+                    if (statsMaxLevel > 1) {
+                        Slider(
+                            value = selectedStatsLevel.toFloat(),
+                            onValueChange = {
+                                selectedStatsLevel = it.roundToInt().coerceIn(1, statsMaxLevel)
+                            },
+                            valueRange = 1f..statsMaxLevel.toFloat(),
+                            steps = (statsMaxLevel - 2).coerceAtLeast(0)
                         )
-                        stats.forEachIndexed { index, value ->
-                            VillageItemDetailField("Chỉ số ${index + 1}", value)
+                    }
+                    val stats = levelDetails[selectedStatsLevel].orEmpty()
+                    if (stats.isEmpty()) {
+                        Text(
+                            "Chưa có chỉ số cho cấp này.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                    } else {
+                        stats.forEachIndexed { index, rawValue ->
+                            val separator = rawValue.indexOf(':')
+                            val rawLabel = if (separator > 0) {
+                                rawValue.substring(0, separator).trim()
+                            } else {
+                                "Chỉ số ${index + 1}"
+                            }
+                            val value = if (separator > 0) {
+                                rawValue.substring(separator + 1).trim()
+                            } else {
+                                rawValue
+                            }
+                            val (label, displayValue) = localizedCatalogField(rawLabel, value, isEnglish)
+                            VillageItemDetailField(label, displayValue)
                         }
                     }
                 }
@@ -2675,10 +2941,14 @@ private fun VillageItemDetailDialog(
                 if (remote?.details?.isNotEmpty() == true) {
                     Text("THÔNG TIN BỔ SUNG", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
                     remote.details.forEachIndexed { index, value ->
-                        VillageItemDetailField("Chi tiết ${index + 1}", value)
+                        val separator = value.indexOf(':')
+                        val rawLabel = if (separator > 0) value.substring(0, separator).trim() else "Chi tiết ${index + 1}"
+                        val rawValue = if (separator > 0) value.substring(separator + 1).trim() else value
+                        val (label, displayValue) = localizedCatalogField(rawLabel, rawValue, isEnglish)
+                        VillageItemDetailField(label, displayValue)
                     }
                 }
-                if (remote == null && item.details.isEmpty() && item.properties.isEmpty() &&
+                if (remote == null && description == null && item.details.isEmpty() && item.properties.isEmpty() &&
                     item.timerSeconds == null && item.helperCooldownSeconds == null
                 ) {
                     Text(
