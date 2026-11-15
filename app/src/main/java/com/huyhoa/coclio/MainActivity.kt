@@ -364,14 +364,16 @@ internal fun LedBrandTitle(
 @Composable
 internal fun LedAdminAvatar(size: androidx.compose.ui.unit.Dp = 30.dp) {
     val led = LocalLedTheme.current
-    val palette = led.palette.ifEmpty { listOf(CocCyan) }
+    val phase = led.progress.value.rem(1f)
+    val palette = led.palette.ifEmpty { listOf(CocCyan) }.map { it.copy(alpha = 1f) }
+    val animatedColors = movingLedColors(palette, phase)
     val ringBrush: Brush = if (led.enabled && palette.size >= 2) {
-        Brush.sweepGradient(movingLedColors(palette, 0f))
+        Brush.sweepGradient(animatedColors)
     } else {
         SolidColor(MaterialTheme.colorScheme.outlineVariant)
     }
     val textBrush: Brush = if (led.enabled) {
-        Brush.horizontalGradient(movingLedColors(palette, 0f))
+        Brush.horizontalGradient(animatedColors)
     } else {
         SolidColor(MaterialTheme.colorScheme.onSurface)
     }
@@ -385,20 +387,22 @@ internal fun LedAdminAvatar(size: androidx.compose.ui.unit.Dp = 30.dp) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            "A",
+            "AD",
             style = TextStyle(
                 brush = textBrush,
                 shadow = if (led.enabled && led.glowEnabled) {
                     androidx.compose.ui.graphics.Shadow(
-                        color = palette.first().copy(alpha = 0.18f),
+                        color = animatedColors.first().copy(alpha = 0.24f),
                         blurRadius = with(LocalDensity.current) { 1.dp.toPx() }
                     )
                 } else {
                     null
                 }
             ),
-            fontSize = (size.value * 0.52f).sp,
+            fontSize = (size.value * 0.34f).sp,
             fontWeight = FontWeight.Black,
+            letterSpacing = (-0.4).sp,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             maxLines = 1
         )
     }
