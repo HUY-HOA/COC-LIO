@@ -1264,6 +1264,15 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
     RemoteAppConfigManager.config.value.translation(source, language)?.let { return it }
     if (language != AppUiLanguage.ENGLISH) return source
     englishTranslations[source]?.let { return it }
+    Regex("^CẤP (\\d+)/(\\d+)$").matchEntire(source)?.let {
+        return "LEVEL ${it.groupValues[1]}/${it.groupValues[2]}"
+    }
+    Regex("^CẤP (\\d+)$").matchEntire(source)?.let {
+        return "LEVEL ${it.groupValues[1]}"
+    }
+    Regex("^VŨ KHÍ (\\d+)$").matchEntire(source)?.let {
+        return "WEAPON LEVEL ${it.groupValues[1]}"
+    }
     return when {
         Regex("^(.+) • (\\d+) mốc • (.+)$").matchEntire(source) != null ->
             Regex("^(.+) • (\\d+) mốc • (.+)$").matchEntire(source)!!.let {
