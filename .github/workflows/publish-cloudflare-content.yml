@@ -1,0 +1,217 @@
+name: Publish COC-LIO Content to Cloudflare
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "remote-content/current.json"
+      - "remote-content/catalog/*.json"
+      - "cloudflare/worker/src/index.mjs"
+      - ".github/workflows/publish-cloudflare-content.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coc-lio-cloudflare-content
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: b1e6af9f0ef491fb7557747974a863f9
+      CLOUDFLARE_KV_NAMESPACE_ID: e809595b32304b18ab21f60bbfb506cf
+      CLOUDFLARE_WORKER_NAME: coc-lio-remote-content
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Test Cloudflare Worker
+        run: node --test cloudflare/worker/test/index.test.mjs
+
+      - name: Explain skipped Cloudflare publishing
+        if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
+        run: |
+          echo "::notice::Cloudflare Worker tests passed. Publishing is skipped until the CLOUDFLARE_API_TOKEN GitHub Actions secret is configured."
+
+      - name: Deploy Worker and publish versioned content
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const { createHash } = require("node:crypto");
+
+          const token = process.env.CLOUDFLARE_API_TOKEN;
+          const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+          const namespaceId = process.env.CLOUDFLARE_KV_NAMESPACE_ID;
+          const workerName = process.env.CLOUDFLARE_WORKER_NAME;
+          const apiRoot = "https://api.cloudflare.com/client/v4";
+
+          async function checkResponse(response, label) {
+            let body;
+            try {
+              body = await response.json();
+            } catch {
+              throw new Error(label + " returned a non-JSON response.");
+            }
+            if (!response.ok || body.success !== true) {
+              throw new Error(label + " failed: " + JSON.stringify(body.errors || body));
+            }
+            return body;
+          }
+
+          async function api(method, route, body) {
+            const response = await fetch(apiRoot + route, {
+              method,
+              headers: {
+                Authorization: "Bearer " + token,
+                "Content-Type": "application/json"
+              },
+              body: body === undefined ? undefined : JSON.stringify(body)
+            });
+            return checkResponse(response, method + " " + route);
+          }
+
+          async function putValue(key, value) {
+            const route = "/accounts/" + accountId + "/storage/kv/namespaces/" +
+              namespaceId + "/values/" + encodeURIComponent(key);
+            const response = await fetch(apiRoot + route, {
+              method: "PUT",
+              headers: {
+                Authorization: "Bearer " + token,
+                "Content-Type": "application/json"
+              },
+              body: value
+            });
+            await checkResponse(response, "Publish KV key " + key);
+          }
+
+          async function main() {
+            const workerSource = fs.readFileSync("cloudflare/worker/src/index.mjs", "utf8");
+            const metadata = {
+              main_module: "index.mjs",
+              compatibility_date: "2026-11-16",
+              bindings: [
+                {
+                  type: "kv_namespace",
+                  name: "CONTENT",
+                  namespace_id: namespaceId
+                }
+              ],
+              observability: {
+                enabled: true,
+                head_sampling_rate: 0.1,
+                logs: {
+                  enabled: true,
+                  invocation_logs: true,
+                  persist: true,
+                  head_sampling_rate: 0.1
+                },
+                traces: {
+                  enabled: true,
+                  persist: true,
+                  head_sampling_rate: 0.1
+                }
+              }
+            };
+
+            const form = new FormData();
+            form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+            form.append("files", new Blob([workerSource], { type: "application/javascript+module" }), "index.mjs");
+
+            const workerRoute = "/accounts/" + accountId + "/workers/scripts/" + workerName;
+            const upload = await fetch(apiRoot + workerRoute, {
+              method: "PUT",
+              headers: { Authorization: "Bearer " + token },
+              body: form
+            });
+            await checkResponse(upload, "Deploy Cloudflare Worker");
+
+            await api(
+              "POST",
+              workerRoute + "/subdomain",
+              { enabled: true, previews_enabled: false }
+            );
+
+            const source = JSON.parse(fs.readFileSync("remote-content/current.json", "utf8"));
+            const catalogDirectory = "remote-content/catalog";
+            const shardNames = fs.existsSync(catalogDirectory)
+              ? fs.readdirSync(catalogDirectory)
+                  .filter(name => /^part-\\d{2}\\.json$/.test(name))
+                  .sort()
+              : [];
+            const seenIds = new Set();
+            for (const item of source.catalog || []) {
+              const id = Number(item && item.dataId);
+              if (!Number.isInteger(id) || id < 1 || seenIds.has(id) ||
+                  !String(item && item.name || "").trim()) {
+                throw new Error("Base catalog contains an invalid or duplicate dataId.");
+              }
+              seenIds.add(id);
+            }
+
+            for (const name of shardNames) {
+              const shard = JSON.parse(fs.readFileSync(path.join(catalogDirectory, name), "utf8"));
+              if (!Array.isArray(shard.catalog)) {
+                throw new Error("Catalog shard " + name + " has no catalog array.");
+              }
+              for (const item of shard.catalog) {
+                const id = Number(item && item.dataId);
+                if (!Number.isInteger(id) || id < 1 || seenIds.has(id) ||
+                    !String(item && item.name || "").trim()) {
+                  throw new Error("Catalog shard " + name + " contains an invalid or duplicate dataId.");
+                }
+                seenIds.add(id);
+                source.catalog.push(item);
+              }
+            }
+
+            if (!Number.isInteger(source.version) || source.version < 1 ||
+                typeof source.enabled !== "boolean" ||
+                !Array.isArray(source.catalog) || source.catalog.length > 500 ||
+                !Array.isArray(source.guides) || source.guides.length > 20 ||
+                !Array.isArray(source.links) || source.links.length > 20) {
+              throw new Error("Remote content schema or item limits are invalid.");
+            }
+
+            const payload = JSON.stringify(source);
+            const byteLength = Buffer.byteLength(payload, "utf8");
+            if (byteLength > 20 * 1024 * 1024) {
+              throw new Error("Remote content exceeds the safe 20 MiB Cloudflare KV publication limit.");
+            }
+
+            const sha256 = createHash("sha256").update(payload, "utf8").digest("hex");
+            const versionKey = "content/v" + source.version + ".json";
+            await putValue(versionKey, payload);
+            await putValue("content/current", JSON.stringify({
+              version: source.version,
+              key: versionKey,
+              sha256,
+              publishedAt: new Date().toISOString()
+            }));
+
+            console.log("Cloudflare Worker deployed:", workerName);
+            console.log("Content version:", source.version);
+            console.log("Catalog entries:", source.catalog.length);
+            console.log("Catalog shards:", shardNames.length);
+            console.log("Content bytes:", byteLength);
+            console.log("SHA-256:", sha256);
+            console.log("Published immutable version before updating the current pointer.");
+          }
+
+          main().catch(error => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE

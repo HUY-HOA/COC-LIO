@@ -93,7 +93,9 @@ jobs:
             }
             const encodedSize = Buffer.byteLength(JSON.stringify(source), "utf8");
             if (encodedSize > 900000) {
-              throw new Error(`Remote content is ${encodedSize} bytes; keep it below 900,000 bytes for Firestore.`);
+              console.log(`Firestore mirror skipped: remote content is ${encodedSize} bytes, above the safe document limit.`);
+              console.log("Cloudflare KV remains the primary delivery channel for this larger version.");
+              return;
             }
             if (!Number.isInteger(source.version) || source.version < 1) {
               throw new Error("remote-content/current.json has an invalid version.");

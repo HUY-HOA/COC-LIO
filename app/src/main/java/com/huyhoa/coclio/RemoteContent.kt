@@ -4,6 +4,12 @@ import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -78,20 +84,24 @@ object RemoteContentManager {
     }
 
     fun startRealtimeUpdates(context: Context) {
-        if (!accessAllowed || FirebaseAuth.getInstance().currentUser == null || listenerRegistration != null) return
+        if (!accessAllowed || FirebaseAuth.getInstance().currentUser == null) return
 
-        listenerRegistration = FirebaseFirestore.getInstance()
-            .collection(COLLECTION)
-            .document(DOCUMENT)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
-                val parsed = if (snapshot?.exists() == true) {
-                    parseRemoteContent(snapshot.data.orEmpty())
-                } else {
-                    RemoteContentState()
+        if (listenerRegistration == null) {
+            listenerRegistration = FirebaseFirestore.getInstance()
+                .collection(COLLECTION)
+                .document(DOCUMENT)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) return@addSnapshotListener
+                    val parsed = if (snapshot?.exists() == true) {
+                        parseRemoteContent(snapshot.data.orEmpty())
+                    } else {
+                        RemoteContentState()
+                    }
+                    publish(context.applicationContext, parsed)
                 }
-                publish(context.applicationContext, parsed)
-            }
+        }
+
+        refreshFromCloudflare(context.applicationContext)
     }
 
     fun stopRealtimeUpdates() {
@@ -99,7 +109,24 @@ object RemoteContentManager {
         listenerRegistration = null
     }
 
+    private val cloudflareScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var cloudflareRefreshJob: Job? = null
+    @Volatile private var lastCloudflareRefreshAt = 0L
+
+    private fun refreshFromCloudflare(context: Context) {
+        if (cloudflareRefreshJob?.isActive == true) return
+        val now = System.currentTimeMillis()
+        if (now - lastCloudflareRefreshAt < 60_000L) return
+        lastCloudflareRefreshAt = now
+        cloudflareRefreshJob = cloudflareScope.launch {
+            CloudflareRemoteContentClient.load(context)?.let { state ->
+                publish(context, state)
+            }
+        }
+    }
+
     private fun publish(context: Context, state: RemoteContentState) {
+        if (state.version < mutableContent.value.version) return
         val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val editor = preferences.edit()
             .putInt("version", state.version)
@@ -118,7 +145,7 @@ object RemoteContentManager {
     }
 }
 
-internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
+internal fun parseRemoteContent(data: Map<String, Any?>): RemoteContentState {
     val version = (data["version"] as? Number)?.toInt()?.coerceAtLeast(0) ?: 0
     if (data["enabled"] == false) return RemoteContentState(version = version)
 

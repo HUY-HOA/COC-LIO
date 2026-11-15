@@ -1,6 +1,6 @@
 # COC-LIO – nội dung cập nhật từ xa
 
-Ứng dụng đọc tài liệu Firestore sau khi người dùng đăng nhập Google. Tài liệu không chứa mã thực thi; ứng dụng chỉ diễn giải các trường dữ liệu đã được giới hạn.
+Ứng dụng ưu tiên tải nội dung công khai từ Cloudflare Workers KV qua Worker chỉ đọc. Firestore vẫn là kênh dự phòng và đồng bộ thời gian thực trong ứng dụng. Hồ sơ, quyền tài khoản, tin nhắn cộng đồng và dữ liệu riêng tư không được đưa vào kho KV công khai.
 
 ## Thiết lập một lần
 
@@ -50,3 +50,21 @@ Nếu thiếu Secret hoặc quyền Firestore, workflow sẽ báo lỗi và tài
 ## Nguồn dữ liệu quân lính và trang bị
 
 Danh mục các nhóm quân lính, Anh hùng, Thần chú, Linh thú, Máy công thành và 43 trang bị Anh hùng được lưu theo các tệp phân mảnh trong `remote-content/catalog/`. Dữ liệu chỉ số theo cấp được chuẩn hóa từ dự án dữ liệu cộng đồng [clash-of-clans-data](https://github.com/chiefpansancolt/clash-of-clans-data), dự án này ghi nguồn dữ liệu trò chơi từ Clash of Clans Wiki. Đây không phải API chính thức của Supercell; chỉ số có thể thay đổi sau bản cập nhật game, vì vậy cần đối chiếu trong game khi có thay đổi.
+
+
+## Phân phối Cloudflare và dự phòng Firebase
+
+- Cloudflare Worker: https://coc-lio-remote-content.coc-lio-data.workers.dev
+- Endpoint nội dung: /v1/content
+- KV namespace: COC-LIO Remote Content. Nội dung được phát hành theo khóa phiên bản bất biến, sau đó mới cập nhật con trỏ hiện tại.
+- Worker chỉ cho phép GET, HEAD và OPTIONS; không có API ghi công khai. Mỗi phản hồi nội dung có ETag, phiên bản và SHA-256 để ứng dụng kiểm tra cache và tính toàn vẹn.
+- Ứng dụng tải Cloudflare trước, lưu bản JSON hợp lệ trên thiết bị, không chấp nhận phiên bản thấp hơn bản đã lưu và tiếp tục có thể đọc cache khi ngoại tuyến. Firestore listener vẫn được giữ làm đường dự phòng/thời gian thực.
+- Dữ liệu KV chỉ gồm catalog trò chơi, hướng dẫn, liên kết và mẫu thông báo không chứa thông tin tài khoản. Không đưa hồ sơ, email, Player Tag cá nhân, tin nhắn, token hoặc dữ liệu riêng tư vào đây.
+- Workflow Publish COC-LIO Content to Cloudflare kiểm tra Worker, triển khai Worker và phát hành catalog khi có GitHub Actions secret CLOUDFLARE_API_TOKEN. Token cần quyền Account Workers Scripts: Edit và Workers KV Storage: Edit, giới hạn trong tài khoản COC-LIO.
+- Nếu secret chưa được cấu hình, workflow vẫn chạy unit test nhưng bỏ qua bước phát hành; Firebase vẫn hoạt động như trước.
+
+## Kế hoạch R2 cho hình ảnh và tệp lớn
+
+R2 phù hợp hơn KV cho hình ảnh, ảnh cộng đồng, tệp đính kèm và các object lớn vì đây là kho object storage, có lưu lượng egress Internet miễn phí. Tài khoản Cloudflare hiện chưa kích hoạt R2; API trả về yêu cầu bật R2 và hoàn thành bước đăng ký trong Dashboard. Không tự động bật vì bước này có thể liên kết thanh toán và sử dụng vượt mức miễn phí có thể phát sinh phí.
+
+Sau khi chủ tài khoản bật R2 và chấp nhận hạn mức/chi phí, tạo bucket COC-LIO, gắn binding chỉ đọc cho tài nguyên công khai, rồi mới chuyển ảnh/tệp theo từng loại. Tệp riêng tư phải được cấp URL tạm thời qua Worker sau khi xác minh người dùng; không đặt bucket riêng tư ở chế độ public. Trong lúc chưa bật R2, ứng dụng tiếp tục dùng đường ảnh hiện tại và Firestore cho các nội dung nhỏ như trước.
