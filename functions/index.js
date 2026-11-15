@@ -239,29 +239,3 @@ exports.notifyCommunityMessage = onDocumentCreated(
     });
   }
 );
-
-exports.notifyAppUpdate = onDocumentCreated(
-  { document: "app_updates/{updateId}", region: REGION },
-  async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) return;
-
-    const data = snapshot.data() || {};
-    if (data.notifyUsers !== true) return;
-
-    const version = String(data.versionName || "").slice(0, 40);
-    const notes = String(data.notes || "").trim();
-    const body = ("COC-LIO " + version + (notes ? ": " + notes : " đã có APK mới.")).slice(0, 450);
-
-    await messaging.send({
-      topic: "coc_lio_updates",
-      data: {
-        type: "app_update",
-        version: version,
-        title: "COC-LIO có bản cập nhật mới",
-        body: body
-      },
-      android: { priority: "high" }
-    });
-  }
-);
