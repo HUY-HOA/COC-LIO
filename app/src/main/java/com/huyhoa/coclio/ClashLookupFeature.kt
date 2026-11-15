@@ -47,6 +47,8 @@ import com.huyhoa.coclio.data.CocAssets
 import com.huyhoa.coclio.data.CocUpgradeCatalog
 import com.huyhoa.coclio.data.CocUpgradeEntry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -55,6 +57,7 @@ import org.json.JSONTokener
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.util.Locale
 
 private enum class ClashLookupKind { PLAYER, CLAN }
 
