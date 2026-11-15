@@ -37,26 +37,38 @@ test("health endpoint is available without reading the content store", async () 
 });
 
 test("content endpoint returns verified JSON and version headers", async () => {
-  const content = JSON.stringify({ enabled: true, version: 2, catalog: [] });
-  const env = makeEnvironment(content);
-  const response = await worker.fetch(new Request("https://test/v1/content"), env);
-  assert.equal(response.status, 200);
-  assert.equal(response.headers.get("X-COC-LIO-Content-Version"), "2");
-  assert.equal(response.headers.get("X-COC-LIO-Content-Store"), "cloudflare-kv");
-  assert.equal(response.headers.get("ETag"), '"' + createHash("sha256").update(content).digest("hex") + '"');
-  assert.deepEqual(await response.json(), { enabled: true, version: 2, catalog: [] });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("", { status: 503 });
+  try {
+    const content = JSON.stringify({ enabled: true, version: 2, catalog: [] });
+    const env = makeEnvironment(content);
+    const response = await worker.fetch(new Request("https://test/v1/content"), env);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("X-COC-LIO-Content-Version"), "2");
+    assert.equal(response.headers.get("X-COC-LIO-Content-Store"), "cloudflare-kv");
+    assert.equal(response.headers.get("ETag"), '"' + createHash("sha256").update(content).digest("hex") + '"');
+    assert.deepEqual(await response.json(), { enabled: true, version: 2, catalog: [] });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("matching ETag returns 304 without a response body", async () => {
-  const content = JSON.stringify({ enabled: true, version: 2, catalog: [] });
-  const env = makeEnvironment(content);
-  const first = await worker.fetch(new Request("https://test/v1/content"), env);
-  const etag = first.headers.get("ETag");
-  const second = await worker.fetch(new Request("https://test/v1/content", {
-    headers: { "If-None-Match": etag }
-  }), env);
-  assert.equal(second.status, 304);
-  assert.equal(await second.text(), "");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("", { status: 503 });
+  try {
+    const content = JSON.stringify({ enabled: true, version: 2, catalog: [] });
+    const env = makeEnvironment(content);
+    const first = await worker.fetch(new Request("https://test/v1/content"), env);
+    const etag = first.headers.get("ETag");
+    const second = await worker.fetch(new Request("https://test/v1/content", {
+      headers: { "If-None-Match": etag }
+    }), env);
+    assert.equal(second.status, 304);
+    assert.equal(await second.text(), "");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("write methods are rejected", async () => {
@@ -78,27 +90,39 @@ test("missing content pointer is reported as unavailable when GitHub is unavaila
 });
 
 test("content hash mismatch is rejected", async () => {
-  const content = JSON.stringify({ enabled: true, version: 2, catalog: [] });
-  const env = makeEnvironment(content);
-  env.values.set("content/current", JSON.stringify({
-    version: 2,
-    key: "content/v2.json",
-    sha256: "0".repeat(64)
-  }));
-  const response = await worker.fetch(new Request("https://test/v1/content"), env);
-  assert.equal(response.status, 503);
-  assert.equal((await response.json()).error, "CONTENT_SERVICE_UNAVAILABLE");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("", { status: 503 });
+  try {
+    const content = JSON.stringify({ enabled: true, version: 2, catalog: [] });
+    const env = makeEnvironment(content);
+    env.values.set("content/current", JSON.stringify({
+      version: 2,
+      key: "content/v2.json",
+      sha256: "0".repeat(64)
+    }));
+    const response = await worker.fetch(new Request("https://test/v1/content"), env);
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error, "CONTENT_SERVICE_UNAVAILABLE");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("invalid version keys are rejected", async () => {
-  const env = makeEnvironment(JSON.stringify({ enabled: true, version: 2, catalog: [] }));
-  env.values.set("content/current", JSON.stringify({
-    version: 2,
-    key: "../private.json",
-    sha256: "0".repeat(64)
-  }));
-  const response = await worker.fetch(new Request("https://test/v1/content"), env);
-  assert.equal(response.status, 503);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("", { status: 503 });
+  try {
+    const env = makeEnvironment(JSON.stringify({ enabled: true, version: 2, catalog: [] }));
+    env.values.set("content/current", JSON.stringify({
+      version: 2,
+      key: "../private.json",
+      sha256: "0".repeat(64)
+    }));
+    const response = await worker.fetch(new Request("https://test/v1/content"), env);
+    assert.equal(response.status, 503);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("Worker imports, validates, merges and stores JSON catalog shards on a new version", async () => {

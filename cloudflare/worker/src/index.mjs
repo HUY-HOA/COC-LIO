@@ -109,9 +109,14 @@ async function publishLatestRepositoryContent(env, existingPointer) {
     publishedAt: new Date().toISOString()
   };
 
-  await env.CONTENT.put(key, content);
-  await env.CONTENT.put("content/current", JSON.stringify(pointer));
-  return { content, pointer };
+  let stored = true;
+  try {
+    await env.CONTENT.put(key, content);
+    await env.CONTENT.put("content/current", JSON.stringify(pointer));
+  } catch {
+    stored = false;
+  }
+  return { content, pointer, stored };
 }
 
 async function readStoredContent(env, pointer) {
@@ -213,7 +218,14 @@ export default {
       let pointer = await env.CONTENT.get("content/current", { type: "json", cacheTtl: 60 });
       try {
         const latest = await publishLatestRepositoryContent(env, pointer);
-        if (latest) return contentResponse(request, latest.content, latest.pointer);
+        if (latest) {
+          return contentResponse(
+            request,
+            latest.content,
+            latest.pointer,
+            latest.stored ? "cloudflare-kv" : "github-origin"
+          );
+        }
       } catch {
       }
 
