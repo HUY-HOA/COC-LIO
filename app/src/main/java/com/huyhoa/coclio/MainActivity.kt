@@ -201,22 +201,68 @@ internal fun ledCycleDurationMillis(
     return (1_000.0 / cyclesPerSecond).roundToInt().coerceAtLeast(1)
 }
 
-private fun interpolateLedColor(first: Color, second: Color, fraction: Float): Color {
-    val firstHsv = FloatArray(3)
-    val secondHsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(first.toArgb(), firstHsv)
-    android.graphics.Color.colorToHSV(second.toArgb(), secondHsv)
+private data class LedOklab(
+    val lightness: Double,
+    val a: Double,
+    val b: Double,
+    val alpha: Double
+)
 
-    val hueDelta = ((secondHsv[0] - firstHsv[0] + 540f) % 360f) - 180f
-    val hsv = floatArrayOf(
-        (firstHsv[0] + hueDelta * fraction + 360f) % 360f,
-        firstHsv[1] + (secondHsv[1] - firstHsv[1]) * fraction,
-        firstHsv[2] + (secondHsv[2] - firstHsv[2]) * fraction
+private fun srgbToLinear(value: Double): Double =
+    if (value <= 0.04045) value / 12.92
+    else Math.pow((value + 0.055) / 1.055, 2.4)
+
+private fun linearToSrgb(value: Double): Float {
+    val clamped = value.coerceIn(0.0, 1.0)
+    val encoded = if (clamped <= 0.0031308) {
+        clamped * 12.92
+    } else {
+        1.055 * Math.pow(clamped, 1.0 / 2.4) - 0.055
+    }
+    return encoded.toFloat().coerceIn(0f, 1f)
+}
+
+private fun Color.toLedOklab(): LedOklab {
+    val argb = toArgb()
+    val red = srgbToLinear(((argb shr 16) and 0xFF) / 255.0)
+    val green = srgbToLinear(((argb shr 8) and 0xFF) / 255.0)
+    val blue = srgbToLinear((argb and 0xFF) / 255.0)
+
+    val l = Math.cbrt(0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue)
+    val m = Math.cbrt(0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue)
+    val s = Math.cbrt(0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue)
+
+    return LedOklab(
+        lightness = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+        a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+        b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+        alpha = alpha.toDouble()
     )
-    val alpha = (first.alpha + (second.alpha - first.alpha) * fraction) * 255f
+}
+
+private fun interpolateLedColor(first: Color, second: Color, fraction: Float): Color {
+    val amount = fraction.coerceIn(0f, 1f).toDouble()
+    val start = first.toLedOklab()
+    val end = second.toLedOklab()
+
+    val lightness = start.lightness + (end.lightness - start.lightness) * amount
+    val a = start.a + (end.a - start.a) * amount
+    val b = start.b + (end.b - start.b) * amount
+
+    val l = Math.pow(lightness + 0.3963377774 * a + 0.2158037573 * b, 3.0)
+    val m = Math.pow(lightness - 0.1055613458 * a - 0.0638541728 * b, 3.0)
+    val s = Math.pow(lightness - 0.0894841775 * a - 1.2914855480 * b, 3.0)
+
+    val red = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+    val green = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+    val blue = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+    val alpha = (start.alpha + (end.alpha - start.alpha) * amount).toFloat()
 
     return Color(
-        android.graphics.Color.HSVToColor(alpha.roundToInt().coerceIn(0, 255), hsv)
+        red = linearToSrgb(red),
+        green = linearToSrgb(green),
+        blue = linearToSrgb(blue),
+        alpha = alpha.coerceIn(0f, 1f)
     )
 }
 
@@ -226,13 +272,22 @@ internal fun movingLedColors(
     sampleCount: Int = 256
 ): List<Color> {
     if (palette.size < 2) return palette
-    val intervals = palette.size - 1
-    val normalizedPhase = phase.rem(1f)
-    return List(sampleCount.coerceAtLeast(2)) { index ->
-        val position = ((index / sampleCount.toFloat() - normalizedPhase + 1f) % 1f) * intervals
+
+    val cyclePalette = if (palette.first().toArgb() == palette.last().toArgb()) {
+        palette
+    } else {
+        palette + palette.first()
+    }
+    val intervals = cyclePalette.lastIndex
+    val normalizedPhase = ((phase % 1f) + 1f) % 1f
+    val samples = sampleCount.coerceIn(2, 512)
+
+    return List(samples) { index ->
+        val cyclePosition = ((index / samples.toFloat() - normalizedPhase + 1f) % 1f)
+        val position = cyclePosition * intervals
         val startIndex = position.toInt().coerceIn(0, intervals - 1)
         val fraction = (position - startIndex).coerceIn(0f, 1f)
-        interpolateLedColor(palette[startIndex], palette[startIndex + 1], fraction)
+        interpolateLedColor(cyclePalette[startIndex], cyclePalette[startIndex + 1], fraction)
     }
 }
 
