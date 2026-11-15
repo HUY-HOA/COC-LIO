@@ -1245,20 +1245,26 @@ fun CommunityScreen(
                         } else {
                             Text("Đang kiểm tra dữ liệu trên máy chủ…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                         }
-                        OutlinedButton(
-                            onClick = { communityCountRefreshKey += 1 },
-                            enabled = !busy,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("LÀM MỚI SỐ LIỆU")
-                        }
-                        Button(
-                            onClick = { showDeleteAllArchiveConfirmation = true },
-                            enabled = !busy,
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("XÓA TOÀN BỘ LƯU TRỮ FIREBASE")
+                            OutlinedButton(
+                                onClick = { communityCountRefreshKey += 1 },
+                                enabled = !busy,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("LÀM MỚI SỐ LIỆU", fontSize = 9.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            }
+                            Button(
+                                onClick = { showDeleteAllArchiveConfirmation = true },
+                                enabled = !busy,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("XÓA TOÀN BỘ LƯU TRỮ FIREBASE", fontSize = 9.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            }
                         }
                         Text(
                             "Bộ đếm lấy tổng số tài liệu thật từ các mục Cộng đồng và Kho đã gỡ trên Firestore; không tính hồ sơ, cài đặt và dữ liệu khác của ứng dụng.",
