@@ -154,7 +154,7 @@ internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
                 ?.takeIf { it in setOf("defense", "resources", "traps", "other", "troops", "heroes", "spells", "pets", "equipment") }
                 .orEmpty()
             val maxLevel = (item["maxLevel"] as? Number)?.toInt()
-                ?.takeIf { it in 1..100 }
+                ?.takeIf { it in 1..200 }
             val aliases = safeRemoteStringList(item["aliases"], 10, 64)
             val requirements = safeRemoteStringList(item["requirements"], 4, 100)
             val details = safeRemoteStringList(item["details"], 6, 100)
