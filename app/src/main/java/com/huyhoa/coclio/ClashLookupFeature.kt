@@ -294,6 +294,24 @@ private fun ClashGameDataLookupScreen() {
                 )
             }
         }
+        if (rarityOptions.isNotEmpty() && categoryFilter in setOf("all", "hero-equipment")) {
+            Text("ĐỘ HIẾM", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(selected = rarityFilter == "all", onClick = { rarityFilter = "all" }, label = { Text("TẤT CẢ", fontSize = 9.sp) })
+                rarityOptions.forEach { key ->
+                    FilterChip(selected = rarityFilter == key, onClick = { rarityFilter = key }, label = { Text(gameDataRarityLabel(key), fontSize = 9.sp) })
+                }
+            }
+        }
+        if (heroOptions.isNotEmpty() && categoryFilter in setOf("all", "hero-equipment")) {
+            Text("ANH HÙNG", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(selected = heroFilter == "all", onClick = { heroFilter = "all" }, label = { Text("TẤT CẢ", fontSize = 9.sp) })
+                heroOptions.forEach { key ->
+                    FilterChip(selected = heroFilter == key, onClick = { heroFilter = key }, label = { Text(gameDataHeroLabel(key), fontSize = 9.sp) })
+                }
+            }
+        }
         if (loading) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
