@@ -1,0 +1,1271 @@
+{
+  "catalog": [
+    {
+      "dataId": 73000008,
+      "name": "Diggy",
+      "category": "pets",
+      "description": "Diggy is an introvert and spends a lot of time hiding underground. Still when it comes to battle, he'll do his part, coming up to attack buildings and aid his Hero. If his Hero's taken out, he'll seek out a new one for support, scritches.",
+      "maxLevel": 15,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 32",
+        "Tầm đánh: 0.8",
+        "Tốc độ tấn công: 1.1",
+        "Target Type: Mặt đất",
+        "Preferred Target: Hero's Target",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 105",
+          "Sát thương mỗi đòn: 115.5",
+          "Stun Duration: 2",
+          "Máu: 3650",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 110",
+          "Sát thương mỗi đòn: 121",
+          "Stun Duration: 2",
+          "Máu: 3800",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 90000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày 12 giờ"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 115",
+          "Sát thương mỗi đòn: 126.5",
+          "Stun Duration: 2",
+          "Máu: 3950",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 105000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 120",
+          "Sát thương mỗi đòn: 132",
+          "Stun Duration: 2",
+          "Máu: 4100",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 120000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 125",
+          "Sát thương mỗi đòn: 137.5",
+          "Stun Duration: 2.5",
+          "Máu: 4250",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 130000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 130",
+          "Sát thương mỗi đòn: 143",
+          "Stun Duration: 2.5",
+          "Máu: 4400",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 140000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày 12 giờ"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 135",
+          "Sát thương mỗi đòn: 148.5",
+          "Stun Duration: 2.5",
+          "Máu: 4550",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 150000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 140",
+          "Sát thương mỗi đòn: 154",
+          "Stun Duration: 2.5",
+          "Máu: 4700",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 160000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày 12 giờ"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 145",
+          "Sát thương mỗi đòn: 159.5",
+          "Stun Duration: 2.5",
+          "Máu: 4850",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 170000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 150",
+          "Sát thương mỗi đòn: 165",
+          "Stun Duration: 3",
+          "Máu: 5000",
+          "Nhà Linh thú cấp: 6",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 180000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày 12 giờ"
+        ],
+        "11": [
+          "Sát thương mỗi giây: 155",
+          "Sát thương mỗi đòn: 170.5",
+          "Stun Duration: 3",
+          "Máu: 5150",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 220000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày"
+        ],
+        "12": [
+          "Sát thương mỗi giây: 160",
+          "Sát thương mỗi đòn: 176",
+          "Stun Duration: 3",
+          "Máu: 5300",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 250000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày 12 giờ"
+        ],
+        "13": [
+          "Sát thương mỗi giây: 165",
+          "Sát thương mỗi đòn: 181.5",
+          "Stun Duration: 3",
+          "Máu: 5450",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 280000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "14": [
+          "Sát thương mỗi giây: 170",
+          "Sát thương mỗi đòn: 187",
+          "Stun Duration: 3",
+          "Máu: 5600",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 310000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "15": [
+          "Sát thương mỗi giây: 175",
+          "Sát thương mỗi đòn: 192.5",
+          "Stun Duration: 3.5",
+          "Máu: 5750",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 350000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 73000002,
+      "name": "Electro Owl",
+      "category": "pets",
+      "description": "Electro Owl zaps enemy defenses into dust from great distance. He's mostly made of feathers though, so better keep him well protected!",
+      "maxLevel": 15,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 20",
+        "Tầm đánh: 6",
+        "Tốc độ tấn công: 1.4",
+        "Target Type: Mặt đất và trên không",
+        "Preferred Target: Hero's Target",
+        "Attack Type: Chain Lightning"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 100",
+          "Sát thương mỗi đòn: 140",
+          "Máu: 1600",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 105",
+          "Sát thương mỗi đòn: 147",
+          "Máu: 1700",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 30000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày 12 giờ"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 110",
+          "Sát thương mỗi đòn: 154",
+          "Máu: 1800",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 45000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 115",
+          "Sát thương mỗi đòn: 161",
+          "Máu: 1900",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 60000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 120",
+          "Sát thương mỗi đòn: 168",
+          "Máu: 2000",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 75000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 125",
+          "Sát thương mỗi đòn: 175",
+          "Máu: 2100",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 90000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày 12 giờ"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 130",
+          "Sát thương mỗi đòn: 182",
+          "Máu: 2200",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 105000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 135",
+          "Sát thương mỗi đòn: 189",
+          "Máu: 2300",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 120000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày 12 giờ"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 140",
+          "Sát thương mỗi đòn: 196",
+          "Máu: 2400",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 135000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 145",
+          "Sát thương mỗi đòn: 203",
+          "Máu: 2500",
+          "Nhà Linh thú cấp: 2",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 150000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày 12 giờ"
+        ],
+        "11": [
+          "Sát thương mỗi giây: 150",
+          "Sát thương mỗi đòn: 210",
+          "Máu: 2600",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 165000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày"
+        ],
+        "12": [
+          "Sát thương mỗi giây: 155",
+          "Sát thương mỗi đòn: 217",
+          "Máu: 2700",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 180000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "13": [
+          "Sát thương mỗi giây: 160",
+          "Sát thương mỗi đòn: 224",
+          "Máu: 2800",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 195000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "14": [
+          "Sát thương mỗi giây: 165",
+          "Sát thương mỗi đòn: 231",
+          "Máu: 2900",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 210000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "15": [
+          "Sát thương mỗi giây: 170",
+          "Sát thương mỗi đòn: 238",
+          "Máu: 3000",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 225000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 73000009,
+      "name": "Frosty",
+      "category": "pets",
+      "description": "Frosty is the coolest pet... literally. Not only does his icy breath cause enemies to chill out, but he also releases swarms of Frostmites to further slow down defenses and help his Hero.",
+      "maxLevel": 15,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 24",
+        "Tầm đánh: 3.5",
+        "Tốc độ tấn công: 1.2",
+        "Target Type: Mặt đất và trên không",
+        "Preferred Target: Within 4.5 tiles of Hero",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 94",
+          "Sát thương mỗi đòn: 112.8",
+          "Frostmites Per Summon: 1",
+          "Max Frostmites: 4",
+          "Máu: 2350",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 98",
+          "Sát thương mỗi đòn: 117.6",
+          "Frostmites Per Summon: 1",
+          "Max Frostmites: 4",
+          "Máu: 2450",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 70000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày 12 giờ"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 102",
+          "Sát thương mỗi đòn: 122.4",
+          "Frostmites Per Summon: 1",
+          "Max Frostmites: 4",
+          "Máu: 2550",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 85000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 106",
+          "Sát thương mỗi đòn: 127.2",
+          "Frostmites Per Summon: 1",
+          "Max Frostmites: 4",
+          "Máu: 2650",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 100000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 110",
+          "Sát thương mỗi đòn: 132",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 8",
+          "Máu: 2800",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 115000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 114",
+          "Sát thương mỗi đòn: 136.8",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 8",
+          "Máu: 2900",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 130000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày 12 giờ"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 118",
+          "Sát thương mỗi đòn: 141.6",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 8",
+          "Máu: 3000",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 145000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 122",
+          "Sát thương mỗi đòn: 146.4",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 8",
+          "Máu: 3100",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 160000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày 12 giờ"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 126",
+          "Sát thương mỗi đòn: 151.2",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 8",
+          "Máu: 3200",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 170000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 130",
+          "Sát thương mỗi đòn: 156",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 10",
+          "Máu: 3300",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 180000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày 12 giờ"
+        ],
+        "11": [
+          "Sát thương mỗi giây: 134",
+          "Sát thương mỗi đòn: 160.8",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 10",
+          "Máu: 3400",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 200000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày"
+        ],
+        "12": [
+          "Sát thương mỗi giây: 138",
+          "Sát thương mỗi đòn: 165.6",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 10",
+          "Máu: 3500",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 230000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "13": [
+          "Sát thương mỗi giây: 142",
+          "Sát thương mỗi đòn: 170.4",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 10",
+          "Máu: 3600",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 260000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "14": [
+          "Sát thương mỗi giây: 146",
+          "Sát thương mỗi đòn: 175.2",
+          "Frostmites Per Summon: 2",
+          "Max Frostmites: 10",
+          "Máu: 3700",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 290000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "15": [
+          "Sát thương mỗi giây: 150",
+          "Sát thương mỗi đòn: 180",
+          "Frostmites Per Summon: 3",
+          "Max Frostmites: 12",
+          "Máu: 3800",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 320000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 73000017,
+      "name": "Greedy Raven",
+      "category": "pets",
+      "description": "No scarecrow is frightning enough to keep Greedy Raven away from shiny loot! This masked bandit's swift feathers target and deal extra damage to resource buildings and egos.",
+      "maxLevel": 10,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 28",
+        "Tầm đánh: 8",
+        "Tốc độ tấn công: 0.42",
+        "Target Type: Mặt đất và trên không",
+        "Preferred Target: Resources",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 110",
+          "Sát thương mỗi đòn: 46.2",
+          "Dps On Resource Buildings: 550",
+          "Máu: 2150",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 115",
+          "Sát thương mỗi đòn: 48.3",
+          "Dps On Resource Buildings: 575",
+          "Máu: 2300",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 260000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 120",
+          "Sát thương mỗi đòn: 50.4",
+          "Dps On Resource Buildings: 600",
+          "Máu: 2450",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 280000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 125",
+          "Sát thương mỗi đòn: 52.5",
+          "Dps On Resource Buildings: 625",
+          "Máu: 2600",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 300000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 130",
+          "Sát thương mỗi đòn: 54.6",
+          "Dps On Resource Buildings: 650",
+          "Máu: 2750",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 320000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 135",
+          "Sát thương mỗi đòn: 56.7",
+          "Dps On Resource Buildings: 675",
+          "Máu: 2900",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 340000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 140",
+          "Sát thương mỗi đòn: 58.8",
+          "Dps On Resource Buildings: 700",
+          "Máu: 3050",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 360000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 145",
+          "Sát thương mỗi đòn: 60.9",
+          "Dps On Resource Buildings: 725",
+          "Máu: 3200",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 380000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 150",
+          "Sát thương mỗi đòn: 63",
+          "Dps On Resource Buildings: 750",
+          "Máu: 3350",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 400000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 155",
+          "Sát thương mỗi đòn: 65.1",
+          "Dps On Resource Buildings: 775",
+          "Máu: 3500",
+          "Nhà Linh thú cấp: 12",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nâng cấp: 420000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 73000000,
+      "name": "L.A.S.S.I",
+      "category": "pets",
+      "description": "The trustiest hound to ever roam the village proper, L.A.S.S.I chases enemies with unrelenting fury. Unless they fly, in which case she just observes them intently.",
+      "maxLevel": 15,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 32",
+        "Tầm đánh: 0.6",
+        "Tốc độ tấn công: 0.9",
+        "Target Type: Mặt đất",
+        "Preferred Target: Within 2.5 tiles of Hero",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 160",
+          "Sát thương mỗi đòn: 144",
+          "Máu: 2800",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 170",
+          "Sát thương mỗi đòn: 153",
+          "Máu: 2900",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 20000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 180",
+          "Sát thương mỗi đòn: 162",
+          "Máu: 3000",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 30000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày 12 giờ"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 190",
+          "Sát thương mỗi đòn: 171",
+          "Máu: 3100",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 40000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 200",
+          "Sát thương mỗi đòn: 180",
+          "Máu: 3200",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 50000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày 12 giờ"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 210",
+          "Sát thương mỗi đòn: 189",
+          "Máu: 3300",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 60000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 220",
+          "Sát thương mỗi đòn: 198",
+          "Máu: 3400",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 70000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày 12 giờ"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 230",
+          "Sát thương mỗi đòn: 207",
+          "Máu: 3500",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 80000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 240",
+          "Sát thương mỗi đòn: 216",
+          "Máu: 3600",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 90000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày 12 giờ"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 260",
+          "Sát thương mỗi đòn: 234",
+          "Máu: 3700",
+          "Nhà Linh thú cấp: 1",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 100000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "11": [
+          "Sát thương mỗi giây: 290",
+          "Sát thương mỗi đòn: 261",
+          "Máu: 3850",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 110000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày 12 giờ"
+        ],
+        "12": [
+          "Sát thương mỗi giây: 310",
+          "Sát thương mỗi đòn: 279",
+          "Máu: 3950",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 120000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "13": [
+          "Sát thương mỗi giây: 330",
+          "Sát thương mỗi đòn: 297",
+          "Máu: 4100",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 130000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày 12 giờ"
+        ],
+        "14": [
+          "Sát thương mỗi giây: 360",
+          "Sát thương mỗi đòn: 324",
+          "Máu: 4300",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 140000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày"
+        ],
+        "15": [
+          "Sát thương mỗi giây: 400",
+          "Sát thương mỗi đòn: 360",
+          "Máu: 4500",
+          "Nhà Linh thú cấp: 5",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 150000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày 12 giờ"
+        ]
+      }
+    },
+    {
+      "dataId": 73000001,
+      "name": "Mighty Yak",
+      "category": "pets",
+      "description": "Built like a Siege Machine, the Mighty Yak has a knack for knocking down Walls it comes in contact with. It also flies into a rage if you knock out its companion.",
+      "maxLevel": 15,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 20",
+        "Tầm đánh: 1.2",
+        "Tốc độ tấn công: 2.1",
+        "Target Type: Mặt đất",
+        "Preferred Target: Within 7 tiles of Hero",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 60",
+          "Sát thương mỗi đòn: 126",
+          "Damage Vs Walls: 2520",
+          "Máu: 3750",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 64",
+          "Sát thương mỗi đòn: 134.4",
+          "Damage Vs Walls: 2688",
+          "Máu: 4000",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 40000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 68",
+          "Sát thương mỗi đòn: 142.8",
+          "Damage Vs Walls: 2856",
+          "Máu: 4250",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 50000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày 12 giờ"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 72",
+          "Sát thương mỗi đòn: 151.2",
+          "Damage Vs Walls: 3024",
+          "Máu: 4500",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 60000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 76",
+          "Sát thương mỗi đòn: 159.6",
+          "Damage Vs Walls: 3192",
+          "Máu: 4750",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 70000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày 12 giờ"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 80",
+          "Sát thương mỗi đòn: 168",
+          "Damage Vs Walls: 3360",
+          "Máu: 4950",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 80000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 84",
+          "Sát thương mỗi đòn: 176.4",
+          "Damage Vs Walls: 3528",
+          "Máu: 5100",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 90000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày 12 giờ"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 88",
+          "Sát thương mỗi đòn: 184.8",
+          "Damage Vs Walls: 3696",
+          "Máu: 5250",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 100000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 92",
+          "Sát thương mỗi đòn: 193.2",
+          "Damage Vs Walls: 3864",
+          "Máu: 5400",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 110000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày 12 giờ"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 96",
+          "Sát thương mỗi đòn: 201.6",
+          "Damage Vs Walls: 4032",
+          "Máu: 5550",
+          "Nhà Linh thú cấp: 3",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 120000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "11": [
+          "Sát thương mỗi giây: 100",
+          "Sát thương mỗi đòn: 210",
+          "Damage Vs Walls: 4200",
+          "Máu: 5700",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 130000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày 12 giờ"
+        ],
+        "12": [
+          "Sát thương mỗi giây: 104",
+          "Sát thương mỗi đòn: 218.4",
+          "Damage Vs Walls: 4368",
+          "Máu: 5850",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 140000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "13": [
+          "Sát thương mỗi giây: 108",
+          "Sát thương mỗi đòn: 226.8",
+          "Damage Vs Walls: 4536",
+          "Máu: 6000",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 150000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày 12 giờ"
+        ],
+        "14": [
+          "Sát thương mỗi giây: 112",
+          "Sát thương mỗi đòn: 235.2",
+          "Damage Vs Walls: 4704",
+          "Máu: 6150",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 160000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày"
+        ],
+        "15": [
+          "Sát thương mỗi giây: 116",
+          "Sát thương mỗi đòn: 243.6",
+          "Damage Vs Walls: 4872",
+          "Máu: 6300",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 170000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày 12 giờ"
+        ]
+      }
+    },
+    {
+      "dataId": 73000004,
+      "name": "Phoenix",
+      "category": "pets",
+      "description": "A true friend will egg you on when things get rough. Phoenix starts the battle as a helpless egg, but at the moment her Hero might go down, she hatches. The furious fiery fowl then gives temporary invulnerability to its Hero and engages nea",
+      "maxLevel": 10,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 16",
+        "Tầm đánh: 2.5",
+        "Tốc độ tấn công: 1",
+        "Target Type: Mặt đất và trên không",
+        "Preferred Target: Hero's Target",
+        "Attack Type: Area Splash"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 178",
+          "Sát thương mỗi đòn: 178",
+          "Revive Duration: 6",
+          "Máu: 3120",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 186",
+          "Sát thương mỗi đòn: 186",
+          "Revive Duration: 6",
+          "Máu: 3240",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 80000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày 12 giờ"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 194",
+          "Sát thương mỗi đòn: 194",
+          "Revive Duration: 6",
+          "Máu: 3360",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 95000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 202",
+          "Sát thương mỗi đòn: 202",
+          "Revive Duration: 6",
+          "Máu: 3480",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 110000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 210",
+          "Sát thương mỗi đòn: 210",
+          "Revive Duration: 7",
+          "Máu: 3600",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 125000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 218",
+          "Sát thương mỗi đòn: 218",
+          "Revive Duration: 7",
+          "Máu: 3720",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 140000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày 12 giờ"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 226",
+          "Sát thương mỗi đòn: 226",
+          "Revive Duration: 7",
+          "Máu: 3840",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 155000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 234",
+          "Sát thương mỗi đòn: 234",
+          "Revive Duration: 7",
+          "Máu: 3960",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 170000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày 12 giờ"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 242",
+          "Sát thương mỗi đòn: 242",
+          "Revive Duration: 7",
+          "Máu: 4080",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 180000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 250",
+          "Sát thương mỗi đòn: 250",
+          "Revive Duration: 8",
+          "Máu: 4200",
+          "Nhà Linh thú cấp: 8",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 190000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày 12 giờ"
+        ]
+      }
+    },
+    {
+      "dataId": 73000007,
+      "name": "Poison Lizard",
+      "category": "pets",
+      "description": "Always the fastest never the lastest, Poison Lizard spits slowing toxins at its foes. Is it actually a venom lizard? Possibly, but who's brave enough to correct it?",
+      "maxLevel": 15,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 36",
+        "Tầm đánh: 4.5",
+        "Tốc độ tấn công: 0.35",
+        "Target Type: Mặt đất và trên không",
+        "Preferred Target: Heroes and Troops",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 181",
+          "Sát thương mỗi đòn: 63.35",
+          "Poison Max Dps: 80",
+          "Poison Speed Decrease Percent: 26",
+          "Poison Attack Rate Decrease Percent: 35",
+          "Máu: 1400",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 192",
+          "Sát thương mỗi đòn: 67.2",
+          "Poison Max Dps: 80",
+          "Poison Speed Decrease Percent: 26",
+          "Poison Attack Rate Decrease Percent: 35",
+          "Máu: 1450",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 60000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 203",
+          "Sát thương mỗi đòn: 71.05",
+          "Poison Max Dps: 80",
+          "Poison Speed Decrease Percent: 26",
+          "Poison Attack Rate Decrease Percent: 35",
+          "Máu: 1500",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 75000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày 12 giờ"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 214",
+          "Sát thương mỗi đòn: 74.9",
+          "Poison Max Dps: 80",
+          "Poison Speed Decrease Percent: 26",
+          "Poison Attack Rate Decrease Percent: 35",
+          "Máu: 1550",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 90000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 225",
+          "Sát thương mỗi đòn: 78.75",
+          "Poison Max Dps: 100",
+          "Poison Speed Decrease Percent: 34",
+          "Poison Attack Rate Decrease Percent: 45",
+          "Máu: 1600",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 100000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày 12 giờ"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 236",
+          "Sát thương mỗi đòn: 82.6",
+          "Poison Max Dps: 100",
+          "Poison Speed Decrease Percent: 34",
+          "Poison Attack Rate Decrease Percent: 45",
+          "Máu: 1650",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 110000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 247",
+          "Sát thương mỗi đòn: 86.45",
+          "Poison Max Dps: 100",
+          "Poison Speed Decrease Percent: 34",
+          "Poison Attack Rate Decrease Percent: 45",
+          "Máu: 1700",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 120000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày 12 giờ"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 258",
+          "Sát thương mỗi đòn: 90.3",
+          "Poison Max Dps: 100",
+          "Poison Speed Decrease Percent: 34",
+          "Poison Attack Rate Decrease Percent: 45",
+          "Máu: 1800",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 130000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 269",
+          "Sát thương mỗi đòn: 94.15",
+          "Poison Max Dps: 100",
+          "Poison Speed Decrease Percent: 34",
+          "Poison Attack Rate Decrease Percent: 45",
+          "Máu: 1900",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 140000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày 12 giờ"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 280",
+          "Sát thương mỗi đòn: 98",
+          "Poison Max Dps: 120",
+          "Poison Speed Decrease Percent: 38",
+          "Poison Attack Rate Decrease Percent: 50",
+          "Máu: 2050",
+          "Nhà Linh thú cấp: 7",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nâng cấp: 150000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "11": [
+          "Sát thương mỗi giây: 291",
+          "Sát thương mỗi đòn: 101.85",
+          "Poison Max Dps: 120",
+          "Poison Speed Decrease Percent: 38",
+          "Poison Attack Rate Decrease Percent: 50",
+          "Máu: 2100",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 180000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "12": [
+          "Sát thương mỗi giây: 302",
+          "Sát thương mỗi đòn: 105.7",
+          "Poison Max Dps: 120",
+          "Poison Speed Decrease Percent: 38",
+          "Poison Attack Rate Decrease Percent: 50",
+          "Máu: 2150",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 200000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày"
+        ],
+        "13": [
+          "Sát thương mỗi giây: 313",
+          "Sát thương mỗi đòn: 109.55",
+          "Poison Max Dps: 120",
+          "Poison Speed Decrease Percent: 38",
+          "Poison Attack Rate Decrease Percent: 50",
+          "Máu: 2200",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 220000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "14": [
+          "Sát thương mỗi giây: 324",
+          "Sát thương mỗi đòn: 113.4",
+          "Poison Max Dps: 120",
+          "Poison Speed Decrease Percent: 38",
+          "Poison Attack Rate Decrease Percent: 50",
+          "Máu: 2250",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 240000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "15": [
+          "Sát thương mỗi giây: 335",
+          "Sát thương mỗi đòn: 117.25",
+          "Poison Max Dps: 140",
+          "Poison Speed Decrease Percent: 42",
+          "Poison Attack Rate Decrease Percent: 55",
+          "Máu: 2300",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 260000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ]
+      }
+    }
+  ]
+}
