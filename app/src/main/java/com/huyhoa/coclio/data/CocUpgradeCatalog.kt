@@ -3,6 +3,8 @@ package com.huyhoa.coclio.data
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.Normalizer
+import java.util.Locale
 
 data class CocUpgradeLevel(
     val level: Int,
@@ -82,8 +84,24 @@ data class CocUpgradeEntry(
     val hero: String,
     val maxLevel: Int,
     val properties: JSONObject,
-    val levels: List<CocUpgradeLevel>
+    val levels: List<CocUpgradeLevel>,
+    val aliases: List<String> = emptyList()
 ) {
+    val sectionKey: String
+        get() = when (category) {
+            "hero-equipment" -> "equipment"
+            "siege-machine" -> "siege_machines"
+            "troop" -> if (base == "builder") "units2" else "units"
+            "hero" -> if (base == "builder") "heroes2" else "heroes"
+            "spell" -> "spells"
+            "pet" -> "pets"
+            "guardian" -> "guardians"
+            "trap" -> if (base == "builder") "traps2" else "traps"
+            else -> if (base == "builder") "buildings2" else "buildings"
+        }
+
+    val localizedName: String get() = CocNames.name(dataId, sectionKey)
+
     fun level(level: Int): CocUpgradeLevel? = levels.firstOrNull { it.level == level }
 }
 
@@ -116,6 +134,14 @@ object CocUpgradeCatalog {
     @Volatile
     private var cached: Map<Int, CocUpgradeEntry>? = null
 
+    @Volatile
+    private var cachedWarnings: List<String> = emptyList()
+
+    fun warnings(context: Context): List<String> {
+        all(context)
+        return cachedWarnings
+    }
+
     fun all(context: Context): Map<Int, CocUpgradeEntry> {
         cached?.let { return it }
         return synchronized(this) {
@@ -127,6 +153,7 @@ object CocUpgradeCatalog {
 
     private fun load(context: Context): Map<Int, CocUpgradeEntry> {
         val result = linkedMapOf<Int, CocUpgradeEntry>()
+        val warnings = mutableListOf<String>()
         val names = context.assets.list("coc_upgrade").orEmpty()
             .filter { it.matches(Regex("part-\\d{2}\\.json")) }
             .sorted()
@@ -138,7 +165,14 @@ object CocUpgradeCatalog {
                 for (index in 0 until items.length()) {
                     val raw = items.optJSONObject(index) ?: continue
                     val id = raw.optInt("dataId", -1)
-                    if (id < 1) continue
+                    if (id < 1) {
+                        warnings += "$fileName: bản ghi thứ ${index + 1} thiếu dataId hợp lệ"
+                        continue
+                    }
+                    if (result.containsKey(id)) {
+                        warnings += "$fileName: dataId $id bị trùng; giữ bản ghi đầu tiên"
+                        continue
+                    }
                     val levelsJson = raw.optJSONArray("levels") ?: JSONArray()
                     val levels = (0 until levelsJson.length()).mapNotNull { levelIndex ->
                         val levelRaw = levelsJson.optJSONObject(levelIndex) ?: return@mapNotNull null
@@ -156,13 +190,69 @@ object CocUpgradeCatalog {
                         hero = raw.optString("hero"),
                         maxLevel = raw.optInt("maxLevel", levels.maxOfOrNull { it.level } ?: 0),
                         properties = raw.optJSONObject("properties") ?: JSONObject(),
-                        levels = levels
+                        levels = levels,
+                        aliases = raw.optJSONArray("aliases")?.let { aliases ->
+                            (0 until aliases.length()).mapNotNull { aliasIndex ->
+                                aliases.optString(aliasIndex).takeIf { it.isNotBlank() }
+                            }
+                        }.orEmpty()
                     )
                 }
+            }.onFailure { error ->
+                warnings += "$fileName: ${error.message ?: "JSON không hợp lệ"}"
             }
         }
+        if (names.isEmpty()) warnings += "Không tìm thấy tệp part-XX.json trong assets/coc_upgrade"
+        cachedWarnings = warnings
         return result
     }
+
+    fun search(
+        entries: Collection<CocUpgradeEntry>,
+        query: String,
+        baseFilter: String = "all",
+        categoryFilter: String = "all",
+        limit: Int = 30
+    ): List<CocUpgradeEntry> {
+        val rawQuery = query.trim()
+        val normalizedQuery = normalizeSearchText(rawQuery.removePrefix("#"))
+        val idQuery = rawQuery.removePrefix("#").filter(Char::isDigit)
+        return entries.asSequence()
+            .filter { baseFilter == "all" || it.base == baseFilter }
+            .filter { categoryFilter == "all" || it.category == categoryFilter }
+            .filter { entry ->
+                if (rawQuery.isBlank()) return@filter true
+                val searchable = normalizeSearchText(
+                    listOf(entry.dataId.toString(), entry.id, entry.name, entry.localizedName,
+                        entry.description, entry.hero, entry.category, entry.base, entry.rarity)
+                        .plus(entry.aliases).joinToString(" ")
+                )
+                val numericMatch = idQuery.isNotBlank() && entry.dataId.toString().contains(idQuery)
+                val textMatch = normalizedQuery.isNotBlank() && normalizedQuery.split(' ')
+                    .all { token -> searchable.contains(token) }
+                numericMatch || textMatch
+            }
+            .sortedWith(
+                compareBy<CocUpgradeEntry> {
+                    when {
+                        idQuery.isNotBlank() && it.dataId.toString() == idQuery -> 0
+                        it.id.equals(rawQuery, ignoreCase = true) -> 1
+                        normalizeSearchText(it.name) == normalizedQuery -> 2
+                        normalizeSearchText(it.localizedName) == normalizedQuery -> 3
+                        it.dataId.toString().startsWith(idQuery) && idQuery.isNotBlank() -> 4
+                        else -> 5
+                    }
+                }.thenBy { it.localizedName.lowercase(Locale.ROOT) }
+            )
+            .take(limit.coerceIn(1, 100))
+            .toList()
+    }
+
+    private fun normalizeSearchText(value: String): String =
+        Normalizer.normalize(value.lowercase(Locale.ROOT).replace('đ', 'd'), Normalizer.Form.NFD)
+            .replace(Regex("\\p{M}+"), "")
+            .replace(Regex("[^a-z0-9]+"), " ")
+            .trim()
 
     fun maxLevelAtHall(
         entry: CocUpgradeEntry,
