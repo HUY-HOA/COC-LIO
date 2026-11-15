@@ -1133,179 +1133,185 @@ fun CommunityScreen(
                 }
             }
         } else if (selectedSection == 2 && isOwner) {
-            Column(
+            LazyColumn(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 12f),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Text("TỰ ĐỘNG XÓA TOÀN BỘ CỘNG ĐỒNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FilterChip(
-                                selected = !communityAutoDeleteEnabled,
-                                onClick = { communityAutoDeleteEnabled = false },
-                                label = { Text("TẮT", fontSize = 9.sp) }
+                item(key = "community-auto-delete-settings") {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 12f),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Text("TỰ ĐỘNG XÓA TOÀN BỘ CỘNG ĐỒNG", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                FilterChip(
+                                    selected = !communityAutoDeleteEnabled,
+                                    onClick = { communityAutoDeleteEnabled = false },
+                                    label = { Text("TẮT", fontSize = 9.sp) }
+                                )
+                                FilterChip(
+                                    selected = communityAutoDeleteEnabled,
+                                    onClick = { communityAutoDeleteEnabled = true },
+                                    label = { Text("BẬT", fontSize = 9.sp) }
+                                )
+                            }
+                            OutlinedTextField(
+                                value = communityAutoDeleteDays,
+                                onValueChange = { communityAutoDeleteDays = it.filter(Char::isDigit).take(4) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                label = { Text("Số ngày giữ nội dung") }
                             )
-                            FilterChip(
-                                selected = communityAutoDeleteEnabled,
-                                onClick = { communityAutoDeleteEnabled = true },
-                                label = { Text("BẬT", fontSize = 9.sp) }
-                            )
-                        }
-                        OutlinedTextField(
-                            value = communityAutoDeleteDays,
-                            onValueChange = { communityAutoDeleteDays = it.filter(Char::isDigit).take(4) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("Số ngày giữ nội dung") }
-                        )
-                        Text(
-                            if (communityAutoDeleteEnabled) {
-                                "Tin nhắn, JSON, ảnh, tệp, APK và bản đã gỡ sẽ bị xóa khỏi Firestore khi đủ số ngày tính từ lúc đăng. Ứng dụng quản lý sẽ tự dọn định kỳ; thời điểm xóa có thể trễ khi máy ngoại tuyến hoặc Android hạn chế chạy nền."
-                            } else {
-                                "Đang tắt tự động xóa. Nội dung trong Cộng đồng và Kho đã gỡ sẽ không bị xóa theo thời hạn mới."
-                            },
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 9.sp
-                        )
-                        Button(
-                            onClick = {
-                                val days = communityAutoDeleteDays.toIntOrNull()
-                                if (communityAutoDeleteEnabled && (days == null || days !in 1..1200)) {
-                                    statusMessage = "Nhập số ngày tự động xóa từ 1 đến 1200."
+                            Text(
+                                if (communityAutoDeleteEnabled) {
+                                    "Tin nhắn, JSON, ảnh, tệp, APK và bản đã gỡ sẽ bị xóa khỏi Firestore khi đủ số ngày tính từ lúc đăng. Ứng dụng quản lý sẽ tự dọn định kỳ; thời điểm xóa có thể trễ khi máy ngoại tuyến hoặc Android hạn chế chạy nền."
                                 } else {
-                                    scope.launch {
-                                        busy = true
-                                        try {
-                                            FirebaseFirestore.getInstance()
-                                                .collection("admin")
-                                                .document("community_archive_settings")
-                                                .set(
-                                                    mapOf(
-                                                        "communityAutoDeleteEnabled" to communityAutoDeleteEnabled,
-                                                        "communityAutoDeleteDays" to (days ?: 30),
-                                                        "attachmentAutoDeleteEnabled" to communityAutoDeleteEnabled,
-                                                        "attachmentAutoDeleteDays" to (days ?: 30),
-                                                        "updatedAt" to FieldValue.serverTimestamp()
-                                                    ),
-                                                    SetOptions.merge()
-                                                )
-                                                .awaitCommunityResult()
-                                            val removed = if (communityAutoDeleteEnabled && days != null) {
-                                                cleanupExpiredCommunityRecords(days)
-                                            } else {
-                                                cleanupCommunityArchive()
+                                    "Đang tắt tự động xóa. Nội dung trong Cộng đồng và Kho đã gỡ sẽ không bị xóa theo thời hạn mới."
+                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp
+                            )
+                            Button(
+                                onClick = {
+                                    val days = communityAutoDeleteDays.toIntOrNull()
+                                    if (communityAutoDeleteEnabled && (days == null || days !in 1..1200)) {
+                                        statusMessage = "Nhập số ngày tự động xóa từ 1 đến 1200."
+                                    } else {
+                                        scope.launch {
+                                            busy = true
+                                            try {
+                                                FirebaseFirestore.getInstance()
+                                                    .collection("admin")
+                                                    .document("community_archive_settings")
+                                                    .set(
+                                                        mapOf(
+                                                            "communityAutoDeleteEnabled" to communityAutoDeleteEnabled,
+                                                            "communityAutoDeleteDays" to (days ?: 30),
+                                                            "attachmentAutoDeleteEnabled" to communityAutoDeleteEnabled,
+                                                            "attachmentAutoDeleteDays" to (days ?: 30),
+                                                            "updatedAt" to FieldValue.serverTimestamp()
+                                                        ),
+                                                        SetOptions.merge()
+                                                    )
+                                                    .awaitCommunityResult()
+                                                val removed = if (communityAutoDeleteEnabled && days != null) {
+                                                    cleanupExpiredCommunityRecords(days)
+                                                } else {
+                                                    cleanupCommunityArchive()
+                                                }
+                                                communityCountRefreshKey += 1
+                                                statusMessage = if (communityAutoDeleteEnabled) {
+                                                    "Đã lưu. Tự động xóa toàn bộ nội dung sau $days ngày; đã dọn $removed bản ghi hết hạn."
+                                                } else {
+                                                    "Đã lưu. Tự động xóa toàn bộ cộng đồng đã tắt; đã dọn $removed mục lưu trữ đến hạn cũ."
+                                                }
+                                            } catch (error: Exception) {
+                                                statusMessage = error.message ?: "Không thể lưu thiết lập tự động xóa."
+                                            } finally {
+                                                busy = false
                                             }
-                                            communityCountRefreshKey += 1
-                                            statusMessage = if (communityAutoDeleteEnabled) {
-                                                "Đã lưu. Tự động xóa toàn bộ nội dung sau $days ngày; đã dọn $removed bản ghi hết hạn."
-                                            } else {
-                                                "Đã lưu. Tự động xóa toàn bộ cộng đồng đã tắt; đã dọn $removed mục lưu trữ đến hạn cũ."
-                                            }
-                                        } catch (error: Exception) {
-                                            statusMessage = error.message ?: "Không thể lưu thiết lập tự động xóa."
-                                        } finally {
-                                            busy = false
                                         }
                                     }
+                                },
+                                enabled = !busy,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("LƯU THIẾT LẬP")
+                            }
+                        }
+                    }
+                }
+                item(key = "community-storage-counts") {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 12f),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text("BẢN GHI CÒN LƯU TRONG FIREBASE", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                            if (communityStorageCounts != null) {
+                                val counts = communityStorageCounts!!
+                                Text("TỔNG CỘNG: ${counts.total} BẢN GHI", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                                Text("Cộng đồng: ${counts.activeTotal}  •  Kho đã gỡ: ${counts.archivedTotal}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                                Text(
+                                    "Cộng đồng: ${counts.activeMessages} mục tin nhắn/ảnh, ${counts.activeJsons} JSON riêng",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 9.sp
+                                )
+                                Text(
+                                    "Kho đã gỡ: ${counts.archivedMessages} tin nhắn/JSON, ${counts.archivedImages} ảnh, ${counts.archivedFiles} tệp, ${counts.archivedApks} APK",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 9.sp
+                                )
+                            } else if (communityStorageCountError != null) {
+                                Text(communityStorageCountError!!, color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
+                            } else {
+                                Text("Đang kiểm tra dữ liệu trên máy chủ…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(
+                                    onClick = { communityCountRefreshKey += 1 },
+                                    enabled = !busy,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("LÀM MỚI SỐ LIỆU", fontSize = 9.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                 }
-                            },
-                            enabled = !busy,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("LƯU THIẾT LẬP")
+                                Button(
+                                    onClick = { showDeleteAllArchiveConfirmation = true },
+                                    enabled = !busy,
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                ) {
+                                    Text("XÓA TOÀN BỘ LƯU TRỮ FIREBASE", fontSize = 9.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                }
+                            }
+                            Text(
+                                "Bộ đếm lấy tổng số tài liệu thật từ các mục Cộng đồng và Kho đã gỡ trên Firestore; không tính hồ sơ, cài đặt và dữ liệu khác của ứng dụng.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 8.sp
+                            )
                         }
                     }
                 }
-                Card(
-                    modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 12f),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text("BẢN GHI CÒN LƯU TRONG FIREBASE", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
-                        if (communityStorageCounts != null) {
-                            val counts = communityStorageCounts!!
-                            Text("TỔNG CỘNG: ${counts.total} BẢN GHI", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                            Text("Cộng đồng: ${counts.activeTotal}  •  Kho đã gỡ: ${counts.archivedTotal}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
-                            Text(
-                                "Cộng đồng: ${counts.activeMessages} mục tin nhắn/ảnh, ${counts.activeJsons} JSON riêng",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp
+                item(key = "community-archive-categories") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        listOf(
+                            "text" to "TIN NHẮN",
+                            "image" to "HÌNH ẢNH",
+                            "file" to "TỆP"
+                        ).forEach { (category, label) ->
+                            FilterChip(
+                                selected = archiveCategory == category,
+                                onClick = { archiveCategory = category },
+                                label = { Text(label, fontSize = 9.sp) }
                             )
-                            Text(
-                                "Kho đã gỡ: ${counts.archivedMessages} tin nhắn/JSON, ${counts.archivedImages} ảnh, ${counts.archivedFiles} tệp, ${counts.archivedApks} APK",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 9.sp
-                            )
-                        } else if (communityStorageCountError != null) {
-                            Text(communityStorageCountError!!, color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
-                        } else {
-                            Text("Đang kiểm tra dữ liệu trên máy chủ…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedButton(
-                                onClick = { communityCountRefreshKey += 1 },
-                                enabled = !busy,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("LÀM MỚI SỐ LIỆU", fontSize = 9.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                            }
-                            Button(
-                                onClick = { showDeleteAllArchiveConfirmation = true },
-                                enabled = !busy,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Text("XÓA TOÀN BỘ LƯU TRỮ FIREBASE", fontSize = 9.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                            }
-                        }
-                        Text(
-                            "Bộ đếm lấy tổng số tài liệu thật từ các mục Cộng đồng và Kho đã gỡ trên Firestore; không tính hồ sơ, cài đặt và dữ liệu khác của ứng dụng.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 8.sp
-                        )
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    listOf(
-                        "text" to "TIN NHẮN",
-                        "image" to "HÌNH ẢNH",
-                        "file" to "TỆP"
-                    ).forEach { (category, label) ->
-                        FilterChip(
-                            selected = archiveCategory == category,
-                            onClick = { archiveCategory = category },
-                            label = { Text(label, fontSize = 9.sp) }
-                        )
                     }
                 }
                 if (loadingArchive) {
-                    Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    item(key = "community-archive-loading") {
+                        Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
                 } else {
-                    archiveError?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
-                    }
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (archiveItems.isEmpty()) {
-                            item {
-                                Text("Chưa có dữ liệu trong mục này.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                            }
+                    archiveError?.let { error ->
+                        item(key = "community-archive-error") {
+                            Text(error, color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
                         }
+                    }
+                    if (archiveItems.isEmpty()) {
+                        item(key = "community-archive-empty") {
+                            Text("Chưa có dữ liệu trong mục này.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                        }
+                    } else {
                         items(archiveItems, key = { it.id }) { item ->
                             CommunityArchiveCard(
                                 item = item,
