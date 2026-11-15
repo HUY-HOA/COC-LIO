@@ -27,7 +27,8 @@ data class RemoteCatalogEntry(
     val requirements: List<String> = emptyList(),
     val details: List<String> = emptyList(),
     val upgradeDurationSeconds: Long? = null,
-    val upgradeCost: String = ""
+    val upgradeCost: String = "",
+    val rarity: String = ""
 )
 
 data class RemoteGuide(
@@ -158,6 +159,8 @@ internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
             val upgradeDurationSeconds = (item["upgradeDurationSeconds"] as? Number)
                 ?.toLong()?.takeIf { it in 1L..31_536_000L }
             val upgradeCost = (item["upgradeCost"] as? String).orEmpty().trim().take(80)
+            val rarity = (item["rarity"] as? String)?.lowercase()
+                ?.takeIf { it in setOf("common", "rare", "epic", "legendary") }.orEmpty()
             id to RemoteCatalogEntry(
                 name = name,
                 category = category,
@@ -168,7 +171,8 @@ internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
                 requirements = requirements,
                 details = details,
                 upgradeDurationSeconds = upgradeDurationSeconds,
-                upgradeCost = upgradeCost
+                upgradeCost = upgradeCost,
+                rarity = rarity
             )
         }
         ?.toMap()
