@@ -174,10 +174,11 @@ private data class CommunityStorageCounts(
     val activeJsons: Long,
     val archivedMessages: Long,
     val archivedImages: Long,
-    val archivedFiles: Long
+    val archivedFiles: Long,
+    val archivedApks: Long
 ) {
     val activeTotal: Long get() = activeMessages + activeJsons
-    val archivedTotal: Long get() = archivedMessages + archivedImages + archivedFiles
+    val archivedTotal: Long get() = archivedMessages + archivedImages + archivedFiles + archivedApks
     val total: Long get() = activeTotal + archivedTotal
 }
 
@@ -195,7 +196,8 @@ private suspend fun loadCommunityStorageCounts(): CommunityStorageCounts = Commu
     activeJsons = countCommunityDocuments("community_shared_jsons"),
     archivedMessages = countCommunityDocuments("community_deleted_messages"),
     archivedImages = countCommunityDocuments("community_deleted_images"),
-    archivedFiles = countCommunityDocuments("community_deleted_files")
+    archivedFiles = countCommunityDocuments("community_deleted_files"),
+    archivedApks = countCommunityDocuments("app_update_archive")
 )
 
 private suspend fun deleteArchiveDocuments(
@@ -1235,7 +1237,7 @@ fun CommunityScreen(
                                 fontSize = 9.sp
                             )
                             Text(
-                                "Kho đã gỡ: ${counts.archivedMessages} tin nhắn, ${counts.archivedImages} ảnh, ${counts.archivedFiles} tệp",
+                                "Kho đã gỡ: ${counts.archivedMessages} tin nhắn/JSON, ${counts.archivedImages} ảnh, ${counts.archivedFiles} tệp, ${counts.archivedApks} APK",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp
                             )
@@ -1250,6 +1252,14 @@ fun CommunityScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("LÀM MỚI SỐ LIỆU")
+                        }
+                        Button(
+                            onClick = { showDeleteAllArchiveConfirmation = true },
+                            enabled = !busy && (communityStorageCounts?.archivedTotal ?: 0L) > 0L,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("XÓA TOÀN BỘ LƯU TRỮ FIREBASE")
                         }
                         Text(
                             "Bộ đếm lấy tổng số tài liệu thật từ các mục Cộng đồng và Kho đã gỡ trên Firestore; không tính hồ sơ, cài đặt và dữ liệu khác của ứng dụng.",
@@ -1273,14 +1283,6 @@ fun CommunityScreen(
                             label = { Text(label, fontSize = 9.sp) }
                         )
                     }
-                }
-                Button(
-                    onClick = { showDeleteAllArchiveConfirmation = true },
-                    enabled = !busy && (communityStorageCounts?.archivedTotal ?: 0L) > 0L,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("XÓA VĨNH VIỄN TẤT CẢ")
                 }
                 if (loadingArchive) {
                     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -1371,8 +1373,8 @@ fun CommunityScreen(
     if (showDeleteAllArchiveConfirmation) {
         AlertDialog(
             onDismissRequest = { if (!busy) showDeleteAllArchiveConfirmation = false },
-            title = { Text("Xóa vĩnh viễn toàn bộ Kho đã gỡ?") },
-            text = { Text("Tất cả tin nhắn, ảnh, tệp và APK trong Kho đã gỡ sẽ bị xóa khỏi Firestore. Nội dung đang còn trong Cộng đồng sẽ không bị ảnh hưởng. Thao tác này không thể hoàn tác.") },
+            title = { Text("Xóa toàn bộ lưu trữ Firebase?") },
+            text = { Text("Thao tác sẽ xóa vĩnh viễn tất cả bản ghi trong KHO ĐÃ GỠ trên Firebase: tin nhắn, JSON, ảnh, tệp và APK. Nội dung đang còn trong Cộng đồng và JSON đang hoạt động sẽ không bị xóa. Không thể hoàn tác.") },
             confirmButton = {
                 TextButton(
                     enabled = !busy,
@@ -1383,7 +1385,7 @@ fun CommunityScreen(
                             try {
                                 val deleted = deleteAllCommunityArchives()
                                 communityCountRefreshKey += 1
-                                statusMessage = "Đã xóa vĩnh viễn $deleted mục trong Kho đã gỡ."
+                                statusMessage = "Đã xóa toàn bộ lưu trữ Firebase: $deleted bản ghi."
                             } catch (error: Exception) {
                                 statusMessage = error.message ?: "Không thể xóa toàn bộ Kho đã gỡ."
                             } finally {
