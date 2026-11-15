@@ -3920,11 +3920,12 @@ private fun HistoryScreen(
                                     maxLines = 1,
                                     modifier = Modifier.weight(1f)
                                 )
-                                Text(
-                                    if (pinned) "★" else "☆",
-                                    color = if (pinned) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 19.sp,
-                                    modifier = Modifier.clickable { onTogglePin(snapshot.tag) }.padding(horizontal = 5.dp, vertical = 1.dp)
+                                CocGameIcon(
+                                    R.drawable.ic_coc_star,
+                                    Modifier.size(20.dp)
+                                        .clickable { onTogglePin(snapshot.tag) }
+                                        .padding(horizontal = 5.dp, vertical = 1.dp),
+                                    if (pinned) "Bỏ ghim làng" else "Ghim làng"
                                 )
                                 Text(
                                     "×",
@@ -3935,12 +3936,7 @@ private fun HistoryScreen(
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Filled.Tag,
-                                    contentDescription = AppLanguageSettings.translate(context, "Mã người chơi"),
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(11.dp)
-                                )
+                                CocGameIcon(R.drawable.ic_coc_tag, Modifier.size(11.dp), AppLanguageSettings.translate(context, "Mã người chơi"))
                                 Text(
                                     "${snapshot.tag.removePrefix("#")}  •  Nhà chính ${snapshot.townHallLevel ?: "—"}  •  Nhà thợ ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
                                     color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurface,
