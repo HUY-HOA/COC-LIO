@@ -54,15 +54,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tag
-import androidx.compose.material3.Icon
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
@@ -1839,11 +1830,10 @@ private fun OverviewScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Tag,
-                            contentDescription = AppLanguageSettings.translate(context, "Mã người chơi"),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(10.dp)
+                        CocGameIcon(
+                            R.drawable.ic_coc_tag,
+                            Modifier.size(10.dp),
+                            AppLanguageSettings.translate(context, "Mã người chơi")
                         )
                         Text(snapshot.tag.removePrefix("#"), color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                     }
