@@ -2,13 +2,11 @@ const admin = require("firebase-admin");
 const { getStorage } = require("firebase-admin/storage");
 const functionsV1 = require("firebase-functions/v1");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 
 admin.initializeApp();
 
 const auth = admin.auth();
 const db = admin.firestore();
-const messaging = admin.messaging();
 const REGION = "asia-southeast1";
 const OWNER_EMAIL = "phunghuyhoahaikba@gmail.com";
 
@@ -205,37 +203,3 @@ exports.cleanupDeletedAuthUser = functionsV1.auth.user().onDelete(async (user) =
   await deleteUserOwnedData(user.uid);
 });
 
-exports.notifyCommunityMessage = onDocumentCreated(
-  { document: "community_messages/{messageId}", region: REGION },
-  async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) return;
-
-    const data = snapshot.data() || {};
-    const senderIsAdmin = data.senderIsAdmin === true;
-    const sender = senderIsAdmin ? "AILIO" : String(data.displayName || "Thành viên").slice(0, 80);
-    const text = String(data.text || "").trim();
-    const type = String(data.type || "text");
-
-    let content = text;
-    if (!content && type === "image") content = "Đã gửi một hình ảnh.";
-    if (!content && type === "file") content = "Đã gửi một tệp.";
-    if (!content) return;
-
-    await messaging.send({
-      topic: "coc_lio_community",
-      data: {
-        type: "community_message",
-        messageId: event.params.messageId,
-        senderUid: String(data.uid || ""),
-        senderName: sender,
-        senderIsAdmin: String(senderIsAdmin),
-        senderPhotoUrl: senderIsAdmin ? "" : String(data.photoUrl || "").slice(0, 900),
-        messageText: content.slice(0, 1000),
-        title: "Cộng đồng COC-LIO",
-        body: (sender + ": " + content).slice(0, 450)
-      },
-      android: { priority: "high" }
-    });
-  }
-);
