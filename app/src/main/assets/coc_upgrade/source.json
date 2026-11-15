@@ -1,0 +1,13 @@
+{
+  "source": "chiefpansancolt/clash-of-clans-data",
+  "sourceUrl": "https://github.com/chiefpansancolt/clash-of-clans-data",
+  "sourceCommit": "7afaa0375e5865c04021836a3a4192ffcfea092d",
+  "sourceLicense": "MIT",
+  "sourceLicenseUrl": "https://github.com/chiefpansancolt/clash-of-clans-data/blob/7afaa0375e5865c04021836a3a4192ffcfea092d/LICENSE",
+  "snapshotDate": "2026-11-15",
+  "officialCrossChecks": [
+    "https://supercell.com/en/games/clashofclans/blog/release-notes/",
+    "https://supercell.com/en/games/clashofclans/blog/news/weve-revamped-the-clash-of-clans-user-interface/"
+  ],
+  "note": "Upgrade costs, durations, level stats and requirements are sourced from a third-party MIT-licensed community dataset assembled from Clash of Clans Wiki data. They are not a Supercell official API feed. Supercell release notes are used to cross-check major newly released levels. Displayed limits should be treated as a dated reference and checked against the in-game upgrade screen after balance updates."
+}
