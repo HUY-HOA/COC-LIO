@@ -501,13 +501,13 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
             }
             levelData?.let { level ->
                 if (level.cost() > 0L) {
-                    LookupValue("Chi phí nâng cấp", "Cấp $selectedLevel: ${lookupNumber(level.cost())} ${gameDataResourceLabel(level.resource())}")
+                    LookupResourceValue(level.resource(), "Cấp $selectedLevel: ${lookupNumber(level.cost())}")
                 }
                 level.oreCosts().forEach { (name, amount) ->
-                    LookupValue("⛏️ $name", lookupNumber(amount))
+                    LookupResourceValue(name, lookupNumber(amount))
                 }
                 if (level.durationSeconds() > 0L) {
-                    LookupValue("⏱️ Thời gian nâng cấp", lookupDuration(level.durationSeconds()))
+                    LookupIconValue(R.drawable.ic_coc_time, "Thời gian nâng cấp", lookupDuration(level.durationSeconds()))
                 }
             }
             if (requirements.isNotEmpty()) {
@@ -536,7 +536,7 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
                         levels[planTargetIndex]
                     )
                     planTotals.resources.forEach { (resource, amount) ->
-                        LookupValue("${gameDataResourceIcon(resource)} ${gameDataResourceLabel(resource)}", lookupNumber(amount))
+                        LookupResourceValue(resource, lookupNumber(amount))
                     }
                     if (planTotals.durationSeconds > 0L) {
                         LookupValue("Tổng thời gian nâng cấp", lookupDuration(planTotals.durationSeconds))
@@ -569,7 +569,7 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
                 if (tier.cost() > 0L) {
                     LookupValue("Chi phí bậc", "Cấp ${tier.level}: ${lookupNumber(tier.cost())} ${gameDataResourceLabel(tier.resource())}")
                 }
-                tier.oreCosts().forEach { (name, amount) -> LookupValue("⛏️ $name", lookupNumber(amount)) }
+                tier.oreCosts().forEach { (name, amount) -> LookupResourceValue(name, lookupNumber(amount)) }
                 if (tier.durationSeconds() > 0L) {
                     LookupValue("Thời gian bậc", "Cấp ${tier.level}: ${lookupDuration(tier.durationSeconds())}")
                 }
@@ -630,16 +630,6 @@ private fun gameDataHeroLabel(hero: String): String = when (hero.lowercase()) {
     else -> hero.replace('-', ' ').replaceFirstChar { it.uppercase() }
 }
 
-private fun gameDataResourceIcon(resource: String): String = when (resource.trim().lowercase()) {
-    "gold", "builder gold", "capital gold" -> "🪙"
-    "elixir", "builder elixir" -> "🧪"
-    "dark elixir" -> "🖤"
-    "shiny ore", "quặng sáng" -> "💠"
-    "glowy ore", "quặng phát sáng" -> "🔮"
-    "starry ore", "quặng sao" -> "⭐"
-    else -> "📦"
-}
-
 private fun gameDataResourceLabel(resource: String): String = when (resource.lowercase()) {
     "gold" -> "Vàng"
     "elixir" -> "Tiên dược"
@@ -647,6 +637,9 @@ private fun gameDataResourceLabel(resource: String): String = when (resource.low
     "builder gold" -> "Vàng thợ xây"
     "builder elixir" -> "Tiên dược thợ xây"
     "capital gold" -> "Vàng Thủ đô"
+    "shiny ore", "quặng sáng" -> "Quặng sáng"
+    "glowy ore", "quặng phát sáng" -> "Quặng phát sáng"
+    "starry ore", "quặng sao" -> "Quặng sao"
     else -> resource
 }
 
@@ -1649,6 +1642,32 @@ private fun LookupCard(content: @Composable ColumnScope.() -> Unit) {
             verticalArrangement = Arrangement.spacedBy(7.dp),
             content = content
         )
+    }
+}
+
+@Composable
+private fun LookupResourceValue(resource: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CocResourceIcon(resource, Modifier.size(16.dp))
+        Text(gameDataResourceLabel(resource), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, modifier = Modifier.weight(1f))
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun LookupIconValue(iconRes: Int, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CocGameIcon(iconRes, Modifier.size(16.dp), label)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp, modifier = Modifier.weight(1f))
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
