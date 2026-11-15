@@ -10,6 +10,8 @@ data class CocUpgradeLevel(
     val level: Int,
     val raw: JSONObject
 ) {
+    val isSupercharge: Boolean get() = raw.optBoolean("supercharge")
+
     fun long(vararg keys: String): Long? = keys.firstNotNullOfOrNull { key ->
         if (raw.has(key) && !raw.isNull(key)) raw.optLong(key).takeIf { it >= 0L } else null
     }
@@ -51,7 +53,7 @@ data class CocUpgradeLevel(
             "blacksmithLevelRequired", "workshopLevelRequired", "starLabRequired",
             "upgradeCost", "upgradeCostResource", "researchCost", "researchCostResource",
             "buildCost", "buildCostResource", "upgradeTime", "researchTime", "buildTime",
-            "upgradeShinyOre", "upgradeGlowingOre", "upgradeStarryOre", "images"
+            "upgradeShinyOre", "upgradeGlowingOre", "upgradeStarryOre", "images", "supercharge"
         )
         val result = mutableListOf<Pair<String, String>>()
         raw.keys().forEach { key ->
@@ -85,7 +87,8 @@ data class CocUpgradeEntry(
     val maxLevel: Int,
     val properties: JSONObject,
     val levels: List<CocUpgradeLevel>,
-    val aliases: List<String> = emptyList()
+    val aliases: List<String> = emptyList(),
+    val superchargeLevels: List<CocUpgradeLevel> = emptyList()
 ) {
     val sectionKey: String
         get() = when (category) {
@@ -174,11 +177,13 @@ object CocUpgradeCatalog {
                         continue
                     }
                     val levelsJson = raw.optJSONArray("levels") ?: JSONArray()
-                    val levels = (0 until levelsJson.length()).mapNotNull { levelIndex ->
+                    val parsedLevels = (0 until levelsJson.length()).mapNotNull { levelIndex ->
                         val levelRaw = levelsJson.optJSONObject(levelIndex) ?: return@mapNotNull null
                         val level = levelRaw.optInt("level", -1)
                         if (level < 1) null else CocUpgradeLevel(level, levelRaw)
-                    }.sortedBy { it.level }
+                    }
+                    val levels = parsedLevels.filterNot { it.isSupercharge }.sortedBy { it.level }
+                    val superchargeLevels = parsedLevels.filter { it.isSupercharge }.sortedBy { it.level }
                     result[id] = CocUpgradeEntry(
                         dataId = id,
                         id = raw.optString("id"),
@@ -195,7 +200,8 @@ object CocUpgradeCatalog {
                             (0 until aliases.length()).mapNotNull { aliasIndex ->
                                 aliases.optString(aliasIndex).takeIf { it.isNotBlank() }
                             }
-                        }.orEmpty()
+                        }.orEmpty(),
+                        superchargeLevels = superchargeLevels
                     )
                 }
             }.onFailure { error ->
@@ -367,6 +373,41 @@ object CocUpgradeCatalog {
             }
             duration += level.durationSeconds()
         }
+        return CocUpgradeTotals(resources, duration)
+    }
+
+    fun superchargeMaxAtHall(entry: CocUpgradeEntry, hallLevel: Int?): Int? {
+        if (hallLevel == null || hallLevel < 1 || entry.superchargeLevels.isEmpty()) return null
+        val hallKey = if (entry.base == "builder") "builderHallLevelRequired" else "townHallRequired"
+        val fallbackKey = if (entry.base == "builder") "builderHallRequired" else "townHall"
+        return entry.superchargeLevels
+            .filter { level ->
+                val required = level.int(hallKey, fallbackKey)
+                required != null && required <= hallLevel
+            }
+            .maxOfOrNull { it.level }
+    }
+
+    fun superchargeTotals(
+        entry: CocUpgradeEntry,
+        currentTier: Int,
+        targetTier: Int
+    ): CocUpgradeTotals {
+        val resources = linkedMapOf<String, Long>()
+        var duration = 0L
+        entry.superchargeLevels
+            .filter { it.level > currentTier && it.level <= targetTier }
+            .forEach { level ->
+                val cost = level.cost()
+                val resource = level.resource()
+                if (cost > 0L && resource.isNotBlank()) {
+                    resources[resource] = (resources[resource] ?: 0L) + cost
+                }
+                level.oreCosts().forEach { (name, amount) ->
+                    resources[name] = (resources[name] ?: 0L) + amount
+                }
+                duration += level.durationSeconds()
+            }
         return CocUpgradeTotals(resources, duration)
     }
 
