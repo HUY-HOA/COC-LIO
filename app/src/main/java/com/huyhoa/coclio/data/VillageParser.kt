@@ -513,7 +513,8 @@ object CocNames {
         4000035 to "Kẻ ném bom", 4000036 to "P.E.K.K.A quyền năng",
         4000037 to "Xe pháo", 4000038 to "Tàu thả bom",
         4000041 to "Rồng con", 4000042 to "Phù thủy đêm",
-        4000070 to "Kỵ sĩ heo bay", 4000106 to "Pháp sư điện lửa",
+        4000070 to "Kỵ sĩ heo bay", 4000075 to "Doanh trại công thành",
+        4000106 to "Pháp sư điện lửa",
         26000000 to "Thần chú Sấm sét", 26000001 to "Thần chú Hồi máu",
         26000002 to "Thần chú Thịnh nộ", 26000003 to "Thần chú Bật nhảy",
         26000005 to "Thần chú Đóng băng", 26000009 to "Thần chú Độc dược",
@@ -567,14 +568,14 @@ object CocNames {
     fun name(id: Int, section: String): String {
         if (id < 0) return "Không xác định"
         return names[id] ?: when {
-            section == "skins" || section == "skins2" -> "Trang phục"
-            section == "sceneries" || section == "sceneries2" -> "Phong cảnh"
-            section == "decos" || section == "decos2" -> "Đồ trang trí"
-            section == "obstacles" || section == "obstacles2" -> "Chướng ngại vật"
-            section == "house_parts" -> "Bộ phận nhà"
-            section == "spells" -> "Thần chú"
-            section.endsWith("2") -> "Mục căn cứ thợ xây"
-            else -> "Mục"
+            section == "skins" || section == "skins2" -> "Trang phục #$id"
+            section == "sceneries" || section == "sceneries2" -> "Phong cảnh #$id"
+            section == "decos" || section == "decos2" -> "Đồ trang trí #$id"
+            section == "obstacles" || section == "obstacles2" -> "Chướng ngại vật #$id"
+            section == "house_parts" -> "Bộ phận nhà #$id"
+            section == "spells" -> "Thần chú #$id"
+            section.endsWith("2") -> "Mục căn cứ thợ xây #$id"
+            else -> "Mục #$id"
         }
     }
 }
