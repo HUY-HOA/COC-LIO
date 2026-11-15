@@ -2247,7 +2247,7 @@ private fun CategoryScreen(
             }
         }?.takeIf { it in setOf("defense", "resources", "traps", "army", "walls", "other") }
             ?: remoteCatalog[item.dataId]?.category
-                ?.takeIf { it in setOf("defense", "resources", "traps", "other") }
+                ?.takeIf { it in setOf("defense", "resources", "traps", "army", "walls", "other") }
             ?: when {
                 item.sectionKey == "traps" || item.sectionKey == "traps2" -> "traps"
                 item.dataId in resourceIds -> "resources"
@@ -3495,6 +3495,8 @@ private fun UpgradeResourceChip(resource: String, amount: Long) {
         "dark elixir" -> Triple("🖤", "Dầu đen", Color(0xFFB77AFF))
         "builder gold" -> Triple("🪙", "Vàng thợ xây", Color(0xFFFFD166))
         "builder elixir" -> Triple("🧪", "Dầu tiên thợ xây", Color(0xFFFF6EC7))
+        "gold or elixir" -> Triple("🪙🧪", "Vàng hoặc Dầu tiên", Color(0xFFFFD166))
+        "builder gold or builder elixir" -> Triple("🪙🧪", "Vàng thợ xây hoặc Dầu tiên thợ xây", Color(0xFFFFD166))
         "capital gold" -> Triple("🏅", "Vàng thủ đô", Color(0xFFFFD166))
         "quặng sáng", "shiny ore" -> Triple("💠", "Quặng sáng", Color(0xFF55B9FF))
         "quặng phát sáng", "glowy ore" -> Triple("🔮", "Quặng phát sáng", Color(0xFFB77AFF))
