@@ -77,9 +77,10 @@ private data class ClashLookupSearchPage(
 private const val CLASHKING_API = "https://api.clashk.ing"
 
 private fun normalizeClashTag(value: String): String {
-    val tag = value.trim().uppercase().replace(" ", "").let {
-        if (it.startsWith("#")) it else "#$it"
+    val compact = value.uppercase(Locale.ROOT).filter {
+        it in 'A'..'Z' || it in '0'..'9'
     }
+    val tag = "#$compact"
     require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(tag)) {
         "Mã không hợp lệ. Hãy nhập mã người chơi hoặc bang hội dạng #ABC123."
     }
@@ -122,28 +123,90 @@ private suspend fun searchClashKing(
     require(term.length in 2..40) {
         "Hãy nhập ít nhất 2 ký tự, tên hoặc mã tag cần tìm."
     }
-    val encodedQuery = URLEncoder.encode(term, "UTF-8")
-    val encodedCursor = cursor?.let { "&cursor=" + URLEncoder.encode(it, "UTF-8") }.orEmpty()
-    val path = when (kind) {
-        ClashLookupKind.PLAYER -> {
-            val filter = townHallFilter?.let { "&townhallLevels=$it" }.orEmpty()
-            "/v2/player/search?query=$encodedQuery&limit=10$filter$encodedCursor"
-        }
-        ClashLookupKind.CLAN -> {
-            val filter = minMembersFilter?.let {
-                "&" + URLEncoder.encode("members[min]", "UTF-8") + "=$it"
-            }.orEmpty()
-            "/v2/clan/search?query=$encodedQuery&limit=10$filter$encodedCursor"
+
+    val exactTag = runCatching { normalizeClashTag(term) }.getOrNull()
+    if (kind == ClashLookupKind.CLAN && exactTag != null && cursor == null) {
+        val encodedTag = URLEncoder.encode(exactTag, "UTF-8")
+        val directProfile = runCatching {
+            readClashKingJson("/v2/clan/$encodedTag/cached") as? JSONObject
+        }.getOrNull()
+        if (directProfile != null && directProfile.optString("tag").isNotBlank()) {
+            return@withContext ClashLookupSearchPage(
+                listOf(ClashLookupCandidate(ClashLookupKind.CLAN, directProfile)),
+                null
+            )
         }
     }
-    val search = readClashKingJson(path) as? JSONObject
-        ?: throw IllegalStateException("Dữ liệu tìm kiếm không đúng định dạng.")
-    val items = search.optJSONArray("items") ?: JSONArray()
-    val candidates = (0 until items.length()).mapNotNull { index ->
-        items.optJSONObject(index)?.let { ClashLookupCandidate(kind, it) }
+
+    val variants = if (exactTag != null) {
+        listOf(exactTag, exactTag.removePrefix("#"), term).distinct()
+    } else {
+        clashSearchTerms(term)
     }
-    val nextCursor = search.optJSONObject("pagination")?.opt("nextCursor") as? String
-    ClashLookupSearchPage(candidates, nextCursor?.takeIf { it.isNotBlank() })
+    val requestTerms = if (cursor == null) variants.take(6) else variants.take(1)
+    val responses = requestTerms.map { searchTerm ->
+        async {
+            runCatching {
+                val encodedQuery = URLEncoder.encode(searchTerm, "UTF-8")
+                val encodedCursor = cursor?.let {
+                    "&cursor=" + URLEncoder.encode(it, "UTF-8")
+                }.orEmpty()
+                val path = when (kind) {
+                    ClashLookupKind.PLAYER -> {
+                        val filter = townHallFilter?.let { "&townhallLevels=$it" }.orEmpty()
+                        "/v2/player/search?query=$encodedQuery&limit=20$filter$encodedCursor"
+                    }
+                    ClashLookupKind.CLAN -> {
+                        val filter = minMembersFilter?.let {
+                            "&" + URLEncoder.encode("members[min]", "UTF-8") + "=$it"
+                        }.orEmpty()
+                        "/v2/clan/search?query=$encodedQuery&limit=20$filter$encodedCursor"
+                    }
+                }
+                val search = readClashKingJson(path) as? JSONObject
+                    ?: throw IllegalStateException("Dữ liệu tìm kiếm không đúng định dạng.")
+                val items = search.optJSONArray("items") ?: JSONArray()
+                val candidates = (0 until items.length()).mapNotNull { index ->
+                    items.optJSONObject(index)?.let { ClashLookupCandidate(kind, it) }
+                }
+                val nextCursor = search.optJSONObject("pagination")
+                    ?.opt("nextCursor") as? String
+                Triple(candidates, nextCursor?.takeIf { it.isNotBlank() }, searchTerm)
+            }
+        }
+    }.awaitAll()
+
+    val successful = responses.mapNotNull { it.getOrNull() }
+    if (successful.isEmpty()) {
+        throw responses.firstNotNullOfOrNull { it.exceptionOrNull() }
+            ?: IllegalStateException("Không thể tìm kiếm lúc này. Hãy thử lại.")
+    }
+
+    val uniqueCandidates = LinkedHashMap<String, ClashLookupCandidate>()
+    successful.flatMap { it.first }.forEach { candidate ->
+        val profileTag = candidate.profile.optString("tag").uppercase(Locale.ROOT)
+        val key = if (profileTag.isNotBlank()) profileTag
+        else normalizeClashSearchText(candidate.profile.optString("name"))
+        if (key.isNotBlank()) uniqueCandidates.putIfAbsent(key, candidate)
+    }
+
+    val allCandidates = uniqueCandidates.values.toList()
+    val matchedCandidates = if (exactTag != null) {
+        allCandidates.filter {
+            runCatching { normalizeClashTag(it.profile.optString("tag")) }.getOrNull() == exactTag
+        }
+    } else {
+        allCandidates.filter {
+            clashNameMatchesSearch(it.profile.optString("name"), term)
+        }
+    }
+
+    val primaryResponse = successful.firstOrNull { it.third == requestTerms.first() }
+        ?: successful.first()
+    ClashLookupSearchPage(
+        matchedCandidates.ifEmpty { allCandidates },
+        primaryResponse.second
+    )
 }
 
 private suspend fun loadClashKingProfile(candidate: ClashLookupCandidate): ClashLookupResponse =
