@@ -28,7 +28,9 @@ data class RemoteCatalogEntry(
     val details: List<String> = emptyList(),
     val upgradeDurationSeconds: Long? = null,
     val upgradeCost: String = "",
-    val rarity: String = ""
+    val rarity: String = "",
+    val abilityType: String = "",
+    val levelDetails: Map<Int, List<String>> = emptyMap()
 )
 
 data class RemoteGuide(
@@ -161,6 +163,15 @@ internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
             val upgradeCost = (item["upgradeCost"] as? String).orEmpty().trim().take(80)
             val rarity = (item["rarity"] as? String)?.lowercase()
                 ?.takeIf { it in setOf("common", "rare", "epic", "legendary") }.orEmpty()
+            val abilityType = (item["abilityType"] as? String)?.lowercase()
+                ?.takeIf { it in setOf("active", "passive") }.orEmpty()
+            val levelDetails = (item["levelDetails"] as? Map<*, *>)?.entries
+                ?.mapNotNull { (rawLevel, rawDetails) ->
+                    val level = rawLevel.toString().toIntOrNull()?.takeIf { it in 1..100 }
+                        ?: return@mapNotNull null
+                    val values = safeRemoteStringList(rawDetails, 12, 120)
+                    if (values.isEmpty()) null else level to values
+                }?.toMap().orEmpty()
             id to RemoteCatalogEntry(
                 name = name,
                 category = category,
@@ -172,7 +183,9 @@ internal fun parseRemoteContent(data: Map<String, Any>): RemoteContentState {
                 details = details,
                 upgradeDurationSeconds = upgradeDurationSeconds,
                 upgradeCost = upgradeCost,
-                rarity = rarity
+                rarity = rarity,
+                abilityType = abilityType,
+                levelDetails = levelDetails
             )
         }
         ?.toMap()
