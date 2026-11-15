@@ -2795,7 +2795,7 @@ private fun HistoryScreen(
                 if (loadingSharedJsons) {
                     item { Box(Modifier.fillMaxWidth().padding(18.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
                 } else if (sharedJsons.isEmpty()) {
-                    item { InfoCard("Chưa chia sẻ JSON nào", "Chọn một làng trong mục ĐANG LƯU rồi nhấn CHIA SẺ JSON.") }
+                    item { InfoCard("Chưa chia sẻ JSON nào", "Mở Cộng đồng và dùng nút GỬI JSON để đăng một làng. Danh sách đã gửi sẽ xuất hiện tại đây.") }
                 } else {
                     items(sharedJsons, key = { "shared_" + it.id }) { sharedJson ->
                         CommunitySharedJsonCard(
