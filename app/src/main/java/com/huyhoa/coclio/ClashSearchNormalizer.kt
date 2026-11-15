@@ -24,21 +24,26 @@ internal fun clashSearchTerms(value: String): List<String> {
     val trimmed = value.trim()
     val chunks = Regex("[\\p{L}\\p{N}]+")
         .findAll(trimmed)
-        .map { it.value }
-        .toList()
+        .map { normalizeClashSearchText(it.value) }
+        .filter { it.length >= 2 }
+        .distinct()
 
+    val normalized = normalizeClashSearchText(trimmed)
     return buildList {
+        if (normalized.length >= 2) add(normalized)
+        addAll(chunks)
+        if (chunks.size > 1) add(chunks.joinToString(""))
+        Regex("[\\p{L}\\p{N}]+")
+            .findAll(trimmed)
+            .map { it.value.trim() }
+            .filter { it.length >= 2 }
+            .forEach(::add)
         add(trimmed)
-        add(normalizeClashSearchText(trimmed))
-        chunks.forEach {
-            add(it)
-            add(normalizeClashSearchText(it))
-        }
     }
         .map(String::trim)
         .filter { it.length >= 2 }
-        .distinctBy { it.lowercase(Locale.ROOT) }
-        .take(6)
+        .distinctBy { normalizeClashSearchText(it) }
+        .take(8)
 }
 
 internal fun clashNameMatchesSearch(name: String, query: String): Boolean {
