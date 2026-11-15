@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,15 +103,28 @@ object RemoteContentManager {
         }
 
         refreshFromCloudflare(context.applicationContext)
+        if (cloudflarePollingJob?.isActive != true) {
+            cloudflarePollingJob = cloudflareScope.launch {
+                while (isActive && accessAllowed) {
+                    delay(5 * 60 * 1000L)
+                    if (accessAllowed) refreshFromCloudflare(context.applicationContext)
+                }
+            }
+        }
     }
 
     fun stopRealtimeUpdates() {
         listenerRegistration?.remove()
         listenerRegistration = null
+        cloudflarePollingJob?.cancel()
+        cloudflarePollingJob = null
+        cloudflareRefreshJob?.cancel()
+        cloudflareRefreshJob = null
     }
 
     private val cloudflareScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var cloudflareRefreshJob: Job? = null
+    private var cloudflarePollingJob: Job? = null
     @Volatile private var lastCloudflareRefreshAt = 0L
 
     private fun refreshFromCloudflare(context: Context) {
