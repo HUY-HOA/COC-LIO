@@ -1008,7 +1008,10 @@ fun CommunityScreen(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
-                            Text("🖼 ẢNH", fontSize = 10.sp)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Image(painterResource(R.drawable.ic_coc_image), null, modifier = Modifier.size(16.dp))
+                                Text("ẢNH", fontSize = 10.sp)
+                            }
                         }
                         OutlinedButton(
                             onClick = {
@@ -1020,11 +1023,17 @@ fun CommunityScreen(
                             },
                             enabled = !busy
                         ) {
-                            Text("📦 GỬI JSON", fontSize = 10.sp)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Image(painterResource(R.drawable.ic_coc_json), null, modifier = Modifier.size(16.dp))
+                                Text("GỬI JSON", fontSize = 10.sp)
+                            }
                         }
                         if (isOwner) {
                             OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
-                                Text("📎 TỆP", fontSize = 10.sp)
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                    Image(painterResource(R.drawable.ic_coc_file), null, modifier = Modifier.size(16.dp))
+                                    Text("TỆP", fontSize = 10.sp)
+                                }
                             }
                         }
                     }
@@ -1073,10 +1082,14 @@ fun CommunityScreen(
                             onClick = { showEmojiPicker = !showEmojiPicker },
                             enabled = !busy
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.EmojiEmotions,
-                                contentDescription = if (showEmojiPicker) "Đóng bảng emoji" else "Mở bảng emoji",
-                                tint = if (showEmojiPicker) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            Image(
+                                painter = painterResource(R.drawable.ic_coc_chat),
+                                contentDescription = if (showEmojiPicker) "Đóng bảng biểu cảm" else "Mở bảng biểu cảm",
+                                modifier = Modifier.size(22.dp),
+                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                                    if (showEmojiPicker) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
                         }
                         OutlinedTextField(
