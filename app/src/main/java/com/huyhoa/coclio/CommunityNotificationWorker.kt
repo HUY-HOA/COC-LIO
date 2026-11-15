@@ -120,11 +120,39 @@ class CommunityNotificationWorker(
                 ) {
                     return@withLock Result.success()
                 }
+                var hasMoreNotifications = false
                 if (communityEnabled) {
-                    checkCommunityMessages(applicationContext, firestore, preferences, profile, user.uid)
+                    hasMoreNotifications = checkCommunityMessages(
+                        applicationContext,
+                        firestore,
+                        preferences,
+                        profile,
+                        user.uid
+                    ) || hasMoreNotifications
                 }
                 if (updatesEnabled) {
-                    checkAppUpdates(applicationContext, firestore, preferences, profile)
+                    hasMoreNotifications = checkAppUpdates(
+                        applicationContext,
+                        firestore,
+                        preferences,
+                        profile
+                    ) || hasMoreNotifications
+                }
+                if (hasMoreNotifications) {
+                    val drainRequest = OneTimeWorkRequestBuilder<CommunityNotificationWorker>()
+                        .setConstraints(
+                            Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.CONNECTED)
+                                .build()
+                        )
+                        .setInputData(Data.Builder().putString("profile", profile).build())
+                        .setInitialDelay(1, TimeUnit.MINUTES)
+                        .build()
+                    WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+                        COC_LIO_NOTIFICATION_WORK + "_drain_" + System.currentTimeMillis(),
+                        ExistingWorkPolicy.KEEP,
+                        drainRequest
+                    )
                 }
                 Result.success()
             } catch (error: CancellationException) {
@@ -151,7 +179,8 @@ private fun compareNotificationTimestamps(first: Timestamp, second: Timestamp): 
 
 private data class NotificationScan(
     val firstRun: Boolean,
-    val documents: List<NotificationDocument>
+    val documents: List<NotificationDocument>,
+    val hasMore: Boolean = false
 )
 
 private suspend fun readNotificationChanges(
@@ -257,7 +286,11 @@ private suspend fun readNotificationChanges(
             .putStringSet(idsKey, mutableSetOf())
             .apply()
     }
-    return NotificationScan(false, pendingChanges)
+    return NotificationScan(
+        firstRun = false,
+        documents = pendingChanges,
+        hasMore = changes.size > pendingChanges.size
+    )
 }
 
 private suspend fun checkCommunityMessages(
@@ -266,7 +299,7 @@ private suspend fun checkCommunityMessages(
     preferences: android.content.SharedPreferences,
     profile: String,
     currentUid: String
-) {
+): Boolean {
     val scan = readNotificationChanges(
         firestore,
         "community_messages",
@@ -275,7 +308,7 @@ private suspend fun checkCommunityMessages(
         "community",
         50L
     )
-    if (scan.firstRun) return
+    if (scan.firstRun) return false
 
     scan.documents.forEach { item ->
         val document = item.document
@@ -305,6 +338,7 @@ private suspend fun checkCommunityMessages(
             )
         }
     }
+    return scan.hasMore
 }
 
 private suspend fun checkAppUpdates(
@@ -312,7 +346,7 @@ private suspend fun checkAppUpdates(
     firestore: FirebaseFirestore,
     preferences: android.content.SharedPreferences,
     profile: String
-) {
+): Boolean {
     val scan = readNotificationChanges(
         firestore,
         "app_updates",
@@ -321,6 +355,8 @@ private suspend fun checkAppUpdates(
         "updates",
         20L
     )
+    if (scan.firstRun) return false
+
     val installedVersion = runCatching {
         applicationVersionName(context)
     }.getOrDefault("")
@@ -343,6 +379,7 @@ private suspend fun checkAppUpdates(
             body
         )
     }
+    return scan.hasMore
 }
 
 private fun saveNotificationWatermark(
