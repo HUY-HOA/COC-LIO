@@ -1321,6 +1321,22 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         }
         Regex("^Phát hiện (\\d+) thay đổi$").matchEntire(source) != null ->
             Regex("^Phát hiện (\\d+) thay đổi$").matchEntire(source)!!.let { "Detected ${it.groupValues[1]} changes" }
+        Regex("^Đã tự xóa (\\d+) bản ghi cộng đồng/kho đã gỡ hết hạn\\.$").matchEntire(source) != null ->
+            Regex("^Đã tự xóa (\\d+) bản ghi cộng đồng/kho đã gỡ hết hạn\\.$").matchEntire(source)!!.let {
+                "Automatically deleted ${it.groupValues[1]} expired community/archive records."
+            }
+        Regex("^Đã lưu\\. Tự động xóa toàn bộ nội dung sau (\\d+) ngày; đã dọn (\\d+) bản ghi hết hạn\\.$").matchEntire(source) != null ->
+            Regex("^Đã lưu\\. Tự động xóa toàn bộ nội dung sau (\\d+) ngày; đã dọn (\\d+) bản ghi hết hạn\\.$").matchEntire(source)!!.let {
+                "Saved. All content will be automatically deleted after ${it.groupValues[1]} days; cleaned up ${it.groupValues[2]} expired records."
+            }
+        Regex("^Đã lưu\\. Tự động xóa toàn bộ cộng đồng đã tắt; đã dọn (\\d+) mục lưu trữ đến hạn cũ\\.$").matchEntire(source) != null ->
+            Regex("^Đã lưu\\. Tự động xóa toàn bộ cộng đồng đã tắt; đã dọn (\\d+) mục lưu trữ đến hạn cũ\\.$").matchEntire(source)!!.let {
+                "Saved. Automatic community deletion is off; cleaned up ${it.groupValues[1]} previously due archive items."
+            }
+        Regex("^Đã xóa vĩnh viễn (\\d+) mục trong Kho đã gỡ\\.$").matchEntire(source) != null ->
+            Regex("^Đã xóa vĩnh viễn (\\d+) mục trong Kho đã gỡ\\.$").matchEntire(source)!!.let {
+                "Permanently deleted ${it.groupValues[1]} items from the removed archive."
+            }
         Regex("^Đã tự dọn (\\d+) mục lưu trữ hết hạn\\.$").matchEntire(source) != null ->
             Regex("^Đã tự dọn (\\d+) mục lưu trữ hết hạn\\.$").matchEntire(source)!!.let { "Automatically cleaned up ${it.groupValues[1]} expired archive items." }
         Regex("^Đã lưu thời hạn và dọn (\\d+) mục hết hạn\\.$").matchEntire(source) != null ->
