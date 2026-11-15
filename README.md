@@ -53,6 +53,7 @@ COC-LIO là dự án cộng đồng không chính thức, không liên kết ho�
 - Có tiện ích màn hình chính theo từng hồ sơ và từng làng; bố cục dọc mặc định 2 × 4 ô, danh sách tất cả công trình đang nâng cấp có thể cuộn, mỗi mục có đồng hồ đếm ngược và thanh tiến trình riêng.
 - Trong app, các thẻ công trình có dải LED neon chuyển động quanh viền, có tùy chọn **Ánh sáng lan tỏa**; ảnh công trình giữ nguyên, không phủ hiệu ứng lên artwork. Các thẻ đang nâng có thanh tiến trình cập nhật theo đồng hồ.
 - Trong Cộng đồng, tài khoản quản lý hiển thị tên AILIO và avatar ADMIN; thành viên khác giữ tên và ảnh Google. Thông báo nâng cấp được đặt thời hạn tự đóng 25 giây; thời gian banner nổi và âm thanh thực tế vẫn do Android, kênh thông báo và thiết bị quyết định.
+- Cộng đồng lưu tin nhắn và JSON trong Firestore. Ảnh được nén và lưu trực tiếp dưới dạng dữ liệu Firestore, tối đa 350 KiB/ảnh; thành viên đủ điều kiện có thể gửi ảnh. Tệp tài liệu và tệp APK đính kèm chỉ tài khoản quản lý được gửi, tối đa 350 KiB/tệp. Tệp lớn hơn và chức năng đăng/tải APK phát hành qua Firebase Storage hiện chưa khả dụng trên gói Spark.
 - Thông báo Cộng đồng hiện chưa có máy chủ gửi FCM được triển khai trên Firebase Spark. APK có phần đăng ký chủ đề FCM nhưng đăng ký này không tự gửi thông báo. WorkManager kiểm tra dự phòng khoảng 15 phút/lần; Android có thể trì hoãn tác vụ nền.
 
 Để bật đăng nhập Google, xem [docs/GOOGLE_SIGN_IN_SETUP.md](docs/GOOGLE_SIGN_IN_SETUP.md) và cấu hình secret `GOOGLE_WEB_CLIENT_ID`.
