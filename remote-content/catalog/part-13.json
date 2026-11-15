@@ -1,0 +1,634 @@
+{
+  "catalog": [
+    {
+      "dataId": 26000009,
+      "name": "Poison Spell",
+      "category": "spells",
+      "description": "Give your army the upper hand against enemy troops with this deadly poison! Defending units that linger in a Poison Spell's toxic cloud will move slower, attack slower and take damage with increasing severity over time. Poison Spells do not",
+      "maxLevel": 12,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Target Type: Mặt đất và trên không",
+        "Spell Type: dark"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Max Damage Per Second: 90",
+          "Speed Decrease: 26",
+          "Attack Rate Decrease: 35",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 8",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Max Damage Per Second: 115",
+          "Speed Decrease: 30",
+          "Attack Rate Decrease: 40",
+          "Phòng thí nghiệm cấp: 6",
+          "Nhà chính tối thiểu: 8",
+          "Chi phí nghiên cứu: 5000 Dark Elixir",
+          "Thời gian nghiên cứu: 6 giờ"
+        ],
+        "3": [
+          "Max Damage Per Second: 145",
+          "Speed Decrease: 34",
+          "Attack Rate Decrease: 45",
+          "Phòng thí nghiệm cấp: 7",
+          "Nhà chính tối thiểu: 9",
+          "Chi phí nghiên cứu: 10000 Dark Elixir",
+          "Thời gian nghiên cứu: 18 giờ"
+        ],
+        "4": [
+          "Max Damage Per Second: 180",
+          "Speed Decrease: 38",
+          "Attack Rate Decrease: 50",
+          "Phòng thí nghiệm cấp: 8",
+          "Nhà chính tối thiểu: 10",
+          "Chi phí nghiên cứu: 21500 Dark Elixir",
+          "Thời gian nghiên cứu: 2 ngày"
+        ],
+        "5": [
+          "Max Damage Per Second: 220",
+          "Speed Decrease: 40",
+          "Attack Rate Decrease: 55",
+          "Phòng thí nghiệm cấp: 9",
+          "Nhà chính tối thiểu: 11",
+          "Chi phí nghiên cứu: 35000 Dark Elixir",
+          "Thời gian nghiên cứu: 3 ngày"
+        ],
+        "6": [
+          "Max Damage Per Second: 260",
+          "Speed Decrease: 42",
+          "Attack Rate Decrease: 60",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 12",
+          "Chi phí nghiên cứu: 55000 Dark Elixir",
+          "Thời gian nghiên cứu: 4 ngày"
+        ],
+        "7": [
+          "Max Damage Per Second: 280",
+          "Speed Decrease: 44",
+          "Attack Rate Decrease: 65",
+          "Phòng thí nghiệm cấp: 11",
+          "Nhà chính tối thiểu: 13",
+          "Chi phí nghiên cứu: 77500 Dark Elixir",
+          "Thời gian nghiên cứu: 5 ngày"
+        ],
+        "8": [
+          "Max Damage Per Second: 300",
+          "Speed Decrease: 46",
+          "Attack Rate Decrease: 68",
+          "Phòng thí nghiệm cấp: 12",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nghiên cứu: 100000 Dark Elixir",
+          "Thời gian nghiên cứu: 6 ngày 12 giờ"
+        ],
+        "9": [
+          "Max Damage Per Second: 320",
+          "Speed Decrease: 48",
+          "Attack Rate Decrease: 70",
+          "Phòng thí nghiệm cấp: 13",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nghiên cứu: 135000 Dark Elixir",
+          "Thời gian nghiên cứu: 7 ngày"
+        ],
+        "10": [
+          "Max Damage Per Second: 340",
+          "Speed Decrease: 50",
+          "Attack Rate Decrease: 72",
+          "Phòng thí nghiệm cấp: 14",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 175000 Dark Elixir",
+          "Thời gian nghiên cứu: 8 ngày"
+        ],
+        "11": [
+          "Max Damage Per Second: 360",
+          "Speed Decrease: 51",
+          "Attack Rate Decrease: 73",
+          "Phòng thí nghiệm cấp: 15",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nghiên cứu: 230000 Dark Elixir",
+          "Thời gian nghiên cứu: 9 ngày 16 giờ"
+        ],
+        "12": [
+          "Max Damage Per Second: 380",
+          "Speed Decrease: 52",
+          "Attack Rate Decrease: 74",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nghiên cứu: 350000 Dark Elixir",
+          "Thời gian nghiên cứu: 14 ngày 12 giờ"
+        ]
+      }
+    },
+    {
+      "dataId": 26000002,
+      "name": "Rage Spell",
+      "category": "spells",
+      "description": "Enrage your units to make them bigger, faster and stronger! Cast this to create a Ring of Rage! Your units will gain speed and attack power while they are inside this ring.",
+      "maxLevel": 7,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 2",
+        "Spell Type: regular"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Damage Increase: 130",
+          "Speed Increase: 20",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 7",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Damage Increase: 140",
+          "Speed Increase: 22",
+          "Phòng thí nghiệm cấp: 3",
+          "Nhà chính tối thiểu: 7",
+          "Chi phí nghiên cứu: 400000 Dầu tiên",
+          "Thời gian nghiên cứu: 6 giờ"
+        ],
+        "3": [
+          "Damage Increase: 150",
+          "Speed Increase: 24",
+          "Phòng thí nghiệm cấp: 4",
+          "Nhà chính tối thiểu: 7",
+          "Chi phí nghiên cứu: 800000 Dầu tiên",
+          "Thời gian nghiên cứu: 12 giờ"
+        ],
+        "4": [
+          "Damage Increase: 160",
+          "Speed Increase: 26",
+          "Phòng thí nghiệm cấp: 5",
+          "Nhà chính tối thiểu: 7",
+          "Chi phí nghiên cứu: 1000000 Dầu tiên",
+          "Thời gian nghiên cứu: 1 ngày"
+        ],
+        "5": [
+          "Damage Increase: 170",
+          "Speed Increase: 28",
+          "Phòng thí nghiệm cấp: 6",
+          "Nhà chính tối thiểu: 8",
+          "Chi phí nghiên cứu: 2000000 Dầu tiên",
+          "Thời gian nghiên cứu: 2 ngày"
+        ],
+        "6": [
+          "Damage Increase: 180",
+          "Speed Increase: 30",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 12",
+          "Chi phí nghiên cứu: 5000000 Dầu tiên",
+          "Thời gian nghiên cứu: 4 ngày"
+        ],
+        "7": [
+          "Damage Increase: 190",
+          "Speed Increase: 32",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nghiên cứu: 26000000 Dầu tiên",
+          "Thời gian nghiên cứu: 14 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 26000053,
+      "name": "Recall Spell",
+      "category": "spells",
+      "description": "Attack going badly? Need to come in from another direction? The Recall Spell summons back Troops, Heroes and Pets to the deployment bar. You can then send the recalled units back out for a second strike.",
+      "maxLevel": 7,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 2",
+        "Target Type: Mặt đất và trên không",
+        "Spell Type: regular"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Recalled Capacity: 83",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 11",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Recalled Capacity: 89",
+          "Phòng thí nghiệm cấp: 11",
+          "Nhà chính tối thiểu: 13",
+          "Chi phí nghiên cứu: 7500000 Dầu tiên",
+          "Thời gian nghiên cứu: 7 ngày"
+        ],
+        "3": [
+          "Recalled Capacity: 95",
+          "Phòng thí nghiệm cấp: 12",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nghiên cứu: 8000000 Dầu tiên",
+          "Thời gian nghiên cứu: 7 ngày 12 giờ"
+        ],
+        "4": [
+          "Recalled Capacity: 101",
+          "Phòng thí nghiệm cấp: 13",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nghiên cứu: 9000000 Dầu tiên",
+          "Thời gian nghiên cứu: 8 ngày"
+        ],
+        "5": [
+          "Recalled Capacity: 107",
+          "Phòng thí nghiệm cấp: 14",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 13000000 Dầu tiên",
+          "Thời gian nghiên cứu: 9 ngày"
+        ],
+        "6": [
+          "Recalled Capacity: 113",
+          "Phòng thí nghiệm cấp: 15",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nghiên cứu: 19000000 Dầu tiên",
+          "Thời gian nghiên cứu: 11 ngày"
+        ],
+        "7": [
+          "Recalled Capacity: 120",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nghiên cứu: 29000000 Dầu tiên",
+          "Thời gian nghiên cứu: 16 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 26000098,
+      "name": "Revive Spell",
+      "category": "spells",
+      "description": "The Healer's own special recipe! The Revive Spell brings a defeated Hero in its range back into the fight with some health. Bring this Spell into battle, and a floating golden heart will appear above any defeated Hero that can be revived. U",
+      "maxLevel": 5,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 2",
+        "Spell Type: regular"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Hero Heal Percent: 60",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 12",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Hero Heal Percent: 65",
+          "Phòng thí nghiệm cấp: 13",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nghiên cứu: 18000000 Dầu tiên",
+          "Thời gian nghiên cứu: 7 ngày"
+        ],
+        "3": [
+          "Hero Heal Percent: 70",
+          "Phòng thí nghiệm cấp: 14",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 19000000 Dầu tiên",
+          "Thời gian nghiên cứu: 8 ngày"
+        ],
+        "4": [
+          "Hero Heal Percent: 75",
+          "Phòng thí nghiệm cấp: 15",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nghiên cứu: 20000000 Dầu tiên",
+          "Thời gian nghiên cứu: 11 ngày 12 giờ"
+        ],
+        "5": [
+          "Hero Heal Percent: 80",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nghiên cứu: 29500000 Dầu tiên",
+          "Thời gian nghiên cứu: 16 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 26000017,
+      "name": "Skeleton Spell",
+      "category": "spells",
+      "description": "Summon an army of Skeletons anywhere on the battlefield! Put a few extra swords when and where you need them most. Skeletons do not trigger traps.",
+      "maxLevel": 8,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Target Type: Mặt đất",
+        "Spell Type: dark"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Skeletons Generated: 12",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 9",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Skeletons Generated: 13",
+          "Phòng thí nghiệm cấp: 8",
+          "Nhà chính tối thiểu: 10",
+          "Chi phí nghiên cứu: 11000 Dark Elixir",
+          "Thời gian nghiên cứu: 12 giờ"
+        ],
+        "3": [
+          "Skeletons Generated: 14",
+          "Phòng thí nghiệm cấp: 8",
+          "Nhà chính tối thiểu: 10",
+          "Chi phí nghiên cứu: 17000 Dark Elixir",
+          "Thời gian nghiên cứu: 1 ngày"
+        ],
+        "4": [
+          "Skeletons Generated: 15",
+          "Phòng thí nghiệm cấp: 9",
+          "Nhà chính tối thiểu: 11",
+          "Chi phí nghiên cứu: 25000 Dark Elixir",
+          "Thời gian nghiên cứu: 2 ngày"
+        ],
+        "5": [
+          "Skeletons Generated: 16",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 12",
+          "Chi phí nghiên cứu: 40000 Dark Elixir",
+          "Thời gian nghiên cứu: 2 ngày 12 giờ"
+        ],
+        "6": [
+          "Skeletons Generated: 17",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 12",
+          "Chi phí nghiên cứu: 50000 Dark Elixir",
+          "Thời gian nghiên cứu: 3 ngày"
+        ],
+        "7": [
+          "Skeletons Generated: 18",
+          "Phòng thí nghiệm cấp: 11",
+          "Nhà chính tối thiểu: 13",
+          "Chi phí nghiên cứu: 75000 Dark Elixir",
+          "Thời gian nghiên cứu: 4 ngày"
+        ],
+        "8": [
+          "Skeletons Generated: 19",
+          "Phòng thí nghiệm cấp: 13",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nghiên cứu: 135000 Dark Elixir",
+          "Thời gian nghiên cứu: 6 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 26000120,
+      "name": "Totem Spell",
+      "category": "spells",
+      "description": "Hey, look over there! Distract ground and air Defenses by dropping a Totem Spell. Nearby enemies will focus their attack on the Totem, taking the heat off other troops. Forged from dense cosmic rock, the Totem also damages and stuns the are",
+      "maxLevel": 4,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Target Type: Mặt đất và trên không",
+        "Spell Type: regular"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Totem Hitpoints: 10000",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 13",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Totem Hitpoints: 11000",
+          "Phòng thí nghiệm cấp: 14",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 21000000 Dầu tiên",
+          "Thời gian nghiên cứu: 12 ngày"
+        ],
+        "3": [
+          "Totem Hitpoints: 12000",
+          "Phòng thí nghiệm cấp: 15",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nghiên cứu: 22000000 Dầu tiên",
+          "Thời gian nghiên cứu: 14 ngày"
+        ],
+        "4": [
+          "Totem Hitpoints: 13000",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nghiên cứu: 23000000 Dầu tiên",
+          "Thời gian nghiên cứu: 16 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 4000097,
+      "name": "Apprentice Warden",
+      "category": "troops",
+      "description": "Despite his grand ambitions, Apprentice Warden is still just a student. Supports troops with his magical Life Aura and less-magical slingshot.",
+      "maxLevel": 4,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 20",
+        "Tốc độ di chuyển: 20",
+        "Tầm đánh: 5",
+        "Tốc độ tấn công: 0.9",
+        "Target Type: Mặt đất và trên không",
+        "Damage Type: Đơn mục tiêu"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Máu: 1500",
+          "Nhà chính tối thiểu: 13",
+          "Phòng thí nghiệm cấp: 0",
+          "Thời gian nghiên cứu: 0 giây",
+          "Aura Hp Increase: 20",
+          "Sát thương mỗi giây: 170",
+          "Sát thương mỗi phát: 153"
+        ],
+        "2": [
+          "Máu: 1650",
+          "Nhà chính tối thiểu: 13",
+          "Phòng thí nghiệm cấp: 11",
+          "Chi phí nghiên cứu: 90000 Dark Elixir",
+          "Thời gian nghiên cứu: 6 ngày",
+          "Aura Hp Increase: 22",
+          "Sát thương mỗi giây: 185",
+          "Sát thương mỗi phát: 166.5"
+        ],
+        "3": [
+          "Máu: 1800",
+          "Nhà chính tối thiểu: 14",
+          "Phòng thí nghiệm cấp: 12",
+          "Chi phí nghiên cứu: 135000 Dark Elixir",
+          "Thời gian nghiên cứu: 7 ngày 12 giờ",
+          "Aura Hp Increase: 24",
+          "Sát thương mỗi giây: 200",
+          "Sát thương mỗi phát: 180"
+        ],
+        "4": [
+          "Máu: 1950",
+          "Nhà chính tối thiểu: 15",
+          "Phòng thí nghiệm cấp: 13",
+          "Chi phí nghiên cứu: 160000 Dark Elixir",
+          "Thời gian nghiên cứu: 8 ngày",
+          "Aura Hp Increase: 26",
+          "Sát thương mỗi giây: 215",
+          "Sát thương mỗi phát: 193.5"
+        ]
+      }
+    },
+    {
+      "dataId": 4000001,
+      "name": "Archer",
+      "category": "troops",
+      "description": "These sharpshooters like to keep their distance on the battlefield and in life. Nothing makes them happier than single-mindedly taking down their target.",
+      "maxLevel": 14,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Tốc độ di chuyển: 24",
+        "Tầm đánh: 3.5",
+        "Tốc độ tấn công: 1",
+        "Target Type: Mặt đất và trên không",
+        "Damage Type: Đơn mục tiêu"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Máu: 22",
+          "Nhà chính tối thiểu: 1",
+          "Phòng thí nghiệm cấp: 0",
+          "Thời gian nghiên cứu: 0 giây",
+          "Sát thương mỗi giây: 8",
+          "Sát thương mỗi phát: 8"
+        ],
+        "2": [
+          "Máu: 26",
+          "Nhà chính tối thiểu: 3",
+          "Phòng thí nghiệm cấp: 1",
+          "Chi phí nghiên cứu: 20000 Dầu tiên",
+          "Thời gian nghiên cứu: 1 giờ",
+          "Sát thương mỗi giây: 10",
+          "Sát thương mỗi phát: 10"
+        ],
+        "3": [
+          "Máu: 29",
+          "Nhà chính tối thiểu: 5",
+          "Phòng thí nghiệm cấp: 3",
+          "Chi phí nghiên cứu: 80000 Dầu tiên",
+          "Thời gian nghiên cứu: 2 giờ",
+          "Sát thương mỗi giây: 13",
+          "Sát thương mỗi phát: 13"
+        ],
+        "4": [
+          "Máu: 33",
+          "Nhà chính tối thiểu: 7",
+          "Phòng thí nghiệm cấp: 5",
+          "Chi phí nghiên cứu: 200000 Dầu tiên",
+          "Thời gian nghiên cứu: 3 giờ",
+          "Sát thương mỗi giây: 16",
+          "Sát thương mỗi phát: 16"
+        ],
+        "5": [
+          "Máu: 40",
+          "Nhà chính tối thiểu: 8",
+          "Phòng thí nghiệm cấp: 6",
+          "Chi phí nghiên cứu: 500000 Dầu tiên",
+          "Thời gian nghiên cứu: 8 giờ",
+          "Sát thương mỗi giây: 20",
+          "Sát thương mỗi phát: 20"
+        ],
+        "6": [
+          "Máu: 44",
+          "Nhà chính tối thiểu: 9",
+          "Phòng thí nghiệm cấp: 7",
+          "Chi phí nghiên cứu: 1000000 Dầu tiên",
+          "Thời gian nghiên cứu: 12 giờ",
+          "Sát thương mỗi giây: 22",
+          "Sát thương mỗi phát: 22"
+        ],
+        "7": [
+          "Máu: 48",
+          "Nhà chính tối thiểu: 10",
+          "Phòng thí nghiệm cấp: 8",
+          "Chi phí nghiên cứu: 1500000 Dầu tiên",
+          "Thời gian nghiên cứu: 1 ngày",
+          "Sát thương mỗi giây: 25",
+          "Sát thương mỗi phát: 25"
+        ],
+        "8": [
+          "Máu: 52",
+          "Nhà chính tối thiểu: 11",
+          "Phòng thí nghiệm cấp: 9",
+          "Chi phí nghiên cứu: 2300000 Dầu tiên",
+          "Thời gian nghiên cứu: 1 ngày 12 giờ",
+          "Sát thương mỗi giây: 28",
+          "Sát thương mỗi phát: 28"
+        ],
+        "9": [
+          "Máu: 56",
+          "Nhà chính tối thiểu: 12",
+          "Phòng thí nghiệm cấp: 10",
+          "Chi phí nghiên cứu: 3000000 Dầu tiên",
+          "Thời gian nghiên cứu: 2 ngày",
+          "Sát thương mỗi giây: 31",
+          "Sát thương mỗi phát: 31"
+        ],
+        "10": [
+          "Máu: 60",
+          "Nhà chính tối thiểu: 14",
+          "Phòng thí nghiệm cấp: 12",
+          "Chi phí nghiên cứu: 4500000 Dầu tiên",
+          "Thời gian nghiên cứu: 3 ngày",
+          "Sát thương mỗi giây: 34",
+          "Sát thương mỗi phát: 34"
+        ],
+        "11": [
+          "Máu: 64",
+          "Nhà chính tối thiểu: 15",
+          "Phòng thí nghiệm cấp: 13",
+          "Chi phí nghiên cứu: 6500000 Dầu tiên",
+          "Thời gian nghiên cứu: 4 ngày",
+          "Sát thương mỗi giây: 37",
+          "Sát thương mỗi phát: 37"
+        ],
+        "12": [
+          "Máu: 68",
+          "Nhà chính tối thiểu: 16",
+          "Phòng thí nghiệm cấp: 14",
+          "Chi phí nghiên cứu: 9000000 Dầu tiên",
+          "Thời gian nghiên cứu: 4 ngày 12 giờ",
+          "Sát thương mỗi giây: 40",
+          "Sát thương mỗi phát: 40"
+        ],
+        "13": [
+          "Máu: 72",
+          "Nhà chính tối thiểu: 17",
+          "Phòng thí nghiệm cấp: 15",
+          "Chi phí nghiên cứu: 14000000 Dầu tiên",
+          "Thời gian nghiên cứu: 9 ngày",
+          "Sát thương mỗi giây: 43",
+          "Sát thương mỗi phát: 43"
+        ],
+        "14": [
+          "Máu: 76",
+          "Nhà chính tối thiểu: 18",
+          "Phòng thí nghiệm cấp: 16",
+          "Chi phí nghiên cứu: 25000000 Dầu tiên",
+          "Thời gian nghiên cứu: 13 ngày 12 giờ",
+          "Sát thương mỗi giây: 46",
+          "Sát thương mỗi phát: 46"
+        ]
+      }
+    }
+  ]
+}
