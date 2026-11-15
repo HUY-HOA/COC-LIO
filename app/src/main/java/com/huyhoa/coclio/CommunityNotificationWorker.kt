@@ -103,6 +103,15 @@ class CommunityNotificationWorker(
             val updatesEnabled = AppPreferences.updateNotificationsEnabled(applicationContext, profile)
             if (!communityEnabled && !updatesEnabled) return@withLock Result.success()
 
+            val notificationsAllowed =
+                (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                    ContextCompat.checkSelfPermission(
+                        applicationContext,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED) &&
+                    NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()
+            if (!notificationsAllowed) return@withLock Result.success()
+
             try {
                 val preferences = applicationContext.getSharedPreferences(
                     "coc_lio_notification_watermarks",
