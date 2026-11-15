@@ -556,8 +556,8 @@ service cloud.firestore {
             && request.resource.data.fileSize <= 700000
             && request.resource.data.keys().hasAny(['sharedJsonId'])
             && request.resource.data.sharedJsonId.size() > 0
-            && exists(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId))
-            && (isOwner() || get(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId)).data.uid == request.auth.uid)
+            && existsAfter(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId))
+            && (isOwner() || getAfter(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId)).data.uid == request.auth.uid)
           )
         );
 
