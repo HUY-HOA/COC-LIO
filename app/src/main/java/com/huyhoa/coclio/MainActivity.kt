@@ -1280,11 +1280,7 @@ private fun CocLioApp(
                                         }
                                     ),
                                     contentDescription = item.title,
-                                    modifier = Modifier.size(20.dp),
-                                    colorFilter = ColorFilter.tint(
-                                        if (selectedTab == item.page) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         },
