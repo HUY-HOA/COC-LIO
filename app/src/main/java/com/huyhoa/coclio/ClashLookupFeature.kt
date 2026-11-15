@@ -383,6 +383,8 @@ private fun ClashGameDataLookupScreen() {
 private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUpgradeEntry>) {
     val levels = entry.levels.map { it.level }.distinct().sorted()
     var selectedIndex by remember(entry.dataId, levels) { mutableStateOf((levels.lastIndex).coerceAtLeast(0)) }
+    var planStartIndex by remember(entry.dataId, levels) { mutableStateOf(0) }
+    var planTargetIndex by remember(entry.dataId, levels) { mutableStateOf((levels.lastIndex).coerceAtLeast(0)) }
     val selectedLevel = levels.getOrNull(selectedIndex) ?: entry.levels.firstOrNull()?.level ?: 1
     val levelData = entry.level(selectedLevel)
     val english = LocalAppLanguage.current == AppUiLanguage.ENGLISH
@@ -447,6 +449,41 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
             }
             if (requirements.isNotEmpty()) {
                 LookupValue("Yêu cầu mở cấp tiếp theo", requirements.joinToString(" • ") { "${it.label} cấp ${it.level}" })
+            }
+            if (levels.size > 1) {
+                Text("TÍNH TỔNG NÂNG CẤP THEO KHOẢNG CẤP", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                LookupValue("Từ cấp", levels[planStartIndex].toString())
+                Slider(
+                    value = planStartIndex.toFloat(),
+                    onValueChange = { planStartIndex = it.toInt().coerceIn(0, planTargetIndex) },
+                    valueRange = 0f..levels.lastIndex.toFloat(),
+                    steps = (levels.size - 2).coerceAtLeast(0)
+                )
+                LookupValue("Đến cấp", levels[planTargetIndex].toString())
+                Slider(
+                    value = planTargetIndex.toFloat(),
+                    onValueChange = { planTargetIndex = it.toInt().coerceIn(planStartIndex, levels.lastIndex) },
+                    valueRange = 0f..levels.lastIndex.toFloat(),
+                    steps = (levels.size - 2).coerceAtLeast(0)
+                )
+                if (planTargetIndex > planStartIndex) {
+                    val planTotals = CocUpgradeCatalog.upgradeTotals(
+                        entry,
+                        levels[planStartIndex],
+                        levels[planTargetIndex]
+                    )
+                    planTotals.resources.forEach { (resource, amount) ->
+                        LookupValue("${gameDataResourceIcon(resource)} ${gameDataResourceLabel(resource)}", lookupNumber(amount))
+                    }
+                    if (planTotals.durationSeconds > 0L) {
+                        LookupValue("Tổng thời gian nâng cấp", lookupDuration(planTotals.durationSeconds))
+                    }
+                    if (planTotals.resources.isEmpty() && planTotals.durationSeconds == 0L) {
+                        LookupValue("Kết quả tính toán", "Nguồn hiện chưa có chi phí hoặc thời gian cho khoảng cấp này.")
+                    }
+                } else {
+                    LookupValue("Khoảng cấp", "Chọn cấp đích lớn hơn cấp bắt đầu để tính tổng.")
+                }
             }
             if (nextLevelData == null && selectedLevel >= entry.maxLevel) {
                 LookupValue("Trạng thái", "Đã ở cấp tối đa theo dữ liệu hiện có")
@@ -528,6 +565,16 @@ private fun gameDataHeroLabel(hero: String): String = when (hero.lowercase()) {
     "minion-prince" -> "Hoàng tử tiểu quỷ"
     "dragon-duke" -> "Công tước Rồng"
     else -> hero.replace('-', ' ').replaceFirstChar { it.uppercase() }
+}
+
+private fun gameDataResourceIcon(resource: String): String = when (resource.trim().lowercase()) {
+    "gold", "builder gold", "capital gold" -> "🪙"
+    "elixir", "builder elixir" -> "🧪"
+    "dark elixir" -> "🖤"
+    "shiny ore", "quặng sáng" -> "💠"
+    "glowy ore", "quặng phát sáng" -> "🔮"
+    "starry ore", "quặng sao" -> "⭐"
+    else -> "📦"
 }
 
 private fun gameDataResourceLabel(resource: String): String = when (resource.lowercase()) {
