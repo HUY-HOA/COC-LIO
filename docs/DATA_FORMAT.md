@@ -36,7 +36,7 @@ A row with `timer` and no `cnt` is interpreted as one running instance. A row wi
 - It does not provide a live online/offline status.
 - It does not update itself after the player returns to the game; a new export must be imported.
 - Game updates may add identifiers, levels or fields. Unknown identifiers remain visible as numeric IDs until the mapping is verified.
-- Supercharge has special tier semantics beyond ordinary level upgrades. COC-LIO currently retains the source JSON but does not yet claim to interpret every Supercharge field. This must be validated against current real exports before it is used in completion detection.
+- Catalog rows marked `supercharge: true` are separated into Supercharge tiers and are never mixed into ordinary level sequences, normal maximum-level calculations or normal upgrade totals. COC-LIO can display Supercharge tier stats, requirements, costs and time independently. The village export is still treated as the authority for the player's actual state; the catalogue alone does not prove which Supercharge tiers a player has completed.
 - The export is a snapshot. A book, potion, snack, helper, Clock Tower boost, Gold Pass boost, or other game action after export can make the estimate differ from the current in-game timer. Import a fresh JSON after those actions. The game timer is the reference.
 
 ## References
@@ -64,3 +64,12 @@ These are independent community references, not official Supercell API documenta
 - Upgrade reminder notifications are configured to expire after 25 seconds. Alarm-style notifications use an approximately 10-second vibration pattern. Android controls the heads-up banner duration, and actual alarm sound playback still depends on the selected system alarm sound, notification-channel settings, Do Not Disturb and device software.
 - An expired JSON countdown is an estimated finish time, not proof that the game upgrade has completed. Import a fresh JSON to confirm the actual level.
 - The upgrade progress view starts at 0% at the JSON timestamp, advances with elapsed time, and transitions from red through yellow to green. The widget keeps its existing static RGB gradient border; Android RemoteViews widgets do not provide the same continuously animated Compose LED effect used inside the app.
+
+
+## Catalog ID lookup and integrity
+
+- `dataId` is the canonical game object key. The text `id` slug is descriptive and can be repeated across villages or bases; use `dataId` (and base when needed) for exact identity.
+- The in-app ID lookup searches numeric IDs, English source names, Vietnamese localized names without requiring diacritics, aliases, category and base.
+- Localized names and image paths are validated against the complete local upgrade catalogue. Unknown cosmetic or future IDs remain visible with their numeric ID; the app does not fabricate a name or an image.
+- The CI validation script checks duplicate IDs, normal-level and Supercharge-level collisions, max-level consistency, remote-catalog references, and missing Vietnamese-name or image mappings.
+- Supercharge is a separate progression track. Its costs and times are reported separately from ordinary upgrades and must not be added to ordinary level totals.
