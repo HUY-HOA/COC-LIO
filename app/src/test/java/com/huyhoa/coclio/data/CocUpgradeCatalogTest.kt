@@ -2,6 +2,7 @@ package com.huyhoa.coclio.data
 
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CocUpgradeCatalogTest {
@@ -107,4 +108,62 @@ class CocUpgradeCatalogTest {
         assertEquals(400000L, totals.resources["Dark Elixir"])
         assertEquals(172800L, totals.durationSeconds)
     }
+    @Test
+    fun keepsSuperchargeTiersSeparateAndCalculatesTheirCostsAndTime() {
+        val entry = CocUpgradeEntry(
+            dataId = 1000077,
+            id = "monolith",
+            name = "Monolith",
+            description = "",
+            base = "home",
+            category = "defense",
+            rarity = "",
+            hero = "",
+            maxLevel = 5,
+            properties = JSONObject(),
+            levels = listOf(
+                CocUpgradeLevel(4, JSONObject("""{"level":4,"buildCost":300000,"buildCostResource":"Dark Elixir","buildTime":{"days":11}}""")),
+                CocUpgradeLevel(5, JSONObject("""{"level":5,"buildCost":470000,"buildCostResource":"Dark Elixir","buildTime":{"days":15}}"""))
+            ),
+            superchargeLevels = listOf(
+                CocUpgradeLevel(1, JSONObject("""{"level":1,"supercharge":true,"buildCost":220000,"buildCostResource":"Dark Elixir","buildTime":{"days":5}}""")),
+                CocUpgradeLevel(2, JSONObject("""{"level":2,"supercharge":true,"buildCost":200000,"buildCostResource":"Dark Elixir","buildTime":{"days":7}}"""))
+            )
+        )
+
+        assertEquals(2, entry.superchargeLevels.size)
+        assertTrue(entry.superchargeLevels.all { it.isSupercharge })
+        assertEquals(false, entry.levels.any { it.isSupercharge })
+
+        val regular = CocUpgradeCatalog.upgradeTotals(entry, 3, 5)
+        val supercharge = CocUpgradeCatalog.superchargeTotals(entry, 0, 2)
+
+        assertEquals(770000L, regular.resources["Dark Elixir"])
+        assertEquals(2246400L, regular.durationSeconds)
+        assertEquals(420000L, supercharge.resources["Dark Elixir"])
+        assertEquals(1036800L, supercharge.durationSeconds)
+    }
+
+    @Test
+    fun findsCatalogEntriesByNumericIdAndAccentInsensitiveVietnameseName() {
+        val entry = CocUpgradeEntry(
+            dataId = 28000006,
+            id = "minion-prince",
+            name = "Minion Prince",
+            description = "",
+            base = "home",
+            category = "hero",
+            rarity = "",
+            hero = "",
+            maxLevel = 95,
+            properties = JSONObject(),
+            levels = emptyList(),
+            aliases = listOf("Prince")
+        )
+
+        assertEquals(28000006, CocUpgradeCatalog.search(listOf(entry), "28000006").single().dataId)
+        assertEquals(28000006, CocUpgradeCatalog.search(listOf(entry), "hoang tu tieu quy").single().dataId)
+        assertEquals(28000006, CocUpgradeCatalog.search(listOf(entry), "Prince").single().dataId)
+    }
+
 }
