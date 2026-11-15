@@ -76,11 +76,9 @@ data class RemoteAppConfig(
 }
 
 private fun defaultRemoteNavigation() = listOf(
-    RemoteNavigationItem("home", "Tổng quan", 0),
-    RemoteNavigationItem("buildings", "Thông tin", 1),
     RemoteNavigationItem("history", "JSON", 2),
-    RemoteNavigationItem("community", "Cộng đồng", 3),
     RemoteNavigationItem("lookup", "Tra cứu ID", 5),
+    RemoteNavigationItem("community", "Cộng đồng", 3),
     RemoteNavigationItem("settings", "Cài đặt", 4)
 )
 
@@ -129,11 +127,9 @@ object RemoteAppConfigManager {
   },
   "navigation": {
     "items": [
-      {"id": "home", "title": "Tổng quan", "enabled": true},
-      {"id": "buildings", "title": "Thông tin", "enabled": true},
       {"id": "history", "title": "JSON", "enabled": true},
-      {"id": "community", "title": "Cộng đồng", "enabled": true},
       {"id": "lookup", "title": "Tra cứu ID", "enabled": true},
+      {"id": "community", "title": "Cộng đồng", "enabled": true},
       {"id": "settings", "title": "Cài đặt", "enabled": true}
     ]
   },
@@ -312,12 +308,10 @@ object RemoteAppConfigManager {
     private fun parseNavigation(navigation: JSONObject?): List<RemoteNavigationItem> {
         val items = navigation?.optJSONArray("items") ?: return defaultRemoteNavigation()
         val pages = mapOf(
-            "home" to 0,
-            "buildings" to 1,
             "history" to 2,
+            "lookup" to 5,
             "community" to 3,
-            "settings" to 4,
-            "lookup" to 5
+            "settings" to 4
         )
         val defaults = defaultRemoteNavigation().associateBy { it.id }
         val result = mutableListOf<RemoteNavigationItem>()
@@ -342,7 +336,8 @@ object RemoteAppConfigManager {
             )
         }
         if (result.none { it.enabled }) return defaultRemoteNavigation()
-        return result
+        val orderedDefaults = defaultRemoteNavigation().associateBy { it.id }
+        return result.sortedBy { orderedDefaults.keys.indexOf(it.id).let { index -> if (index < 0) Int.MAX_VALUE else index } }
     }
 
     private fun parseDashboardBlocks(dashboard: JSONObject?): List<RemoteDashboardBlock> {
