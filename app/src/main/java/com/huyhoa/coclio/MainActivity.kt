@@ -1268,18 +1268,23 @@ private fun CocLioApp(
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = when (item.id) {
-                                        "home" -> Icons.Filled.Home
-                                        "buildings" -> Icons.Filled.Business
-                                        "history" -> Icons.Filled.History
-                                        "community" -> Icons.Filled.Forum
-                                        "lookup" -> Icons.Filled.Tag
-                                        else -> Icons.Filled.Settings
-                                    },
+                                Image(
+                                    painter = painterResource(
+                                        when (item.id) {
+                                            "home" -> R.drawable.ic_coc_home
+                                            "buildings" -> R.drawable.ic_coc_buildings
+                                            "history" -> R.drawable.ic_coc_history
+                                            "community" -> R.drawable.ic_coc_clan
+                                            "lookup" -> R.drawable.ic_coc_search
+                                            else -> R.drawable.ic_coc_settings
+                                        }
+                                    ),
                                     contentDescription = item.title,
                                     modifier = Modifier.size(20.dp),
-                                    tint = if (selectedTab == item.page) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    colorFilter = ColorFilter.tint(
+                                        if (selectedTab == item.page) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 )
                             }
                         },
