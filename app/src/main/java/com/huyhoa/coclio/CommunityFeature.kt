@@ -671,6 +671,7 @@ fun CommunityScreen(
     var busy by remember { mutableStateOf(false) }
     var deleteMessage by remember { mutableStateOf<CommunityMessage?>(null) }
     var deleteArchiveItem by remember { mutableStateOf<CommunityArchiveItem?>(null) }
+    var restoreArchiveItem by remember { mutableStateOf<CommunityArchiveItem?>(null) }
     var archiveItems by remember { mutableStateOf<List<CommunityArchiveItem>>(emptyList()) }
     var loadingArchive by remember { mutableStateOf(false) }
     var archiveError by remember { mutableStateOf<String?>(null) }
@@ -1302,6 +1303,7 @@ fun CommunityScreen(
                             CommunityArchiveCard(
                                 item = item,
                                 onDownload = { url, name -> downloadCommunityFile(context, url, name) },
+                                onRestore = { restoreArchiveItem = item },
                                 onDelete = { deleteArchiveItem = item }
                             )
                         }
@@ -1328,6 +1330,7 @@ fun CommunityScreen(
                                 "uid" to message.uid,
                                 "displayName" to message.displayName,
                                 "photoUrl" to message.photoUrl,
+                                "senderIsAdmin" to message.senderIsAdmin,
                                 "type" to message.type,
                                 "text" to message.text,
                                 "fileName" to message.fileName,
@@ -1392,6 +1395,93 @@ fun CommunityScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteAllArchiveConfirmation = false }) { Text("HỦY") }
+            }
+        )
+    }
+
+    restoreArchiveItem?.let { item ->
+        AlertDialog(
+            onDismissRequest = { if (!busy) restoreArchiveItem = null },
+            title = { Text("Khôi phục nội dung đã gỡ?") },
+            text = {
+                Text("Nội dung sẽ được đưa trở lại Cộng đồng. Bản lưu trong mục ĐÃ GỠ sẽ bị xóa sau khi khôi phục thành công.")
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy,
+                    onClick = {
+                        restoreArchiveItem = null
+                        scope.launch {
+                            busy = true
+                            try {
+                                val firestore = FirebaseFirestore.getInstance()
+                                val archiveReference = firestore
+                                    .collection(communityArchiveCollection(item.category))
+                                    .document(item.id)
+                                val archivedDocument = archiveReference.get().awaitCommunityResult()
+                                require(archivedDocument.exists()) { "Bản lưu không còn tồn tại." }
+                                val uid = archivedDocument.getString("uid").orEmpty()
+                                val displayName = archivedDocument.getString("displayName").orEmpty().ifBlank { "Thành viên" }
+                                val type = archivedDocument.getString("type").orEmpty().ifBlank { "text" }
+                                require(uid.isNotBlank()) { "Bản lưu thiếu thông tin người gửi nên không thể khôi phục." }
+                                val sharedJsonId = archivedDocument.getString("sharedJsonId").orEmpty()
+                                val sharedJsonData = (archivedDocument.get("sharedJsonData") as? Map<*, *>)
+                                    ?.entries
+                                    ?.filter { it.key is String && it.value != null }
+                                    ?.associate { it.key as String to it.value as Any }
+                                    ?.toMutableMap()
+                                if (type == "json") {
+                                    require(sharedJsonId.isNotBlank() && sharedJsonData?.get("rawJson") is String) {
+                                        "Bản JSON lưu trữ không có dữ liệu gốc để khôi phục."
+                                    }
+                                    sharedJsonData["createdAt"] = FieldValue.serverTimestamp()
+                                }
+                                val messageData = mapOf(
+                                    "uid" to uid,
+                                    "displayName" to displayName,
+                                    "senderIsAdmin" to (archivedDocument.getBoolean("senderIsAdmin")
+                                        ?: (displayName == "AILIO")),
+                                    "photoUrl" to archivedDocument.getString("photoUrl").orEmpty(),
+                                    "type" to type,
+                                    "text" to archivedDocument.getString("text").orEmpty(),
+                                    "fileName" to archivedDocument.getString("fileName").orEmpty(),
+                                    "storagePath" to archivedDocument.getString("storagePath").orEmpty(),
+                                    "downloadUrl" to archivedDocument.getString("downloadUrl").orEmpty(),
+                                    "contentType" to archivedDocument.getString("contentType").orEmpty(),
+                                    "fileSize" to (archivedDocument.getLong("fileSize") ?: 0L),
+                                    "contentData" to archivedDocument.getString("contentData").orEmpty(),
+                                    "sharedJsonId" to if (type == "json") sharedJsonId else "",
+                                    "createdAt" to FieldValue.serverTimestamp()
+                                )
+                                val originalId = archivedDocument.getString("originalId").orEmpty().ifBlank { item.id }
+                                val batch = firestore.batch()
+                                if (type == "json" && sharedJsonData != null) {
+                                    batch.set(
+                                        firestore.collection("community_shared_jsons").document(sharedJsonId),
+                                        sharedJsonData
+                                    )
+                                }
+                                batch.set(
+                                    firestore.collection("community_messages").document(originalId),
+                                    messageData
+                                )
+                                batch.delete(archiveReference)
+                                batch.commit().awaitCommunityResult()
+                                communityCountRefreshKey += 1
+                                statusMessage = "Đã khôi phục nội dung về Cộng đồng."
+                            } catch (error: Exception) {
+                                statusMessage = error.message ?: "Không thể khôi phục nội dung đã gỡ."
+                            } finally {
+                                busy = false
+                            }
+                        }
+                    }
+                ) { Text("KHÔI PHỤC") }
+            },
+            dismissButton = {
+                TextButton(onClick = { if (!busy) restoreArchiveItem = null }, enabled = !busy) {
+                    Text("HỦY")
+                }
             }
         )
     }
@@ -1871,6 +1961,7 @@ internal fun CommunityReceivedJsonCard(
 private fun CommunityArchiveCard(
     item: CommunityArchiveItem,
     onDownload: (String, String) -> Unit,
+    onRestore: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -2055,6 +2146,9 @@ private fun CommunityArchiveCard(
                     }
                 }
 
+                TextButton(onClick = onRestore) {
+                    Text("KHÔI PHỤC", fontSize = 9.sp)
+                }
                 TextButton(onClick = onDelete) {
                     Text("XÓA VĨNH VIỄN", color = MaterialTheme.colorScheme.error, fontSize = 9.sp)
                 }
