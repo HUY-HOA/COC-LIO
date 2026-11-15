@@ -18,12 +18,15 @@ class ClashSearchNormalizerTest {
         assertTrue(terms.any { it.equals("HUY", ignoreCase = true) })
         assertTrue(terms.any { it.equals("HÒA", ignoreCase = true) })
         assertTrue(terms.any { it.equals("HUYHOA", ignoreCase = true) })
+        assertTrue(terms.contains("HOA"))
+        assertTrue(terms.contains("HÒA"))
     }
 
     @Test
     fun prioritizesSearchableWordsWithoutDecorativeSymbols() {
         assertEquals(listOf("HUYHOA", "HUY", "HOA"), clashSearchTerms("HUY⭐⭐⭐HÒA").take(3))
         assertEquals(listOf("LIOONE", "LIO", "ONE"), clashSearchTerms("LIO⭐⭐⭐ONE").take(3))
+        assertTrue(clashSearchTerms("LIO⭐⭐⭐ONE").contains("LIO⭐⭐⭐ONE"))
     }
 
     @Test
