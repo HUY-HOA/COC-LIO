@@ -254,15 +254,87 @@ internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLedStroke(
 }
 
 @Composable
-private fun animatedLedTextBrush(): Brush {
+private fun LedBrandTitle(
+    text: String,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    letterSpacing: androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier = Modifier,
+    textAlign: androidx.compose.ui.text.style.TextAlign = androidx.compose.ui.text.style.TextAlign.Start
+) {
     val led = LocalLedTheme.current
     if (!led.enabled) {
-        val color = MaterialTheme.colorScheme.onSurface
-        return Brush.linearGradient(listOf(color, color))
+        Text(
+            text,
+            modifier = modifier,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = fontSize,
+            fontWeight = FontWeight.Black,
+            letterSpacing = letterSpacing,
+            textAlign = textAlign,
+            maxLines = 1
+        )
+        return
     }
-    val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val phase = (led.progress.value).rem(1f)
-    return Brush.linearGradient(movingLedColors(palette, phase))
+
+    val phase = led.progress.value.rem(1f)
+    val fullPalette = led.palette.map { it.copy(alpha = 1f) }
+    val haloPalette = led.palette.map { it.copy(alpha = 0.68f) }
+    val coreBrush = Brush.linearGradient(movingLedColors(fullPalette, phase))
+    val haloBrush = Brush.linearGradient(movingLedColors(haloPalette, phase))
+    val outlineWidth = with(LocalDensity.current) { 1.35.dp.toPx() }
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text,
+            style = TextStyle(
+                brush = haloBrush,
+                drawStyle = Stroke(width = outlineWidth * 3f),
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = CocCyan.copy(alpha = 0.96f),
+                    blurRadius = outlineWidth * 11f
+                )
+            ),
+            fontSize = fontSize,
+            fontWeight = FontWeight.Black,
+            letterSpacing = letterSpacing,
+            textAlign = textAlign,
+            maxLines = 1
+        )
+        Text(
+            text,
+            style = TextStyle(
+                brush = haloBrush,
+                drawStyle = Stroke(width = outlineWidth),
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = CocMagenta.copy(alpha = 0.82f),
+                    blurRadius = outlineWidth * 4f
+                )
+            ),
+            fontSize = fontSize,
+            fontWeight = FontWeight.Black,
+            letterSpacing = letterSpacing,
+            textAlign = textAlign,
+            maxLines = 1
+        )
+        Text(
+            text,
+            style = TextStyle(
+                brush = coreBrush,
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = CocCyan.copy(alpha = 0.72f),
+                    blurRadius = outlineWidth * 3f
+                )
+            ),
+            fontSize = fontSize,
+            fontWeight = FontWeight.Black,
+            letterSpacing = letterSpacing,
+            textAlign = textAlign,
+            maxLines = 1
+        )
+    }
 }
 
 @Composable
@@ -1140,11 +1212,9 @@ private fun CocLioApp(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        remoteAppConfig.appTitle,
-                        style = TextStyle(brush = animatedLedTextBrush()),
+                    LedBrandTitle(
+                        text = remoteAppConfig.appTitle,
                         fontSize = 23.sp,
-                        fontWeight = FontWeight.Black,
                         letterSpacing = 2.sp
                     )
                     Text(
@@ -1655,12 +1725,11 @@ private fun GoogleLoginStartScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    appTitle,
-                    style = TextStyle(brush = animatedLedTextBrush()),
+                LedBrandTitle(
+                    text = appTitle,
                     fontSize = 26.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
+                    letterSpacing = 2.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
                     appSubtitle,
