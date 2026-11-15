@@ -1,0 +1,769 @@
+{
+  "catalog": [
+    {
+      "dataId": 73000016,
+      "name": "Sneezy",
+      "category": "pets",
+      "description": "Her nose is blocked and loaded! Sneezy hangs behind her Hero due to allergies and sneezes tanky air Boogers that target Buildings. She goes on attack when her Hero falls!",
+      "maxLevel": 10,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 24",
+        "Tầm đánh: 5.5",
+        "Tốc độ tấn công: 0.8",
+        "Target Type: Mặt đất và trên không",
+        "Preferred Target: Defenses",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 270",
+          "Sát thương mỗi đòn: 216",
+          "Máu: 3300",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 290",
+          "Sát thương mỗi đòn: 232",
+          "Máu: 3450",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 200000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 310",
+          "Sát thương mỗi đòn: 248",
+          "Máu: 3600",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 220000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 330",
+          "Sát thương mỗi đòn: 264",
+          "Máu: 3750",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 240000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 350",
+          "Sát thương mỗi đòn: 280",
+          "Máu: 3900",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 260000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 370",
+          "Sát thương mỗi đòn: 296",
+          "Máu: 4050",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 280000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 390",
+          "Sát thương mỗi đòn: 312",
+          "Máu: 4200",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 300000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 410",
+          "Sát thương mỗi đòn: 328",
+          "Máu: 4350",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 320000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 430",
+          "Sát thương mỗi đòn: 344",
+          "Máu: 4500",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 340000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 450",
+          "Sát thương mỗi đòn: 360",
+          "Máu: 4650",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 360000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 73000010,
+      "name": "Spirit Fox",
+      "category": "pets",
+      "description": "An extremely shy creature, who's happiest alone in the woods outside the Village. When called to battle, Spirit Fox fights fiercely alongside their hero and helps them with a little invisibility.",
+      "maxLevel": 10,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 24",
+        "Tầm đánh: 2.5",
+        "Tốc độ tấn công: 1.6",
+        "Target Type: Mặt đất",
+        "Preferred Target: Within 4.5 tiles of Hero",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 108",
+          "Sát thương mỗi đòn: 172.8",
+          "Invisibility Duration: 3",
+          "Máu: 1900",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 116",
+          "Sát thương mỗi đòn: 185.6",
+          "Invisibility Duration: 3",
+          "Máu: 2000",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 150000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 124",
+          "Sát thương mỗi đòn: 198.4",
+          "Invisibility Duration: 3",
+          "Máu: 2100",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 160000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 132",
+          "Sát thương mỗi đòn: 211.2",
+          "Invisibility Duration: 3",
+          "Máu: 2200",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 170000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 140",
+          "Sát thương mỗi đòn: 224",
+          "Invisibility Duration: 3.5",
+          "Máu: 2300",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 180000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày 12 giờ"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 148",
+          "Sát thương mỗi đòn: 236.8",
+          "Invisibility Duration: 3.5",
+          "Máu: 2400",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 190000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "7": [
+          "Sát thương mỗi giây: 156",
+          "Sát thương mỗi đòn: 249.6",
+          "Invisibility Duration: 3.5",
+          "Máu: 2500",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 200000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày 12 giờ"
+        ],
+        "8": [
+          "Sát thương mỗi giây: 164",
+          "Sát thương mỗi đòn: 262.4",
+          "Invisibility Duration: 3.5",
+          "Máu: 2600",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 210000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày"
+        ],
+        "9": [
+          "Sát thương mỗi giây: 172",
+          "Sát thương mỗi đòn: 275.2",
+          "Invisibility Duration: 3.5",
+          "Máu: 2700",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 220000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày 12 giờ"
+        ],
+        "10": [
+          "Sát thương mỗi giây: 180",
+          "Sát thương mỗi đòn: 288",
+          "Invisibility Duration: 4",
+          "Máu: 2800",
+          "Nhà Linh thú cấp: 9",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nâng cấp: 230000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 73000003,
+      "name": "Unicorn",
+      "category": "pets",
+      "description": "Unicorns have severe trust issues, but overcoming them with love and patience is totally worth it. They'll heal up any minor or major scrapes as well as any Healer!",
+      "maxLevel": 15,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Tốc độ di chuyển: 16",
+        "Tầm đánh: 2.5",
+        "Tốc độ tấn công: 1",
+        "Target Type: Mặt đất và trên không",
+        "Preferred Target: Hero",
+        "Attack Type: Single Target"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Hồi máu mỗi giây: 50",
+          "Healing Per Pulse: 50",
+          "Máu: 1400",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Thời gian nâng cấp: 0 giây"
+        ],
+        "2": [
+          "Hồi máu mỗi giây: 53",
+          "Healing Per Pulse: 53",
+          "Máu: 1450",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 50000 Dark Elixir",
+          "Thời gian nâng cấp: 1 ngày 12 giờ"
+        ],
+        "3": [
+          "Hồi máu mỗi giây: 56",
+          "Healing Per Pulse: 56",
+          "Máu: 1500",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 65000 Dark Elixir",
+          "Thời gian nâng cấp: 2 ngày"
+        ],
+        "4": [
+          "Hồi máu mỗi giây: 58",
+          "Healing Per Pulse: 58",
+          "Máu: 1550",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 80000 Dark Elixir",
+          "Thời gian nâng cấp: 3 ngày"
+        ],
+        "5": [
+          "Hồi máu mỗi giây: 60",
+          "Healing Per Pulse: 60",
+          "Máu: 1600",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 95000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày"
+        ],
+        "6": [
+          "Hồi máu mỗi giây: 62",
+          "Healing Per Pulse: 62",
+          "Máu: 1675",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 110000 Dark Elixir",
+          "Thời gian nâng cấp: 4 ngày 12 giờ"
+        ],
+        "7": [
+          "Hồi máu mỗi giây: 64",
+          "Healing Per Pulse: 64",
+          "Máu: 1725",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 125000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày"
+        ],
+        "8": [
+          "Hồi máu mỗi giây: 66",
+          "Healing Per Pulse: 66",
+          "Máu: 1800",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 140000 Dark Elixir",
+          "Thời gian nâng cấp: 5 ngày 12 giờ"
+        ],
+        "9": [
+          "Hồi máu mỗi giây: 68",
+          "Healing Per Pulse: 68",
+          "Máu: 1875",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 155000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày"
+        ],
+        "10": [
+          "Hồi máu mỗi giây: 70",
+          "Healing Per Pulse: 70",
+          "Máu: 1950",
+          "Nhà Linh thú cấp: 4",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nâng cấp: 170000 Dark Elixir",
+          "Thời gian nâng cấp: 6 ngày 12 giờ"
+        ],
+        "11": [
+          "Hồi máu mỗi giây: 71",
+          "Healing Per Pulse: 71",
+          "Máu: 2025",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 200000 Dark Elixir",
+          "Thời gian nâng cấp: 7 ngày"
+        ],
+        "12": [
+          "Hồi máu mỗi giây: 72",
+          "Healing Per Pulse: 72",
+          "Máu: 2100",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 230000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "13": [
+          "Hồi máu mỗi giây: 73",
+          "Healing Per Pulse: 73",
+          "Máu: 2175",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 260000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "14": [
+          "Hồi máu mỗi giây: 74",
+          "Healing Per Pulse: 74",
+          "Máu: 2250",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 290000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ],
+        "15": [
+          "Hồi máu mỗi giây: 75",
+          "Healing Per Pulse: 75",
+          "Máu: 2325",
+          "Nhà Linh thú cấp: 11",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nâng cấp: 320000 Dark Elixir",
+          "Thời gian nâng cấp: 8 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 4000052,
+      "name": "Battle Blimp",
+      "category": "troops",
+      "description": "The Battle Blimp bypasses ground-based obstacles and delivers your Clan Castle troops directly into the heart of the enemy village, all while dropping bombs along the way. However, its thin hide makes it easier to shoot down. Immune to spel",
+      "maxLevel": 6,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Tốc độ di chuyển: 18",
+        "Tốc độ tấn công: 1.5",
+        "Preferred Target: None",
+        "Attack Type: Area Splash"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 100",
+          "Sát thương mỗi đòn: 150",
+          "Damage When Destroyed: 700",
+          "Máu: 3000",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 12",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 140",
+          "Sát thương mỗi đòn: 210",
+          "Damage When Destroyed: 800",
+          "Máu: 3500",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 12",
+          "Chi phí nghiên cứu: 2500000 Dầu tiên",
+          "Thời gian nghiên cứu: 2 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 180",
+          "Sát thương mỗi đòn: 270",
+          "Damage When Destroyed: 900",
+          "Máu: 4000",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 12",
+          "Chi phí nghiên cứu: 3500000 Dầu tiên",
+          "Thời gian nghiên cứu: 3 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 220",
+          "Sát thương mỗi đòn: 330",
+          "Damage When Destroyed: 1000",
+          "Máu: 4500",
+          "Phòng thí nghiệm cấp: 11",
+          "Nhà chính tối thiểu: 13",
+          "Chi phí nghiên cứu: 6500000 Dầu tiên",
+          "Thời gian nghiên cứu: 7 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 260",
+          "Sát thương mỗi đòn: 390",
+          "Damage When Destroyed: 1100",
+          "Máu: 5000",
+          "Phòng thí nghiệm cấp: 13",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nghiên cứu: 10000000 Dầu tiên",
+          "Thời gian nghiên cứu: 9 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 300",
+          "Sát thương mỗi đòn: 450",
+          "Damage When Destroyed: 1200",
+          "Máu: 5500",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nghiên cứu: 26000000 Dầu tiên",
+          "Thời gian nghiên cứu: 13 ngày 12 giờ"
+        ]
+      }
+    },
+    {
+      "dataId": 4000092,
+      "name": "Battle Drill",
+      "category": "troops",
+      "description": "A fine example of goblin ingenuity, the Battle Drill burrows underground towards the nearest defense. On arrival it pops up to stun and demolish with its dastardly drill.",
+      "maxLevel": 6,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Tốc độ di chuyển: 24",
+        "Tầm đánh: 1",
+        "Tốc độ tấn công: 1.7",
+        "Preferred Target: Defenses",
+        "Attack Type: Single Target (Ground Only)"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 430",
+          "Sát thương mỗi đòn: 731",
+          "Máu: 4800",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 16",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 470",
+          "Sát thương mỗi đòn: 799",
+          "Máu: 5100",
+          "Phòng thí nghiệm cấp: 13",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 6000000 Dầu tiên",
+          "Thời gian nghiên cứu: 4 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 510",
+          "Sát thương mỗi đòn: 867",
+          "Máu: 5400",
+          "Phòng thí nghiệm cấp: 13",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 8500000 Dầu tiên",
+          "Thời gian nghiên cứu: 5 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 550",
+          "Sát thương mỗi đòn: 935",
+          "Máu: 5800",
+          "Phòng thí nghiệm cấp: 13",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 10000000 Dầu tiên",
+          "Thời gian nghiên cứu: 8 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 590",
+          "Sát thương mỗi đòn: 1003",
+          "Máu: 6300",
+          "Phòng thí nghiệm cấp: 15",
+          "Nhà chính tối thiểu: 17",
+          "Chi phí nghiên cứu: 17000000 Dầu tiên",
+          "Thời gian nghiên cứu: 9 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 640",
+          "Sát thương mỗi đòn: 1088",
+          "Máu: 6900",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nghiên cứu: 28000000 Dầu tiên",
+          "Thời gian nghiên cứu: 15 ngày 12 giờ"
+        ]
+      }
+    },
+    {
+      "dataId": 4000091,
+      "name": "Flame Flinger",
+      "category": "troops",
+      "description": "This little charmer flings bundles of Fire Spirits that both hit hard and leave behind a burning mess. Its long range helps it stay out of trouble, but beware of longer range defenses and traps! Immune to spell effects.",
+      "maxLevel": 5,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Tốc độ di chuyển: 6",
+        "Tầm đánh: 11",
+        "Preferred Target: Defenses",
+        "Attack Type: Area Splash (Ground Only)"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 124",
+          "Sát thương mỗi đòn: 225",
+          "Flame Max Dps: 80",
+          "Lifetime: 100",
+          "Máu: 1700",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 15",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 137",
+          "Sát thương mỗi đòn: 250",
+          "Flame Max Dps: 95",
+          "Lifetime: 105.88",
+          "Máu: 1800",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nghiên cứu: 5500000 Dầu tiên",
+          "Thời gian nghiên cứu: 3 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 151",
+          "Sát thương mỗi đòn: 275",
+          "Flame Max Dps: 105",
+          "Lifetime: 111.76",
+          "Máu: 1900",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nghiên cứu: 8000000 Dầu tiên",
+          "Thời gian nghiên cứu: 4 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 165",
+          "Sát thương mỗi đòn: 300",
+          "Flame Max Dps: 120",
+          "Lifetime: 117.64",
+          "Máu: 2000",
+          "Phòng thí nghiệm cấp: 11",
+          "Nhà chính tối thiểu: 15",
+          "Chi phí nghiên cứu: 10000000 Dầu tiên",
+          "Thời gian nghiên cứu: 7 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 179",
+          "Sát thương mỗi đòn: 325",
+          "Flame Max Dps: 130",
+          "Lifetime: 123.52",
+          "Máu: 2100",
+          "Phòng thí nghiệm cấp: 14",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 18000000 Dầu tiên",
+          "Thời gian nghiên cứu: 12 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 4000087,
+      "name": "Log Launcher",
+      "category": "troops",
+      "description": "While the Log Launcher certainly isn't the fastest or the sturdiest, it is definitely among the meanest. The trunk-throwing contraption pummels everything in front of it with endless logs to open up a path to the enemy Town Hall. Immune to ",
+      "maxLevel": 6,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Tốc độ di chuyển: 5",
+        "Tốc độ tấn công: 3",
+        "Preferred Target: Walls (Damage x4)",
+        "Attack Type: Area Splash (Ground Only)"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Sát thương mỗi giây: 140",
+          "Sát thương mỗi đòn: 420",
+          "Damage Vs Walls: 1680",
+          "Point Blank Damage: 2900",
+          "Lifetime: 25.64",
+          "Máu: 4000",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 14",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Sát thương mỗi giây: 160",
+          "Sát thương mỗi đòn: 480",
+          "Damage Vs Walls: 1920",
+          "Point Blank Damage: 3000",
+          "Lifetime: 28.2",
+          "Máu: 4400",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nghiên cứu: 3200000 Dầu tiên",
+          "Thời gian nghiên cứu: 3 ngày"
+        ],
+        "3": [
+          "Sát thương mỗi giây: 180",
+          "Sát thương mỗi đòn: 540",
+          "Damage Vs Walls: 2160",
+          "Point Blank Damage: 3100",
+          "Lifetime: 30.76",
+          "Máu: 4800",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nghiên cứu: 4500000 Dầu tiên",
+          "Thời gian nghiên cứu: 4 ngày"
+        ],
+        "4": [
+          "Sát thương mỗi giây: 200",
+          "Sát thương mỗi đòn: 600",
+          "Damage Vs Walls: 2400",
+          "Point Blank Damage: 3200",
+          "Lifetime: 33.33",
+          "Máu: 5200",
+          "Phòng thí nghiệm cấp: 11",
+          "Nhà chính tối thiểu: 14",
+          "Chi phí nghiên cứu: 7500000 Dầu tiên",
+          "Thời gian nghiên cứu: 7 ngày"
+        ],
+        "5": [
+          "Sát thương mỗi giây: 220",
+          "Sát thương mỗi đòn: 660",
+          "Damage Vs Walls: 2640",
+          "Point Blank Damage: 3400",
+          "Lifetime: 35.25",
+          "Máu: 5500",
+          "Phòng thí nghiệm cấp: 14",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 18000000 Dầu tiên",
+          "Thời gian nghiên cứu: 12 ngày"
+        ],
+        "6": [
+          "Sát thương mỗi giây: 230",
+          "Sát thương mỗi đòn: 690",
+          "Damage Vs Walls: 2760",
+          "Point Blank Damage: 3600",
+          "Lifetime: 37.17",
+          "Máu: 5800",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nghiên cứu: 27000000 Dầu tiên",
+          "Thời gian nghiên cứu: 15 ngày"
+        ]
+      }
+    },
+    {
+      "dataId": 4000075,
+      "name": "Siege Barracks",
+      "category": "troops",
+      "description": "The Siege Barracks parachutes down gracefully to first release a menagerie of P.E.K.K.As and Wizards and then the Clan Castle troops. How they all managed to squeeze inside is a mystery not really worth investigating.",
+      "maxLevel": 6,
+      "rarity": "",
+      "abilityType": "",
+      "details": [
+        "Không gian nhà: 1",
+        "Tốc độ di chuyển: 0"
+      ],
+      "requirements": [],
+      "levelDetails": {
+        "1": [
+          "Pekkas Spawned: 1",
+          "Wizards Spawned: 6",
+          "Máu: 3300",
+          "Phòng thí nghiệm cấp: 0",
+          "Nhà chính tối thiểu: 13",
+          "Thời gian nghiên cứu: 0 giây"
+        ],
+        "2": [
+          "Pekkas Spawned: 1",
+          "Wizards Spawned: 8",
+          "Máu: 3700",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 13",
+          "Chi phí nghiên cứu: 3500000 Dầu tiên",
+          "Thời gian nghiên cứu: 3 ngày"
+        ],
+        "3": [
+          "Pekkas Spawned: 1",
+          "Wizards Spawned: 10",
+          "Máu: 4100",
+          "Phòng thí nghiệm cấp: 10",
+          "Nhà chính tối thiểu: 13",
+          "Chi phí nghiên cứu: 5000000 Dầu tiên",
+          "Thời gian nghiên cứu: 4 ngày"
+        ],
+        "4": [
+          "Pekkas Spawned: 1",
+          "Wizards Spawned: 11",
+          "Máu: 4500",
+          "Phòng thí nghiệm cấp: 11",
+          "Nhà chính tối thiểu: 13",
+          "Chi phí nghiên cứu: 8000000 Dầu tiên",
+          "Thời gian nghiên cứu: 7 ngày"
+        ],
+        "5": [
+          "Pekkas Spawned: 2",
+          "Wizards Spawned: 11",
+          "Máu: 4800",
+          "Phòng thí nghiệm cấp: 14",
+          "Nhà chính tối thiểu: 16",
+          "Chi phí nghiên cứu: 18000000 Dầu tiên",
+          "Thời gian nghiên cứu: 12 ngày"
+        ],
+        "6": [
+          "Pekkas Spawned: 2",
+          "Wizards Spawned: 12",
+          "Máu: 5100",
+          "Phòng thí nghiệm cấp: 16",
+          "Nhà chính tối thiểu: 18",
+          "Chi phí nghiên cứu: 27000000 Dầu tiên",
+          "Thời gian nghiên cứu: 15 ngày"
+        ]
+      }
+    }
+  ]
+}
