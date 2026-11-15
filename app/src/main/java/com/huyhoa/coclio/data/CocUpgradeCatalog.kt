@@ -173,14 +173,14 @@ object CocUpgradeCatalog {
         if (entry.category == "hero-equipment") {
             val smith = entries.values.firstOrNull { it.id == "blacksmith" } ?: return null
             val availableSmithLevel = smith.levels
-                .filter { hallRequirement(smith, it, entries) <= hallLevel }
+                .filter { hallRequirement(smith, it, entries)?.let { required -> required <= hallLevel } == true }
                 .maxOfOrNull { it.level } ?: return null
             val smithData = smith.level(availableSmithLevel)?.raw ?: return null
             val caps = smithData.optJSONObject("maxEquipmentLevel") ?: return null
             return caps.optInt(entry.rarity, -1).takeIf { it > 0 }?.coerceAtMost(entry.maxLevel)
         }
         val highest = entry.levels.filter { level ->
-            hallRequirement(entry, level, entries) <= hallLevel
+            hallRequirement(entry, level, entries)?.let { required -> required <= hallLevel } == true
         }.maxOfOrNull { it.level }
         return highest?.coerceAtMost(entry.maxLevel)
     }
@@ -204,7 +204,8 @@ object CocUpgradeCatalog {
         val raw = entry.level(level)?.raw ?: return emptyList()
         val result = mutableListOf<CocUpgradeRequirement>()
         val hallKey = if (entry.base == "builder") "builderHallLevelRequired" else "townHallRequired"
-        raw.optInt(hallKey, -1).takeIf { it > 0 }?.let {
+        val hallFallbackKey = if (entry.base == "builder") "builderHallRequired" else "townHall"
+        raw.optInt(hallKey, raw.optInt(hallFallbackKey, -1)).takeIf { it > 0 }?.let {
             result += CocUpgradeRequirement(if (entry.base == "builder") "Nhà thợ xây" else "Nhà chính", it)
         }
         facilityIds.forEach { (key, facilityId) ->
@@ -234,9 +235,10 @@ object CocUpgradeCatalog {
         entry: CocUpgradeEntry,
         level: CocUpgradeLevel,
         entries: Map<Int, CocUpgradeEntry>
-    ): Int {
+    ): Int? {
         val hallKey = if (entry.base == "builder") "builderHallLevelRequired" else "townHallRequired"
-        val direct = level.int(hallKey, if (entry.base == "builder") "builderHallRequired" else "townHall")
+        val hallFallbackKey = if (entry.base == "builder") "builderHallRequired" else "townHall"
+        val direct = level.int(hallKey, hallFallbackKey)
         val requirements = mutableListOf<Int>()
         direct?.takeIf { it > 0 }?.let(requirements::add)
         facilityIds.forEach { (key, facilityId) ->
@@ -250,7 +252,10 @@ object CocUpgradeCatalog {
             }
             if (requiredHall > 0) requirements += requiredHall
         }
-        return requirements.maxOrNull() ?: if (level.level == entry.levels.firstOrNull()?.level) 1 else 1
+        requirements.maxOrNull()?.let { return it }
+        val previous = entry.levels.filter { it.level < level.level }.maxByOrNull { it.level }
+        return previous?.let { hallRequirement(entry, it, entries) }
+            ?: if (level.level == entry.levels.firstOrNull()?.level && entry.levels.size == 1) 1 else null
     }
 
     fun upgradeTotals(
