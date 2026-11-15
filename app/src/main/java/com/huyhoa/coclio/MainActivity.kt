@@ -1463,7 +1463,6 @@ private fun CocLioApp(
                             importJson(rawJson)
                             receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
                         },
-                        history = history,
                         deletedVillages = deletedVillages,
                         pinnedTags = pinnedTags,
                         activeTag = current?.tag.orEmpty(),
