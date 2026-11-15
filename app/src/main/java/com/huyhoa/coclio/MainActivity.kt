@@ -2500,10 +2500,11 @@ private fun VillageGridItemCard(
     val blacksmithMax = upgrade?.let {
         CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(it, blacksmithLevel, catalog)
     }
-    val effectiveMax = when {
-        item.sectionKey == "equipment" && blacksmithMax != null -> listOfNotNull(hallMax, blacksmithMax).minOrNull()
+    val currentLimit = when {
+        item.sectionKey == "equipment" -> listOfNotNull(hallMax, blacksmithMax).minOrNull() ?: blacksmithMax
         else -> hallMax
-    } ?: absoluteMax
+    }
+    val effectiveMax = currentLimit ?: absoluteMax
     val itemName = if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
         remote?.name?.takeIf { it.isNotBlank() } ?: upgrade?.name?.takeIf { it.isNotBlank() } ?: item.name
     } else {
@@ -2577,10 +2578,26 @@ private fun VillageGridItemCard(
             fontWeight = FontWeight.Bold,
             maxLines = 1
         )
-        if (hallMax != null || absoluteMax != null) {
+        if (currentLimit != null || absoluteMax != null) {
             Text(
-                "MỞ ĐẾN: ${effectiveMax ?: "—"} • MAX TOÀN GAME: ${absoluteMax ?: "—"}",
-                color = if (effectiveMax != null && absoluteMax != null && effectiveMax < absoluteMax) CocGold else MaterialTheme.colorScheme.onSurfaceVariant,
+                "GIỚI HẠN ĐANG MỞ: ${currentLimit ?: "Chưa rõ"}",
+                color = if (currentLimit != null && absoluteMax != null && currentLimit < absoluteMax) CocGold else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            Text(
+                "MAX TOÀN GAME: ${absoluteMax ?: "Chưa có dữ liệu"}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+        }
+        if (item.sectionKey == "equipment") {
+            Text(
+                "LÒ RÈN: ${blacksmithLevel?.let { "CẤP $it" } ?: "CHƯA CÓ DỮ LIỆU"}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
