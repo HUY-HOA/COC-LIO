@@ -747,10 +747,11 @@ private fun CocLioApp(
             .toList()
     }
     var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(2) }
+    var jsonSection by rememberSaveable { mutableStateOf(0) }
     val remoteNavigationItems = remoteAppConfig.navigationItems
         .filter { it.enabled && remoteAppConfig.featureEnabled(it.id) }
-        .take(6)
+        .take(4)
         .ifEmpty { remoteAppConfig.navigationItems.firstOrNull()?.let { listOf(it.copy(enabled = true)) }.orEmpty() }
     LaunchedEffect(remoteNavigationItems, selectedTab) {
         if (remoteNavigationItems.none { it.page == selectedTab }) {
@@ -1145,7 +1146,8 @@ private fun CocLioApp(
         accountProfileError = null
         activeProfile = googleAccount.email
         interactiveGoogleSignIn = false
-        selectedTab = 0
+        selectedTab = 2
+        jsonSection = 0
         googleAuthError = null
         snackbar.showAppSnackbar(context, "Đăng nhập Google thành công.")
     }
@@ -1159,7 +1161,8 @@ private fun CocLioApp(
             AccountProfileStore.setActive(context, null)
             interactiveGoogleSignIn = false
             activeProfile = "local"
-            selectedTab = 0
+            selectedTab = 2
+            jsonSection = 0
             snackbar.showAppSnackbar(context, message)
         }
     }
@@ -1266,7 +1269,7 @@ private fun CocLioApp(
                                         when (item.id) {
                                             "home" -> R.drawable.ic_coc_home
                                             "buildings" -> R.drawable.ic_coc_buildings
-                                            "history" -> R.drawable.ic_coc_history
+                                            "history" -> R.drawable.ic_coc_json
                                             "community" -> R.drawable.ic_coc_clan
                                             "lookup" -> R.drawable.ic_coc_search
                                             else -> R.drawable.ic_coc_settings
@@ -1356,7 +1359,7 @@ private fun CocLioApp(
                     }
                 }
             )
-            if (selectedTab == 0 && (remoteContent.guides.isNotEmpty() || remoteContent.links.isNotEmpty())) {
+            if (selectedTab == 2 && (remoteContent.guides.isNotEmpty() || remoteContent.links.isNotEmpty())) {
                 RemoteGuidesSection(
                     guides = remoteContent.guides,
                     links = remoteContent.links
@@ -1375,22 +1378,24 @@ private fun CocLioApp(
                 ) {
                     Crossfade(targetState = selectedTab, label = "navigation-transition") { page ->
                 when (page) {
-                    0 -> current?.let {
-                        OverviewScreen(snapshot = it)
-                    } ?: EmptyWelcome(
-                        onImport = { requestImportJson() },
-                        onOpenGame = { openClashOfClans(context) }
-                    )
-                    1 -> current?.let {
-                        BuildingsAndArmyScreen(
-                            snapshot = it,
-                            remoteCatalog = remoteContent.catalog
-                        )
-                    } ?: EmptyWelcome(
-                        onImport = { requestImportJson() },
-                        onOpenGame = { openClashOfClans(context) }
-                    )
-                    2 -> HistoryScreen(
+                    2 -> Column(Modifier.fillMaxSize()) {
+                        JsonSectionTabs(selected = jsonSection, onSelected = { jsonSection = it })
+                        Box(Modifier.weight(1f).fillMaxWidth()) {
+                            when (jsonSection) {
+                                0 -> current?.let { OverviewScreen(snapshot = it) } ?: EmptyWelcome(
+                                    onImport = { requestImportJson() },
+                                    onOpenGame = { openClashOfClans(context) }
+                                )
+                                1 -> current?.let {
+                                    BuildingsAndArmyScreen(
+                                        snapshot = it,
+                                        remoteCatalog = remoteContent.catalog
+                                    )
+                                } ?: EmptyWelcome(
+                                    onImport = { requestImportJson() },
+                                    onOpenGame = { openClashOfClans(context) }
+                                )
+                                else -> HistoryScreen(
                         isGoogleSignedIn = isGoogleSignedIn,
                         history = history,
                         receivedJsons = receivedSharedJsons,
@@ -1425,7 +1430,8 @@ private fun CocLioApp(
                         activeTimestamp = current?.timestamp,
                         onSelect = {
                             current = it
-                            selectedTab = 0
+                            selectedTab = 2
+                            jsonSection = 0
                         },
                         onTogglePin = { tag ->
                             VillageStore.setPinned(context, tag, tag !in pinnedTags, activeProfile)
@@ -1463,6 +1469,9 @@ private fun CocLioApp(
                             }
                         },
                     )
+                            }
+                        }
+                    }
                     3 -> CommunityScreen(
                         isGoogleSignedIn = isGoogleSignedIn,
                         jsonOptions = history,
@@ -1744,6 +1753,52 @@ private fun GoogleLoginStartScreen(
     }
 }
 @Composable
+private fun JsonSectionTabs(
+    selected: Int,
+    onSelected: (Int) -> Unit
+) {
+    val labels = listOf("TỔNG QUAN", "THÔNG TIN", "DỮ LIỆU JSON")
+    val icons = listOf(
+        R.drawable.ic_coc_home,
+        R.drawable.ic_coc_buildings,
+        R.drawable.ic_coc_json
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        labels.forEachIndexed { index, label ->
+            FilterChip(
+                selected = selected == index,
+                onClick = { onSelected(index) },
+                label = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(icons[index]),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        MaterialText(
+                            label,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
 private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
     Column(
         modifier = Modifier
@@ -1758,18 +1813,10 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         Text("Bắt đầu theo dõi", color = MaterialTheme.colorScheme.onSurface, fontSize = 21.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Lấy JSON trực tiếp từ trò chơi để COC-LIO đọc cấp độ, công trình đang nâng và thời gian còn lại.",
+            "Sau khi nhập JSON làng, COC-LIO sẽ tổng hợp tiến trình, cấp độ công trình, quân đội và thời gian nâng cấp.",
             color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, lineHeight = 18.sp
         )
         Spacer(Modifier.height(18.dp))
-        NeonPanel(modifier = Modifier.fillMaxWidth(), glow = CocCyan) {
-            Text("CÁCH LẤY JSON LẦN ĐẦU", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Black)
-            Text("1. Mở Clash of Clans và vào làng cần theo dõi.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
-            Text("2. Nhấn bánh răng Cài đặt → Cài đặt khác.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
-            Text("3. Kéo xuống Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
-            Text("4. Quay lại COC-LIO, dán JSON rồi nhấn Phân tích.", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
-        }
-        Spacer(Modifier.height(14.dp))
         NeonButton(text = "MỞ CLASH OF CLANS", onClick = onOpenGame, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(10.dp))
         NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport, modifier = Modifier.fillMaxWidth())
