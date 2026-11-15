@@ -2332,13 +2332,7 @@ private fun CategoryScreen(
 
     fun groupKey(item: VillageItem): String {
         val category = if (tab == "buildings") buildingCategory(item) else armyCategory(item)
-        if (category == "equipment") {
-            val owner = upgradeCatalog[item.dataId]?.hero
-                ?.let(::equipmentHeroName)
-                ?: equipmentHero(item.dataId)
-                ?: "Khác"
-            return "equipment:$owner"
-        }
+        if (category == "equipment") return "equipment"
         return category
     }
 
@@ -2354,8 +2348,8 @@ private fun CategoryScreen(
         "heroes" -> "ANH HÙNG"
         "spells" -> "THẦN CHÚ"
         "pets" -> "LINH THÚ"
-        else -> if (key.startsWith("equipment:")) "TRANG BỊ • ${key.substringAfter(':').uppercase()}"
-            else rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
+        "equipment" -> "TRANG BỊ ANH HÙNG • TẤT CẢ TƯỚNG"
+        else -> rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
     }
 
     fun groupGlow(key: String): Color = when {
@@ -2367,7 +2361,7 @@ private fun CategoryScreen(
         key == "heroes" -> Color(0xFFFFB45C)
         key == "spells" -> Color(0xFF64B5F6)
         key == "pets" -> Color(0xFF6FE0B4)
-        key.startsWith("equipment:") -> CocViolet
+        key == "equipment" -> CocViolet
         else -> CocCyan
     }
 
@@ -2576,10 +2570,17 @@ private fun VillageGridItemCard(
             fontWeight = FontWeight.Black,
             maxLines = 1
         )
+        Text(
+            "${if (item.base == "builder") "NHÀ THỢ XÂY" else "NHÀ CHÍNH"}: ${hallLevel?.let { if (item.base == "builder") "BH$it" else "TH$it" } ?: "—"}",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
+        )
         if (hallMax != null || absoluteMax != null) {
             Text(
-                "TH/BH: ${hallMax ?: "—"} • MAX: ${absoluteMax ?: "—"}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                "MỞ ĐẾN: ${effectiveMax ?: "—"} • MAX TOÀN GAME: ${absoluteMax ?: "—"}",
+                color = if (effectiveMax != null && absoluteMax != null && effectiveMax < absoluteMax) CocGold else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
@@ -3528,12 +3529,12 @@ private fun VillageItemStatField(label: String, value: String) {
 private fun UpgradeResourceChip(resource: String, amount: Long) {
     val (icon, label, tint) = when (resource.trim().lowercase()) {
         "gold" -> Triple("🪙", "Vàng", Color(0xFFFFD166))
-        "elixir" -> Triple("🧪", "Dầu tiên", Color(0xFFFF6EC7))
+        "elixir" -> Triple("🧪", "Tiên dược", Color(0xFFFF6EC7))
         "dark elixir" -> Triple("🖤", "Dầu đen", Color(0xFFB77AFF))
         "builder gold" -> Triple("🪙", "Vàng thợ xây", Color(0xFFFFD166))
-        "builder elixir" -> Triple("🧪", "Dầu tiên thợ xây", Color(0xFFFF6EC7))
-        "gold or elixir" -> Triple("🪙🧪", "Vàng hoặc Dầu tiên", Color(0xFFFFD166))
-        "builder gold or builder elixir" -> Triple("🪙🧪", "Vàng thợ xây hoặc Dầu tiên thợ xây", Color(0xFFFFD166))
+        "builder elixir" -> Triple("🧪", "Tiên dược thợ xây", Color(0xFFFF6EC7))
+        "gold or elixir" -> Triple("🪙🧪", "Vàng hoặc Tiên dược", Color(0xFFFFD166))
+        "builder gold or builder elixir" -> Triple("🪙🧪", "Vàng thợ xây hoặc Tiên dược thợ xây", Color(0xFFFFD166))
         "capital gold" -> Triple("🏅", "Vàng thủ đô", Color(0xFFFFD166))
         "quặng sáng", "shiny ore" -> Triple("💠", "Quặng sáng", Color(0xFF55B9FF))
         "quặng phát sáng", "glowy ore" -> Triple("🔮", "Quặng phát sáng", Color(0xFFB77AFF))
