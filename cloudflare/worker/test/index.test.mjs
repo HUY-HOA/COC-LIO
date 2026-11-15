@@ -20,6 +20,9 @@ function makeEnvironment(content, overrides = {}) {
         const value = values.get(key);
         if (value == null) return null;
         return options?.type === "json" ? JSON.parse(value) : value;
+      },
+      async put(key, value) {
+        values.set(key, value);
       }
     },
     values,
@@ -61,11 +64,17 @@ test("write methods are rejected", async () => {
   assert.equal(response.status, 405);
 });
 
-test("missing content pointer is reported as unavailable", async () => {
-  const response = await worker.fetch(new Request("https://test/v1/content"), {
-    CONTENT: { async get() { return null; } }
-  });
-  assert.equal(response.status, 503);
+test("missing content pointer is reported as unavailable when GitHub is unavailable", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("", { status: 503 });
+  try {
+    const response = await worker.fetch(new Request("https://test/v1/content"), {
+      CONTENT: { async get() { return null; }, async put() {} }
+    });
+    assert.equal(response.status, 503);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("content hash mismatch is rejected", async () => {
@@ -78,7 +87,7 @@ test("content hash mismatch is rejected", async () => {
   }));
   const response = await worker.fetch(new Request("https://test/v1/content"), env);
   assert.equal(response.status, 503);
-  assert.equal((await response.json()).error, "CONTENT_INTEGRITY_CHECK_FAILED");
+  assert.equal((await response.json()).error, "CONTENT_SERVICE_UNAVAILABLE");
 });
 
 test("invalid version keys are rejected", async () => {
@@ -90,6 +99,76 @@ test("invalid version keys are rejected", async () => {
   }));
   const response = await worker.fetch(new Request("https://test/v1/content"), env);
   assert.equal(response.status, 503);
+});
+
+test("Worker imports, validates, merges and stores JSON catalog shards on a new version", async () => {
+  const originalFetch = globalThis.fetch;
+  const base = {
+    enabled: true,
+    version: 3,
+    catalog: [],
+    catalogShards: ["part-01.json"],
+    guides: [],
+    links: []
+  };
+  const shard = { catalog: [{ dataId: 4000000, name: "Barbarian" }] };
+  globalThis.fetch = async url => {
+    if (String(url).endsWith("/remote-content/current.json")) {
+      return new Response(JSON.stringify(base), { status: 200 });
+    }
+    if (String(url).endsWith("/remote-content/catalog/part-01.json")) {
+      return new Response(JSON.stringify(shard), { status: 200 });
+    }
+    return new Response("", { status: 404 });
+  };
+  const values = new Map();
+  const env = {
+    CONTENT: {
+      async get(key, options) {
+        const value = values.get(key);
+        if (value == null) return null;
+        return options?.type === "json" ? JSON.parse(value) : value;
+      },
+      async put(key, value) { values.set(key, value); }
+    }
+  };
+  try {
+    const response = await worker.fetch(new Request("https://test/v1/content"), env);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.version, 3);
+    assert.equal(body.catalog.length, 1);
+    assert.equal(body.catalog[0].dataId, 4000000);
+    assert.equal(values.has("content/v3.json"), true);
+    assert.equal(values.has("content/current"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("catalog shard duplicates are rejected and existing version remains served", async () => {
+  const originalFetch = globalThis.fetch;
+  const base = {
+    enabled: true,
+    version: 3,
+    catalog: [{ dataId: 4000000, name: "Barbarian" }],
+    catalogShards: ["part-01.json"],
+    guides: [],
+    links: []
+  };
+  const shard = { catalog: [{ dataId: 4000000, name: "Duplicate" }] };
+  globalThis.fetch = async url => String(url).endsWith("/remote-content/current.json")
+    ? new Response(JSON.stringify(base), { status: 200 })
+    : new Response(JSON.stringify(shard), { status: 200 });
+  const oldContent = JSON.stringify({ enabled: true, version: 2, catalog: [] });
+  const env = makeEnvironment(oldContent);
+  try {
+    const response = await worker.fetch(new Request("https://test/v1/content"), env);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).version, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("public asset route remains closed until an R2 bucket is bound", async () => {

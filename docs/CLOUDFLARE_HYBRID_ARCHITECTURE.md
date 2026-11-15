@@ -54,3 +54,8 @@ Sau khi kích hoạt, tạo bucket riêng cho tài nguyên công khai. Tệp c�
 Unit test Worker được chạy trong workflow bằng Node.js test runner. Kiểm tra bao gồm health, nội dung hợp lệ, ETag/304, chặn phương thức ghi, thiếu dữ liệu, hash sai, key không hợp lệ và đường asset trước khi R2 được gắn.
 
 Không tự động build APK khi chỉ cập nhật Worker hoặc dữ liệu. Các thay đổi Kotlin trong ứng dụng cần được kiểm tra Android riêng và chỉ build bản cài đặt theo lệnh BUILD APK.
+
+
+## Tự khởi tạo nội dung từ repository
+
+Nếu GitHub Actions chưa có `CLOUDFLARE_API_TOKEN`, Worker vẫn có thể khởi tạo kho nội dung: đọc `remote-content/current.json`, tải các shard được liệt kê trong `catalogShards`, kiểm tra ID trùng và cấu trúc, ghép JSON, tạo SHA-256 rồi lưu bản phiên bản vào KV. Sau lần đầu, Worker phục vụ bản đã lưu trong KV; khi source tăng version, nó tự phát hiện và phát hành phiên bản kế tiếp. Không phụ thuộc vào secret triển khai Worker trong GitHub Actions.

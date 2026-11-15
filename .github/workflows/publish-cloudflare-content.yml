@@ -101,7 +101,7 @@ jobs:
             const workerSource = fs.readFileSync("cloudflare/worker/src/index.mjs", "utf8");
             const metadata = {
               main_module: "index.mjs",
-              compatibility_date: "2026-11-16",
+              compatibility_date: "2026-11-15",
               bindings: [
                 {
                   type: "kv_namespace",
