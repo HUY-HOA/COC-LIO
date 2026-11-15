@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "remote-content/current.json"
+      - "remote-content/catalog/*.json"
       - ".github/workflows/publish-remote-content.yml"
   workflow_dispatch:
 
@@ -59,6 +60,41 @@ jobs:
 
           async function main() {
             const source = JSON.parse(fs.readFileSync("remote-content/current.json", "utf8"));
+            const catalogDirectory = "remote-content/catalog";
+            const shardNames = fs.existsSync(catalogDirectory)
+              ? fs.readdirSync(catalogDirectory)
+                  .filter(name => /^part-\\d{2}\\.json$/.test(name))
+                  .sort()
+              : [];
+            const catalogIds = new Set();
+            for (const item of source.catalog || []) {
+              const id = Number(item?.dataId);
+              if (!Number.isInteger(id) || id < 1 || catalogIds.has(id)) {
+                throw new Error("The base catalog contains an invalid or duplicate dataId.");
+              }
+              catalogIds.add(id);
+            }
+            for (const fileName of shardNames) {
+              const shard = JSON.parse(fs.readFileSync(`${catalogDirectory}/${fileName}`, "utf8"));
+              if (!Array.isArray(shard.catalog)) {
+                throw new Error(`Catalog shard ${fileName} must contain a catalog array.`);
+              }
+              for (const item of shard.catalog) {
+                const id = Number(item?.dataId);
+                if (!Number.isInteger(id) || id < 1 || !String(item?.name || "").trim()) {
+                  throw new Error(`Catalog shard ${fileName} contains an invalid item.`);
+                }
+                if (catalogIds.has(id)) {
+                  throw new Error(`Duplicate catalog dataId: ${id}`);
+                }
+                catalogIds.add(id);
+                source.catalog.push(item);
+              }
+            }
+            const encodedSize = Buffer.byteLength(JSON.stringify(source), "utf8");
+            if (encodedSize > 900000) {
+              throw new Error(`Remote content is ${encodedSize} bytes; keep it below 900,000 bytes for Firestore.`);
+            }
             if (!Number.isInteger(source.version) || source.version < 1) {
               throw new Error("remote-content/current.json has an invalid version.");
             }
@@ -91,6 +127,8 @@ jobs:
             console.log("Published Firestore document: app_remote_content/current");
             console.log("Content version:", source.version);
             console.log("Catalog entries:", source.catalog.length);
+            console.log("Catalog shards:", shardNames.length);
+            console.log("Remote document bytes:", encodedSize);
             console.log("Guides:", source.guides.length);
             console.log("Links:", source.links.length);
             console.log("Firestore read-back verification passed.");
