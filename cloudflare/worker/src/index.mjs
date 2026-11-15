@@ -7,15 +7,12 @@ const baseHeaders = {
   "Referrer-Policy": "no-referrer"
 };
 
-const GITHUB_RAW_ROOT =
-  "https://raw.githubusercontent.com/HUY-HOA-1/COC-LIO/main/";
-
 function safeError(error) {
   if (error instanceof Error) {
     return {
       name: error.name,
       message: String(error.message || "").slice(0, 240),
-      stack: String(error.stack || "").split("\\n").slice(0, 5).join("\\n")
+      stack: String(error.stack || "").split("\n").slice(0, 5).join("\n")
     };
   }
   return { message: String(error).slice(0, 240) };
@@ -42,81 +39,112 @@ function matchesEtag(request, etag) {
     .some(value => value === etag || value === "*");
 }
 
-async function fetchRepositoryJson(path) {
-  const response = await fetch(GITHUB_RAW_ROOT + path, {
-    headers: { Accept: "application/json" },
-    cf: { cacheTtl: 60, cacheEverything: true }
-  });
-  if (!response.ok) {
-    throw new Error("GITHUB_FETCH_FAILED:" + path + ":HTTP_" + response.status);
+function isValidCatalogItem(item, seenIds) {
+  const id = Number(item && item.dataId);
+  if (!Number.isSafeInteger(id) || id < 1 ||
+      !String(item && item.name || "").trim() || seenIds.has(id)) {
+    return false;
   }
-  return response.json();
+  seenIds.add(id);
+  return true;
 }
 
-async function publishLatestRepositoryContent(env, existingPointer) {
-  const base = await fetchRepositoryJson("remote-content/current.json");
-  if (!base || !Number.isInteger(base.version) || base.version < 1 ||
-      typeof base.enabled !== "boolean" || !Array.isArray(base.catalog) ||
-      !Array.isArray(base.guides) || !Array.isArray(base.links)) {
-    throw new Error("Repository content base schema is invalid");
+async function loadSourceContent(env, manifest) {
+  if (!manifest || !Number.isSafeInteger(manifest.version) || manifest.version < 1 ||
+      manifest.baseKey !== "source/v" + manifest.version + "/base.json" ||
+      !Array.isArray(manifest.shardKeys) || manifest.shardKeys.length > 100) {
+    throw new Error("SOURCE_MANIFEST_INVALID");
   }
 
-  if (existingPointer && base.version <= existingPointer.version) return null;
-
-  const shardNames = base.catalogShards || [];
-  if (!Array.isArray(shardNames) || shardNames.length > 100 ||
-      shardNames.some(name => typeof name !== "string" || !/^part-\d{2}\.json$/.test(name))) {
-    throw new Error("Repository catalog shard manifest is invalid");
+  const baseRaw = await env.CONTENT.get(manifest.baseKey, { type: "text" });
+  if (typeof baseRaw !== "string" || baseRaw.length === 0) {
+    throw new Error("SOURCE_BASE_MISSING");
   }
 
+  let base;
+  try {
+    base = JSON.parse(baseRaw);
+  } catch {
+    throw new Error("SOURCE_BASE_JSON_INVALID");
+  }
+
+  if (!base || base.version !== manifest.version || typeof base.enabled !== "boolean" ||
+      !Array.isArray(base.catalog) || !Array.isArray(base.catalogShards) ||
+      !Array.isArray(base.guides) || !Array.isArray(base.links) ||
+      base.catalogShards.length !== manifest.shardKeys.length ||
+      base.guides.length > 20 || base.links.length > 20) {
+    throw new Error("SOURCE_BASE_SCHEMA_INVALID");
+  }
+
+  const expectedKeys = base.catalogShards.map(name => {
+    if (typeof name !== "string" || !/^part-\d{2}\.json$/.test(name)) {
+      throw new Error("SOURCE_SHARD_NAME_INVALID");
+    }
+    return "source/v" + manifest.version + "/" + name;
+  });
+
+  if (expectedKeys.some((key, index) => key !== manifest.shardKeys[index])) {
+    throw new Error("SOURCE_SHARD_MANIFEST_MISMATCH");
+  }
+
+  const shardRawValues = await Promise.all(expectedKeys.map(key =>
+    env.CONTENT.get(key, { type: "text" })
+  ));
   const seenIds = new Set();
   const catalog = [];
+
   for (const item of base.catalog) {
-    const id = Number(item && item.dataId);
-    if (!Number.isInteger(id) || id < 1 || seenIds.has(id) ||
-        !String(item && item.name || "").trim()) {
-      throw new Error("Repository base catalog contains an invalid or duplicate dataId");
+    if (!isValidCatalogItem(item, seenIds)) {
+      throw new Error("SOURCE_BASE_CATALOG_ITEM_INVALID_OR_DUPLICATE");
     }
-    seenIds.add(id);
     catalog.push(item);
   }
 
-  const shards = await Promise.all(shardNames.map(name =>
-    fetchRepositoryJson("remote-content/catalog/" + name)
-  ));
-
-  for (let index = 0; index < shards.length; index++) {
-    const shard = shards[index];
-    if (!shard || !Array.isArray(shard.catalog)) {
-      throw new Error("Catalog shard has no catalog array: " + shardNames[index]);
+  for (let index = 0; index < shardRawValues.length; index++) {
+    const raw = shardRawValues[index];
+    if (typeof raw !== "string" || raw.length === 0) {
+      throw new Error("SOURCE_SHARD_MISSING:" + expectedKeys[index]);
     }
+
+    let shard;
+    try {
+      shard = JSON.parse(raw);
+    } catch {
+      throw new Error("SOURCE_SHARD_JSON_INVALID:" + expectedKeys[index]);
+    }
+
+    if (!shard || !Array.isArray(shard.catalog)) {
+      throw new Error("SOURCE_SHARD_SCHEMA_INVALID:" + expectedKeys[index]);
+    }
+
     for (const item of shard.catalog) {
-      const id = Number(item && item.dataId);
-      if (!Number.isInteger(id) || id < 1 || seenIds.has(id) ||
-          !String(item && item.name || "").trim()) {
-        throw new Error("Invalid or duplicate dataId in " + shardNames[index]);
+      if (!isValidCatalogItem(item, seenIds)) {
+        throw new Error("SOURCE_SHARD_ITEM_INVALID_OR_DUPLICATE:" + expectedKeys[index]);
       }
-      seenIds.add(id);
       catalog.push(item);
     }
   }
 
-  if (catalog.length > 500) throw new Error("Catalog exceeds the app limit");
-  if (base.guides.length > 20 || base.links.length > 20) {
-    throw new Error("Remote content exceeds the supported item limits");
+  if (catalog.length < 1 || catalog.length > 500) {
+    throw new Error("SOURCE_CATALOG_COUNT_INVALID");
   }
 
   const assembled = { ...base, catalog };
   delete assembled.catalogShards;
   const content = JSON.stringify(assembled);
   if (new TextEncoder().encode(content).byteLength > 8 * 1024 * 1024) {
-    throw new Error("Remote content exceeds the safe 8 MiB response limit");
+    throw new Error("SOURCE_CONTENT_TOO_LARGE");
   }
 
+  return content;
+}
+
+async function publishSourceManifest(env, manifest) {
+  const content = await loadSourceContent(env, manifest);
   const digest = await sha256Hex(content);
-  const key = "content/v" + base.version + ".json";
+  const key = "content/v" + manifest.version + ".json";
   const pointer = {
-    version: base.version,
+    version: manifest.version,
     key,
     sha256: digest,
     publishedAt: new Date().toISOString()
@@ -134,17 +162,15 @@ async function publishLatestRepositoryContent(env, existingPointer) {
 }
 
 async function readStoredContent(env, pointer) {
-  if (!pointer || !Number.isInteger(pointer.version) || pointer.version < 1 ||
-      typeof pointer.key !== "string" ||
-      !/^content\/v[1-9][0-9]*\.json$/.test(pointer.key) ||
+  if (!pointer || !Number.isSafeInteger(pointer.version) || pointer.version < 1 ||
+      pointer.key !== "content/v" + pointer.version + ".json" ||
       typeof pointer.sha256 !== "string" ||
       !/^[a-f0-9]{64}$/.test(pointer.sha256)) {
     return null;
   }
 
-  const content = await env.CONTENT.get(pointer.key, { type: "text", cacheTtl: 60 });
-  if (typeof content !== "string") return null;
-  if (await sha256Hex(content) !== pointer.sha256) return null;
+  const content = await env.CONTENT.get(pointer.key, { type: "text" });
+  if (typeof content !== "string" || await sha256Hex(content) !== pointer.sha256) return null;
 
   let decoded;
   try {
@@ -154,7 +180,8 @@ async function readStoredContent(env, pointer) {
   }
 
   if (!decoded || decoded.version !== pointer.version ||
-      !Array.isArray(decoded.catalog) || decoded.catalog.length > 500) {
+      !Array.isArray(decoded.catalog) || decoded.catalog.length < 1 ||
+      decoded.catalog.length > 500) {
     return null;
   }
   return { content, pointer };
@@ -205,7 +232,8 @@ async function servePublicAsset(request, env, pathname) {
       status: 200,
       headers
     });
-  } catch {
+  } catch (error) {
+    console.error("COC_LIO_R2_ASSET_READ_FAILED", safeError(error));
     return jsonResponse({ error: "ASSET_READ_FAILED" }, 502);
   }
 }
@@ -221,7 +249,11 @@ export default {
       return jsonResponse({ error: "METHOD_NOT_ALLOWED" }, 405, { Allow: "GET, HEAD, OPTIONS" });
     }
     if (url.pathname === "/health") {
-      return jsonResponse({ ok: true, service: "coc-lio-remote-content", storage: "cloudflare-kv" });
+      return jsonResponse({
+        ok: true,
+        service: "coc-lio-remote-content",
+        storage: "cloudflare-kv"
+      });
     }
     if (url.pathname.startsWith("/v1/assets/public/")) {
       return servePublicAsset(request, env, url.pathname);
@@ -229,23 +261,28 @@ export default {
     if (url.pathname !== "/v1/content") return jsonResponse({ error: "NOT_FOUND" }, 404);
 
     try {
-      let pointer = await env.CONTENT.get("content/current", { type: "json", cacheTtl: 60 });
-      try {
-        const latest = await publishLatestRepositoryContent(env, pointer);
-        if (latest) {
-          return contentResponse(
-            request,
-            latest.content,
-            latest.pointer,
-            latest.stored ? "cloudflare-kv" : "github-origin"
-          );
+      let pointer = await env.CONTENT.get("content/current", { type: "json" });
+      let stored = await readStoredContent(env, pointer);
+      let manifest = await env.CONTENT.get("source/current", { type: "json" });
+
+      if (manifest && (!stored || manifest.version > (pointer?.version || 0))) {
+        try {
+          const latest = await publishSourceManifest(env, manifest);
+          if (latest) {
+            return contentResponse(
+              request,
+              latest.content,
+              latest.pointer,
+              latest.stored ? "cloudflare-kv" : "cloudflare-kv-source"
+            );
+          }
+        } catch (error) {
+          console.error("COC_LIO_SOURCE_SYNC_FAILED", safeError(error));
         }
-      } catch (error) {
-        console.error("COC_LIO_CONTENT_SYNC_FAILED", safeError(error));
       }
 
-      pointer = await env.CONTENT.get("content/current", { type: "json", cacheTtl: 60 });
-      const stored = await readStoredContent(env, pointer);
+      pointer = await env.CONTENT.get("content/current", { type: "json" });
+      stored = await readStoredContent(env, pointer);
       if (!stored) return jsonResponse({ error: "CONTENT_SERVICE_UNAVAILABLE" }, 503);
       return contentResponse(request, stored.content, stored.pointer);
     } catch (error) {
