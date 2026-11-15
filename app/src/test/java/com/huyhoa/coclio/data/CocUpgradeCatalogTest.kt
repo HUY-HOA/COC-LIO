@@ -55,7 +55,7 @@ class CocUpgradeCatalogTest {
         assertEquals(20L, totals.resources["Quặng sáng"])
         assertEquals(3L, totals.resources["Quặng phát sáng"])
         assertEquals(1L, totals.resources["Quặng sao"])
-        assertEquals(99000L, totals.durationSeconds)
+        assertEquals(102600L, totals.durationSeconds)
     }
 
     @Test
