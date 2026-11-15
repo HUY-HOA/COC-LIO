@@ -32,6 +32,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
@@ -39,6 +41,8 @@ import kotlin.coroutines.resumeWithException
 
 private const val COC_LIO_NOTIFICATION_WORK = "coc_lio_background_notification_poll"
 private const val COC_LIO_NOTIFICATION_CHANNEL_UPDATES = "coc_lio_app_updates"
+private const val MAX_NOTIFICATION_DELIVERIES_PER_SCAN = 5
+private val notificationWorkerMutex = Mutex()
 
 object CommunityNotificationScheduler {
     fun update(
@@ -87,6 +91,7 @@ class CommunityNotificationWorker(
     parameters: WorkerParameters
 ) : CoroutineWorker(context, parameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        notificationWorkerMutex.withLock {
         val profile = inputData.getString("profile").orEmpty()
         val user = FirebaseAuth.getInstance().currentUser
             ?: return@withContext Result.success()
@@ -126,6 +131,7 @@ class CommunityNotificationWorker(
             throw error
         } catch (_: Exception) {
             Result.retry()
+        }
         }
     }
 }
@@ -233,13 +239,14 @@ private suspend fun readNotificationChanges(
                 .thenBy { it.document.id }
         )
 
-    if (changes.isNotEmpty()) {
+    val pendingChanges = changes.take(MAX_NOTIFICATION_DELIVERIES_PER_SCAN)
+    if (pendingChanges.isNotEmpty()) {
         saveNotificationWatermark(
             preferences,
             secondsKey,
             nanosKey,
             idsKey,
-            changes,
+            pendingChanges,
             lastTimestamp,
             lastIds
         )
@@ -250,7 +257,7 @@ private suspend fun readNotificationChanges(
             .putStringSet(idsKey, mutableSetOf())
             .apply()
     }
-    return NotificationScan(false, changes)
+    return NotificationScan(false, pendingChanges)
 }
 
 private suspend fun checkCommunityMessages(
@@ -270,7 +277,7 @@ private suspend fun checkCommunityMessages(
     )
     if (scan.firstRun) return
 
-    scan.documents.takeLast(5).forEach { item ->
+    scan.documents.forEach { item ->
         val document = item.document
         val senderUid = document.getString("uid").orEmpty()
         if (senderUid == currentUid) return@forEach
@@ -318,7 +325,7 @@ private suspend fun checkAppUpdates(
         applicationVersionName(context)
     }.getOrDefault("")
 
-    scan.documents.takeLast(5).forEach { item ->
+    scan.documents.forEach { item ->
         val document = item.document
         if (document.getBoolean("notifyUsers") == false) return@forEach
         val versionName = document.getString("versionName").orEmpty().trim()
