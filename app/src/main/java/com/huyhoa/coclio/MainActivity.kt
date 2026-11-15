@@ -515,11 +515,10 @@ private fun CocLioApp(
     var firebaseGoogleEmail by remember { mutableStateOf(initialFirebaseGoogleEmail) }
     var initialAuthStateHandled by remember { mutableStateOf(false) }
     var interactiveGoogleSignIn by remember { mutableStateOf(false) }
-    var pendingGoogleSignIn by remember { mutableStateOf<GoogleAccountSelection?>(null) }
-    var requiredAccountConsentLoadedForEmail by remember { mutableStateOf<String?>(null) }
-    var requiredAccountConsentAccepted by remember { mutableStateOf(false) }
-    var requiredAccountConsentSubmitting by remember { mutableStateOf(false) }
-    var requiredAccountConsentReadError by remember { mutableStateOf<String?>(null) }
+    var accountProfileReadyForEmail by remember { mutableStateOf<String?>(null) }
+    var accountProfileReady by remember { mutableStateOf(false) }
+    var googleSignInSubmitting by remember { mutableStateOf(false) }
+    var accountProfileError by remember { mutableStateOf<String?>(null) }
     var villageDataSyncConsent by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
@@ -552,30 +551,11 @@ private fun CocLioApp(
     }
     val isGoogleSignedIn = activeProfile != "local" &&
         firebaseGoogleEmail?.equals(activeProfile, ignoreCase = true) == true &&
-        requiredAccountConsentLoadedForEmail?.equals(firebaseGoogleEmail, ignoreCase = true) == true &&
-        requiredAccountConsentAccepted
-    val isCheckingRequiredAccountConsent = firebaseGoogleEmail != null &&
-        requiredAccountConsentLoadedForEmail == null &&
-        !requiredAccountConsentSubmitting
-    val existingAccountNeedsConsent = firebaseGoogleEmail != null &&
-        requiredAccountConsentLoadedForEmail?.equals(firebaseGoogleEmail, ignoreCase = true) == true &&
-        !requiredAccountConsentAccepted
-    val existingFirebaseUser = FirebaseAuth.getInstance().currentUser
-    val accountAwaitingConsent = pendingGoogleSignIn?.account ?: if (existingAccountNeedsConsent) {
-        existingFirebaseUser?.let { user ->
-            user.email?.let { email ->
-                GoogleAccountData(
-                    email = email,
-                    displayName = user.displayName,
-                    givenName = null,
-                    familyName = null,
-                    profilePictureUri = user.photoUrl?.toString()
-                )
-            }
-        }
-    } else {
-        null
-    }
+        accountProfileReadyForEmail?.equals(firebaseGoogleEmail, ignoreCase = true) == true &&
+        accountProfileReady
+    val isPreparingGoogleAccount = firebaseGoogleEmail != null &&
+        accountProfileReadyForEmail == null &&
+        !googleSignInSubmitting
     LaunchedEffect(isGoogleSignedIn) {
         RemoteContentManager.setAccessAllowed(context, isGoogleSignedIn)
     }
@@ -621,8 +601,8 @@ private fun CocLioApp(
     var updateNotificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.updateNotificationsEnabled(context, activeProfile))
     }
-    LaunchedEffect(activeProfile, isGoogleSignedIn, requiredAccountConsentAccepted, communityNotificationsEnabled, updateNotificationsEnabled) {
-        val notificationsAllowed = isGoogleSignedIn && requiredAccountConsentAccepted
+    LaunchedEffect(activeProfile, isGoogleSignedIn, communityNotificationsEnabled, updateNotificationsEnabled) {
+        val notificationsAllowed = isGoogleSignedIn
         CommunityNotificationScheduler.update(
             context,
             activeProfile,
@@ -847,33 +827,58 @@ private fun CocLioApp(
         AppWidgetUpdater.ensureRefresh(context)
     }
 
-    LaunchedEffect(firebaseGoogleEmail, requiredAccountConsentSubmitting) {
+    LaunchedEffect(firebaseGoogleEmail, googleSignInSubmitting) {
         val email = firebaseGoogleEmail
         if (email.isNullOrBlank()) {
-            requiredAccountConsentAccepted = false
-            requiredAccountConsentLoadedForEmail = ""
-            requiredAccountConsentReadError = null
+            accountProfileReady = false
+            accountProfileReadyForEmail = ""
+            accountProfileError = null
             return@LaunchedEffect
         }
-        if (requiredAccountConsentSubmitting) return@LaunchedEffect
+        if (googleSignInSubmitting) return@LaunchedEffect
         if (
-            requiredAccountConsentAccepted &&
-            requiredAccountConsentLoadedForEmail?.equals(email, ignoreCase = true) == true
+            accountProfileReady &&
+            accountProfileReadyForEmail?.equals(email, ignoreCase = true) == true
         ) return@LaunchedEffect
-        requiredAccountConsentAccepted = false
-        requiredAccountConsentLoadedForEmail = null
-        requiredAccountConsentReadError = null
-        runCatching { AccountPrivacyConsent.hasRequiredAccountDataConsent() }
-            .onSuccess { accepted ->
-                requiredAccountConsentAccepted = accepted
-                requiredAccountConsentLoadedForEmail = email
+        accountProfileReady = false
+        accountProfileReadyForEmail = null
+        accountProfileError = null
+        runCatching {
+            if (!AccountPrivacyConsent.hasRequiredAccountDataConsent()) {
+                val user = FirebaseAuth.getInstance().currentUser
+                    ?: throw IllegalStateException("Bạn cần đăng nhập Google trước.")
+                val googleAccount = GoogleAccountData(
+                    email = user.email?.trim()?.lowercase()
+                        ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ."),
+                    displayName = user.displayName?.trim()?.takeIf { it.isNotBlank() },
+                    givenName = null,
+                    familyName = null,
+                    profilePictureUri = user.photoUrl?.toString()
+                )
+                val profileExists = AccountPrivacyConsent.hasAccountProfile()
+                if (profileExists) {
+                    AccountPrivacyConsent.saveRequiredAccountDataConsent()
+                }
+                GoogleAccountAuth.shareProfile(googleAccount, countAsSignIn = false)
+                if (!profileExists) {
+                    AccountPrivacyConsent.saveRequiredAccountDataConsent()
+                }
+            }
+            AccountPrivacyConsent.hasRequiredAccountDataConsent()
+        }
+            .onSuccess { ready ->
+                accountProfileReady = ready
+                accountProfileReadyForEmail = email
+                if (!ready) {
+                    accountProfileError = "Không thể hoàn tất thiết lập hồ sơ tài khoản."
+                }
             }
             .onFailure { error ->
-                requiredAccountConsentAccepted = false
-                requiredAccountConsentLoadedForEmail = email
-                requiredAccountConsentReadError = error.message
+                accountProfileReady = false
+                accountProfileReadyForEmail = email
+                accountProfileError = error.message
                     ?.takeIf { it.isNotBlank() }
-                    ?: "Không thể kiểm tra xác nhận dữ liệu tài khoản."
+                    ?: "Không thể thiết lập hồ sơ tài khoản."
             }
     }
 
@@ -1021,15 +1026,15 @@ private fun CocLioApp(
         }
         FirebaseAccountAdministration.savePreferredName(profileName)
         AccountProfileStore.setActive(context, googleAccount.email)
-        requiredAccountConsentAccepted = true
-        requiredAccountConsentLoadedForEmail = googleAccount.email
-        requiredAccountConsentSubmitting = false
-        requiredAccountConsentReadError = null
+        accountProfileReady = true
+        accountProfileReadyForEmail = googleAccount.email
+        googleSignInSubmitting = false
+        accountProfileError = null
         activeProfile = googleAccount.email
         interactiveGoogleSignIn = false
         selectedTab = 0
         googleAuthError = null
-        snackbar.showAppSnackbar(context, "Đã xác nhận dữ liệu cần thiết và đăng nhập Google thành công.")
+        snackbar.showAppSnackbar(context, "Đăng nhập Google thành công.")
     }
 
     fun leaveGoogleAccount(message: String) {
@@ -1049,69 +1054,28 @@ private fun CocLioApp(
 
 
     fun signInWithGoogle() {
-        if (requiredAccountConsentSubmitting || interactiveGoogleSignIn) return
+        if (googleSignInSubmitting || interactiveGoogleSignIn) return
         scope.launch {
             interactiveGoogleSignIn = true
+            googleSignInSubmitting = true
             googleAuthError = null
+            accountProfileError = null
             try {
                 val selection = GoogleAccountAuth.selectAccount(context)
-                pendingGoogleSignIn = selection
-                interactiveGoogleSignIn = false
+                val googleAccount = GoogleAccountAuth.authenticateSelectedAccount(selection)
+                finishGoogleSignIn(googleAccount)
             } catch (error: Exception) {
+                googleSignInSubmitting = false
                 interactiveGoogleSignIn = false
                 if (error is GetCredentialCancellationException) {
                     googleAuthError = null
-                    snackbar.showAppSnackbar(context, "Bạn đã hủy chọn tài khoản Google.")
+                    snackbar.showAppSnackbar(context, "Bạn đã hủy đăng nhập Google.")
                 } else {
                     googleAuthError = error.message
                         ?.takeIf { it.isNotBlank() }
                         ?: "Không thể hoàn tất đăng nhập. Hãy kiểm tra quyền truy cập tài khoản và cấu hình Firebase."
                 }
             }
-        }
-    }
-
-    fun acceptAccountConsent() {
-        if (requiredAccountConsentSubmitting) return
-        requiredAccountConsentSubmitting = true
-        scope.launch {
-            try {
-                AccountActivityTracker.stopAndWait(context)
-                val selection = pendingGoogleSignIn
-                val googleAccount = if (selection != null) {
-                    GoogleAccountAuth.authenticateSelectedAccount(selection)
-                } else {
-                    val user = FirebaseAuth.getInstance().currentUser
-                        ?: throw IllegalStateException("Bạn cần chọn tài khoản Google trước.")
-                    GoogleAccountData(
-                        email = user.email?.trim()?.lowercase()
-                            ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ."),
-                        displayName = user.displayName?.trim()?.takeIf { it.isNotBlank() },
-                        givenName = null,
-                        familyName = null,
-                        profilePictureUri = user.photoUrl?.toString()
-                    )
-                }
-                finishGoogleSignIn(googleAccount)
-                pendingGoogleSignIn = null
-                googleAuthError = null
-            } catch (error: Exception) {
-                requiredAccountConsentSubmitting = false
-                googleAuthError = error.message
-                    ?.takeIf { it.isNotBlank() }
-                    ?: "Không thể hoàn tất xác nhận dữ liệu tài khoản. Hãy thử lại."
-            }
-        }
-    }
-
-    fun rejectAccountConsent() {
-        if (requiredAccountConsentSubmitting) return
-        val hadPendingSelection = pendingGoogleSignIn != null
-        pendingGoogleSignIn = null
-        if (hadPendingSelection && isGoogleSignedIn) {
-            scope.launch { snackbar.showAppSnackbar(context, "Bạn đã hủy xác nhận và giữ nguyên tài khoản đang sử dụng.") }
-        } else {
-            leaveGoogleAccount("Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất.")
         }
     }
 
@@ -1220,14 +1184,14 @@ private fun CocLioApp(
             }
         }
     ) { innerPadding ->
-        if (!isGoogleSignedIn || pendingGoogleSignIn != null) {
-            if (isCheckingRequiredAccountConsent && pendingGoogleSignIn == null) {
+        if (!isGoogleSignedIn) {
+            if (isPreparingGoogleAccount && !googleSignInSubmitting) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "ĐANG KIỂM TRA XÁC NHẬN DỮ LIỆU TÀI KHOẢN...",
+                        "ĐANG ĐỒNG BỘ HỒ SƠ TÀI KHOẢN...",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp
                     )
@@ -1237,12 +1201,9 @@ private fun CocLioApp(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                     appTitle = remoteAppConfig.appTitle,
                     appSubtitle = remoteAppConfig.appSubtitle,
-                    selectedAccount = accountAwaitingConsent,
-                    isBusy = requiredAccountConsentSubmitting || interactiveGoogleSignIn,
-                    readError = requiredAccountConsentReadError,
-                    onReject = { rejectAccountConsent() },
-                    onGoogleSignIn = { signInWithGoogle() },
-                    onConsentAccept = { acceptAccountConsent() }
+                    isBusy = googleSignInSubmitting || interactiveGoogleSignIn,
+                    readError = accountProfileError,
+                    onGoogleSignIn = { signInWithGoogle() }
                 )
             }
         } else {
@@ -1633,13 +1594,11 @@ private fun GoogleLoginStartScreen(
     modifier: Modifier = Modifier,
     appTitle: String,
     appSubtitle: String,
-    selectedAccount: GoogleAccountData?,
     isBusy: Boolean,
     readError: String?,
-    onReject: () -> Unit,
-    onGoogleSignIn: () -> Unit,
-    onConsentAccept: () -> Unit
+    onGoogleSignIn: () -> Unit
 ) {
+    val context = LocalContext.current
     Box(
         modifier = modifier.padding(10.dp),
         contentAlignment = Alignment.Center
@@ -1675,54 +1634,25 @@ private fun GoogleLoginStartScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
-                    "Để tạo và duy trì tài khoản, COC-LIO cần xử lý mã tài khoản, email, tên và ảnh hồ sơ Google, trạng thái xác minh cùng thông tin đăng nhập. Dữ liệu này được dùng để xác thực, quản lý tài khoản và hiển thị danh tính thành viên.",
+                    "Google sẽ chia sẻ email, tên và ảnh hồ sơ của bạn với COC-LIO khi bạn chấp thuận trên màn hình Google. COC-LIO sử dụng các thông tin này để xác thực, tạo và duy trì tài khoản, quản lý tài khoản và hiển thị danh tính thành viên. Mã tài khoản được tạo trong Firebase; hồ sơ được lưu trong Firestore.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     lineHeight = 16.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                if (selectedAccount != null) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                RoundedCornerShape(12.dp)
-                            )
-                            .padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            "TÀI KHOẢN GOOGLE ĐÃ CHỌN",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            selectedAccount.displayName?.takeIf { it.isNotBlank() } ?: selectedAccount.email,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        if (!selectedAccount.displayName.isNullOrBlank()) {
-                            Text(
-                                selectedAccount.email,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 11.sp,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                TextButton(
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("https://coc-lio-73de9.firebaseapp.com/privacy")
+                                )
                             )
                         }
                     }
-                    Text(
-                        "Tôi đồng ý chia sẻ dữ liệu tài khoản cần thiết để sử dụng COC-LIO.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
+                ) {
+                    Text("CHÍNH SÁCH QUYỀN RIÊNG TƯ", fontSize = 10.sp)
                 }
                 if (!readError.isNullOrBlank()) {
                     Text(
@@ -1733,26 +1663,13 @@ private fun GoogleLoginStartScreen(
                     )
                 }
                 NeonButton(
-                    text = when {
-                        isBusy && selectedAccount != null -> "ĐANG XÁC NHẬN..."
-                        isBusy -> "ĐANG MỞ GOOGLE..."
-                        selectedAccount != null -> "ĐỒNG Ý & TIẾP TỤC"
-                        else -> "ĐĂNG NHẬP GOOGLE"
-                    },
-                    onClick = if (selectedAccount == null) onGoogleSignIn else onConsentAccept,
+                    text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
+                    onClick = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isBusy
                 )
-                if (selectedAccount != null) {
-                    TextButton(
-                        onClick = onReject,
-                        enabled = !isBusy
-                    ) {
-                        Text("KHÔNG ĐỒNG Ý / HỦY", color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
-                    }
-                }
                 Text(
-                    "Dữ liệu hoạt động, thiết bị, phân tích, báo lỗi và đồng bộ JSON là các mục riêng; mặc định tắt và không được bật chỉ bằng sự đồng ý này.",
+                    "Đăng nhập Google không tự bật dữ liệu hoạt động, thiết bị, phân tích, báo lỗi hoặc đồng bộ JSON. Các mục này là lựa chọn riêng và mặc định tắt.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
                     lineHeight = 13.sp,
@@ -1762,7 +1679,6 @@ private fun GoogleLoginStartScreen(
         }
     }
 }
-
 @Composable
 private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
     Column(
