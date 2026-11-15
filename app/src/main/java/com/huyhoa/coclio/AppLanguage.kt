@@ -1219,13 +1219,13 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^(.+) đã bị quản lý vô hiệu hóa$").matchEntire(source)!!.let {
                 "${it.groupValues[1]} has been disabled by an administrator"
             }
-        Regex("^Google từ chối cấu hình OAuth \\[(.+?)\\]\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế của APK: (.+)\\. Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud\\.$").matchEntire(source) != null ->
-            Regex("^Google từ chối cấu hình OAuth \\[(.+?)\\]\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế của APK: (.+)\\. Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud\\.$").matchEntire(source)!!.let {
-                "Google rejected OAuth configuration [${it.groupValues[1]}]. Web Client ID embedded in APK: ${it.groupValues[2]}. Actual APK SHA-1: ${it.groupValues[3]}. Verify that GOOGLE_WEB_CLIENT_ID is a Web application OAuth Client; the Android OAuth Client must match the actual package and SHA-1; both clients must belong to the same Google Cloud project."
+        Regex("^Google từ chối cấu hình OAuth \\[(.+?)\\]\\. Web Client ID đang nhúng trong APK: (.+)\\. Package APK: (.+)\\. SHA-1 thực tế của APK: (.+)\\. Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud\\.$").matchEntire(source) != null ->
+            Regex("^Google từ chối cấu hình OAuth \\[(.+?)\\]\\. Web Client ID đang nhúng trong APK: (.+)\\. Package APK: (.+)\\. SHA-1 thực tế của APK: (.+)\\. Kiểm tra GOOGLE_WEB_CLIENT_ID phải là OAuth Client loại Web application; Android OAuth Client phải khớp package và SHA-1 thực tế; hai Client phải thuộc cùng dự án Google Cloud\\.$").matchEntire(source)!!.let {
+                "Google rejected OAuth configuration [\${it.groupValues[1]}]. Web Client ID embedded in APK: \${it.groupValues[2]}. APK package: \${it.groupValues[3]}. Actual APK SHA-1: \${it.groupValues[4]}. Verify that GOOGLE_WEB_CLIENT_ID is a Web application OAuth Client; the Android OAuth Client must match this package and SHA-1; both clients must belong to the same Google Cloud project."
             }
-        Regex("^Google vẫn từ chối xác thực sau khi làm mới phiên\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế: (.+)\\. Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án\\.$").matchEntire(source) != null ->
-            Regex("^Google vẫn từ chối xác thực sau khi làm mới phiên\\. Web Client ID đang nhúng trong APK: (.+)\\. SHA-1 thực tế: (.+)\\. Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án\\.$").matchEntire(source)!!.let {
-                "Google still rejected authentication after refreshing the session. Web Client ID embedded in APK: ${it.groupValues[1]}. Actual SHA-1: ${it.groupValues[2]}. Check the Android OAuth Client against this SHA-1 and use the Web application Client ID from the same project."
+        Regex("^Google vẫn từ chối xác thực sau khi làm mới phiên\\. Web Client ID đang nhúng trong APK: (.+)\\. Package APK: (.+)\\. SHA-1 thực tế: (.+)\\. Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án\\.$").matchEntire(source) != null ->
+            Regex("^Google vẫn từ chối xác thực sau khi làm mới phiên\\. Web Client ID đang nhúng trong APK: (.+)\\. Package APK: (.+)\\. SHA-1 thực tế: (.+)\\. Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án\\.$").matchEntire(source)!!.let {
+                "Google still rejected authentication after refreshing the session. Web Client ID embedded in APK: \${it.groupValues[1]}. APK package: \${it.groupValues[2]}. Actual SHA-1: \${it.groupValues[3]}. Check the Android OAuth Client against this package and SHA-1, and use the Web application Client ID from the same project."
             }
         Regex("^Thao tác này chỉ xóa hồ sơ users/(.+), dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore\\. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication\\. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication\\. Bài đăng Cộng đồng không bị xóa\\.$").matchEntire(source) != null ->
             Regex("^Thao tác này chỉ xóa hồ sơ users/(.+), dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore\\. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication\\. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication\\. Bài đăng Cộng đồng không bị xóa\\.$").matchEntire(source)!!.let {
@@ -1439,7 +1439,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Yêu cầu: ") -> "Requirement: " + source.removePrefix("Yêu cầu: ")
         source.startsWith("Thời gian: ") -> "Duration: " + source.removePrefix("Thời gian: ")
         source.startsWith("MỤC ") -> "ITEM " + source.removePrefix("MỤC ")
-        source.startsWith("Nhóm ") -> "Group " + source.removePrefix("Nhóm ")
         source.startsWith("MỨC ") -> "LEVEL " + source.removePrefix("MỨC ")
         source.startsWith("Mở lần cuối: ") -> "Last opened: " + source.removePrefix("Mở lần cuối: ")
         source.startsWith("Đăng nhập ") -> "Signed in " + source.removePrefix("Đăng nhập ")
@@ -1478,7 +1477,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             .replaceFirst("JSON từ ", "JSON from ")
             .replace(" sẽ bị xóa khỏi Kho JSON và không thể khôi phục.", " will be deleted from JSON Storage and cannot be recovered.")
             .replace(" Bản nhập trong LỊCH SỬ vẫn được giữ.", " Imports in HISTORY will be kept.")
-        source.startsWith("Chia sẻ bởi: ") -> "Shared by: " + source.removePrefix("Chia sẻ bởi: ")
         source.startsWith("Dữ liệu: ") -> "Data: " + source.removePrefix("Dữ liệu: ").replace(" • Nhận: ", " • Received: ")
         source.startsWith("Đã gỡ: ") -> "Removed: " + source.removePrefix("Đã gỡ: ")
         source.startsWith("Đã gửi: ") -> "Sent: " + source.removePrefix("Đã gửi: ").replace(" • Đã gỡ: ", " • Removed: ")
@@ -1490,7 +1488,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Cấp bang hội ") -> "Clan Level " + source.removePrefix("Cấp bang hội ")
         source.startsWith("Cấp ") -> "Level " + source.removePrefix("Cấp ")
         source.startsWith("Có ") -> "Has " + source.removePrefix("Có ")
-        source.startsWith("MỤC ") -> "SECTION " + source.removePrefix("MỤC ")
         source.startsWith("Nhóm ") -> "Group " + source.removePrefix("Nhóm ")
         source.startsWith("Đang hiển thị ") -> "Showing " + source.removePrefix("Đang hiển thị ")
         source.startsWith("Cập nhật ") -> "Updated " + source.removePrefix("Cập nhật ")
@@ -1504,7 +1501,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             val tag = source.removePrefix("Đã chuyển ").removeSuffix(" vào mục ĐÃ GỠ.")
             "Moved " + tag + " to REMOVED."
         }
-        source.startsWith("Đã gửi: ") -> "Sent: " + source.removePrefix("Đã gửi: ")
         source.startsWith("Chia sẻ bởi: ") -> "Shared by: " + source.removePrefix("Chia sẻ bởi: ")
         Regex("^Ngày dữ liệu: (.+) • Nhận: (.+)$").matchEntire(source) != null ->
             Regex("^Ngày dữ liệu: (.+) • Nhận: (.+)$").matchEntire(source)!!.let {
