@@ -1213,7 +1213,7 @@ private val englishTranslations = mapOf(
     "Mở liên kết" to "Open link",
     "Không tìm thấy mã JSON." to "The shared JSON ID could not be found.",
     "Yêu cầu: " to "Requirement: ",
-    "Thời gian: " to "Duration: ",,
+    "Thời gian: " to "Duration: ",
     "THƯỜNG" to "COMMON",
     "HIẾM" to "RARE",
     "SỬ THI" to "EPIC",
