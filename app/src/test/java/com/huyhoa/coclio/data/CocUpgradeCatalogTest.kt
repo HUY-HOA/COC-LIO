@@ -2,6 +2,7 @@ package com.huyhoa.coclio.data
 
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -164,6 +165,67 @@ class CocUpgradeCatalogTest {
         assertEquals(28000006, CocUpgradeCatalog.search(listOf(entry), "28000006").single().dataId)
         assertEquals(28000006, CocUpgradeCatalog.search(listOf(entry), "hoang tu tieu quy").single().dataId)
         assertEquals(28000006, CocUpgradeCatalog.search(listOf(entry), "Prince").single().dataId)
+    }
+
+    @Test
+    fun filtersLookupByLocalizedHeroAndEquipmentRarity() {
+        val equipment = CocUpgradeEntry(
+            dataId = 90000010,
+            id = "giant-gauntlet",
+            name = "Giant Gauntlet",
+            description = "",
+            base = "home",
+            category = "hero-equipment",
+            rarity = "epic",
+            hero = "barbarian-king",
+            maxLevel = 27,
+            properties = JSONObject(),
+            levels = emptyList()
+        )
+
+        assertEquals(
+            90000010,
+            CocUpgradeCatalog.search(
+                entries = listOf(equipment),
+                query = "vua man di",
+                categoryFilter = "hero-equipment",
+                rarityFilter = "epic",
+                heroFilter = "barbarian-king"
+            ).single().dataId
+        )
+        assertTrue(
+            CocUpgradeCatalog.search(
+                entries = listOf(equipment),
+                query = "",
+                categoryFilter = "hero-equipment",
+                rarityFilter = "common"
+            ).isEmpty()
+        )
+    }
+
+    @Test
+    fun unlocksOnlySuperchargeTiersAllowedByTownHall() {
+        val entry = CocUpgradeEntry(
+            dataId = 1000077,
+            id = "monolith",
+            name = "Monolith",
+            description = "",
+            base = "home",
+            category = "defense",
+            rarity = "",
+            hero = "",
+            maxLevel = 5,
+            properties = JSONObject(),
+            levels = listOf(CocUpgradeLevel(5, JSONObject("""{"level":5,"townHallRequired":17}"""))),
+            superchargeLevels = listOf(
+                CocUpgradeLevel(1, JSONObject("""{"level":1,"supercharge":true,"townHallRequired":18}""")),
+                CocUpgradeLevel(2, JSONObject("""{"level":2,"supercharge":true,"townHallRequired":19}"""))
+            )
+        )
+
+        assertNull(CocUpgradeCatalog.superchargeMaxAtHall(entry, 17))
+        assertEquals(1, CocUpgradeCatalog.superchargeMaxAtHall(entry, 18))
+        assertEquals(2, CocUpgradeCatalog.superchargeMaxAtHall(entry, 19))
     }
 
 }
