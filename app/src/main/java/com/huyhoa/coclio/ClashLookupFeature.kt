@@ -380,6 +380,10 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
         if (entry.rarity.isNotBlank()) LookupValue("Độ hiếm", gameDataRarityLabel(entry.rarity))
         entry.hero.takeIf { it.isNotBlank() }?.let { LookupValue("Anh hùng sử dụng", gameDataHeroLabel(it)) }
         LookupValue("Cấp tối đa trong dữ liệu", entry.maxLevel.toString())
+        val recordedRegularMax = entry.levels.maxOfOrNull { it.level } ?: 0
+        if (recordedRegularMax > 0 && recordedRegularMax < entry.maxLevel) {
+            LookupValue("Độ đầy đủ chỉ số", "Nguồn hiện có dữ liệu đến cấp $recordedRegularMax/${entry.maxLevel}; các cấp còn thiếu chưa được tự ước đoán.")
+        }
         if (entry.description.isNotBlank()) {
             Text(entry.description, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 15.sp)
         }
@@ -399,7 +403,7 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
             }
             levelData?.let { level ->
                 if (level.cost() > 0L) {
-                    LookupValue("Chi phí nâng cấp lên cấp ${selectedLevel + 1}", "${lookupNumber(level.cost())} ${gameDataResourceLabel(level.resource())}")
+                    LookupValue("Chi phí để đạt cấp $selectedLevel", "${lookupNumber(level.cost())} ${gameDataResourceLabel(level.resource())}")
                 }
                 level.oreCosts().forEach { (name, amount) ->
                     LookupValue("⛏️ $name", lookupNumber(amount))
@@ -414,6 +418,40 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
             if (nextLevelData == null && selectedLevel >= entry.maxLevel) {
                 LookupValue("Trạng thái", "Đã ở cấp tối đa theo dữ liệu hiện có")
             }
+        }
+
+        if (entry.superchargeLevels.isNotEmpty()) {
+            val highestSuperchargeTier = entry.superchargeLevels.maxOf { it.level }
+            val superchargeTotals = CocUpgradeCatalog.superchargeTotals(entry, 0, highestSuperchargeTier)
+            Text("SIÊU CƯỜNG HÓA", color = CocGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            LookupValue("Số bậc dữ liệu", highestSuperchargeTier.toString())
+            entry.superchargeLevels.forEach { tier ->
+                Text("BẬC SIÊU CƯỜNG HÓA ${tier.level}", color = CocGold, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                tier.displayStats().forEach { (label, value) ->
+                    LookupValue(label.replace('_', ' ').replaceFirstChar { it.uppercase() }, value)
+                }
+                if (tier.cost() > 0L) {
+                    LookupValue("Chi phí bậc ${tier.level}", "${lookupNumber(tier.cost())} ${gameDataResourceLabel(tier.resource())}")
+                }
+                tier.oreCosts().forEach { (name, amount) -> LookupValue("⛏️ $name", lookupNumber(amount)) }
+                if (tier.durationSeconds() > 0L) {
+                    LookupValue("⏱️ Thời gian bậc ${tier.level}", lookupDuration(tier.durationSeconds()))
+                }
+                tier.int("townHallRequired", "builderHallLevelRequired", "builderHallRequired")?.let {
+                    LookupValue("Yêu cầu Nhà chính/Nhà thợ xây", "Cấp $it")
+                }
+            }
+            superchargeTotals.resources.forEach { (resource, amount) ->
+                LookupValue("Tổng siêu cường hóa • $resource", lookupNumber(amount))
+            }
+            if (superchargeTotals.durationSeconds > 0L) {
+                LookupValue("Tổng thời gian siêu cường hóa", lookupDuration(superchargeTotals.durationSeconds))
+            }
+            Text(
+                "Các bậc siêu cường hóa được tách riêng khỏi cấp thường; đây là dữ liệu tham khảo, không phải trạng thái siêu cường hóa hiện tại của làng.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 9.sp
+            )
         }
     }
 }
