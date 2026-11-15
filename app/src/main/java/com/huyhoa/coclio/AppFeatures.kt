@@ -3039,26 +3039,24 @@ private fun ensureCommunityBubbleShortcut(context: Context) {
 class CocLioMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         val data = message.data
-        val type = data["type"] ?: return
-        val isCommunity = type == "community_message"
-        if (!isCommunity) return
+        if (data["type"] != "community_message") return
         val signedInUser = FirebaseAuth.getInstance().currentUser ?: return
         if (signedInUser.uid == data["senderUid"]) return
         val channelId = COC_LIO_COMMUNITY_CHANNEL
-        val title = data["title"] ?: AppLanguageSettings.translate(this, if (isCommunity) "Cộng đồng COC-LIO" else "COC-LIO có bản cập nhật")
-        val body = data["body"] ?: AppLanguageSettings.translate(this, if (isCommunity) "Có tin nhắn mới trong cộng đồng." else "Có phiên bản APK mới.")
+        val title = data["title"] ?: AppLanguageSettings.translate(this, "Cộng đồng COC-LIO")
+        val body = data["body"] ?: AppLanguageSettings.translate(this, "Có tin nhắn mới trong cộng đồng.")
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                AppLanguageSettings.translate(this, if (isCommunity) "Tin nhắn cộng đồng" else "Bản cập nhật COC-LIO"),
+                AppLanguageSettings.translate(this, "Tin nhắn cộng đồng"),
                 NotificationManager.IMPORTANCE_HIGH
             )
-            channel.description = AppLanguageSettings.translate(this, if (isCommunity) "Thông báo tin nhắn mới trong cộng đồng COC-LIO" else "Thông báo khi quản lý chọn gửi tin bản cập nhật")
-            if (isCommunity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) channel.setAllowBubbles(true)
+            channel.description = AppLanguageSettings.translate(this, "Thông báo tin nhắn mới trong cộng đồng COC-LIO")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) channel.setAllowBubbles(true)
             manager.createNotificationChannel(channel)
         }
-        val notificationId = (type + data["messageId"].orEmpty() + data["version"].orEmpty()).hashCode()
+        val notificationId = ("community_message" + data["messageId"].orEmpty()).hashCode()
         val openIntent = Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val contentIntent = PendingIntent.getActivity(
@@ -3067,21 +3065,18 @@ class CocLioMessagingService : FirebaseMessagingService() {
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val senderIsAdmin = isCommunity &&
-            data["senderIsAdmin"]?.equals("true", ignoreCase = true) == true
+        val senderIsAdmin = data["senderIsAdmin"]?.equals("true", ignoreCase = true) == true
         val senderName = if (senderIsAdmin) "AILIO" else data["senderName"] ?: AppLanguageSettings.translate(this, "Thành viên")
-        val messageText = if (isCommunity) data["messageText"] ?: body else body
+        val messageText = data["messageText"] ?: body
         val senderPersonBuilder = androidx.core.app.Person.Builder()
             .setName(senderName)
             .setKey(data["senderUid"] ?: "community")
             .setImportant(true)
-        if (isCommunity) {
-            if (senderIsAdmin) {
-                senderPersonBuilder.setIcon(createAdminNotificationAvatar(this))
-            } else {
-                loadCommunitySenderIcon(data["senderPhotoUrl"].orEmpty())?.let {
-                    senderPersonBuilder.setIcon(it)
-                }
+        if (senderIsAdmin) {
+            senderPersonBuilder.setIcon(createAdminNotificationAvatar(this))
+        } else {
+            loadCommunitySenderIcon(data["senderPhotoUrl"].orEmpty())?.let {
+                senderPersonBuilder.setIcon(it)
             }
         }
         val senderPerson = senderPersonBuilder.build()
@@ -3092,22 +3087,18 @@ class CocLioMessagingService : FirebaseMessagingService() {
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
-            .setContentText(if (isCommunity) (senderName + ": " + messageText).take(420) else body)
+            .setContentText((senderName + ": " + messageText).take(420))
             .setStyle(
-                if (isCommunity) {
-                    NotificationCompat.MessagingStyle(currentPerson)
-                        .addMessage(messageText, System.currentTimeMillis(), senderPerson)
-                } else {
-                    NotificationCompat.BigTextStyle().bigText(body)
-                }
+                NotificationCompat.MessagingStyle(currentPerson)
+                    .addMessage(messageText, System.currentTimeMillis(), senderPerson)
             )
             .setContentIntent(contentIntent)
-            .setAutoCancel(!(isCommunity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R))
+            .setAutoCancel(Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-        if (isCommunity) builder.addPerson(senderPerson)
+            .addPerson(senderPerson)
 
-        if (isCommunity && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             ensureCommunityBubbleShortcut(this)
             val bubbleIntent = Intent(this, CocLioBubbleActivity::class.java)
                 .setAction(Intent.ACTION_VIEW)
