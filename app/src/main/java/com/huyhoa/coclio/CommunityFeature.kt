@@ -1975,12 +1975,7 @@ private fun CommunityMessageCard(
             Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     if (message.senderIsAdmin) {
-                        Box(
-                            Modifier.size(30.dp).clip(CircleShape).background(Color(0xFF26354D)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("ADMIN", color = Color(0xFFFFD166), fontSize = 5.5.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                        }
+                        LedAdminAvatar(size = 30.dp)
                     } else if (message.photoUrl.isNotBlank()) {
                         AsyncImage(
                             model = message.photoUrl,
@@ -1996,14 +1991,23 @@ private fun CommunityMessageCard(
                             Text(message.displayName.take(1).uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
-                    Text(
-                        if (message.senderIsAdmin) "AILIO" else if (mine) "Bạn" else message.displayName,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    if (message.senderIsAdmin) {
+                        LedBrandTitle(
+                            text = "AILIO",
+                            fontSize = 10.sp,
+                            letterSpacing = 0.35.sp,
+                            outlineWidthDp = 0.65f
+                        )
+                    } else {
+                        Text(
+                            if (mine) "Bạn" else message.displayName,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     Text(communityTime(message.createdAt), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
                 if (message.text.isNotBlank()) {
