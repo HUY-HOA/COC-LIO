@@ -533,7 +533,7 @@ private fun gameDataHeroLabel(hero: String): String = when (hero.lowercase()) {
 private fun gameDataResourceLabel(resource: String): String = when (resource.lowercase()) {
     "gold" -> "Vàng"
     "elixir" -> "Tiên dược"
-    "dark elixir" -> "Hắc tiên"
+    "dark elixir" -> "Dầu đen"
     "builder gold" -> "Vàng thợ xây"
     "builder elixir" -> "Tiên dược thợ xây"
     "capital gold" -> "Vàng Thủ đô"
