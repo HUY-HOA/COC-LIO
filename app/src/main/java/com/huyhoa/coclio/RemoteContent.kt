@@ -188,8 +188,13 @@ internal fun parseRemoteContent(data: Map<String, Any?>): RemoteContentState {
     val catalog = (data["catalog"] as? List<*>)?.take(500)
         ?.mapNotNull { raw ->
             val item = raw as? Map<*, *> ?: return@mapNotNull null
-            val id = (item["dataId"] as? Number)?.toInt()
-                ?.takeIf { it in 1..2_000_000 } ?: return@mapNotNull null
+            val rawId = item["dataId"] as? Number ?: return@mapNotNull null
+            val idValue = rawId.toLong()
+            val id = idValue.takeIf {
+                rawId.toDouble().isFinite() &&
+                    rawId.toDouble() == it.toDouble() &&
+                    it in 1L..Int.MAX_VALUE.toLong()
+            }?.toInt() ?: return@mapNotNull null
             val name = (item["name"] as? String).orEmpty().trim().take(80)
             if (name.isBlank()) return@mapNotNull null
             val category = (item["category"] as? String)
