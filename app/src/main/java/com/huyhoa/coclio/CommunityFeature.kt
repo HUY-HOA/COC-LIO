@@ -741,7 +741,7 @@ fun CommunityScreen(
                     document.getLong("timestamp") ?: 0L,
                     jsonId
                 )
-                statusMessage = "Đã nhận JSON. Bản nhận được đã được lưu trong mục Chia sẻ của JSON; bản nhập vẫn có trong lịch sử."
+                statusMessage = "Đã nhận JSON. Bản nhận được đã lưu trong mục CHIA SẺ của màn hình JSON; bản nhập vẫn có trong lịch sử."
             } catch (error: Exception) {
                 statusMessage = error.message ?: "Không thể nhận JSON được chia sẻ."
             } finally {
