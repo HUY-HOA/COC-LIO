@@ -2845,16 +2845,28 @@ fun SettingsScreen(
         FeaturePanel {
             FeaturePanelTitle(Icons.Filled.Code, "CÁCH LẤY JSON")
             Text(
-                "Mở Clash of Clans → Cài đặt (bánh răng) → Cài đặt khác → kéo xuống mục Xuất dữ liệu → chọn Xuất dữ liệu làng dưới dạng JSON → Sao chép. Trở lại COC-LIO và dán nội dung JSON.",
+                "1. Mở Clash of Clans và vào làng cần theo dõi.\n2. Nhấn bánh răng Cài đặt → Cài đặt khác.\n3. Tìm mục Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.\n4. Trở lại COC-LIO, nhấn Nhập JSON, dán nội dung rồi phân tích.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp,
-                lineHeight = 17.sp
+                lineHeight = 18.sp
             )
             Button(
                 onClick = onOpenGame,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = FeatureCyan, contentColor = Color(0xFF04101D))
             ) { Text("MỞ CLASH OF CLANS", fontWeight = FontWeight.Black) }
+            Button(
+                onClick = {
+                    runCatching {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://supercell.com/en/games/clashofclans/")))
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            ) { Text("TRANG CHÍNH THỨC CLASH OF CLANS", fontWeight = FontWeight.Bold) }
         }
 
         FeaturePanel {
