@@ -599,6 +599,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CommunityNotificationCleanup.disable(this)
         RemoteAppConfigManager.initialize()
         setContent {
             val remoteConfig by RemoteAppConfigManager.config.collectAsState()
@@ -770,22 +771,8 @@ private fun CocLioApp(
     var notificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationsEnabled(context, activeProfile))
     }
-    var pendingPushPermission by remember { mutableStateOf<String?>(null) }
     var notificationStyle by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationStyle(context, activeProfile))
-    }
-    var communityNotificationsEnabled by remember(activeProfile) {
-        mutableStateOf(AppPreferences.communityNotificationsEnabled(context, activeProfile))
-    }
-    LaunchedEffect(activeProfile, isGoogleSignedIn, communityNotificationsEnabled) {
-        val notificationsAllowed = isGoogleSignedIn
-        CommunityNotificationScheduler.update(
-            context,
-            activeProfile,
-            notificationsAllowed,
-            communityNotificationsEnabled
-        )
-        FirebaseMessagingTopicSubscriptions.sync(context, activeProfile, notificationsAllowed)
     }
     var deletedVillages by remember(activeProfile) {
         mutableStateOf(VillageStore.loadDeleted(context, activeProfile))
@@ -890,34 +877,9 @@ private fun CocLioApp(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         AppPreferences.setNotificationsEnabled(context, activeProfile, granted)
-        AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, granted)
         notificationsEnabled = granted
-        communityNotificationsEnabled = granted
         UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, granted)
         if (!granted) {
-            scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
-        }
-    }
-
-    val pushNotificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        val target = pendingPushPermission
-        pendingPushPermission = null
-        if (granted) {
-            when (target) {
-                "community" -> {
-                    AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, true)
-                    communityNotificationsEnabled = true
-                }
-            }
-        } else {
-            when (target) {
-                "community" -> {
-                    AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, false)
-                    communityNotificationsEnabled = false
-                }
-            }
             scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
         }
     }
@@ -949,9 +911,7 @@ private fun CocLioApp(
                 firstLaunchNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else {
                 AppPreferences.setNotificationsEnabled(context, activeProfile, true)
-                AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, true)
                 notificationsEnabled = true
-                communityNotificationsEnabled = true
                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, true)
             }
         }
@@ -962,7 +922,6 @@ private fun CocLioApp(
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         AppPreferences.ensureNotificationPreferences(context, activeProfile, notificationPermissionGranted)
         notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
-        communityNotificationsEnabled = AppPreferences.communityNotificationsEnabled(context, activeProfile)
         history = VillageStore.loadAll(context, activeProfile)
         current = history.firstOrNull()
         deletedVillages = VillageStore.loadDeleted(context, activeProfile)
@@ -1578,18 +1537,6 @@ private fun CocLioApp(
                             ledPrefs.edit().putBoolean("glow_enabled", value).apply()
                         },
                         notificationStyle = notificationStyle,
-                        communityNotificationsEnabled = communityNotificationsEnabled,
-                        onCommunityNotificationsChanged = { enabled ->
-                            if (enabled && Build.VERSION.SDK_INT >= 33 &&
-                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-                            ) {
-                                pendingPushPermission = "community"
-                                pushNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, enabled)
-                                communityNotificationsEnabled = enabled
-                            }
-                        },
                         onGoogleSignIn = { signInWithGoogle() },
                         onGoogleSwitchAccount = {
                             leaveGoogleAccount("Đã đăng xuất tài khoản hiện tại. Hãy chọn tài khoản Google khác trên màn hình đăng nhập.")
