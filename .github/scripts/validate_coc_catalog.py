@@ -33,7 +33,7 @@ def kotlin_ids(path):
     except OSError as error:
         fail(f"Không đọc được {path.relative_to(ROOT)}: {error}")
         return set()
-    return {int(value) for value in re.findall(r"(?m)^\s*(\d+)\s+to\s+\"", source)}
+    return {int(value) for value in re.findall(r"(\\d+)\\s+to\\s+\\\"", source)}
 
 
 local_files = sorted(ASSETS.glob("part-*.json"))
