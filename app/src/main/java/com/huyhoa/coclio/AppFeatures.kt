@@ -1187,14 +1187,17 @@ object GoogleAccountAuth {
         return selection.account
     }
 
-    suspend fun shareProfile(google: GoogleAccountData) {
+    suspend fun shareProfile(
+        google: GoogleAccountData,
+        countAsSignIn: Boolean = true
+    ) {
         val user = FirebaseAuth.getInstance().currentUser
             ?: throw IllegalStateException("Bạn cần đăng nhập Google trước.")
         if (!user.email.equals(google.email, ignoreCase = true)) {
             throw IllegalStateException("Tài khoản Google hiện tại không khớp với hồ sơ vừa chọn.")
         }
         try {
-            syncFirebaseUserProfile(user, google)
+            syncFirebaseUserProfile(user, google, countAsSignIn)
         } catch (error: Exception) {
             if (error.message?.contains("đã bị quản lý vô hiệu hóa", ignoreCase = true) == true) {
                 FirebaseAuth.getInstance().signOut()
