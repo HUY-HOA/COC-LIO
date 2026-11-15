@@ -69,6 +69,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.Arrangement
@@ -3178,6 +3179,22 @@ private fun createAdminNotificationAvatar(context: Context): IconCompat {
     }
     canvas.drawCircle(center, center, size * 0.48f, backgroundPaint)
 
+    val adminColors = movingLedColors(
+        listOf(
+            Color(0xFF00E5FF),
+            Color(0xFF168BFF),
+            Color(0xFF6548FF),
+            Color(0xFFB33CFF),
+            Color(0xFFFF35B8),
+            Color(0xFFFF4A72),
+            Color(0xFFFFA43A),
+            Color(0xFFB7F34A),
+            Color(0xFF35E6A2)
+        ),
+        0f,
+        256
+    ).map { it.toArgb() }.toIntArray()
+
     val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = size * 0.018f
@@ -3186,11 +3203,7 @@ private fun createAdminNotificationAvatar(context: Context): IconCompat {
             0f,
             size.toFloat(),
             size.toFloat(),
-            intArrayOf(
-                android.graphics.Color.rgb(0, 229, 255),
-                android.graphics.Color.rgb(22, 139, 255),
-                android.graphics.Color.rgb(101, 72, 255)
-            ),
+            adminColors,
             null,
             android.graphics.Shader.TileMode.CLAMP
         )
@@ -3207,11 +3220,7 @@ private fun createAdminNotificationAvatar(context: Context): IconCompat {
             0f,
             size.toFloat(),
             size.toFloat(),
-            intArrayOf(
-                android.graphics.Color.rgb(0, 229, 255),
-                android.graphics.Color.rgb(22, 139, 255),
-                android.graphics.Color.rgb(101, 72, 255)
-            ),
+            adminColors,
             null,
             android.graphics.Shader.TileMode.CLAMP
         )
