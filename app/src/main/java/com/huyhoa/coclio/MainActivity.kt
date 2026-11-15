@@ -2845,9 +2845,13 @@ private fun VillageItemDetailDialog(
             ?: remote?.description?.takeIf { it.isNotBlank() }
     }
     val levelDetails = remote?.levelDetails.orEmpty()
-    val statsMaxLevel = (maxLevel ?: levelDetails.keys.maxOrNull() ?: 1).coerceAtLeast(1)
-    var selectedStatsLevel by remember(item.identity, statsMaxLevel) {
-        mutableStateOf((item.level ?: levelDetails.keys.minOrNull() ?: 1).coerceIn(1, statsMaxLevel))
+    val availableStatsLevels = levelDetails.keys.sorted()
+    val initialStatsTarget = item.level ?: availableStatsLevels.firstOrNull() ?: 1
+    val initialStatsLevel = availableStatsLevels.minByOrNull {
+        kotlin.math.abs(it - initialStatsTarget)
+    } ?: initialStatsTarget
+    var selectedStatsLevel by remember(item.identity, availableStatsLevels) {
+        mutableStateOf(initialStatsLevel)
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -2941,22 +2945,27 @@ private fun VillageItemDetailDialog(
                         if (it == "active") "Chủ động" else "Bị động"
                     )
                 }
-                if (levelDetails.isNotEmpty()) {
+                if (availableStatsLevels.isNotEmpty()) {
                     Text(
                         "THÔNG SỐ THEO CẤP",
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Black
                     )
-                    VillageItemDetailField("Cấp đang xem", "$selectedStatsLevel / $statsMaxLevel")
-                    if (statsMaxLevel > 1) {
+                    val selectedStatsIndex = availableStatsLevels.indexOf(selectedStatsLevel).coerceAtLeast(0)
+                    VillageItemDetailField(
+                        "Cấp dữ liệu đang xem",
+                        "$selectedStatsLevel (${selectedStatsIndex + 1}/${availableStatsLevels.size})"
+                    )
+                    if (availableStatsLevels.size > 1) {
                         Slider(
-                            value = selectedStatsLevel.toFloat(),
+                            value = selectedStatsIndex.toFloat(),
                             onValueChange = {
-                                selectedStatsLevel = it.roundToInt().coerceIn(1, statsMaxLevel)
+                                val index = it.roundToInt().coerceIn(availableStatsLevels.indices)
+                                selectedStatsLevel = availableStatsLevels[index]
                             },
-                            valueRange = 1f..statsMaxLevel.toFloat(),
-                            steps = (statsMaxLevel - 2).coerceAtLeast(0)
+                            valueRange = 0f..(availableStatsLevels.lastIndex).toFloat(),
+                            steps = (availableStatsLevels.size - 2).coerceAtLeast(0)
                         )
                     }
                     val stats = levelDetails[selectedStatsLevel].orEmpty()
