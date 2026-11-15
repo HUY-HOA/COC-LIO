@@ -21,6 +21,12 @@ class ClashSearchNormalizerTest {
     }
 
     @Test
+    fun prioritizesSearchableWordsWithoutDecorativeSymbols() {
+        assertEquals(listOf("HUYHOA", "HUY", "HOA"), clashSearchTerms("HUY⭐⭐⭐HÒA").take(3))
+        assertEquals(listOf("LIOONE", "LIO", "ONE"), clashSearchTerms("LIO⭐⭐⭐ONE").take(3))
+    }
+
+    @Test
     fun matchesNamesWithSymbolsDiacriticsAndDifferentSpacing() {
         assertTrue(clashNameMatchesSearch("HUY⭐⭐⭐HÒA", "HUY⭐⭐⭐HÒA"))
         assertTrue(clashNameMatchesSearch("HUY⭐⭐⭐HÒA", "huy hoa"))
