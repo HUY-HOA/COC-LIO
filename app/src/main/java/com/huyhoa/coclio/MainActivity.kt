@@ -1760,7 +1760,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("🏰", fontSize = 62.sp)
+        CocGameIcon(R.drawable.ic_coc_home, Modifier.size(62.dp), "Làng Clash of Clans")
         Spacer(Modifier.height(14.dp))
         Text("Bắt đầu theo dõi", color = MaterialTheme.colorScheme.onSurface, fontSize = 21.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
@@ -2001,6 +2001,32 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
         Text(value, color = valueColor, fontSize = 24.sp, fontWeight = FontWeight.Black)
         Spacer(Modifier.height(3.dp))
         Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, letterSpacing = 0.4.sp)
+    }
+}
+
+@Composable
+private fun GameCategorySectionTitle(key: String, title: String, trailing: String) {
+    val iconRes = when (key) {
+        "defense" -> R.drawable.ic_coc_defense
+        "resources" -> R.drawable.ic_coc_gold
+        "army", "troops" -> R.drawable.ic_coc_swords
+        "walls" -> R.drawable.ic_coc_wall
+        "traps" -> R.drawable.ic_coc_trap
+        "guardians" -> R.drawable.ic_coc_guardian
+        "heroes" -> R.drawable.ic_coc_hero
+        "spells" -> R.drawable.ic_coc_spell
+        "pets" -> R.drawable.ic_coc_pet
+        "equipment" -> R.drawable.ic_coc_equipment
+        else -> R.drawable.ic_coc_buildings
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 5.dp, bottom = 1.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CocGameIcon(iconRes, Modifier.size(19.dp), title)
+        Spacer(Modifier.width(7.dp))
+        Text(title, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
+        Text(trailing, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
     }
 }
 
@@ -2338,18 +2364,18 @@ private fun CategoryScreen(
     }
 
     fun groupTitle(key: String, rows: List<VillageItem>): String = when (key) {
-        "defense" -> "🛡️ CÔNG TRÌNH PHÒNG THỦ"
-        "resources" -> "💰 CÔNG TRÌNH TÀI NGUYÊN"
-        "army" -> "⚔️ CÔNG TRÌNH QUÂN ĐỘI & NGHIÊN CỨU"
-        "walls" -> "🧱 TƯỜNG"
-        "traps" -> "🪤 BẪY"
-        "other" -> if (tab == "buildings") "🏗️ CÔNG TRÌNH KHÁC" else "📦 MỤC KHÁC"
-        "troops" -> "⚔️ QUÂN LÍNH & MÁY CÔNG THÀNH"
-        "guardians" -> "🛡️ HỘ VỆ"
-        "heroes" -> "👑 ANH HÙNG"
-        "spells" -> "✨ THẦN CHÚ"
-        "pets" -> "🐾 LINH THÚ"
-        "equipment" -> "🛡️ TRANG BỊ ANH HÙNG • TẤT CẢ TƯỚNG"
+        "defense" -> "CÔNG TRÌNH PHÒNG THỦ"
+        "resources" -> "CÔNG TRÌNH TÀI NGUYÊN"
+        "army" -> "CÔNG TRÌNH QUÂN ĐỘI & NGHIÊN CỨU"
+        "walls" -> "TƯỜNG"
+        "traps" -> "BẪY"
+        "other" -> if (tab == "buildings") "CÔNG TRÌNH KHÁC" else "MỤC KHÁC"
+        "troops" -> "QUÂN LÍNH & MÁY CÔNG THÀNH"
+        "guardians" -> "HỘ VỆ"
+        "heroes" -> "ANH HÙNG"
+        "spells" -> "THẦN CHÚ"
+        "pets" -> "LINH THÚ"
+        "equipment" -> "TRANG BỊ ANH HÙNG • TẤT CẢ TƯỚNG"
         else -> rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
     }
 
@@ -2436,7 +2462,7 @@ private fun CategoryScreen(
                             innerPadding = 8.dp
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                                SectionTitle(groupTitle(key, rows), rows.sumOf { it.count }.toString())
+                                GameCategorySectionTitle(key, groupTitle(key, rows), rows.sumOf { it.count }.toString())
                                 ordered.filter { it.timerSeconds != null }.forEach { item ->
                                     UpgradeCard(item, snapshot.timestamp)
                                 }
@@ -2554,13 +2580,10 @@ private fun VillageGridItemCard(
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         owner?.let {
-            Text(
-                "👑 $it",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 8.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                CocGameIcon(R.drawable.ic_coc_hero, Modifier.size(11.dp), "Anh hùng")
+                Text(it, color = MaterialTheme.colorScheme.primary, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
         if (rarity != null) ItemRarityBadge(rarity)
         Text(
@@ -2610,7 +2633,12 @@ private fun VillageGridItemCard(
             horizontalArrangement = Arrangement.Center
         ) {
             if (item.count > 1) Text("×${item.count}", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp)
-            if (item.gearUp) Text("⚙ ĐÃ GHÉP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            if (item.gearUp) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    CocGameIcon(R.drawable.ic_coc_gear, Modifier.size(11.dp), "Đã ghép")
+                    Text("ĐÃ GHÉP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                }
+            }
             item.weaponLevel?.let { Text("VŨ KHÍ $it", color = MaterialTheme.colorScheme.primary, fontSize = 8.sp) }
         }
         Text(
@@ -3289,7 +3317,7 @@ private fun VillageItemDetailDialog(
                 VillageItemDetailField("Căn cứ", if (item.base == "builder") "Làng đêm" else "Làng chính")
                 val ownerHero = upgradeEntry?.hero?.takeIf { it.isNotBlank() }?.let(::equipmentHeroName)
                     ?: equipmentHero(item.dataId)?.takeIf { isEquipment }
-                ownerHero?.let { VillageItemDetailField("👑 Anh hùng sử dụng", it) }
+                ownerHero?.let { VillageIconDetailField(R.drawable.ic_coc_hero, "Anh hùng sử dụng", it) }
                 val levelText = item.level?.let { level ->
                     usableCap?.let { "$level / $it" } ?: level.toString()
                 } ?: "Chưa có dữ liệu"
@@ -3342,7 +3370,7 @@ private fun VillageItemDetailDialog(
                                 UpgradeResourceChip(resource, amount)
                             }
                             if (nextStep.durationSeconds() > 0L) {
-                                VillageItemDetailField("⏱️ Thời gian nâng cấp tiếp theo", formatDuration(nextStep.durationSeconds()))
+                                VillageIconDetailField(R.drawable.ic_coc_time, "Thời gian nâng cấp tiếp theo", formatDuration(nextStep.durationSeconds()))
                             }
                         }
                     }
@@ -3363,7 +3391,7 @@ private fun VillageItemDetailDialog(
                         )
                         totals.resources.forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
                         val totalSeconds = totals.durationSeconds + (item.timerSeconds?.coerceAtLeast(0L) ?: 0L)
-                        if (totalSeconds > 0L) VillageItemDetailField("🕒 Thời gian ước tính còn lại", formatDuration(totalSeconds))
+                        if (totalSeconds > 0L) VillageIconDetailField(R.drawable.ic_coc_time, "Thời gian ước tính còn lại", formatDuration(totalSeconds))
                         if (totals.resources.isEmpty() && totalSeconds == 0L) {
                             VillageItemDetailField("Tài nguyên và thời gian", "Không cần thêm theo dữ liệu cấp hiện có")
                         }
@@ -3384,7 +3412,7 @@ private fun VillageItemDetailDialog(
                         )
                         totals.resources.forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
                         if (totals.durationSeconds > 0L) {
-                            VillageItemDetailField("🕒 Thời gian bổ sung", formatDuration(totals.durationSeconds))
+                            VillageIconDetailField(R.drawable.ic_coc_time, "Thời gian bổ sung", formatDuration(totals.durationSeconds))
                         }
                     }
                     if (entry.superchargeLevels.isNotEmpty()) {
@@ -3413,13 +3441,13 @@ private fun VillageItemDetailDialog(
                                 if (tier.cost() > 0L) UpgradeResourceChip(tier.resource(), tier.cost())
                                 tier.oreCosts().forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
                                 if (tier.durationSeconds() > 0L) {
-                                    VillageItemDetailField("⏱️ Thời gian bậc ${tier.level}", formatDuration(tier.durationSeconds()))
+                                    VillageIconDetailField(R.drawable.ic_coc_time, "Thời gian bậc ${tier.level}", formatDuration(tier.durationSeconds()))
                                 }
                             }
                             Text("TỔNG CHI PHÍ SIÊU CƯỜNG HÓA ĐANG MỞ", color = CocGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
                             totals.resources.forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
                             if (totals.durationSeconds > 0L) {
-                                VillageItemDetailField("🕒 Tổng thời gian siêu cường hóa", formatDuration(totals.durationSeconds))
+                                VillageIconDetailField(R.drawable.ic_coc_time, "Tổng thời gian siêu cường hóa", formatDuration(totals.durationSeconds))
                             }
                             VillageItemDetailField(
                                 "Lưu ý",
@@ -3585,19 +3613,20 @@ private fun VillageItemStatField(label: String, value: String) {
 
 @Composable
 private fun UpgradeResourceChip(resource: String, amount: Long) {
-    val (icon, label, tint) = when (resource.trim().lowercase()) {
-        "gold" -> Triple("🪙", "Vàng", Color(0xFFFFD166))
-        "elixir" -> Triple("🧪", "Tiên dược", Color(0xFFFF6EC7))
-        "dark elixir" -> Triple("🖤", "Dầu đen", Color(0xFFB77AFF))
-        "builder gold" -> Triple("🪙", "Vàng thợ xây", Color(0xFFFFD166))
-        "builder elixir" -> Triple("🧪", "Tiên dược thợ xây", Color(0xFFFF6EC7))
-        "gold or elixir" -> Triple("🪙🧪", "Vàng hoặc Tiên dược", Color(0xFFFFD166))
-        "builder gold or builder elixir" -> Triple("🪙🧪", "Vàng thợ xây hoặc Tiên dược thợ xây", Color(0xFFFFD166))
-        "capital gold" -> Triple("🏅", "Vàng thủ đô", Color(0xFFFFD166))
-        "quặng sáng", "shiny ore" -> Triple("💠", "Quặng sáng", Color(0xFF55B9FF))
-        "quặng phát sáng", "glowy ore" -> Triple("🔮", "Quặng phát sáng", Color(0xFFB77AFF))
-        "quặng sao", "starry ore" -> Triple("⭐", "Quặng sao", Color(0xFFFFC857))
-        else -> Triple("📦", resource, MaterialTheme.colorScheme.primary)
+    val normalized = resource.trim().lowercase()
+    val (label, tint) = when (normalized) {
+        "gold" -> "Vàng" to Color(0xFFFFD166)
+        "elixir" -> "Tiên dược" to Color(0xFFFF6EC7)
+        "dark elixir" -> "Dầu đen" to Color(0xFFB77AFF)
+        "builder gold" -> "Vàng thợ xây" to Color(0xFFFFD166)
+        "builder elixir" -> "Tiên dược thợ xây" to Color(0xFFFF6EC7)
+        "gold or elixir" -> "Vàng hoặc Tiên dược" to Color(0xFFFFD166)
+        "builder gold or builder elixir" -> "Vàng thợ xây hoặc Tiên dược thợ xây" to Color(0xFFFFD166)
+        "capital gold" -> "Vàng thủ đô" to Color(0xFFFFD166)
+        "quặng sáng", "shiny ore" -> "Quặng sáng" to Color(0xFF55B9FF)
+        "quặng phát sáng", "glowy ore" -> "Quặng phát sáng" to Color(0xFFB77AFF)
+        "quặng sao", "starry ore" -> "Quặng sao" to Color(0xFFFFC857)
+        else -> resource to MaterialTheme.colorScheme.primary
     }
     Row(
         modifier = Modifier
@@ -3608,9 +3637,31 @@ private fun UpgradeResourceChip(resource: String, amount: Long) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(icon, fontSize = 17.sp)
+        if (normalized == "gold or elixir" || normalized == "builder gold or builder elixir") {
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                CocResourceIcon("gold", Modifier.size(18.dp))
+                CocResourceIcon("elixir", Modifier.size(18.dp))
+            }
+        } else {
+            CocResourceIcon(resource, Modifier.size(18.dp))
+        }
         Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, modifier = Modifier.weight(1f))
         Text(java.text.NumberFormat.getIntegerInstance().format(amount), color = tint, fontSize = 12.sp, fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
+private fun VillageIconDetailField(iconRes: Int, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        CocGameIcon(iconRes, Modifier.size(17.dp), label)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+            Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, lineHeight = 17.sp)
+        }
     }
 }
 
@@ -3677,7 +3728,7 @@ private fun VillageItemCard(item: VillageItem) {
                 Text(item.level?.let { "CẤP $it" } ?: "—", color = MaterialTheme.colorScheme.tertiary, fontSize = 16.sp, fontWeight = FontWeight.Black, maxLines = 1)
                 if (item.count > 1) Text("×${item.count}", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
             }
-            if (item.gearUp) Text("⚙", color = CocGreen, fontSize = 18.sp)
+            if (item.gearUp) CocGameIcon(R.drawable.ic_coc_gear, Modifier.size(18.dp), "Đã ghép")
             item.weaponLevel?.let { Text("V$it", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
         }
     }
