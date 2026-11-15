@@ -185,6 +185,17 @@ object CocUpgradeCatalog {
         return highest?.coerceAtMost(entry.maxLevel)
     }
 
+    fun maxEquipmentAtBlacksmithLevel(
+        entry: CocUpgradeEntry,
+        blacksmithLevel: Int?,
+        entries: Map<Int, CocUpgradeEntry>
+    ): Int? {
+        if (entry.category != "hero-equipment" || blacksmithLevel == null) return null
+        val smith = entries.values.firstOrNull { it.id == "blacksmith" } ?: return null
+        val caps = smith.level(blacksmithLevel)?.raw?.optJSONObject("maxEquipmentLevel") ?: return null
+        return caps.optInt(entry.rarity, -1).takeIf { it > 0 }?.coerceAtMost(entry.maxLevel)
+    }
+
     fun nextRequirements(
         entry: CocUpgradeEntry,
         level: Int,
