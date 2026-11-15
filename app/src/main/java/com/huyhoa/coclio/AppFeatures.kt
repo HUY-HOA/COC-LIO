@@ -308,24 +308,13 @@ object AppPreferences {
             .edit().putBoolean(key(profile, "community_notifications"), enabled).apply()
     }
 
-    fun updateNotificationsEnabled(context: Context, profile: String): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(key(profile, "update_notifications"), false)
-
-    fun setUpdateNotificationsEnabled(context: Context, profile: String, enabled: Boolean) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putBoolean(key(profile, "update_notifications"), enabled).apply()
-    }
-
     fun ensureNotificationPreferences(context: Context, profile: String, defaultEnabled: Boolean) {
         val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val editor = preferences.edit()
         val notificationKey = key(profile, "notifications")
         val communityKey = key(profile, "community_notifications")
-        val updateKey = key(profile, "update_notifications")
         if (!preferences.contains(notificationKey)) editor.putBoolean(notificationKey, defaultEnabled)
         if (!preferences.contains(communityKey)) editor.putBoolean(communityKey, defaultEnabled)
-        if (!preferences.contains(updateKey)) editor.putBoolean(updateKey, defaultEnabled)
         editor.apply()
     }
 
@@ -407,7 +396,6 @@ object AppPreferences {
 
 object FirebaseMessagingTopicSubscriptions {
     private const val COMMUNITY_TOPIC = "coc_lio_community"
-    private const val UPDATES_TOPIC = "coc_lio_updates"
 
     suspend fun sync(context: Context, profile: String, signedIn: Boolean) {
         val user = FirebaseAuth.getInstance().currentUser
@@ -422,11 +410,8 @@ object FirebaseMessagingTopicSubscriptions {
         val communityEnabled = profileMatches &&
             notificationPermissionGranted &&
             AppPreferences.communityNotificationsEnabled(context, profile)
-        val updatesEnabled = profileMatches &&
-            notificationPermissionGranted &&
-            AppPreferences.updateNotificationsEnabled(context, profile)
         val messaging = FirebaseMessaging.getInstance()
-        messaging.setAutoInitEnabled(communityEnabled || updatesEnabled)
+        messaging.setAutoInitEnabled(communityEnabled)
         runCatching {
             (if (communityEnabled) {
                 messaging.subscribeToTopic(COMMUNITY_TOPIC)
@@ -434,12 +419,9 @@ object FirebaseMessagingTopicSubscriptions {
                 messaging.unsubscribeFromTopic(COMMUNITY_TOPIC)
             }).awaitFirebaseResult()
         }
-        runCatching {
-            (if (updatesEnabled) {
-                messaging.subscribeToTopic(UPDATES_TOPIC)
-            } else {
-                messaging.unsubscribeFromTopic(UPDATES_TOPIC)
-            }).awaitFirebaseResult()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.getSystemService(NotificationManager::class.java)
+                .deleteNotificationChannel("coc_lio_app_updates")
         }
     }
 }
@@ -2454,9 +2436,7 @@ fun SettingsScreen(
     onLedGlowEnabledChanged: (Boolean) -> Unit,
     notificationStyle: String,
     communityNotificationsEnabled: Boolean,
-    updateNotificationsEnabled: Boolean,
     onCommunityNotificationsChanged: (Boolean) -> Unit,
-    onUpdateNotificationsChanged: (Boolean) -> Unit,
     onGoogleSignIn: () -> Unit,
     onGoogleSwitchAccount: () -> Unit,
     onGoogleSignOut: () -> Unit,
@@ -2868,19 +2848,6 @@ fun SettingsScreen(
             }
             Text(
                 "Để hiện bong bóng, hãy bật Bong bóng trong cài đặt thông báo Android hoặc nhấn giữ thông báo tin nhắn cộng đồng rồi chọn hiển thị dạng bong bóng.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 9.sp,
-                lineHeight = 13.sp
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("THÔNG BÁO BẢN CẬP NHẬT APK", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Cần đăng nhập Google; báo khi có phiên bản mới trong mục Cộng đồng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-                }
-                Switch(checked = updateNotificationsEnabled, onCheckedChange = onUpdateNotificationsChanged)
-            }
-            Text(
-                "Thông báo được kiểm tra định kỳ bằng kết nối mạng. Android có thể trì hoãn lâu hơn 15 phút khi tiết kiệm pin hoặc hạn chế chạy nền.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 9.sp,
                 lineHeight = 13.sp
