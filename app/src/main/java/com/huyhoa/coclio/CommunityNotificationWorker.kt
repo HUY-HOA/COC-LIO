@@ -57,6 +57,7 @@ object CommunityNotificationScheduler {
         communityEnabled: Boolean,
     ) {
         val manager = WorkManager.getInstance(context)
+        if (!signedIn || profile == "local" || !communityEnabled) {
             manager.cancelUniqueWork(COC_LIO_NOTIFICATION_WORK)
             manager.cancelUniqueWork(COC_LIO_NOTIFICATION_WORK + "_initial")
             return
