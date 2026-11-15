@@ -2367,7 +2367,11 @@ private fun VillageGridItemCard(
     } else {
         remote?.maxLevel
     }
-    val itemName = remote?.name?.takeIf { it.isNotBlank() } ?: item.name
+    val itemName = if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
+        remote?.name?.takeIf { it.isNotBlank() } ?: item.name
+    } else {
+        item.name
+    }
 
     NeonPanel(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -2468,13 +2472,14 @@ private fun equipmentRarity(dataId: Int): String? = when (dataId) {
 }
 
 private fun equipmentMaxLevel(rarity: String?, blacksmithLevel: Int?): Int? {
-    val maximum = when (rarity?.lowercase()) {
+    val normalized = rarity?.lowercase() ?: return null
+    val maximum = when (normalized) {
         "common" -> 18
         "epic" -> 27
         else -> return null
     }
     val smith = blacksmithLevel ?: return maximum
-    return when (rarity.lowercase()) {
+    return when (normalized) {
         "common" -> when {
             smith < 3 -> 9
             smith < 5 -> 12
