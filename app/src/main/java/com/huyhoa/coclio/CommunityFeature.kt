@@ -133,17 +133,6 @@ private data class CommunitySharedJson(
     val createdAt: Long
 )
 
-private data class CommunityRelease(
-    val id: String,
-    val versionName: String,
-    val notes: String,
-    val fileName: String,
-    val storagePath: String,
-    val downloadUrl: String,
-    val fileSize: Long,
-    val createdAt: Long
-)
-
 private data class CommunityArchiveItem(
     val id: String,
     val category: String,
@@ -685,12 +674,9 @@ fun CommunityScreen(
     }
     var messages by remember { mutableStateOf<List<CommunityMessage>>(emptyList()) }
     var sharedJsons by remember { mutableStateOf<List<CommunitySharedJson>>(emptyList()) }
-    var releases by remember { mutableStateOf<List<CommunityRelease>>(emptyList()) }
     var loadingMessages by remember { mutableStateOf(true) }
     var loadingSharedJsons by remember { mutableStateOf(true) }
-    var loadingReleases by remember { mutableStateOf(true) }
     var messageError by remember { mutableStateOf<String?>(null) }
-    var releaseError by remember { mutableStateOf<String?>(null) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf("") }
     var showEmojiPicker by remember { mutableStateOf(false) }
@@ -700,7 +686,6 @@ fun CommunityScreen(
         availableJsons.distinctBy { it.tag to it.timestamp }.sortedByDescending { it.timestamp }
     }
     var deleteMessage by remember { mutableStateOf<CommunityMessage?>(null) }
-    var deleteRelease by remember { mutableStateOf<CommunityRelease?>(null) }
     var deleteArchiveItem by remember { mutableStateOf<CommunityArchiveItem?>(null) }
     var deleteSharedJson by remember { mutableStateOf<CommunitySharedJson?>(null) }
     var deleteReceivedJson by remember { mutableStateOf<ReceivedSharedJsonRecord?>(null) }
@@ -787,11 +772,9 @@ fun CommunityScreen(
         if (user == null) {
             messages = emptyList()
             sharedJsons = emptyList()
-            releases = emptyList()
             archiveItems = emptyList()
             loadingMessages = false
             loadingSharedJsons = false
-            loadingReleases = false
             loadingArchive = false
             onDispose { }
         } else {
@@ -850,31 +833,6 @@ fun CommunityScreen(
                             )
                         }.sortedByDescending { it.createdAt }
                         loadingSharedJsons = false
-                    }
-                }
-            val releaseRegistration = firestore.collection("app_updates")
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .limit(30)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        releaseError = error.message ?: "Không thể tải danh sách cập nhật."
-                        loadingReleases = false
-                    } else {
-                        releases = snapshot?.documents.orEmpty().mapNotNull { document ->
-                            val name = document.getString("versionName") ?: return@mapNotNull null
-                            CommunityRelease(
-                                id = document.id,
-                                versionName = name,
-                                notes = document.getString("notes").orEmpty(),
-                                fileName = document.getString("fileName").orEmpty(),
-                                storagePath = document.getString("storagePath").orEmpty(),
-                                downloadUrl = document.getString("downloadUrl").orEmpty(),
-                                fileSize = document.getLong("fileSize") ?: 0L,
-                                createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L
-                            )
-                        }
-                        releaseError = null
-                        loadingReleases = false
                     }
                 }
             val archiveRegistrations = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
@@ -961,7 +919,6 @@ fun CommunityScreen(
             onDispose {
                 messageRegistration.remove()
                 sharedJsonRegistration.remove()
-                releaseRegistration.remove()
                 archiveRegistrations.forEach { it.remove() }
             }
         }
@@ -1035,11 +992,6 @@ fun CommunityScreen(
                 selected = selectedSection == 0,
                 onClick = { selectedSection = 0; statusMessage = null },
                 label = { Text("TRÒ CHUYỆN", fontSize = 10.sp) }
-            )
-            FilterChip(
-                selected = selectedSection == 1,
-                onClick = { selectedSection = 1; statusMessage = null },
-                label = { Text("CẬP NHẬT APK", fontSize = 10.sp) }
             )
             FilterChip(
                 selected = selectedSection == 3,
@@ -1513,49 +1465,6 @@ fun CommunityScreen(
                     }
                 }
             }
-        } else {
-            if (isOwner) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().ledRgbBorder(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("ĐĂNG BẢN CẬP NHẬT APK", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
-                        Text(
-                            "Tạm dừng trên gói miễn phí hiện tại. Tải lên và phân phối APK chưa được hỗ trợ.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 10.sp
-                        )
-                    }
-                }
-            }
-            if (loadingReleases) {
-                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                releaseError?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 10.sp) }
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (releases.isEmpty()) {
-                        item {
-                            Text("Chưa có bản cập nhật nào được đăng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-                        }
-                    }
-                    items(releases, key = { it.id }) { release ->
-                        CommunityReleaseCard(
-                            release = release,
-                            isOwner = isOwner,
-                            onDownload = { url, name -> downloadCommunityFile(context, url, name) },
-                            onDelete = { deleteRelease = release }
-                        )
-                    }
-                }
-            }
-        }
     }
 
     if (showJsonPicker) {
@@ -1729,44 +1638,6 @@ fun CommunityScreen(
                 }) { Text("GỠ VÀ LƯU") }
             },
             dismissButton = { TextButton(onClick = { deleteMessage = null }) { Text("HỦY") } }
-        )
-    }
-
-    deleteRelease?.let { release ->
-        AlertDialog(
-            onDismissRequest = { deleteRelease = null },
-            title = { Text("Gỡ bản cập nhật vào kho?") },
-            text = { Text("Bản ghi ${release.versionName} sẽ được chuyển vào kho đã gỡ. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    deleteRelease = null
-                    scope.launch {
-                        try {
-                            val firestore = FirebaseFirestore.getInstance()
-                            val archiveData = mutableMapOf<String, Any>(
-                                "originalId" to release.id,
-                                "versionName" to release.versionName,
-                                "notes" to release.notes,
-                                "fileName" to release.fileName,
-                                "storagePath" to release.storagePath,
-                                "downloadUrl" to release.downloadUrl,
-                                "fileSize" to release.fileSize,
-                                "createdAt" to Timestamp(Date(release.createdAt)),
-                                "archivedBy" to FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
-                                "archivedAt" to FieldValue.serverTimestamp()
-                            )
-                            val batch = firestore.batch()
-                            batch.set(firestore.collection("app_update_archive").document(release.id), archiveData)
-                            batch.delete(firestore.collection("app_updates").document(release.id))
-                            batch.commit().awaitCommunityResult()
-                            statusMessage = "Đã gỡ và lưu APK cập nhật."
-                        } catch (error: Exception) {
-                            statusMessage = error.message ?: "Không thể chuyển APK vào kho."
-                        }
-                    }
-                }) { Text("GỠ VÀ LƯU") }
-            },
-            dismissButton = { TextButton(onClick = { deleteRelease = null }) { Text("HỦY") } }
         )
     }
 
@@ -2408,46 +2279,6 @@ private fun CommunityArchiveCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 8.sp
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CommunityReleaseCard(
-    release: CommunityRelease,
-    isOwner: Boolean,
-    onDownload: (String, String) -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth().ledRgbBorder(cornerRadiusDp = 17f),
-        shape = RoundedCornerShape(17.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("COC-LIO ${release.versionName}", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-                Text("APK", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-            }
-            if (release.notes.isNotBlank()) {
-                Text(release.notes, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
-            }
-            Text(
-                "${release.fileName} · ${formatCommunitySize(release.fileSize)} · ${communityTime(release.createdAt)}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 9.sp
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Tải APK hiện đang tạm dừng trên gói miễn phí.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 9.sp
-                )
-                Spacer(Modifier.width(6.dp))
-                if (isOwner) {
-                    TextButton(onClick = onDelete) { Text("GỠ VÀO KHO", fontSize = 9.sp) }
-                }
             }
         }
     }
