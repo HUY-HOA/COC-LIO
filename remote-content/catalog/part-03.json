@@ -1,0 +1,1474 @@
+{
+  "catalog": [
+    {
+      "dataId": 90000000,
+      "name": "Barbarian Puppet",
+      "category": "equipment",
+      "description": "Summons a pack of raged Barbarians",
+      "maxLevel": 18,
+      "rarity": "common",
+      "abilityType": "active",
+      "details": [
+        "Ability Type: Chủ động",
+        "Barbarian Rage Duration: 20"
+      ],
+      "requirements": [
+        "Available by default"
+      ],
+      "levelDetails": {
+        "1": [
+          "Hitpoint Increase: 309",
+          "Hp Recovery Increase: 110",
+          "Lò rèn cấp: 0",
+          "Summoned Barbarians: 8",
+          "Barbarian Damage Increase: +100%",
+          "Barbarian Speed Increase: 9.5"
+        ],
+        "2": [
+          "Hitpoint Increase: 385",
+          "Hp Recovery Increase: 165",
+          "Quặng sáng cần: 120",
+          "Lò rèn cấp: 1",
+          "Summoned Barbarians: 8",
+          "Barbarian Damage Increase: +100%",
+          "Barbarian Speed Increase: 9.5"
+        ],
+        "3": [
+          "Hitpoint Increase: 467",
+          "Hp Recovery Increase: 220",
+          "Quặng sáng cần: 240",
+          "Quặng phát sáng cần: 20",
+          "Lò rèn cấp: 1",
+          "Summoned Barbarians: 16",
+          "Barbarian Damage Increase: +120%",
+          "Barbarian Speed Increase: 12.7"
+        ],
+        "4": [
+          "Hitpoint Increase: 564",
+          "Hp Recovery Increase: 275",
+          "Quặng sáng cần: 400",
+          "Lò rèn cấp: 1",
+          "Summoned Barbarians: 16",
+          "Barbarian Damage Increase: +120%",
+          "Barbarian Speed Increase: 12.7"
+        ],
+        "5": [
+          "Hitpoint Increase: 649",
+          "Hp Recovery Increase: 330",
+          "Quặng sáng cần: 600",
+          "Lò rèn cấp: 1",
+          "Summoned Barbarians: 16",
+          "Barbarian Damage Increase: +120%",
+          "Barbarian Speed Increase: 12.7"
+        ],
+        "6": [
+          "Hitpoint Increase: 734",
+          "Hp Recovery Increase: 385",
+          "Quặng sáng cần: 840",
+          "Quặng phát sáng cần: 100",
+          "Lò rèn cấp: 1",
+          "Summoned Barbarians: 20",
+          "Barbarian Damage Increase: +140%",
+          "Barbarian Speed Increase: 16"
+        ],
+        "7": [
+          "Hitpoint Increase: 836",
+          "Hp Recovery Increase: 440",
+          "Quặng sáng cần: 1120",
+          "Lò rèn cấp: 1",
+          "Summoned Barbarians: 20",
+          "Barbarian Damage Increase: +140%",
+          "Barbarian Speed Increase: 16"
+        ],
+        "8": [
+          "Hitpoint Increase: 940",
+          "Hp Recovery Increase: 495",
+          "Quặng sáng cần: 1440",
+          "Lò rèn cấp: 1",
+          "Summoned Barbarians: 20",
+          "Barbarian Damage Increase: +140%",
+          "Barbarian Speed Increase: 16"
+        ],
+        "9": [
+          "Hitpoint Increase: 1045",
+          "Hp Recovery Increase: 572",
+          "Quặng sáng cần: 1800",
+          "Quặng phát sáng cần: 200",
+          "Lò rèn cấp: 1",
+          "Summoned Barbarians: 30",
+          "Barbarian Damage Increase: +160%",
+          "Barbarian Speed Increase: 19.1"
+        ],
+        "10": [
+          "Hitpoint Increase: 1155",
+          "Hp Recovery Increase: 660",
+          "Quặng sáng cần: 1900",
+          "Lò rèn cấp: 3",
+          "Summoned Barbarians: 30",
+          "Barbarian Damage Increase: +160%",
+          "Barbarian Speed Increase: 19.1"
+        ],
+        "11": [
+          "Hitpoint Increase: 1265",
+          "Hp Recovery Increase: 748",
+          "Quặng sáng cần: 2000",
+          "Lò rèn cấp: 3",
+          "Summoned Barbarians: 30",
+          "Barbarian Damage Increase: +160%",
+          "Barbarian Speed Increase: 19.1"
+        ],
+        "12": [
+          "Hitpoint Increase: 1445",
+          "Hp Recovery Increase: 847",
+          "Quặng sáng cần: 2100",
+          "Quặng phát sáng cần: 400",
+          "Lò rèn cấp: 3",
+          "Summoned Barbarians: 36",
+          "Barbarian Damage Increase: +180%",
+          "Barbarian Speed Increase: 22.3"
+        ],
+        "13": [
+          "Hitpoint Increase: 1755",
+          "Hp Recovery Increase: 946",
+          "Quặng sáng cần: 2200",
+          "Lò rèn cấp: 5",
+          "Summoned Barbarians: 36",
+          "Barbarian Damage Increase: +180%",
+          "Barbarian Speed Increase: 22.3"
+        ],
+        "14": [
+          "Hitpoint Increase: 2087",
+          "Hp Recovery Increase: 1034",
+          "Quặng sáng cần: 2300",
+          "Lò rèn cấp: 5",
+          "Summoned Barbarians: 36",
+          "Barbarian Damage Increase: +180%",
+          "Barbarian Speed Increase: 22.3"
+        ],
+        "15": [
+          "Hitpoint Increase: 2444",
+          "Hp Recovery Increase: 1166",
+          "Quặng sáng cần: 2400",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 5",
+          "Summoned Barbarians: 40",
+          "Barbarian Damage Increase: +200%",
+          "Barbarian Speed Increase: 25.5"
+        ],
+        "16": [
+          "Hitpoint Increase: 2703",
+          "Hp Recovery Increase: 1243",
+          "Quặng sáng cần: 2500",
+          "Lò rèn cấp: 7",
+          "Summoned Barbarians: 40",
+          "Barbarian Damage Increase: +200%",
+          "Barbarian Speed Increase: 25.5"
+        ],
+        "17": [
+          "Hitpoint Increase: 3093",
+          "Hp Recovery Increase: 1320",
+          "Quặng sáng cần: 2600",
+          "Lò rèn cấp: 7",
+          "Summoned Barbarians: 40",
+          "Barbarian Damage Increase: +200%",
+          "Barbarian Speed Increase: 25.5"
+        ],
+        "18": [
+          "Hitpoint Increase: 3366",
+          "Hp Recovery Increase: 1386",
+          "Quặng sáng cần: 2700",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 7",
+          "Summoned Barbarians: 44",
+          "Barbarian Damage Increase: +220%",
+          "Barbarian Speed Increase: 28.7"
+        ]
+      }
+    },
+    {
+      "dataId": 90000035,
+      "name": "Dark Crown",
+      "category": "equipment",
+      "description": "Boosts health and damage a total of 3 times when allies are defeated",
+      "maxLevel": 27,
+      "rarity": "epic",
+      "abilityType": "passive",
+      "details": [
+        "Ability Type: Bị động"
+      ],
+      "requirements": [
+        "Buy in Dark Deal event for 3,100 Mischief Medals",
+        "Buy in Meltdown Mayhem event for 3,100 Ember Medals",
+        "Buy in Equipment Blast event for 3,100 Relic Medals",
+        "Purchasable from the Trader for 1,500 Gems"
+      ],
+      "levelDetails": {
+        "1": [
+          "Hitpoint Increase: 550",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 3",
+          "Max Damage Increase: 3",
+          "Tăng tốc độ đánh: 1"
+        ],
+        "2": [
+          "Hitpoint Increase: 575",
+          "Quặng sáng cần: 120",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 3",
+          "Max Damage Increase: 3",
+          "Tăng tốc độ đánh: 2"
+        ],
+        "3": [
+          "Hitpoint Increase: 600",
+          "Quặng sáng cần: 240",
+          "Quặng phát sáng cần: 20",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 6",
+          "Max Damage Increase: 6",
+          "Tăng tốc độ đánh: 2"
+        ],
+        "4": [
+          "Hitpoint Increase: 625",
+          "Quặng sáng cần: 400",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 6",
+          "Max Damage Increase: 6",
+          "Tăng tốc độ đánh: 3"
+        ],
+        "5": [
+          "Hitpoint Increase: 650",
+          "Quặng sáng cần: 600",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 6",
+          "Max Damage Increase: 6",
+          "Tăng tốc độ đánh: 3"
+        ],
+        "6": [
+          "Hitpoint Increase: 675",
+          "Quặng sáng cần: 840",
+          "Quặng phát sáng cần: 100",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 9",
+          "Max Damage Increase: 9",
+          "Tăng tốc độ đánh: 3"
+        ],
+        "7": [
+          "Hitpoint Increase: 700",
+          "Quặng sáng cần: 1120",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 9",
+          "Max Damage Increase: 9",
+          "Tăng tốc độ đánh: 4"
+        ],
+        "8": [
+          "Hitpoint Increase: 725",
+          "Quặng sáng cần: 1440",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 9",
+          "Max Damage Increase: 9",
+          "Tăng tốc độ đánh: 4"
+        ],
+        "9": [
+          "Hitpoint Increase: 750",
+          "Quặng sáng cần: 1800",
+          "Quặng phát sáng cần: 200",
+          "Quặng sao cần: 10",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 12",
+          "Max Damage Increase: 12",
+          "Tăng tốc độ đánh: 4"
+        ],
+        "10": [
+          "Hitpoint Increase: 775",
+          "Quặng sáng cần: 1900",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 12",
+          "Max Damage Increase: 12",
+          "Tăng tốc độ đánh: 5"
+        ],
+        "11": [
+          "Hitpoint Increase: 800",
+          "Quặng sáng cần: 2000",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 12",
+          "Max Damage Increase: 12",
+          "Tăng tốc độ đánh: 5"
+        ],
+        "12": [
+          "Hitpoint Increase: 825",
+          "Quặng sáng cần: 2100",
+          "Quặng phát sáng cần: 400",
+          "Quặng sao cần: 20",
+          "Lò rèn cấp: 1",
+          "Max Health Increase: 15",
+          "Max Damage Increase: 15",
+          "Tăng tốc độ đánh: 5"
+        ],
+        "13": [
+          "Hitpoint Increase: 850",
+          "Quặng sáng cần: 2200",
+          "Lò rèn cấp: 3",
+          "Max Health Increase: 15",
+          "Max Damage Increase: 15",
+          "Tăng tốc độ đánh: 6"
+        ],
+        "14": [
+          "Hitpoint Increase: 875",
+          "Quặng sáng cần: 2300",
+          "Lò rèn cấp: 3",
+          "Max Health Increase: 15",
+          "Max Damage Increase: 15",
+          "Tăng tốc độ đánh: 6"
+        ],
+        "15": [
+          "Hitpoint Increase: 900",
+          "Quặng sáng cần: 2400",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 30",
+          "Lò rèn cấp: 3",
+          "Max Health Increase: 18",
+          "Max Damage Increase: 18",
+          "Tăng tốc độ đánh: 6"
+        ],
+        "16": [
+          "Hitpoint Increase: 925",
+          "Quặng sáng cần: 2500",
+          "Lò rèn cấp: 5",
+          "Max Health Increase: 18",
+          "Max Damage Increase: 18",
+          "Tăng tốc độ đánh: 7"
+        ],
+        "17": [
+          "Hitpoint Increase: 950",
+          "Quặng sáng cần: 2600",
+          "Lò rèn cấp: 5",
+          "Max Health Increase: 18",
+          "Max Damage Increase: 18",
+          "Tăng tốc độ đánh: 7"
+        ],
+        "18": [
+          "Hitpoint Increase: 975",
+          "Quặng sáng cần: 2700",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 50",
+          "Lò rèn cấp: 5",
+          "Max Health Increase: 21",
+          "Max Damage Increase: 21",
+          "Tăng tốc độ đánh: 7"
+        ],
+        "19": [
+          "Hitpoint Increase: 1000",
+          "Quặng sáng cần: 2800",
+          "Lò rèn cấp: 7",
+          "Max Health Increase: 21",
+          "Max Damage Increase: 21",
+          "Tăng tốc độ đánh: 8"
+        ],
+        "20": [
+          "Hitpoint Increase: 1025",
+          "Quặng sáng cần: 2900",
+          "Lò rèn cấp: 7",
+          "Max Health Increase: 21",
+          "Max Damage Increase: 21",
+          "Tăng tốc độ đánh: 8"
+        ],
+        "21": [
+          "Hitpoint Increase: 1050",
+          "Quặng sáng cần: 3000",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 100",
+          "Lò rèn cấp: 7",
+          "Max Health Increase: 24",
+          "Max Damage Increase: 24",
+          "Tăng tốc độ đánh: 8"
+        ],
+        "22": [
+          "Hitpoint Increase: 1075",
+          "Quặng sáng cần: 3100",
+          "Lò rèn cấp: 8",
+          "Max Health Increase: 24",
+          "Max Damage Increase: 24",
+          "Tăng tốc độ đánh: 9"
+        ],
+        "23": [
+          "Hitpoint Increase: 1100",
+          "Quặng sáng cần: 3200",
+          "Lò rèn cấp: 8",
+          "Max Health Increase: 24",
+          "Max Damage Increase: 24",
+          "Tăng tốc độ đánh: 9"
+        ],
+        "24": [
+          "Hitpoint Increase: 1125",
+          "Quặng sáng cần: 3300",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 120",
+          "Lò rèn cấp: 8",
+          "Max Health Increase: 27",
+          "Max Damage Increase: 27",
+          "Tăng tốc độ đánh: 9"
+        ],
+        "25": [
+          "Hitpoint Increase: 1150",
+          "Quặng sáng cần: 3400",
+          "Lò rèn cấp: 9",
+          "Max Health Increase: 27",
+          "Max Damage Increase: 27",
+          "Tăng tốc độ đánh: 10"
+        ],
+        "26": [
+          "Hitpoint Increase: 1175",
+          "Quặng sáng cần: 3500",
+          "Lò rèn cấp: 9",
+          "Max Health Increase: 27",
+          "Max Damage Increase: 27",
+          "Tăng tốc độ đánh: 10"
+        ],
+        "27": [
+          "Hitpoint Increase: 1200",
+          "Quặng sáng cần: 3600",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 150",
+          "Lò rèn cấp: 9",
+          "Max Health Increase: 30",
+          "Max Damage Increase: 30",
+          "Tăng tốc độ đánh: 11"
+        ]
+      }
+    },
+    {
+      "dataId": 90000043,
+      "name": "Dark Orb",
+      "category": "equipment",
+      "description": "Damages and slows down everything it touches",
+      "maxLevel": 18,
+      "rarity": "common",
+      "abilityType": "active",
+      "details": [
+        "Ability Type: Chủ động"
+      ],
+      "requirements": [
+        "Available by default"
+      ],
+      "levelDetails": {
+        "1": [
+          "Hitpoint Increase: 588",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 45",
+          "Slow Down Percent: 20",
+          "Slow Down Duration: 8s",
+          "Tăng sát thương mỗi giây: 10"
+        ],
+        "2": [
+          "Hitpoint Increase: 603",
+          "Quặng sáng cần: 120",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 45",
+          "Slow Down Percent: 20",
+          "Slow Down Duration: 8s",
+          "Tăng sát thương mỗi giây: 13"
+        ],
+        "3": [
+          "Hitpoint Increase: 617",
+          "Quặng sáng cần: 240",
+          "Quặng phát sáng cần: 20",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 55",
+          "Slow Down Percent: 25",
+          "Slow Down Duration: 9s",
+          "Tăng sát thương mỗi giây: 18"
+        ],
+        "4": [
+          "Hitpoint Increase: 631",
+          "Quặng sáng cần: 400",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 55",
+          "Slow Down Percent: 25",
+          "Slow Down Duration: 9s",
+          "Tăng sát thương mỗi giây: 21"
+        ],
+        "5": [
+          "Hitpoint Increase: 647",
+          "Quặng sáng cần: 600",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 55",
+          "Slow Down Percent: 25",
+          "Slow Down Duration: 9s",
+          "Tăng sát thương mỗi giây: 24"
+        ],
+        "6": [
+          "Hitpoint Increase: 661",
+          "Quặng sáng cần: 840",
+          "Quặng phát sáng cần: 100",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 65",
+          "Slow Down Percent: 30",
+          "Slow Down Duration: 10s",
+          "Tăng sát thương mỗi giây: 29"
+        ],
+        "7": [
+          "Hitpoint Increase: 675",
+          "Quặng sáng cần: 1120",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 65",
+          "Slow Down Percent: 30",
+          "Slow Down Duration: 10s",
+          "Tăng sát thương mỗi giây: 32"
+        ],
+        "8": [
+          "Hitpoint Increase: 600",
+          "Quặng sáng cần: 1440",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 65",
+          "Slow Down Percent: 30",
+          "Slow Down Duration: 10s",
+          "Tăng sát thương mỗi giây: 35"
+        ],
+        "9": [
+          "Hitpoint Increase: 719",
+          "Quặng sáng cần: 1800",
+          "Quặng phát sáng cần: 200",
+          "Lò rèn cấp: 1",
+          "Projectile Damage: 75",
+          "Slow Down Percent: 35",
+          "Slow Down Duration: 11s",
+          "Tăng sát thương mỗi giây: 40"
+        ],
+        "10": [
+          "Hitpoint Increase: 766",
+          "Quặng sáng cần: 1900",
+          "Lò rèn cấp: 3",
+          "Projectile Damage: 75",
+          "Slow Down Percent: 35",
+          "Slow Down Duration: 11s",
+          "Tăng sát thương mỗi giây: 43"
+        ],
+        "11": [
+          "Hitpoint Increase: 813",
+          "Quặng sáng cần: 2000",
+          "Lò rèn cấp: 3",
+          "Projectile Damage: 75",
+          "Slow Down Percent: 35",
+          "Slow Down Duration: 11s",
+          "Tăng sát thương mỗi giây: 46"
+        ],
+        "12": [
+          "Hitpoint Increase: 859",
+          "Quặng sáng cần: 2100",
+          "Quặng phát sáng cần: 400",
+          "Lò rèn cấp: 3",
+          "Projectile Damage: 100",
+          "Slow Down Percent: 40",
+          "Slow Down Duration: 13s",
+          "Tăng sát thương mỗi giây: 51"
+        ],
+        "13": [
+          "Hitpoint Increase: 906",
+          "Quặng sáng cần: 2200",
+          "Lò rèn cấp: 5",
+          "Projectile Damage: 100",
+          "Slow Down Percent: 40",
+          "Slow Down Duration: 13s",
+          "Tăng sát thương mỗi giây: 54"
+        ],
+        "14": [
+          "Hitpoint Increase: 953",
+          "Quặng sáng cần: 2300",
+          "Lò rèn cấp: 5",
+          "Projectile Damage: 100",
+          "Slow Down Percent: 40",
+          "Slow Down Duration: 13s",
+          "Tăng sát thương mỗi giây: 57"
+        ],
+        "15": [
+          "Hitpoint Increase: 1000",
+          "Quặng sáng cần: 2400",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 5",
+          "Projectile Damage: 150",
+          "Slow Down Percent: 45",
+          "Slow Down Duration: 15s",
+          "Tăng sát thương mỗi giây: 62"
+        ],
+        "16": [
+          "Hitpoint Increase: 1046",
+          "Quặng sáng cần: 2500",
+          "Lò rèn cấp: 7",
+          "Projectile Damage: 150",
+          "Slow Down Percent: 45",
+          "Slow Down Duration: 15s",
+          "Tăng sát thương mỗi giây: 65"
+        ],
+        "17": [
+          "Hitpoint Increase: 1093",
+          "Quặng sáng cần: 2600",
+          "Lò rèn cấp: 7",
+          "Projectile Damage: 150",
+          "Slow Down Percent: 45",
+          "Slow Down Duration: 15s",
+          "Tăng sát thương mỗi giây: 68"
+        ],
+        "18": [
+          "Hitpoint Increase: 1140",
+          "Quặng sáng cần: 2700",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 7",
+          "Projectile Damage: 200",
+          "Slow Down Percent: 50",
+          "Slow Down Duration: 18s",
+          "Tăng sát thương mỗi giây: 73"
+        ]
+      }
+    },
+    {
+      "dataId": 90000008,
+      "name": "Earthquake Boots",
+      "category": "equipment",
+      "description": "Causes a powerful earthquake which destroys Walls and damages Buildings",
+      "maxLevel": 18,
+      "rarity": "common",
+      "abilityType": "active",
+      "details": [
+        "Ability Type: Chủ động",
+        "Ability Radius: 8",
+        "Targets: Ground"
+      ],
+      "requirements": [
+        "Blacksmith level 1"
+      ],
+      "levelDetails": {
+        "1": [
+          "Hitpoint Increase: 209",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 10%",
+          "Troop Damage Percent: 5%",
+          "Tăng sát thương mỗi giây: 13"
+        ],
+        "2": [
+          "Hitpoint Increase: 244",
+          "Quặng sáng cần: 120",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 10%",
+          "Troop Damage Percent: 5%",
+          "Tăng sát thương mỗi giây: 15"
+        ],
+        "3": [
+          "Hitpoint Increase: 278",
+          "Quặng sáng cần: 240",
+          "Quặng phát sáng cần: 20",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 20%",
+          "Troop Damage Percent: 10%",
+          "Tăng sát thương mỗi giây: 17"
+        ],
+        "4": [
+          "Hitpoint Increase: 313",
+          "Quặng sáng cần: 400",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 20%",
+          "Troop Damage Percent: 10%",
+          "Tăng sát thương mỗi giây: 19"
+        ],
+        "5": [
+          "Hitpoint Increase: 348",
+          "Quặng sáng cần: 600",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 20%",
+          "Troop Damage Percent: 10%",
+          "Tăng sát thương mỗi giây: 21"
+        ],
+        "6": [
+          "Hitpoint Increase: 383",
+          "Quặng sáng cần: 840",
+          "Quặng phát sáng cần: 100",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 30%",
+          "Troop Damage Percent: 15%",
+          "Tăng sát thương mỗi giây: 23"
+        ],
+        "7": [
+          "Hitpoint Increase: 418",
+          "Quặng sáng cần: 1120",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 30%",
+          "Troop Damage Percent: 15%",
+          "Tăng sát thương mỗi giây: 26"
+        ],
+        "8": [
+          "Hitpoint Increase: 452",
+          "Quặng sáng cần: 1440",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 30%",
+          "Troop Damage Percent: 15%",
+          "Tăng sát thương mỗi giây: 28"
+        ],
+        "9": [
+          "Hitpoint Increase: 522",
+          "Quặng sáng cần: 1800",
+          "Quặng phát sáng cần: 200",
+          "Lò rèn cấp: 1",
+          "Building Damage Percent: 34%",
+          "Troop Damage Percent: 17%",
+          "Tăng sát thương mỗi giây: 32"
+        ],
+        "10": [
+          "Hitpoint Increase: 677",
+          "Quặng sáng cần: 1900",
+          "Lò rèn cấp: 3",
+          "Building Damage Percent: 34%",
+          "Troop Damage Percent: 17%",
+          "Tăng sát thương mỗi giây: 40"
+        ],
+        "11": [
+          "Hitpoint Increase: 831",
+          "Quặng sáng cần: 2000",
+          "Lò rèn cấp: 3",
+          "Building Damage Percent: 34%",
+          "Troop Damage Percent: 17%",
+          "Tăng sát thương mỗi giây: 48"
+        ],
+        "12": [
+          "Hitpoint Increase: 986",
+          "Quặng sáng cần: 2100",
+          "Quặng phát sáng cần: 400",
+          "Lò rèn cấp: 3",
+          "Building Damage Percent: 36%",
+          "Troop Damage Percent: 18%",
+          "Tăng sát thương mỗi giây: 55"
+        ],
+        "13": [
+          "Hitpoint Increase: 1200",
+          "Quặng sáng cần: 2200",
+          "Lò rèn cấp: 5",
+          "Building Damage Percent: 36%",
+          "Troop Damage Percent: 18%",
+          "Tăng sát thương mỗi giây: 63"
+        ],
+        "14": [
+          "Hitpoint Increase: 1500",
+          "Quặng sáng cần: 2300",
+          "Lò rèn cấp: 5",
+          "Building Damage Percent: 36%",
+          "Troop Damage Percent: 18%",
+          "Tăng sát thương mỗi giây: 71"
+        ],
+        "15": [
+          "Hitpoint Increase: 1800",
+          "Quặng sáng cần: 2400",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 5",
+          "Building Damage Percent: 38%",
+          "Troop Damage Percent: 19%",
+          "Tăng sát thương mỗi giây: 79"
+        ],
+        "16": [
+          "Hitpoint Increase: 2100",
+          "Quặng sáng cần: 2500",
+          "Lò rèn cấp: 7",
+          "Building Damage Percent: 38%",
+          "Troop Damage Percent: 19%",
+          "Tăng sát thương mỗi giây: 86"
+        ],
+        "17": [
+          "Hitpoint Increase: 2300",
+          "Quặng sáng cần: 2600",
+          "Lò rèn cấp: 7",
+          "Building Damage Percent: 38%",
+          "Troop Damage Percent: 19%",
+          "Tăng sát thương mỗi giây: 94"
+        ],
+        "18": [
+          "Hitpoint Increase: 2500",
+          "Quặng sáng cần: 2700",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 7",
+          "Building Damage Percent: 40%",
+          "Troop Damage Percent: 20%",
+          "Tăng sát thương mỗi giây: 102"
+        ]
+      }
+    },
+    {
+      "dataId": 90000040,
+      "name": "Electro Boots",
+      "category": "equipment",
+      "description": "Periodically damages everything around the Royal Champion",
+      "maxLevel": 27,
+      "rarity": "epic",
+      "abilityType": "passive",
+      "details": [
+        "Ability Type: Bị động",
+        "Aura Attack Speed: 0.4s",
+        "Aura Radius: 5 tiles"
+      ],
+      "requirements": [
+        "Buy in Toyshop Throwdown event for 3,100 Toy Medals",
+        "Buy in Friend or Foe event for 3,100 Champ Medals",
+        "Buy in Cosmic Rock event for 3,100 Music Medals",
+        "Buy in Equipment Blast event for 3,100 Relic Medals"
+      ],
+      "levelDetails": {
+        "1": [
+          "Hitpoint Increase: 50",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 132",
+          "Aura Damage Per Hit: 52.8",
+          "Hồi máu mỗi giây: 6"
+        ],
+        "2": [
+          "Hitpoint Increase: 75",
+          "Quặng sáng cần: 120",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 132",
+          "Aura Damage Per Hit: 52.8",
+          "Hồi máu mỗi giây: 8"
+        ],
+        "3": [
+          "Hitpoint Increase: 100",
+          "Quặng sáng cần: 240",
+          "Quặng phát sáng cần: 20",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 140",
+          "Aura Damage Per Hit: 56",
+          "Hồi máu mỗi giây: 10"
+        ],
+        "4": [
+          "Hitpoint Increase: 125",
+          "Quặng sáng cần: 400",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 140",
+          "Aura Damage Per Hit: 56",
+          "Hồi máu mỗi giây: 12"
+        ],
+        "5": [
+          "Hitpoint Increase: 150",
+          "Quặng sáng cần: 600",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 140",
+          "Aura Damage Per Hit: 56",
+          "Hồi máu mỗi giây: 14"
+        ],
+        "6": [
+          "Hitpoint Increase: 175",
+          "Quặng sáng cần: 840",
+          "Quặng phát sáng cần: 100",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 147",
+          "Aura Damage Per Hit: 58.8",
+          "Hồi máu mỗi giây: 16"
+        ],
+        "7": [
+          "Hitpoint Increase: 200",
+          "Quặng sáng cần: 1120",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 147",
+          "Aura Damage Per Hit: 58.8",
+          "Hồi máu mỗi giây: 18"
+        ],
+        "8": [
+          "Hitpoint Increase: 225",
+          "Quặng sáng cần: 1440",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 147",
+          "Aura Damage Per Hit: 58.8",
+          "Hồi máu mỗi giây: 20"
+        ],
+        "9": [
+          "Hitpoint Increase: 250",
+          "Quặng sáng cần: 1800",
+          "Quặng phát sáng cần: 200",
+          "Quặng sao cần: 10",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 155",
+          "Aura Damage Per Hit: 62",
+          "Hồi máu mỗi giây: 22"
+        ],
+        "10": [
+          "Hitpoint Increase: 275",
+          "Quặng sáng cần: 1900",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 155",
+          "Aura Damage Per Hit: 62",
+          "Hồi máu mỗi giây: 24"
+        ],
+        "11": [
+          "Hitpoint Increase: 300",
+          "Quặng sáng cần: 2000",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 155",
+          "Aura Damage Per Hit: 62",
+          "Hồi máu mỗi giây: 26"
+        ],
+        "12": [
+          "Hitpoint Increase: 325",
+          "Quặng sáng cần: 2100",
+          "Quặng phát sáng cần: 400",
+          "Quặng sao cần: 20",
+          "Lò rèn cấp: 1",
+          "Aura Dps: 162",
+          "Aura Damage Per Hit: 64.8",
+          "Hồi máu mỗi giây: 28"
+        ],
+        "13": [
+          "Hitpoint Increase: 350",
+          "Quặng sáng cần: 2200",
+          "Lò rèn cấp: 3",
+          "Aura Dps: 162",
+          "Aura Damage Per Hit: 64.8",
+          "Hồi máu mỗi giây: 30"
+        ],
+        "14": [
+          "Hitpoint Increase: 375",
+          "Quặng sáng cần: 2300",
+          "Lò rèn cấp: 3",
+          "Aura Dps: 162",
+          "Aura Damage Per Hit: 64.8",
+          "Hồi máu mỗi giây: 32"
+        ],
+        "15": [
+          "Hitpoint Increase: 400",
+          "Quặng sáng cần: 2400",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 30",
+          "Lò rèn cấp: 3",
+          "Aura Dps: 170",
+          "Aura Damage Per Hit: 68",
+          "Hồi máu mỗi giây: 33"
+        ],
+        "16": [
+          "Hitpoint Increase: 425",
+          "Quặng sáng cần: 2500",
+          "Lò rèn cấp: 5",
+          "Aura Dps: 170",
+          "Aura Damage Per Hit: 68",
+          "Hồi máu mỗi giây: 34"
+        ],
+        "17": [
+          "Hitpoint Increase: 450",
+          "Quặng sáng cần: 2600",
+          "Lò rèn cấp: 5",
+          "Aura Dps: 170",
+          "Aura Damage Per Hit: 68",
+          "Hồi máu mỗi giây: 35"
+        ],
+        "18": [
+          "Hitpoint Increase: 475",
+          "Quặng sáng cần: 2700",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 50",
+          "Lò rèn cấp: 5",
+          "Aura Dps: 177",
+          "Aura Damage Per Hit: 70.8",
+          "Hồi máu mỗi giây: 36"
+        ],
+        "19": [
+          "Hitpoint Increase: 500",
+          "Quặng sáng cần: 2800",
+          "Lò rèn cấp: 7",
+          "Aura Dps: 177",
+          "Aura Damage Per Hit: 70.8",
+          "Hồi máu mỗi giây: 37"
+        ],
+        "20": [
+          "Hitpoint Increase: 525",
+          "Quặng sáng cần: 2900",
+          "Lò rèn cấp: 7",
+          "Aura Dps: 177",
+          "Aura Damage Per Hit: 70.8",
+          "Hồi máu mỗi giây: 38"
+        ],
+        "21": [
+          "Hitpoint Increase: 550",
+          "Quặng sáng cần: 3000",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 100",
+          "Lò rèn cấp: 7",
+          "Aura Dps: 185",
+          "Aura Damage Per Hit: 74",
+          "Hồi máu mỗi giây: 39"
+        ],
+        "22": [
+          "Hitpoint Increase: 575",
+          "Quặng sáng cần: 3100",
+          "Lò rèn cấp: 8",
+          "Aura Dps: 185",
+          "Aura Damage Per Hit: 74",
+          "Hồi máu mỗi giây: 40"
+        ],
+        "23": [
+          "Hitpoint Increase: 600",
+          "Quặng sáng cần: 3200",
+          "Lò rèn cấp: 8",
+          "Aura Dps: 185",
+          "Aura Damage Per Hit: 74",
+          "Hồi máu mỗi giây: 41"
+        ],
+        "24": [
+          "Hitpoint Increase: 625",
+          "Quặng sáng cần: 3300",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 120",
+          "Lò rèn cấp: 8",
+          "Aura Dps: 192",
+          "Aura Damage Per Hit: 76.8",
+          "Hồi máu mỗi giây: 42"
+        ],
+        "25": [
+          "Hitpoint Increase: 650",
+          "Quặng sáng cần: 3400",
+          "Lò rèn cấp: 9",
+          "Aura Dps: 192",
+          "Aura Damage Per Hit: 76.8",
+          "Hồi máu mỗi giây: 43"
+        ],
+        "26": [
+          "Hitpoint Increase: 675",
+          "Quặng sáng cần: 3500",
+          "Lò rèn cấp: 9",
+          "Aura Dps: 192",
+          "Aura Damage Per Hit: 76.8",
+          "Hồi máu mỗi giây: 44"
+        ],
+        "27": [
+          "Hitpoint Increase: 700",
+          "Quặng sáng cần: 3600",
+          "Quặng phát sáng cần: 600",
+          "Quặng sao cần: 150",
+          "Lò rèn cấp: 9",
+          "Aura Dps: 200",
+          "Aura Damage Per Hit: 80",
+          "Hồi máu mỗi giây: 45"
+        ]
+      }
+    },
+    {
+      "dataId": 90000016,
+      "name": "Electro Fangs",
+      "category": "equipment",
+      "description": "Chomps a chain reaction through buildings surrounding Dragon Duke's target, the electrickery damage decreases by 20% with each chain",
+      "maxLevel": 18,
+      "rarity": "common",
+      "abilityType": "passive",
+      "details": [
+        "Ability Type: Bị động",
+        "Chain Damage Decay: -20%",
+        "Chain Distance: 3 tiles"
+      ],
+      "requirements": [
+        "Blacksmith level 10"
+      ],
+      "levelDetails": {
+        "1": [
+          "Hitpoint Increase: 400",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 330",
+          "Number Of Targets: 1"
+        ],
+        "2": [
+          "Hitpoint Increase: 650",
+          "Quặng sáng cần: 120",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 330",
+          "Number Of Targets: 1"
+        ],
+        "3": [
+          "Hitpoint Increase: 850",
+          "Quặng sáng cần: 240",
+          "Quặng phát sáng cần: 20",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 340",
+          "Number Of Targets: 2"
+        ],
+        "4": [
+          "Hitpoint Increase: 1000",
+          "Quặng sáng cần: 400",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 340",
+          "Number Of Targets: 2"
+        ],
+        "5": [
+          "Hitpoint Increase: 1150",
+          "Quặng sáng cần: 600",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 340",
+          "Number Of Targets: 2"
+        ],
+        "6": [
+          "Hitpoint Increase: 1300",
+          "Quặng sáng cần: 840",
+          "Quặng phát sáng cần: 100",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 350",
+          "Number Of Targets: 2"
+        ],
+        "7": [
+          "Hitpoint Increase: 1450",
+          "Quặng sáng cần: 1120",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 350",
+          "Number Of Targets: 2"
+        ],
+        "8": [
+          "Hitpoint Increase: 1600",
+          "Quặng sáng cần: 1440",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 350",
+          "Number Of Targets: 2"
+        ],
+        "9": [
+          "Hitpoint Increase: 1750",
+          "Quặng sáng cần: 1800",
+          "Quặng phát sáng cần: 200",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 360",
+          "Number Of Targets: 3"
+        ],
+        "10": [
+          "Hitpoint Increase: 1900",
+          "Quặng sáng cần: 1900",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 360",
+          "Number Of Targets: 3"
+        ],
+        "11": [
+          "Hitpoint Increase: 2000",
+          "Quặng sáng cần: 2000",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 360",
+          "Number Of Targets: 3"
+        ],
+        "12": [
+          "Hitpoint Increase: 2100",
+          "Quặng sáng cần: 2100",
+          "Quặng phát sáng cần: 400",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 370",
+          "Number Of Targets: 3"
+        ],
+        "13": [
+          "Hitpoint Increase: 2200",
+          "Quặng sáng cần: 2200",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 370",
+          "Number Of Targets: 3"
+        ],
+        "14": [
+          "Hitpoint Increase: 2275",
+          "Quặng sáng cần: 2300",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 370",
+          "Number Of Targets: 3"
+        ],
+        "15": [
+          "Hitpoint Increase: 2325",
+          "Quặng sáng cần: 2400",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 380",
+          "Number Of Targets: 4"
+        ],
+        "16": [
+          "Hitpoint Increase: 2375",
+          "Quặng sáng cần: 2500",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 380",
+          "Number Of Targets: 4"
+        ],
+        "17": [
+          "Hitpoint Increase: 2400",
+          "Quặng sáng cần: 2600",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 380",
+          "Number Of Targets: 4"
+        ],
+        "18": [
+          "Hitpoint Increase: 2400",
+          "Quặng sáng cần: 2700",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 10",
+          "Sát thương mỗi đòn: 400",
+          "Number Of Targets: 4"
+        ]
+      }
+    },
+    {
+      "dataId": 90000004,
+      "name": "Eternal Tome",
+      "category": "equipment",
+      "description": "Grand Warden and all nearby friendly units become immune to damage",
+      "maxLevel": 18,
+      "rarity": "common",
+      "abilityType": "active",
+      "details": [
+        "Ability Type: Chủ động"
+      ],
+      "requirements": [
+        "Available by default"
+      ],
+      "levelDetails": {
+        "1": [
+          "Lò rèn cấp: 0",
+          "Thời lượng kỹ năng: 3.2s"
+        ],
+        "2": [
+          "Quặng sáng cần: 120",
+          "Lò rèn cấp: 1",
+          "Thời lượng kỹ năng: 3.5s"
+        ],
+        "3": [
+          "Quặng sáng cần: 240",
+          "Quặng phát sáng cần: 20",
+          "Lò rèn cấp: 1",
+          "Thời lượng kỹ năng: 4.2s"
+        ],
+        "4": [
+          "Quặng sáng cần: 400",
+          "Lò rèn cấp: 1",
+          "Thời lượng kỹ năng: 4.5s"
+        ],
+        "5": [
+          "Quặng sáng cần: 600",
+          "Lò rèn cấp: 1",
+          "Thời lượng kỹ năng: 4.7s"
+        ],
+        "6": [
+          "Quặng sáng cần: 840",
+          "Quặng phát sáng cần: 100",
+          "Lò rèn cấp: 1",
+          "Thời lượng kỹ năng: 5.5s"
+        ],
+        "7": [
+          "Quặng sáng cần: 1120",
+          "Lò rèn cấp: 1",
+          "Thời lượng kỹ năng: 5.7s"
+        ],
+        "8": [
+          "Quặng sáng cần: 1440",
+          "Lò rèn cấp: 1",
+          "Thời lượng kỹ năng: 6.0s"
+        ],
+        "9": [
+          "Quặng sáng cần: 1800",
+          "Quặng phát sáng cần: 200",
+          "Lò rèn cấp: 1",
+          "Thời lượng kỹ năng: 6.7s"
+        ],
+        "10": [
+          "Quặng sáng cần: 1900",
+          "Lò rèn cấp: 3",
+          "Thời lượng kỹ năng: 6.8s"
+        ],
+        "11": [
+          "Quặng sáng cần: 2000",
+          "Lò rèn cấp: 3",
+          "Thời lượng kỹ năng: 6.9s"
+        ],
+        "12": [
+          "Quặng sáng cần: 2100",
+          "Quặng phát sáng cần: 400",
+          "Lò rèn cấp: 3",
+          "Thời lượng kỹ năng: 7.2s"
+        ],
+        "13": [
+          "Quặng sáng cần: 2200",
+          "Lò rèn cấp: 5",
+          "Thời lượng kỹ năng: 7.3s"
+        ],
+        "14": [
+          "Quặng sáng cần: 2300",
+          "Lò rèn cấp: 5",
+          "Thời lượng kỹ năng: 7.4s"
+        ],
+        "15": [
+          "Quặng sáng cần: 2400",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 5",
+          "Thời lượng kỹ năng: 7.7s"
+        ],
+        "16": [
+          "Quặng sáng cần: 2500",
+          "Lò rèn cấp: 7",
+          "Thời lượng kỹ năng: 7.8s"
+        ],
+        "17": [
+          "Quặng sáng cần: 2600",
+          "Lò rèn cấp: 7",
+          "Thời lượng kỹ năng: 7.9s"
+        ],
+        "18": [
+          "Quặng sáng cần: 2700",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 7",
+          "Thời lượng kỹ năng: 8.2s"
+        ]
+      }
+    },
+    {
+      "dataId": 90000052,
+      "name": "Fire Heart",
+      "category": "equipment",
+      "description": "Slowly regenerates health and bursts into damaging Flames when Dragon Duke falls",
+      "maxLevel": 18,
+      "rarity": "common",
+      "abilityType": "passive",
+      "details": [
+        "Ability Type: Bị động",
+        "Damage Radius: 4 tiles"
+      ],
+      "requirements": [
+        "Available by default"
+      ],
+      "levelDetails": {
+        "1": [
+          "Hitpoint Increase: 830",
+          "Lò rèn cấp: 0",
+          "Damage On Defeat: 1000",
+          "Hồi máu mỗi giây: 50",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "2": [
+          "Hitpoint Increase: 1100",
+          "Quặng sáng cần: 120",
+          "Lò rèn cấp: 1",
+          "Damage On Defeat: 1000",
+          "Hồi máu mỗi giây: 50",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "3": [
+          "Hitpoint Increase: 1350",
+          "Quặng sáng cần: 240",
+          "Quặng phát sáng cần: 20",
+          "Lò rèn cấp: 1",
+          "Damage On Defeat: 1350",
+          "Hồi máu mỗi giây: 70",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "4": [
+          "Hitpoint Increase: 1600",
+          "Quặng sáng cần: 400",
+          "Lò rèn cấp: 1",
+          "Damage On Defeat: 1350",
+          "Hồi máu mỗi giây: 70",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "5": [
+          "Hitpoint Increase: 1850",
+          "Quặng sáng cần: 600",
+          "Lò rèn cấp: 1",
+          "Damage On Defeat: 1350",
+          "Hồi máu mỗi giây: 70",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "6": [
+          "Hitpoint Increase: 2100",
+          "Quặng sáng cần: 840",
+          "Quặng phát sáng cần: 100",
+          "Lò rèn cấp: 1",
+          "Damage On Defeat: 1700",
+          "Hồi máu mỗi giây: 90",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "7": [
+          "Hitpoint Increase: 2400",
+          "Quặng sáng cần: 1120",
+          "Lò rèn cấp: 1",
+          "Damage On Defeat: 1700",
+          "Hồi máu mỗi giây: 90",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "8": [
+          "Hitpoint Increase: 2600",
+          "Quặng sáng cần: 1440",
+          "Lò rèn cấp: 1",
+          "Damage On Defeat: 1700",
+          "Hồi máu mỗi giây: 90",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "9": [
+          "Hitpoint Increase: 2900",
+          "Quặng sáng cần: 1800",
+          "Quặng phát sáng cần: 200",
+          "Lò rèn cấp: 1",
+          "Damage On Defeat: 2000",
+          "Hồi máu mỗi giây: 110",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "10": [
+          "Hitpoint Increase: 3150",
+          "Quặng sáng cần: 1900",
+          "Lò rèn cấp: 3",
+          "Damage On Defeat: 2000",
+          "Hồi máu mỗi giây: 110",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "11": [
+          "Hitpoint Increase: 3400",
+          "Quặng sáng cần: 2000",
+          "Lò rèn cấp: 3",
+          "Damage On Defeat: 2000",
+          "Hồi máu mỗi giây: 110",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "12": [
+          "Hitpoint Increase: 3700",
+          "Quặng sáng cần: 2100",
+          "Quặng phát sáng cần: 400",
+          "Lò rèn cấp: 3",
+          "Damage On Defeat: 2350",
+          "Hồi máu mỗi giây: 120",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "13": [
+          "Hitpoint Increase: 3900",
+          "Quặng sáng cần: 2200",
+          "Lò rèn cấp: 5",
+          "Damage On Defeat: 2350",
+          "Hồi máu mỗi giây: 120",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "14": [
+          "Hitpoint Increase: 4200",
+          "Quặng sáng cần: 2300",
+          "Lò rèn cấp: 5",
+          "Damage On Defeat: 2350",
+          "Hồi máu mỗi giây: 120",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "15": [
+          "Hitpoint Increase: 4400",
+          "Quặng sáng cần: 2400",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 5",
+          "Damage On Defeat: 2700",
+          "Hồi máu mỗi giây: 130",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "16": [
+          "Hitpoint Increase: 4700",
+          "Quặng sáng cần: 2500",
+          "Lò rèn cấp: 7",
+          "Damage On Defeat: 2700",
+          "Hồi máu mỗi giây: 130",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "17": [
+          "Hitpoint Increase: 5000",
+          "Quặng sáng cần: 2600",
+          "Lò rèn cấp: 7",
+          "Damage On Defeat: 2700",
+          "Hồi máu mỗi giây: 130",
+          "Tăng sát thương mỗi giây: 0"
+        ],
+        "18": [
+          "Hitpoint Increase: 5150",
+          "Quặng sáng cần: 2700",
+          "Quặng phát sáng cần: 600",
+          "Lò rèn cấp: 7",
+          "Damage On Defeat: 3000",
+          "Hồi máu mỗi giây: 140",
+          "Tăng sát thương mỗi giây: 0"
+        ]
+      }
+    }
+  ]
+}
