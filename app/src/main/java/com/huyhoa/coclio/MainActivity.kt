@@ -2970,7 +2970,10 @@ private val EquipmentStatLabelsVi = mapOf(
 
 private fun localizedCatalogField(label: String, value: String, isEnglish: Boolean): Pair<String, String> {
     if (isEnglish) return label to value
-    val normalizedLabel = label.trim().lowercase().replace('_', ' ')
+    val normalizedLabel = label.trim()
+        .replace(Regex("([a-z0-9])([A-Z])")) { "${it.groupValues[1]} ${it.groupValues[2]}" }
+        .lowercase()
+        .replace('_', ' ')
     val translatedLabel = EquipmentStatLabelsVi[normalizedLabel] ?: label
     val normalizedValue = value.trim().lowercase()
     val translatedValue = when (normalizedValue) {
@@ -3223,6 +3226,10 @@ private fun VillageItemDetailDialog(
                 }
 
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                VillageItemDetailField(
+                    "Nguồn dữ liệu nâng cấp",
+                    "Dữ liệu cộng đồng được chốt ngày 15/11/2026; không phải API chính thức của Supercell. Kiểm tra trong trò chơi sau mỗi bản cập nhật."
+                )
                 VillageItemDetailField("Căn cứ", if (item.base == "builder") "Làng đêm" else "Làng chính")
                 val ownerHero = upgradeEntry?.hero?.takeIf { it.isNotBlank() }?.let(::equipmentHeroName)
                     ?: equipmentHero(item.dataId)?.takeIf { isEquipment }
@@ -3283,9 +3290,9 @@ private fun VillageItemDetailDialog(
                             }
                         }
                     }
-                    val targetAtHall = hallMax ?: maxLevel ?: entry.maxLevel
+                    val targetAtHall = hallMax
                     val targetAtMax = maxLevel ?: entry.maxLevel
-                    if (targetAtHall > currentLevel) {
+                    if (targetAtHall != null && targetAtHall > currentLevel) {
                         val totals = CocUpgradeCatalog.upgradeTotals(
                             entry,
                             currentLevel,
@@ -3305,14 +3312,16 @@ private fun VillageItemDetailDialog(
                             VillageItemDetailField("Tài nguyên và thời gian", "Không cần thêm theo dữ liệu cấp hiện có")
                         }
                     }
-                    if (targetAtMax > targetAtHall && targetAtMax > currentLevel) {
+                    val globalMaxStart = maxOf(currentLevel, targetAtHall ?: currentLevel)
+                    if (targetAtMax > globalMaxStart) {
                         val totals = CocUpgradeCatalog.upgradeTotals(
                             entry,
-                            maxOf(currentLevel, targetAtHall),
+                            globalMaxStart,
                             targetAtMax
                         )
                         Text(
-                            "TỪ GIỚI HẠN HIỆN TẠI ĐẾN CẤP MAX TOÀN TRÒ CHƠI",
+                            if (targetAtHall == null) "TỔNG CÒN ĐẾN CẤP MAX TOÀN TRÒ CHƠI"
+                            else "TỪ GIỚI HẠN THEO NHÀ ĐẾN CẤP MAX TOÀN TRÒ CHƠI",
                             color = CocGold,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black
@@ -3321,6 +3330,12 @@ private fun VillageItemDetailDialog(
                         if (totals.durationSeconds > 0L) {
                             VillageItemDetailField("🕒 Thời gian bổ sung", formatDuration(totals.durationSeconds))
                         }
+                    }
+                    if (hallMax == null && targetAtMax > currentLevel) {
+                        VillageItemDetailField(
+                            "Giới hạn theo Nhà chính",
+                            "Chưa đủ dữ liệu yêu cầu cấp Nhà chính/công trình để xác định chính xác. Không tự ước đoán cấp này."
+                        )
                     }
                 }
 
