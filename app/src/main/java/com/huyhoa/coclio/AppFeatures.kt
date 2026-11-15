@@ -3041,10 +3041,10 @@ class CocLioMessagingService : FirebaseMessagingService() {
         val data = message.data
         val type = data["type"] ?: return
         val isCommunity = type == "community_message"
-        val signedInUser = FirebaseAuth.getInstance().currentUser
-        if (isCommunity && signedInUser == null) return
-        if (isCommunity && signedInUser?.uid == data["senderUid"]) return
-        val channelId = if (isCommunity) COC_LIO_COMMUNITY_CHANNEL else COC_LIO_UPDATE_CHANNEL
+        if (!isCommunity) return
+        val signedInUser = FirebaseAuth.getInstance().currentUser ?: return
+        if (signedInUser.uid == data["senderUid"]) return
+        val channelId = COC_LIO_COMMUNITY_CHANNEL
         val title = data["title"] ?: AppLanguageSettings.translate(this, if (isCommunity) "Cộng đồng COC-LIO" else "COC-LIO có bản cập nhật")
         val body = data["body"] ?: AppLanguageSettings.translate(this, if (isCommunity) "Có tin nhắn mới trong cộng đồng." else "Có phiên bản APK mới.")
         val manager = getSystemService(NotificationManager::class.java)
