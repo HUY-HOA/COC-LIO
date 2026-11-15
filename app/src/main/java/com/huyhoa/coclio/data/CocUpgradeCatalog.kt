@@ -218,7 +218,9 @@ object CocUpgradeCatalog {
         query: String,
         baseFilter: String = "all",
         categoryFilter: String = "all",
-        limit: Int = 30
+        limit: Int = 30,
+        rarityFilter: String = "all",
+        heroFilter: String = "all"
     ): List<CocUpgradeEntry> {
         val rawQuery = query.trim()
         val normalizedQuery = normalizeSearchText(rawQuery.removePrefix("#"))
@@ -226,11 +228,13 @@ object CocUpgradeCatalog {
         return entries.asSequence()
             .filter { baseFilter == "all" || it.base == baseFilter }
             .filter { categoryFilter == "all" || it.category == categoryFilter }
+            .filter { rarityFilter == "all" || it.rarity.equals(rarityFilter, ignoreCase = true) }
+            .filter { heroFilter == "all" || it.hero == heroFilter }
             .filter { entry ->
                 if (rawQuery.isBlank()) return@filter true
                 val searchable = normalizeSearchText(
                     listOf(entry.dataId.toString(), entry.id, entry.name, entry.localizedName,
-                        entry.description, entry.hero, entry.category, entry.base, entry.rarity)
+                        entry.description, entry.hero, localizedHeroName(entry.hero), entry.category, entry.base, entry.rarity)
                         .plus(entry.aliases).joinToString(" ")
                 )
                 val numericMatch = idQuery.isNotBlank() && entry.dataId.toString().contains(idQuery)
@@ -252,6 +256,16 @@ object CocUpgradeCatalog {
             )
             .take(limit.coerceIn(1, 100))
             .toList()
+    }
+
+    fun localizedHeroName(heroId: String): String = when (heroId.lowercase(Locale.ROOT)) {
+        "barbarian-king" -> "Vua man di"
+        "archer-queen" -> "Nữ hoàng cung thủ"
+        "grand-warden" -> "Đại hộ vệ"
+        "royal-champion" -> "Nhà vô địch Hoàng gia"
+        "minion-prince" -> "Hoàng tử tiểu quỷ"
+        "dragon-duke" -> "Công tước Rồng"
+        else -> heroId.replace('-', ' ').replaceFirstChar { it.uppercase(Locale.ROOT) }
     }
 
     private fun normalizeSearchText(value: String): String =
