@@ -1,7 +1,6 @@
 package com.huyhoa.coclio
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RemoteContentParserTest {
@@ -33,6 +32,6 @@ class RemoteContentParserTest {
 
         assertEquals(setOf(90_000_048, 73_000_017), state.catalog.keys)
         assertEquals("Action Figure", state.catalog[90_000_048]?.name)
-        assertTrue(state.catalog[2_147_483_648] == null)
+        assertEquals(2, state.catalog.size)
     }
 }
