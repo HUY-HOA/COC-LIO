@@ -40,7 +40,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 private const val COC_LIO_NOTIFICATION_WORK = "coc_lio_background_notification_poll"
-private const val COC_LIO_NOTIFICATION_CHANNEL_UPDATES = "coc_lio_app_updates"
 private const val MAX_NOTIFICATION_DELIVERIES_PER_SCAN = 5
 private val notificationWorkerMutex = Mutex()
 
@@ -56,10 +55,8 @@ object CommunityNotificationScheduler {
         profile: String,
         signedIn: Boolean,
         communityEnabled: Boolean,
-        updatesEnabled: Boolean
     ) {
         val manager = WorkManager.getInstance(context)
-        if (!signedIn || profile == "local" || (!communityEnabled && !updatesEnabled)) {
             manager.cancelUniqueWork(COC_LIO_NOTIFICATION_WORK)
             manager.cancelUniqueWork(COC_LIO_NOTIFICATION_WORK + "_initial")
             return
@@ -106,8 +103,6 @@ class CommunityNotificationWorker(
             }
 
             val communityEnabled = AppPreferences.communityNotificationsEnabled(applicationContext, profile)
-            val updatesEnabled = AppPreferences.updateNotificationsEnabled(applicationContext, profile)
-            if (!communityEnabled && !updatesEnabled) return@withLock Result.success()
 
             val notificationsAllowed =
                 (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
@@ -118,9 +113,6 @@ class CommunityNotificationWorker(
                     NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()
             val communityChannelBlocked = communityEnabled &&
                 isNotificationChannelBlocked(applicationContext, "coc_lio_community_messages")
-            val updatesChannelBlocked = updatesEnabled &&
-                isNotificationChannelBlocked(applicationContext, COC_LIO_NOTIFICATION_CHANNEL_UPDATES)
-            if (!notificationsAllowed || communityChannelBlocked || updatesChannelBlocked) {
                 return@withLock Result.success()
             }
 
@@ -149,14 +141,6 @@ class CommunityNotificationWorker(
                         preferences,
                         profile,
                         user.uid
-                    ) || hasMoreNotifications
-                }
-                if (updatesEnabled) {
-                    hasMoreNotifications = checkAppUpdates(
-                        applicationContext,
-                        firestore,
-                        preferences,
-                        profile
                     ) || hasMoreNotifications
                 }
                 if (hasMoreNotifications) {
@@ -363,48 +347,6 @@ private suspend fun checkCommunityMessages(
     return scan.hasMore
 }
 
-private suspend fun checkAppUpdates(
-    context: Context,
-    firestore: FirebaseFirestore,
-    preferences: android.content.SharedPreferences,
-    profile: String
-): Boolean {
-    val scan = readNotificationChanges(
-        firestore,
-        "app_updates",
-        preferences,
-        profile,
-        "updates",
-        20L
-    )
-    if (scan.firstRun) return false
-
-    val installedVersion = runCatching {
-        applicationVersionName(context)
-    }.getOrDefault("")
-
-    scan.documents.forEach { item ->
-        val document = item.document
-        if (document.getBoolean("notifyUsers") == false) return@forEach
-        val versionName = document.getString("versionName").orEmpty().trim()
-        if (versionName.isBlank() || !isNewerAppVersion(versionName, installedVersion)) return@forEach
-        val notes = document.getString("notes").orEmpty().trim()
-        val body = (if (notes.isBlank()) {
-            AppLanguageSettings.translate(context, "COC-LIO có bản cập nhật mới")
-        } else {
-            "COC-LIO $versionName: $notes"
-        }).take(420)
-        postUpdateNotification(
-            context,
-            ("update_" + document.id).hashCode(),
-            AppLanguageSettings.translate(context, "COC-LIO có bản cập nhật mới"),
-            body
-        )
-    }
-    commitNotificationScan(preferences, scan)
-    return scan.hasMore
-}
-
 private fun commitNotificationScan(
     preferences: android.content.SharedPreferences,
     scan: NotificationScan
@@ -450,40 +392,6 @@ private fun saveNotificationWatermark(
         .putInt(nanosKey, newest.timestamp.nanoseconds)
         .putStringSet(idsKey, latestIds)
         .apply()
-}
-
-private fun applicationVersionName(context: Context): String =
-    context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
-
-private fun isNewerAppVersion(candidate: String, installed: String): Boolean {
-    if (candidate.equals(installed, ignoreCase = true)) return false
-    val numberPattern = Regex("^\\d+(?:\\.\\d+)*$")
-    if (!numberPattern.matches(candidate) || !numberPattern.matches(installed)) return true
-    val candidateParts = candidate.split('.').mapNotNull(String::toLongOrNull)
-    val installedParts = installed.split('.').mapNotNull(String::toLongOrNull)
-    val length = maxOf(candidateParts.size, installedParts.size)
-    for (index in 0 until length) {
-        val comparison = (candidateParts.getOrElse(index) { 0L })
-            .compareTo(installedParts.getOrElse(index) { 0L })
-        if (comparison != 0) return comparison > 0
-    }
-    return false
-}
-
-private fun postUpdateNotification(
-    context: Context,
-    notificationId: Int,
-    title: String,
-    body: String
-) {
-    postLocalCommunityNotification(
-        context,
-        COC_LIO_NOTIFICATION_CHANNEL_UPDATES,
-        AppLanguageSettings.translate(context, "Bản cập nhật COC-LIO"),
-        notificationId,
-        title,
-        body
-    )
 }
 
 private fun postLocalCommunityNotification(
