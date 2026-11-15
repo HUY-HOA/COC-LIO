@@ -78,7 +78,7 @@ data class RemoteAppConfig(
 private fun defaultRemoteNavigation() = listOf(
     RemoteNavigationItem("home", "Tổng quan", 0),
     RemoteNavigationItem("buildings", "Thông tin", 1),
-    RemoteNavigationItem("history", "Kho JSON", 2),
+    RemoteNavigationItem("history", "JSON", 2),
     RemoteNavigationItem("community", "Cộng đồng", 3),
     RemoteNavigationItem("lookup", "Tra cứu ID", 5),
     RemoteNavigationItem("settings", "Cài đặt", 4)
@@ -131,7 +131,7 @@ object RemoteAppConfigManager {
     "items": [
       {"id": "home", "title": "Tổng quan", "enabled": true},
       {"id": "buildings", "title": "Thông tin", "enabled": true},
-      {"id": "history", "title": "Kho JSON", "enabled": true},
+      {"id": "history", "title": "JSON", "enabled": true},
       {"id": "community", "title": "Cộng đồng", "enabled": true},
       {"id": "lookup", "title": "Tra cứu ID", "enabled": true},
       {"id": "settings", "title": "Cài đặt", "enabled": true}
