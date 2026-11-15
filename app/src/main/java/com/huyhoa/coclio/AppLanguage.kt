@@ -201,7 +201,6 @@ private val englishTranslations = mapOf(
     "JSON DO CỘNG ĐỒNG CHIA SẺ" to "JSON SHARED BY THE COMMUNITY",
     "Tất cả thành viên đã đăng nhập đều có thể nhận JSON và nhập vào tài khoản của mình." to "All signed-in members can receive JSON and import it into their own account.",
     "Chưa có JSON nào được chia sẻ." to "No JSON has been shared yet.",
-    "ĐĂNG BẢN CẬP NHẬT APK" to "POST APK UPDATE",
     "Tạm dừng trên gói miễn phí hiện tại. Tải lên và phân phối APK chưa được hỗ trợ." to "Paused on the current free plan. APK uploads and distribution are not supported.",
     "Chưa có bản cập nhật nào được đăng." to "No updates have been posted yet.",
     "CHỌN JSON ĐỂ GỬI" to "SELECT JSON TO SEND",
