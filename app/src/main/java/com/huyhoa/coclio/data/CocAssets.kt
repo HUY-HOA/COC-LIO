@@ -272,6 +272,24 @@ object CocAssets {
         107000001 to "smasher"
     )
 
+    fun imageUrl(entry: CocUpgradeEntry): String? {
+        val item = VillageItem(
+            sectionKey = entry.sectionKey,
+            sectionLabel = entry.category,
+            tab = if (entry.sectionKey in setOf("buildings", "buildings2", "traps", "traps2")) "buildings" else "army",
+            base = entry.base,
+            dataId = entry.dataId,
+            level = 1,
+            count = 1,
+            timerSeconds = null,
+            helperCooldownSeconds = null,
+            gearUp = false,
+            weaponLevel = null,
+            details = emptyList()
+        )
+        return imageUrl(item)
+    }
+
     fun imageUrl(item: VillageItem): String? {
         val level = item.level?.takeIf { it > 0 } ?: 1
         val folder = when (item.sectionKey) {
