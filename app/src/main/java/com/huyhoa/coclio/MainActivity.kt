@@ -2611,6 +2611,27 @@ private fun HistoryScreen(
     var pendingReceivedJsonDelete by remember { mutableStateOf<ReceivedSharedJsonRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<VillageSnapshot?>(null) }
     var pendingPermanentDelete by remember { mutableStateOf<DeletedVillageRecord?>(null) }
+    var expandedDeletedRecordId by remember { mutableStateOf<String?>(null) }
+    var pendingDeletedJsonSave by remember { mutableStateOf<VillageSnapshot?>(null) }
+    var deletedSaveStatus by remember { mutableStateOf<String?>(null) }
+    val saveDeletedJsonLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { destination ->
+        val snapshot = pendingDeletedJsonSave
+        pendingDeletedJsonSave = null
+        if (destination != null && snapshot != null) {
+            val result = runCatching {
+                val output = context.contentResolver.openOutputStream(destination)
+                    ?: throw IllegalStateException("Không thể mở vị trí lưu JSON.")
+                output.use { it.write(snapshot.rawJson.toByteArray(Charsets.UTF_8)) }
+            }
+            deletedSaveStatus = if (result.isSuccess) {
+                "Đã lưu JSON của ${snapshot.villageName ?: snapshot.tag}."
+            } else {
+                result.exceptionOrNull()?.message ?: "Không thể lưu JSON."
+            }
+        }
+    }
     DisposableEffect(signedInUser?.uid, selectedSection) {
         if (signedInUser == null || selectedSection != "shared") {
             onDispose { }
@@ -2672,6 +2693,14 @@ private fun HistoryScreen(
                         selected = selectedSection == "history",
                         onClick = { selectedSection = "history" },
                         label = { Text("LỊCH SỬ", fontSize = 9.sp, maxLines = 1) }
+                    )
+                    FilterChip(
+                        selected = selectedSection == "deleted",
+                        onClick = {
+                            selectedSection = "deleted"
+                            deletedSaveStatus = null
+                        },
+                        label = { Text("ĐÃ GỠ (${deletedVillages.size})", fontSize = 9.sp, maxLines = 1) }
                     )
                     FilterChip(
                         selected = selectedSection == "shared",
@@ -2761,6 +2790,112 @@ private fun HistoryScreen(
                                 }
                             }
                             Text("${snapshot.tag}  •  ${formatTimestamp(snapshot.timestamp)}  •  Nhà chính ${snapshot.townHallLevel ?: "—"}  •  Nhà thợ ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
+        } else if (selectedSection == "deleted") {
+            deletedSaveStatus?.let {
+                item { Text(it, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp) }
+            }
+            if (deletedVillages.isEmpty()) {
+                item { InfoCard("Chưa có JSON nào bị gỡ", "Những làng bạn xóa khỏi mục ĐANG LƯU sẽ xuất hiện tại đây để xem, lưu hoặc khôi phục.") }
+            } else {
+                items(deletedVillages, key = { "deleted_village_" + it.id }) { record ->
+                    val expanded = expandedDeletedRecordId == record.id
+                    NeonPanel(
+                        modifier = Modifier.fillMaxWidth(),
+                        glow = CocRed
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    record.villageName ?: record.tag,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    "${record.snapshots.size} mốc",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Text(
+                                "Mã người chơi: ${record.tag}  •  Đã gỡ: ${formatTimestamp(record.deletedAt)}",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextButton(
+                                    onClick = {
+                                        expandedDeletedRecordId = if (expanded) null else record.id
+                                    },
+                                    enabled = record.snapshots.isNotEmpty()
+                                ) {
+                                    Text(if (expanded) "ẨN JSON" else "XEM JSON", fontSize = 9.sp)
+                                }
+                                TextButton(onClick = { onRestore(record.id) }) {
+                                    Text("KHÔI PHỤC", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
+                                TextButton(onClick = { pendingPermanentDelete = record }) {
+                                    Text("XÓA VĨNH VIỄN", color = CocRed, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            if (expanded) {
+                                record.snapshots.forEach { snapshot ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(7.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.weight(1f),
+                                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                                            ) {
+                                                Text(
+                                                    formatTimestamp(snapshot.timestamp),
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Text(
+                                                    "Nhà chính ${snapshot.townHallLevel ?: "—"}  •  Nhà thợ ${snapshot.builderHallLevel ?: "—"}  •  ${snapshot.items.size} mục",
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    fontSize = 8.sp
+                                                )
+                                            }
+                                            TextButton(
+                                                onClick = {
+                                                    pendingDeletedJsonSave = snapshot
+                                                    val safeName = (snapshot.villageName ?: snapshot.tag)
+                                                        .replace(Regex("[^A-Za-z0-9._-]"), "_")
+                                                    saveDeletedJsonLauncher.launch(
+                                                        "${safeName}_${snapshot.timestamp}.json"
+                                                    )
+                                                }
+                                            ) {
+                                                Text("LƯU JSON", fontSize = 9.sp)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
