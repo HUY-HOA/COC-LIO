@@ -240,11 +240,8 @@ private fun Color.toLedOklab(): LedOklab {
     )
 }
 
-private fun interpolateLedColor(first: Color, second: Color, fraction: Float): Color {
+private fun interpolateLedColor(start: LedOklab, end: LedOklab, fraction: Float): Color {
     val amount = fraction.coerceIn(0f, 1f).toDouble()
-    val start = first.toLedOklab()
-    val end = second.toLedOklab()
-
     val lightness = start.lightness + (end.lightness - start.lightness) * amount
     val a = start.a + (end.a - start.a) * amount
     val b = start.b + (end.b - start.b) * amount
@@ -279,6 +276,7 @@ internal fun movingLedColors(
         palette + palette.first()
     }
     val intervals = cyclePalette.lastIndex
+    val convertedPalette = cyclePalette.map { it.toLedOklab() }
     val normalizedPhase = ((phase % 1f) + 1f) % 1f
     val samples = sampleCount.coerceIn(2, 512)
 
@@ -287,7 +285,7 @@ internal fun movingLedColors(
         val position = cyclePosition * intervals
         val startIndex = position.toInt().coerceIn(0, intervals - 1)
         val fraction = (position - startIndex).coerceIn(0f, 1f)
-        interpolateLedColor(cyclePalette[startIndex], cyclePalette[startIndex + 1], fraction)
+        interpolateLedColor(convertedPalette[startIndex], convertedPalette[startIndex + 1], fraction)
     }
 }
 
