@@ -2764,6 +2764,29 @@ private val CatalogDescriptionsVi = mapOf(
 )
 
 private val EquipmentStatLabelsVi = mapOf(
+    "build cost" to "Chi phí xây dựng",
+    "build time" to "Thời gian xây dựng",
+    "production rate" to "Tốc độ sản xuất",
+    "storage capacity" to "Sức chứa kho",
+    "troop capacity" to "Sức chứa quân đội",
+    "spell capacity" to "Sức chứa Thần chú",
+    "max buildings" to "Số công trình tối đa",
+    "max traps" to "Số bẫy tối đa",
+    "hero slots" to "Số vị trí Anh hùng",
+    "unlocked hero" to "Anh hùng được mở khóa",
+    "unlocked pet" to "Linh thú được mở khóa",
+    "unlocked siege machine" to "Máy công thành được mở khóa",
+    "unlocked unit" to "Đơn vị được mở khóa",
+    "equipment unlocked" to "Trang bị được mở khóa",
+    "ore capacity shiny ore" to "Sức chứa Quặng sáng",
+    "ore capacity glowy ore" to "Sức chứa Quặng phát sáng",
+    "ore capacity starry ore" to "Sức chứa Quặng sao",
+    "hero level caps barbarian king" to "Giới hạn cấp Vua man di",
+    "hero level caps archer queen" to "Giới hạn cấp Nữ hoàng cung thủ",
+    "hero level caps minion prince" to "Giới hạn cấp Hoàng tử tiểu quỷ",
+    "hero level caps grand warden" to "Giới hạn cấp Đại hộ vệ",
+    "hero level caps royal champion" to "Giới hạn cấp Nhà vô địch Hoàng gia",
+    "hero level caps dragon duke" to "Giới hạn cấp Công tước Rồng",
     "hitpoint increase" to "Tăng máu",
     "hp recovery increase" to "Tăng hồi phục HP",
     "summoned barbarians" to "Số Man di được triệu hồi",
@@ -2981,7 +3004,8 @@ private fun localizedCatalogField(label: String, value: String, isEnglish: Boole
         .replace(Regex("([a-z0-9])([A-Z])")) { "${it.groupValues[1]} ${it.groupValues[2]}" }
         .lowercase()
         .replace('_', ' ')
-    val translatedLabel = EquipmentStatLabelsVi[normalizedLabel] ?: label
+    val translatedLabel = EquipmentStatLabelsVi[normalizedLabel]
+        ?: normalizedLabel.replaceFirstChar { it.uppercase() }
     val normalizedValue = value.trim().lowercase()
     val translatedValue = when (normalizedValue) {
         "ground" -> "Mặt đất"
@@ -3236,6 +3260,10 @@ private fun VillageItemDetailDialog(
                 VillageItemDetailField(
                     "Nguồn dữ liệu nâng cấp",
                     "Dữ liệu cộng đồng được chốt ngày 15/11/2026; không phải API chính thức của Supercell. Kiểm tra trong trò chơi sau mỗi bản cập nhật."
+                )
+                VillageItemDetailField(
+                    "Cách tính thời gian",
+                    "Cộng thời gian cơ bản theo từng cấp; chưa trừ Sách, Búa, trợ thủ, tăng tốc hoặc ưu đãi sự kiện."
                 )
                 VillageItemDetailField("Căn cứ", if (item.base == "builder") "Làng đêm" else "Làng chính")
                 val ownerHero = upgradeEntry?.hero?.takeIf { it.isNotBlank() }?.let(::equipmentHeroName)
