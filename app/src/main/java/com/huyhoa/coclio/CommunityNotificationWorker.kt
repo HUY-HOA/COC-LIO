@@ -94,14 +94,14 @@ class CommunityNotificationWorker(
         notificationWorkerMutex.withLock {
             val profile = inputData.getString("profile").orEmpty()
             val user = FirebaseAuth.getInstance().currentUser
-                ?: return@withContext Result.success()
+                ?: return@withLock Result.success()
             if (profile.isBlank() || user.email?.equals(profile, ignoreCase = true) != true) {
-                return@withContext Result.success()
+                return@withLock Result.success()
             }
 
             val communityEnabled = AppPreferences.communityNotificationsEnabled(applicationContext, profile)
             val updatesEnabled = AppPreferences.updateNotificationsEnabled(applicationContext, profile)
-            if (!communityEnabled && !updatesEnabled) return@withContext Result.success()
+            if (!communityEnabled && !updatesEnabled) return@withLock Result.success()
 
             try {
                 val preferences = applicationContext.getSharedPreferences(
@@ -118,7 +118,7 @@ class CommunityNotificationWorker(
                     account.getLong("requiredAccountDataConsentVersion") != AccountPrivacyConsent.REQUIRED_ACCOUNT_DATA_VERSION ||
                     account.getBoolean("accountDisabled") == true
                 ) {
-                    return@withContext Result.success()
+                    return@withLock Result.success()
                 }
                 if (communityEnabled) {
                     checkCommunityMessages(applicationContext, firestore, preferences, profile, user.uid)
@@ -134,6 +134,7 @@ class CommunityNotificationWorker(
             }
         }
     }
+}
 
 private data class NotificationDocument(
     val document: DocumentSnapshot,
