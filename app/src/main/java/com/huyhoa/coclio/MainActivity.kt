@@ -2223,6 +2223,9 @@ private fun CategoryScreen(
         1000080, 1000081, 1000082
     )
 
+    val blacksmithLevel = snapshot.items.firstOrNull {
+        it.sectionKey == "buildings" && it.dataId == 1000070
+    }?.level
     val baseItems = snapshot.items.filter { it.base == selectedBase && it.tab == tab }
     fun buildingCategory(item: VillageItem): String =
         remoteCatalog[item.dataId]?.category
@@ -2333,7 +2336,7 @@ private fun CategoryScreen(
                     if (item.timerSeconds != null) {
                         UpgradeCard(item, snapshot.timestamp)
                     } else {
-                        VillageGridItemCard(item, remoteCatalog[item.dataId]) {
+                        VillageGridItemCard(item, remoteCatalog[item.dataId], blacksmithLevel) {
                             selectedItem = item
                         }
                     }
@@ -2342,7 +2345,7 @@ private fun CategoryScreen(
         }
     }
         selectedItem?.let { item ->
-            VillageItemDetailDialog(item, remoteCatalog[item.dataId]) {
+            VillageItemDetailDialog(item, remoteCatalog[item.dataId], blacksmithLevel) {
                 selectedItem = null
             }
         }
@@ -2354,12 +2357,16 @@ private fun CategoryScreen(
 private fun VillageGridItemCard(
     item: VillageItem,
     remote: RemoteCatalogEntry? = null,
+    blacksmithLevel: Int? = null,
     onClick: () -> Unit
 ) {
     val rarity = remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
-    val maxLevel = remote?.maxLevel
-        ?: if (item.sectionKey == "equipment") equipmentMaxLevel(rarity) else null
+    val maxLevel = if (item.sectionKey == "equipment") {
+        equipmentMaxLevel(rarity, blacksmithLevel) ?: remote?.maxLevel
+    } else {
+        remote?.maxLevel
+    }
     val itemName = remote?.name?.takeIf { it.isNotBlank() } ?: item.name
 
     NeonPanel(
@@ -2460,10 +2467,30 @@ private fun equipmentRarity(dataId: Int): String? = when (dataId) {
     else -> null
 }
 
-private fun equipmentMaxLevel(rarity: String?): Int? = when (rarity?.lowercase()) {
-    "common" -> 18
-    "epic" -> 27
-    else -> null
+private fun equipmentMaxLevel(rarity: String?, blacksmithLevel: Int?): Int? {
+    val maximum = when (rarity?.lowercase()) {
+        "common" -> 18
+        "epic" -> 27
+        else -> return null
+    }
+    val smith = blacksmithLevel ?: return maximum
+    return when (rarity.lowercase()) {
+        "common" -> when {
+            smith < 3 -> 9
+            smith < 5 -> 12
+            smith < 7 -> 15
+            else -> 18
+        }
+        "epic" -> when {
+            smith < 3 -> 12
+            smith < 5 -> 15
+            smith < 7 -> 18
+            smith < 8 -> 21
+            smith < 9 -> 24
+            else -> 27
+        }
+        else -> maximum
+    }
 }
 
 private fun equipmentHero(dataId: Int): String? = when (dataId) {
@@ -2501,12 +2528,16 @@ private fun ItemRarityBadge(rarity: String) {
 private fun VillageItemDetailDialog(
     item: VillageItem,
     remote: RemoteCatalogEntry?,
+    blacksmithLevel: Int?,
     onDismiss: () -> Unit
 ) {
     val rarity = remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
-    val maxLevel = remote?.maxLevel
-        ?: if (item.sectionKey == "equipment") equipmentMaxLevel(rarity) else null
+    val maxLevel = if (item.sectionKey == "equipment") {
+        equipmentMaxLevel(rarity, blacksmithLevel) ?: remote?.maxLevel
+    } else {
+        remote?.maxLevel
+    }
     val itemName = remote?.name?.takeIf { it.isNotBlank() } ?: item.name
 
     Dialog(onDismissRequest = onDismiss) {
