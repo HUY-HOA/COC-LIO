@@ -3173,16 +3173,62 @@ private fun createAdminNotificationAvatar(context: Context): IconCompat {
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.rgb(38, 53, 77)
+        color = android.graphics.Color.BLACK
     }
     canvas.drawCircle(size / 2f, size / 2f, size * 0.48f, backgroundPaint)
-    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.rgb(255, 209, 102)
+
+    val textSize = size * 0.19f
+    val typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+    val baselinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
-        textSize = size * 0.19f
+        this.typeface = typeface
+        this.textSize = textSize
     }
-    val baseline = size / 2f - (textPaint.ascent() + textPaint.descent()) / 2f
+    val baseline = size / 2f - (baselinePaint.ascent() + baselinePaint.descent()) / 2f
+
+    val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.rgb(0, 229, 255)
+        textAlign = Paint.Align.CENTER
+        this.typeface = typeface
+        this.textSize = textSize
+        maskFilter = android.graphics.BlurMaskFilter(size * 0.075f, android.graphics.BlurMaskFilter.Blur.NORMAL)
+    }
+    canvas.drawText("ADMIN", size / 2f, baseline, glowPaint)
+
+    val outlinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        textAlign = Paint.Align.CENTER
+        this.typeface = typeface
+        this.textSize = textSize
+        style = Paint.Style.STROKE
+        strokeWidth = size * 0.012f
+    }
+    canvas.drawText("ADMIN", size / 2f, baseline, outlinePaint)
+
+    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        this.typeface = typeface
+        this.textSize = textSize
+        shader = android.graphics.LinearGradient(
+            0f,
+            0f,
+            size.toFloat(),
+            0f,
+            intArrayOf(
+                android.graphics.Color.rgb(0, 229, 255),
+                android.graphics.Color.rgb(22, 139, 255),
+                android.graphics.Color.rgb(101, 72, 255),
+                android.graphics.Color.rgb(179, 60, 255),
+                android.graphics.Color.rgb(255, 53, 184),
+                android.graphics.Color.rgb(255, 74, 114),
+                android.graphics.Color.rgb(255, 164, 58),
+                android.graphics.Color.rgb(183, 243, 74),
+                android.graphics.Color.rgb(53, 230, 162)
+            ),
+            null,
+            android.graphics.Shader.TileMode.CLAMP
+        )
+    }
     canvas.drawText("ADMIN", size / 2f, baseline, textPaint)
     return IconCompat.createWithBitmap(bitmap)
 }
@@ -3475,14 +3521,29 @@ private fun CommunityBubbleChatContent(
                                     verticalArrangement = Arrangement.spacedBy(3.dp)
                                 ) {
                                     if (!mine || message.senderIsAdmin) {
-                                        Text(
-                                            message.displayName.ifBlank {
-                                                AppLanguageSettings.translate(context, "Thành viên")
-                                            },
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                        ) {
+                                            if (message.senderIsAdmin) {
+                                                LedAdminAvatar(size = 22.dp)
+                                                LedBrandTitle(
+                                                    text = "AILIO",
+                                                    fontSize = 9.sp,
+                                                    letterSpacing = 0.3.sp,
+                                                    outlineWidthDp = 0.6f
+                                                )
+                                            } else {
+                                                MaterialText(
+                                                    message.displayName.ifBlank {
+                                                        AppLanguageSettings.translate(context, "Thành viên")
+                                                    },
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
                                     }
                                     Text(
                                         message.text,
