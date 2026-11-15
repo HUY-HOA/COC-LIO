@@ -170,6 +170,7 @@ private suspend fun loadClashKingProfile(candidate: ClashLookupCandidate): Clash
 
 @Composable
 fun ClashLookupScreen() {
+    val english = LocalAppLanguage.current == AppUiLanguage.ENGLISH
     var mode by remember { mutableStateOf("players") }
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -182,12 +183,12 @@ fun ClashLookupScreen() {
             FilterChip(
                 selected = mode == "players",
                 onClick = { mode = "players" },
-                label = { Text("NGƯỜI CHƠI & BANG HỘI") }
+                label = { Text(if (english) "PLAYERS & CLANS" else "NGƯỜI CHƠI & BANG HỘI") }
             )
             FilterChip(
                 selected = mode == "game-data",
                 onClick = { mode = "game-data" },
-                label = { Text("ID TRONG GAME") }
+                label = { Text(if (english) "IN-GAME ID" else "ID TRONG GAME") }
             )
         }
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
