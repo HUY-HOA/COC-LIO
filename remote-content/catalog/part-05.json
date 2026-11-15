@@ -957,7 +957,7 @@
       "dataId": 90000041,
       "name": "Lavaloon Puppet",
       "category": "equipment",
-      "description": "",
+      "description": "Summons spooky Lavaloons to fight alongside the Grand Warden.",
       "maxLevel": 27,
       "rarity": "epic",
       "abilityType": "active",

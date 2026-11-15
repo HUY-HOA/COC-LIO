@@ -2330,6 +2330,12 @@ private fun CategoryScreen(
                         }
                     }
                     if (tab == "army" && rarityChoices.size > 1) {
+                        Text(
+                            "LỌC ĐỘ HIẾM TRANG BỊ",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                         Row(
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -2564,6 +2570,100 @@ private val EquipmentDescriptionsVi = mapOf(
     90000011 to "Mỗi lần Vua Man di tấn công, ông sẽ tự hồi máu."
 )
 
+private val CatalogDescriptionsVi = mapOf(
+    4000041 to "Rồng con này hiếu động, thích phun lửa và gây hỗn loạn. Nhỏ bé nhưng có sức tàn phá đáng gờm.",
+    4000033 to "Tấn công mục tiêu từ xa, phát sáng trong bóng tối và luôn sẵn sàng khuấy động chiến trường.",
+    4000035 to "Ném bom gây sát thương mạnh lên mục tiêu và gây thêm sát thương lên Tường.",
+    4000034 to "Người khổng lồ với cú đấm cực mạnh, có sức chịu đựng cao và chuyên áp sát đối thủ.",
+    4000037 to "Khẩu đại bác cơ động trên bánh xe, có thể chuyển sang chế độ súng cối để tấn công linh hoạt.",
+    4000038 to "Khinh khí cầu chở đầy Bộ xương; chúng nhảy xuống ngay cạnh quân địch để tấn công.",
+    4000106 to "Pháp sư điện hỏa có thể thiêu đốt từng mục tiêu hoặc phóng điện đánh trúng nhiều kẻ địch.",
+    4000070 to "Kỵ sĩ lướt trên không, vượt qua Tường và lao vào mục tiêu nhưng dễ gặp nguy hiểm khi va chạm.",
+    4000042 to "Phù thủy bóng đêm triệu hồi đàn sinh vật bay để hỗ trợ tấn công.",
+    4000036 to "Bộ giáp P.E.K.K.A mạnh mẽ tích tụ nguồn năng lượng bất ổn và giải phóng sức mạnh trong chiến đấu.",
+    4000031 to "Man di giận dữ di chuyển nhanh và tấn công dữ dội ngay khi được triển khai.",
+    4000032 to "Cung thủ lén lút ẩn mình, có thể tấn công mục tiêu trước khi bị phát hiện.",
+    4000052 to "Khinh khí cầu chiến đấu bay vượt chướng ngại vật, thả bom trên đường và đưa quân trong Lâu đài Bang hội thẳng vào trung tâm căn cứ. Nó miễn nhiễm với hiệu ứng Thần chú nhưng có lớp vỏ dễ bị bắn hạ.",
+    4000092 to "Máy khoan chiến đấu đào ngầm đến Công trình phòng thủ gần nhất, sau đó trồi lên làm choáng và phá hủy mục tiêu.",
+    4000091 to "Máy phóng lửa bắn các Linh hỏa gây sát thương và để lại vùng cháy. Tầm bắn xa giúp nó tránh nhiều đòn phản công; máy miễn nhiễm với hiệu ứng Thần chú.",
+    4000087 to "Máy phóng khúc gỗ lăn thẳng về phía trước, phá hủy công trình và mở đường đến Nhà chính. Máy miễn nhiễm với hiệu ứng Thần chú.",
+    4000075 to "Doanh trại công thành được thả xuống để lần lượt thả P.E.K.K.A, Pháp sư và quân tiếp viện từ Lâu đài Bang hội.",
+    4000188 to "Phương tiện bay thả quân từ trên cao, vượt qua Tường và gây sát thương từ xa. Thân gỗ không quá bền nhưng có khả năng di chuyển trên không và miễn nhiễm với Thần chú.",
+    4000062 to "Khối đá bay khổng lồ nhắm vào Công trình phòng thủ, nghiền nát mục tiêu bằng đá tảng và tạo chấn động. Miễn nhiễm với hiệu ứng Thần chú.",
+    4000135 to "Máy phóng quân đứng yên, bắn các thùng chứa quân thường và quân từ Lâu đài Bang hội để hỗ trợ đồng minh.",
+    4000051 to "Xe phá tường lao thẳng qua chướng ngại vật, phá Tường và đưa quân trong Lâu đài Bang hội đến trung tâm căn cứ địch.",
+    4000097 to "Hộ vệ tập sự hỗ trợ quân bằng Hào quang Sinh lực và tấn công từ xa bằng ná cao su.",
+    4000001 to "Cung thủ tấn công từ xa, giữ khoảng cách an toàn và tập trung hạ gục từng mục tiêu.",
+    4000023 to "Rồng con phun lửa tấn công mục tiêu trên mặt đất và trên không. Khi không có đơn vị bay thân thiện ở gần, nó nổi giận và được tăng sát thương cùng tốc độ đánh.",
+    4000005 to "Khinh khí cầu do Bộ xương điều khiển, bỏ qua Tường và tập trung phá hủy Công trình phòng thủ.",
+    4000000 to "Man di là chiến binh dũng mãnh, dùng sức mạnh cận chiến để tấn công và áp đảo căn cứ đối phương.",
+    4000022 to "Người ném đá ném tảng đá lớn có thể nảy qua mục tiêu, gây sát thương nhiều lần.",
+    4000065 to "Kỵ sĩ Rồng bay chuyên phá hủy Công trình phòng thủ bằng các đòn tấn công mạnh.",
+    4000008 to "Rồng phun lửa từ trên không, gây sát thương diện rộng lên quân và công trình đối phương.",
+    4000123 to "Tu sĩ Druid hồi máu cho quân đồng minh; khi biến hình thành Gấu, nó chuyển sang tấn công bằng sức mạnh cận chiến.",
+    4000059 to "Rồng điện phóng tia sét có thể lan qua nhiều mục tiêu. Khi bị hạ, nó còn giáng sét xuống mặt đất.",
+    4000095 to "Titan Điện dùng roi điện tấn công mục tiêu và giải phóng năng lượng gây sát thương lên các đơn vị xung quanh.",
+    4000150 to "Lò lửa đứng yên, định kỳ sinh ra Bọ lửa nhắm vào Công trình và để lại vệt lửa trên đường di chuyển.",
+    4000003 to "Người khổng lồ có lượng máu cao, chuyên hấp thụ sát thương và ưu tiên tấn công Công trình phòng thủ.",
+    4000002 to "Goblin cực nhanh và ưu tiên nhắm vào tài nguyên, giúp cướp tài nguyên hiệu quả.",
+    4000013 to "Golem có sức chịu đựng lớn. Khi bị phá hủy, nó phát nổ và tách thành các Golem con yếu hơn.",
+    4000082 to "Thợ săn Anh hùng chuyên nhắm vào Anh hùng đối phương. Cô có thể nhảy qua Tường và dùng vũ khí độc làm chậm mục tiêu.",
+    4000007 to "Nữ tu bay hỗ trợ hồi máu cho quân đồng minh ở gần. Healer không trực tiếp tấn công quân hoặc công trình đối phương.",
+    4000011 to "Kỵ sĩ Heo có thể nhảy qua Tường và nhanh chóng áp sát các mục tiêu phía sau hệ thống phòng thủ.",
+    4000058 to "Golem Băng làm chậm và đóng băng mục tiêu khi tiếp xúc; khi bị hạ, nó tạo hiệu ứng đóng băng khu vực xung quanh.",
+    4000017 to "Chó săn Dung nham là đơn vị bay có sức chịu đựng cao, ưu tiên tấn công Phòng không và tách thành các Chó con Dung nham khi bị hạ.",
+    4000177 to "Người khổng lồ Thiên thạch ném đá từ xa. Khi tách ra, các Meteormite tấn công mục tiêu gần đó hoặc hợp lại thành Người khổng lồ Thiên thạch.",
+    4000024 to "Thợ mỏ đào ngầm, đi xuyên qua Tường và tấn công các Công trình mục tiêu.",
+    4000010 to "Minion là đơn vị bay nhanh, tấn công từ trên không và không bị Mìn tìm kiếm trên không phát hiện.",
+    4000009 to "P.E.K.K.A mặc bộ giáp cực kỳ bền chắc, gây sát thương cận chiến rất lớn.",
+    4000110 to "Kỵ sĩ Rễ cây cưỡi rễ cây khổng lồ, phá Tường và nghiền nát Công trình phòng thủ.",
+    4000109 to "Phù thủy Phế tích dùng cỗ máy Debrisbuster 5000 hút đống đổ nát rồi tạo ra các Kỵ sĩ Phế tích để chiến đấu.",
+    4000132 to "Chiến binh Ném lao có tầm đánh xa, phóng lao mạnh vào quân địch và Công trình phòng thủ.",
+    4000012 to "Nữ chiến binh dùng rìu hai lưỡi, xoay người tấn công nhiều quân hoặc công trình ở gần.",
+    4000004 to "Pháo thủ phá Tường lao đến Tường và phát nổ để mở đường cho quân bộ binh.",
+    4000015 to "Phù thủy liên tục triệu hồi Bộ xương từ những chiến binh đã ngã xuống để hỗ trợ tấn công.",
+    4000006 to "Pháp sư phóng những luồng phép thuật mạnh, gây sát thương diện rộng lên mục tiêu trên mặt đất và trên không.",
+    4000053 to "Yeti có sức tấn công mạnh và mang theo các Yetimite. Khi bị thương, các Yetimite sẽ trở nên hung hãn.",
+    28000005 to "Trực thăng chiến đấu giúp Chủ xây dựng bay qua Tường, tấn công từ xa bằng đại bác hoặc lao đến gần đối thủ bằng kỹ năng Bão bom.",
+    28000003 to "Cỗ máy chiến đấu do Chủ xây dựng chế tạo, dùng nắm đấm sắt và Búa điện để đập tan công trình đối phương.",
+    28000001 to "Nữ hoàng Cung thủ là Anh hùng tầm xa, dùng nỏ mạnh để tiêu diệt mục tiêu và bảo vệ căn cứ khi phòng thủ.",
+    28000000 to "Vua Man di là Anh hùng cận chiến có lượng máu lớn, dùng kiếm khổng lồ nghiền nát kẻ địch và bảo vệ lãnh thổ.",
+    28000007 to "Công tước Rồng là Anh hùng bay có sức chịu đựng cao. Khi tách khỏi các đơn vị bay đồng minh, ông trở nên cuồng nộ, tăng sức mạnh tấn công và giảm sát thương từ bẫy.",
+    28000002 to "Đại hộ vệ hỗ trợ quân bằng phép thuật và cây trượng, có thể đi bộ hoặc bay qua Tường; khi phòng thủ, ông bảo vệ khu vực quanh biểu ngữ Anh hùng.",
+    28000006 to "Hoàng tử Tiểu quỷ bay trên chiến trường và dùng ma thuật hắc ám tấn công. Khi phòng thủ, anh chỉ bị tấn công bởi các đơn vị tầm xa và đơn vị bay.",
+    28000004 to "Nhà vô địch Hoàng gia chuyên áp sát và tiêu diệt Công trình phòng thủ bằng cây lao và chiếc khiên.",
+    73000011 to "Khối thạch nhầy giận dữ hỗ trợ Anh hùng nhắm vào Công trình phòng thủ, sau đó tách ra để tiếp tục chiến đấu độc lập.",
+    73000008 to "Diggy đào xuống lòng đất để ẩn nấp, sau đó trồi lên tấn công công trình và hỗ trợ Anh hùng. Khi Anh hùng bị hạ, Diggy tìm mục tiêu mới.",
+    73000002 to "Cú điện tấn công Công trình phòng thủ từ xa và có thể phóng sét lan qua các mục tiêu.",
+    73000009 to "Frosty phun hơi lạnh làm chậm kẻ địch và triệu hồi các Bọ băng để hỗ trợ Anh hùng.",
+    73000017 to "Quạ tham lam nhắm vào Công trình tài nguyên và gây thêm sát thương lên các mục tiêu này.",
+    73000000 to "L.A.S.S.I là thú cưng trung thành, nhanh chóng lao đến tấn công kẻ địch ở gần Anh hùng; không thể tấn công mục tiêu bay.",
+    73000001 to "Yak hùng mạnh dùng đầu húc phá Tường và nổi giận khi Anh hùng đồng hành bị hạ.",
+    73000004 to "Phượng hoàng bắt đầu trận đấu dưới dạng trứng. Khi Anh hùng sắp bị hạ, nó nở ra, tạm thời bảo vệ Anh hùng và cùng chiến đấu.",
+    73000007 to "Thằn lằn Độc phun độc làm chậm kẻ địch và hỗ trợ Anh hùng đối phó với quân cùng Anh hùng đối phương.",
+    73000016 to "Sneezy đứng phía sau Anh hùng, hắt ra các khối chất nhầy bay nhắm vào Công trình; khi Anh hùng bị hạ, nó tham gia tấn công.",
+    73000010 to "Cáo Linh hồn là sinh vật nhút nhát nhưng chiến đấu quyết liệt bên cạnh Anh hùng và giúp Anh hùng tàng hình.",
+    73000003 to "Kỳ lân hồi máu cho Anh hùng đồng hành, giúp duy trì sức chiến đấu trong suốt trận chiến.",
+    26000123 to "Thần chú Giận dữ khiến quân trong phạm vi ảnh hưởng trở nên hung hãn và tạm thời ưu tiên tấn công Công trình phòng thủ.",
+    26000028 to "Triệu hồi một đàn Dơi tại vị trí bất kỳ trên chiến trường. Dơi không kích hoạt Bẫy.",
+    26000016 to "Tạo ra một vùng triệu hồi các bản sao quân lính đi vào khu vực. Bản sao chỉ tồn tại trong thời gian giới hạn và có tổng sức chứa tối đa.",
+    26000010 to "Gây động đất làm suy yếu Tường và Công trình. Sát thương lặp lại giảm dần trên công trình nhưng tăng dần trên Tường.",
+    26000005 to "Tạo luồng băng giá đóng băng quân địch và vô hiệu hóa Công trình phòng thủ trong phạm vi ảnh hưởng.",
+    26000011 to "Tăng mạnh tốc độ di chuyển cho quân, đặc biệt hữu ích với đơn vị chậm. Thần chú Tăng tốc không tăng sát thương như Thần chú Cuồng nộ.",
+    26000001 to "Tạo vòng hồi máu giúp quân đồng minh được hồi phục khi đứng bên trong phạm vi ảnh hưởng.",
+    26000109 to "Bao bọc quân mặt đất và trên không trong lớp băng bảo vệ, chặn phần lớn sát thương nhưng khiến chúng không thể di chuyển hoặc tấn công.",
+    26000035 to "Khiến hầu hết mục tiêu trong phạm vi trở nên vô hình và không thể bị nhắm chọn, ngoại trừ Tường và Máy công thành.",
+    26000003 to "Tạo lối đi vượt qua Tường đối phương, giúp quân đồng minh nhảy qua các đoạn Tường bị ảnh hưởng.",
+    26000000 to "Giáng sét xuống khu vực chỉ định, gây sát thương và làm choáng các đơn vị cùng Công trình trong phạm vi nhỏ.",
+    26000070 to "Dùng rễ cây khổng lồ trói các Công trình gần đó, ngăn Phòng thủ tấn công; quân đồng minh sẽ bỏ qua các Công trình bị trói.",
+    26000009 to "Tạo đám mây độc gây sát thương tăng dần, đồng thời làm chậm tốc độ di chuyển và tốc độ tấn công của quân phòng thủ ở trong phạm vi.",
+    26000002 to "Tạo vòng Cuồng nộ giúp quân đồng minh tăng tốc độ và sức mạnh tấn công khi đứng bên trong.",
+    26000053 to "Thu hồi quân lính, Anh hùng và Linh thú trong phạm vi về thanh triển khai để có thể gọi chúng ra lại ở vị trí khác.",
+    26000098 to "Hồi sinh một Anh hùng đã bị hạ gục trong phạm vi và đưa Anh hùng trở lại trận chiến với một phần máu.",
+    26000017 to "Triệu hồi Bộ xương tại vị trí bất kỳ trên chiến trường. Bộ xương không kích hoạt Bẫy.",
+    26000120 to "Đặt Totem để đánh lạc hướng Phòng thủ mặt đất và trên không. Kẻ địch gần đó sẽ tập trung tấn công Totem."
+)
+
 private val EquipmentStatLabelsVi = mapOf(
     "hitpoint increase" to "Tăng máu",
     "hp recovery increase" to "Tăng hồi phục HP",
@@ -2687,7 +2787,93 @@ private val EquipmentStatLabelsVi = mapOf(
     "radius" to "Bán kính",
     "speed" to "Tốc độ",
     "dps" to "Sát thương mỗi giây",
-    "hp" to "Máu"
+    "hp" to "Máu",
+    "death damage" to "Sát thương khi bị tiêu diệt",
+    "damage vs walls" to "Sát thương lên Tường",
+    "rage duration seconds" to "Thời gian Cuồng nộ (giây)",
+    "cloak duration seconds" to "Thời gian tàng hình (giây)",
+    "poison max dps" to "Sát thương độc tối đa mỗi giây",
+    "power shot attacks" to "Số lần bắn cường lực",
+    "power shot damage per hit" to "Sát thương mỗi phát bắn cường lực",
+    "boxer block duration seconds" to "Thời gian đỡ đòn (giây)",
+    "power punch damage" to "Sát thương cú đấm mạnh",
+    "spell type" to "Loại Thần chú",
+    "healing per pulse" to "Lượng hồi máu mỗi nhịp",
+    "healing per second on heroes" to "Lượng hồi máu mỗi giây lên Anh hùng",
+    "healing per pulse on heroes" to "Lượng hồi máu mỗi nhịp lên Anh hùng",
+    "tantrum damage bonus" to "Sát thương tăng thêm khi nổi giận",
+    "fiery sneeze damage min" to "Sát thương hắt lửa tối thiểu",
+    "fiery sneeze damage max" to "Sát thương hắt lửa tối đa",
+    "bouncing bomb damage" to "Sát thương bom nảy",
+    "bouncing bomb damage vs walls" to "Sát thương bom nảy lên Tường",
+    "frostmites per summon" to "Số Bọ băng mỗi lần triệu hồi",
+    "max frostmites" to "Số Bọ băng tối đa",
+    "poison speed decrease percent" to "Phần trăm giảm tốc độ do độc",
+    "poison attack rate decrease percent" to "Phần trăm giảm tốc độ tấn công do độc",
+    "lifetime" to "Thời gian tồn tại",
+    "golemites spawned" to "Số Golem con được tạo ra",
+    "mortar dps" to "Sát thương mỗi giây của súng cối",
+    "mortar damage per shot" to "Sát thương mỗi phát bắn của súng cối",
+    "bat summon cooldown" to "Thời gian hồi triệu hồi Dơi",
+    "bats per summon" to "Số Dơi mỗi lần triệu hồi",
+    "bats max" to "Số Dơi tối đa",
+    "bat swarm count" to "Số đàn Dơi",
+    "total healing" to "Tổng lượng hồi máu",
+    "total healing on heroes" to "Tổng lượng hồi máu lên Anh hùng",
+    "max damage per second" to "Sát thương tối đa mỗi giây",
+    "speed decrease" to "Mức giảm tốc độ",
+    "attack rate decrease" to "Mức giảm tốc độ tấn công",
+    "skeleton bomb damage" to "Sát thương bom Bộ xương",
+    "skeleton bomb skeletons" to "Số Bộ xương từ bom",
+    "brainwash duration" to "Thời gian điều khiển",
+    "dps on resource buildings" to "Sát thương mỗi giây lên Công trình tài nguyên",
+    "revive duration" to "Thời gian hồi sinh",
+    "cloned capacity" to "Sức chứa bản sao",
+    "death freeze time on offense" to "Thời gian đóng băng khi bị hạ (tấn công)",
+    "death freeze time on defense" to "Thời gian đóng băng khi bị hạ (phòng thủ)",
+    "overcharge damage" to "Sát thương quá tải",
+    "barrel count" to "Số thùng",
+    "minions" to "Số Tay sai",
+    "balloons" to "Số Khinh khí cầu",
+    "baby dragons" to "Số Rồng con",
+    "bats generated" to "Số Dơi được tạo ra",
+    "skeletons generated" to "Số Bộ xương được tạo ra",
+    "pups on offense" to "Số Chó con khi tấn công",
+    "pups on defense" to "Số Chó con khi phòng thủ",
+    "skeletons per summon" to "Số Bộ xương mỗi lần triệu hồi",
+    "max skeletons" to "Số Bộ xương tối đa",
+    "skeleton level" to "Cấp Bộ xương",
+    "recalled capacity" to "Sức chứa thu hồi",
+    "damage when destroyed" to "Sát thương khi bị phá hủy",
+    "point blank damage" to "Sát thương cận chiến",
+    "pekkas spawned" to "Số P.E.K.K.A được triệu hồi",
+    "wizards spawned" to "Số Pháp sư được triệu hồi",
+    "damage when destroyed hitbox1" to "Sát thương khi bị phá hủy (vùng 1)",
+    "damage when destroyed hitbox2" to "Sát thương khi bị phá hủy (vùng 2)",
+    "flame max dps" to "Sát thương lửa tối đa mỗi giây",
+    "hero heal percent" to "Tỷ lệ hồi máu cho Anh hùng",
+    "inferno initial dps" to "Sát thương ban đầu mỗi giây của Hỏa ngục",
+    "inferno dps after1_5s" to "Sát thương Hỏa ngục mỗi giây sau 1,5 giây",
+    "inferno dps after3_0s" to "Sát thương Hỏa ngục mỗi giây sau 3 giây",
+    "electro dps" to "Sát thương điện mỗi giây",
+    "electro damage per shot" to "Sát thương điện mỗi phát",
+    "troop level" to "Cấp quân",
+    "barbarians" to "Số Man di",
+    "archers" to "Số Cung thủ",
+    "giants" to "Số Người khổng lồ",
+    "wall breakers" to "Số Pháo thủ phá Tường",
+    "anger duration" to "Thời gian giận dữ",
+    "totem hitpoints" to "Máu của Totem",
+    "aura hp increase" to "Tăng máu từ hào quang",
+    "firemites spawned" to "Số Bọ lửa được sinh ra",
+    "poison speed decrease" to "Mức giảm tốc độ do độc",
+    "poison attack rate decrease" to "Mức giảm tốc độ tấn công do độc",
+    "dps on heroes" to "Sát thương mỗi giây lên Anh hùng",
+    "ruin knight level" to "Cấp Kỵ sĩ Phế tích",
+    "maximum ruin knights summoned" to "Số Kỵ sĩ Phế tích tối đa được triệu hồi",
+    "redeploy speed increase" to "Tăng tốc độ khi triển khai lại",
+    "troop type" to "Loại quân",
+    "targets" to "Mục tiêu"
 )
 
 private fun localizedCatalogField(label: String, value: String, isEnglish: Boolean): Pair<String, String> {
@@ -2704,17 +2890,37 @@ private fun localizedCatalogField(label: String, value: String, isEnglish: Boole
         "active" -> "Chủ động"
         "passive" -> "Bị động"
         "single target" -> "Đơn mục tiêu"
+        "single target (ground only)" -> "Đơn mục tiêu (mặt đất)"
         "splash" -> "Sát thương diện rộng"
-        "melee (ground only)" -> "Cận chiến (chỉ mục tiêu mặt đất)"
-        "ranged (ground & air)" -> "Tầm xa (mặt đất và trên không)"
-        "ranged (ground only)" -> "Tầm xa (chỉ mục tiêu mặt đất)"
-        "ranged (air only)" -> "Tầm xa (chỉ mục tiêu trên không)"
+        "chain" -> "Sát thương dây chuyền"
+        "chain lightning" -> "Sét dây chuyền"
+        "area splash" -> "Sát thương diện rộng"
+        "area splash (ground only)" -> "Sát thương diện rộng (mặt đất)"
+        "area splash 1 and 3 tile radius (ground only)" -> "Sát thương diện rộng bán kính 1 và 3 ô (mặt đất)"
         "defenses" -> "Công trình phòng thủ"
-        "defense" -> "Phòng thủ"
+        "defense" -> "Công trình phòng thủ"
+        "walls" -> "Tường"
+        "wall" -> "Tường"
+        "walls (damage x4)" -> "Tường (sát thương ×4)"
+        "resources" -> "Tài nguyên"
+        "any" -> "Bất kỳ mục tiêu nào"
         "none" -> "Không có"
         "yes" -> "Có"
         "no" -> "Không"
-        else -> value
+        "hero's target" -> "Mục tiêu của Anh hùng"
+        "within 2.5 tiles of hero" -> "Trong phạm vi 2,5 ô quanh Anh hùng"
+        "within 4.5 tiles of hero" -> "Trong phạm vi 4,5 ô quanh Anh hùng"
+        "within 7 tiles of hero" -> "Trong phạm vi 7 ô quanh Anh hùng"
+        "heroes and troops" -> "Anh hùng và quân lính"
+        "heroes" -> "Anh hùng"
+        "hero" -> "Anh hùng"
+        "ranged (ground & air)" -> "Tầm xa (mặt đất và trên không)"
+        "melee (ground only)" -> "Cận chiến (mặt đất)"
+        "ranged single target (any target)" -> "Tầm xa, đơn mục tiêu (mọi mục tiêu)"
+        "melee (with nearby air units)/ranged (otherwise); (ground & air)" -> "Cận chiến khi có đơn vị bay gần, nếu không thì tầm xa (mặt đất và trên không)"
+        "dark" -> "Hắc ám"
+        "regular" -> "Thông thường"
+        else -> localizedCatalogText(value, isEnglish)
     }
     return translatedLabel to translatedValue
 }
@@ -2737,6 +2943,13 @@ private fun localizedCatalogText(value: String, isEnglish: Boolean): String {
         "Available in the Shop" -> "Có trong Cửa hàng"
         "Available from the Trader" -> "Có thể nhận từ Thương nhân"
         else -> value
+            .replace("Dark Elixir", "Dầu đen", ignoreCase = true)
+            .replace("Elixir", "Dầu tiên", ignoreCase = true)
+            .replace("Gold", "Vàng", ignoreCase = true)
+            .replace("Gems", "Ngọc", ignoreCase = true)
+            .replace("Shiny Ore", "Quặng sáng", ignoreCase = true)
+            .replace("Glowy Ore", "Quặng phát sáng", ignoreCase = true)
+            .replace("Starry Ore", "Quặng sao", ignoreCase = true)
     }
 }
 
@@ -2843,6 +3056,7 @@ private fun VillageItemDetailDialog(
         remote?.description?.takeIf { it.isNotBlank() }
     } else {
         EquipmentDescriptionsVi[item.dataId]
+            ?: CatalogDescriptionsVi[item.dataId]
             ?: remote?.description?.takeIf { it.isNotBlank() }
     }
     val levelDetails = remote?.levelDetails.orEmpty()
@@ -2990,7 +3204,7 @@ private fun VillageItemDetailDialog(
                                 rawValue
                             }
                             val (label, displayValue) = localizedCatalogField(rawLabel, value, isEnglish)
-                            VillageItemDetailField(label, displayValue)
+                            VillageItemStatField(label, displayValue)
                         }
                     }
                 }
@@ -3039,6 +3253,32 @@ private fun VillageItemDetailDialog(
                     Text("ĐÓNG")
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun VillageItemStatField(label: String, value: String) {
+    val normalized = label.trim().lowercase()
+    val oreColor = when {
+        normalized.contains("quặng sao") || normalized.contains("starry ore") -> Color(0xFFFFC857)
+        normalized.contains("quặng phát sáng") || normalized.contains("glowy ore") -> Color(0xFFB77AFF)
+        normalized.contains("quặng sáng") || normalized.contains("shiny ore") -> Color(0xFF55B9FF)
+        else -> null
+    }
+    if (oreColor == null) {
+        VillageItemDetailField(label, value)
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(oreColor.copy(alpha = 0.10f), RoundedCornerShape(10.dp))
+                .border(1.dp, oreColor.copy(alpha = 0.42f), RoundedCornerShape(10.dp))
+                .padding(9.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(label, color = oreColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, lineHeight = 17.sp)
         }
     }
 }

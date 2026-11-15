@@ -637,7 +637,7 @@
       "dataId": 4000007,
       "name": "Healer",
       "category": "troops",
-      "description": "",
+      "description": "A flying support unit that restores the health of nearby friendly troops. Healers do not attack enemies.",
       "maxLevel": 11,
       "rarity": "",
       "abilityType": "",
