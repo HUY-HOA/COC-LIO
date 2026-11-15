@@ -69,6 +69,8 @@ import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.huyhoa.coclio.data.CocAssets
 import com.huyhoa.coclio.data.CocAssetCache
 import com.huyhoa.coclio.data.CocAssetPrefetchWorker
+import com.huyhoa.coclio.data.CocUpgradeCatalog
+import com.huyhoa.coclio.data.CocUpgradeEntry
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
@@ -2204,6 +2206,8 @@ private fun CategoryScreen(
     remoteCatalog: Map<Int, RemoteCatalogEntry>,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val upgradeCatalog = remember(context) { CocUpgradeCatalog.all(context) }
     var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf("all")
     }
@@ -2213,7 +2217,6 @@ private fun CategoryScreen(
     var selectedItem by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf<VillageItem?>(null)
     }
-
     val resourceIds = setOf(
         1000002, 1000003, 1000004, 1000005, 1000023, 1000024,
         1000035, 1000036, 1000037, 1000038, 1000058
@@ -2226,31 +2229,48 @@ private fun CategoryScreen(
         1000051, 1000052, 1000054, 1000055, 1000056, 1000057, 1000063,
         1000080, 1000081, 1000082
     )
-
     val blacksmithLevel = snapshot.items.firstOrNull {
         it.sectionKey == "buildings" && it.dataId == 1000070
     }?.level
+    val hallLevel = if (selectedBase == "builder") snapshot.builderHallLevel else snapshot.townHallLevel
     val baseItems = snapshot.items.filter { it.base == selectedBase && it.tab == tab }
+
     fun buildingCategory(item: VillageItem): String =
-        remoteCatalog[item.dataId]?.category
-            ?.takeIf { it in setOf("defense", "resources", "traps", "other") }
+        upgradeCatalog[item.dataId]?.category?.let {
+            when (it) {
+                "resource" -> "resources"
+                "defense" -> "defense"
+                "trap" -> "traps"
+                else -> null
+            }
+        }?.takeIf { it in setOf("defense", "resources", "traps", "other") }
+            ?: remoteCatalog[item.dataId]?.category
+                ?.takeIf { it in setOf("defense", "resources", "traps", "other") }
             ?: when {
                 item.sectionKey == "traps" || item.sectionKey == "traps2" -> "traps"
                 item.dataId in resourceIds -> "resources"
                 item.dataId in defenseIds -> "defense"
                 else -> "other"
             }
+
     fun armyCategory(item: VillageItem): String =
-        remoteCatalog[item.dataId]?.category
-            ?.takeIf { it in setOf("troops", "heroes", "spells", "pets", "equipment", "other") }
-            ?: when (item.sectionKey) {
-                "units", "units2", "siege_machines" -> "troops"
-                "heroes", "heroes2" -> "heroes"
-                "spells" -> "spells"
-                "pets" -> "pets"
-                "equipment" -> "equipment"
-                else -> "other"
-            }
+        when (upgradeCatalog[item.dataId]?.category) {
+            "troop", "siege-machine" -> "troops"
+            "hero" -> "heroes"
+            "spell" -> "spells"
+            "pet" -> "pets"
+            "hero-equipment" -> "equipment"
+            else -> remoteCatalog[item.dataId]?.category
+                ?.takeIf { it in setOf("troops", "heroes", "spells", "pets", "equipment", "other") }
+                ?: when (item.sectionKey) {
+                    "units", "units2", "siege_machines" -> "troops"
+                    "heroes", "heroes2" -> "heroes"
+                    "spells" -> "spells"
+                    "pets" -> "pets"
+                    "equipment" -> "equipment"
+                    else -> "other"
+                }
+        }
 
     val filterChoices = if (tab == "buildings") {
         listOf(
@@ -2259,25 +2279,22 @@ private fun CategoryScreen(
             "resources" to "Tài nguyên",
             "traps" to "Bẫy",
             "other" to "Khác"
-        ).filter { (key, _) ->
-            key == "all" || baseItems.any { buildingCategory(it) == key }
-        }
+        ).filter { (key, _) -> key == "all" || baseItems.any { buildingCategory(it) == key } }
     } else {
         listOf(
             "all" to "Tất cả",
-            "troops" to "Quân đội",
+            "troops" to "Quân lính & máy công thành",
             "heroes" to "Anh hùng",
             "spells" to "Thần chú",
             "pets" to "Linh thú",
             "equipment" to "Trang bị anh hùng",
             "other" to "Khác"
-        ).filter { (key, _) ->
-            key == "all" || baseItems.any { armyCategory(it) == key }
-        }
+        ).filter { (key, _) -> key == "all" || baseItems.any { armyCategory(it) == key } }
     }
 
     fun rarityFor(item: VillageItem): String? =
-        remoteCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
+        upgradeCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
+            ?: remoteCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
             ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
 
     val categoryFiltered = when {
@@ -2285,7 +2302,6 @@ private fun CategoryScreen(
         tab == "buildings" -> baseItems.filter { buildingCategory(it) == selectedFilter }
         else -> baseItems.filter { armyCategory(it) == selectedFilter }
     }
-
     val rarityItems = categoryFiltered.filter { rarityFor(it) != null }
     val rarityChoices = listOf(
         "all" to "TẤT CẢ",
@@ -2293,234 +2309,299 @@ private fun CategoryScreen(
         "rare" to "HIẾM",
         "epic" to "SỬ THI",
         "legendary" to "HUYỀN THOẠI"
-    ).filter { (key, _) ->
-        key == "all" || rarityItems.any { rarityFor(it) == key }
-    }
-
+    ).filter { (key, _) -> key == "all" || rarityItems.any { rarityFor(it) == key } }
     val filtered = if (tab == "army" && selectedRarity != "all") {
         categoryFiltered.filter { rarityFor(it) == selectedRarity }
     } else {
         categoryFiltered
     }
 
+    fun groupKey(item: VillageItem): String {
+        val category = if (tab == "buildings") buildingCategory(item) else armyCategory(item)
+        if (category == "equipment") {
+            val owner = upgradeCatalog[item.dataId]?.hero
+                ?.let(::equipmentHeroName)
+                ?: equipmentHero(item.dataId)
+                ?: "Khác"
+            return "equipment:$owner"
+        }
+        return category
+    }
+
+    fun groupTitle(key: String, rows: List<VillageItem>): String = when (key) {
+        "defense" -> "CÔNG TRÌNH PHÒNG THỦ"
+        "resources" -> "CÔNG TRÌNH TÀI NGUYÊN"
+        "traps" -> "BẪY"
+        "other" -> if (tab == "buildings") "CÔNG TRÌNH KHÁC" else "MỤC KHÁC"
+        "troops" -> "QUÂN LÍNH & MÁY CÔNG THÀNH"
+        "heroes" -> "ANH HÙNG"
+        "spells" -> "THẦN CHÚ"
+        "pets" -> "LINH THÚ"
+        else -> if (key.startsWith("equipment:")) "TRANG BỊ • ${key.substringAfter(':').uppercase()}"
+            else rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
+    }
+
+    fun groupGlow(key: String): Color = when {
+        key == "defense" -> Color(0xFFFF626B)
+        key == "resources" -> CocGold
+        key == "traps" -> CocViolet
+        key == "troops" -> CocMagenta
+        key == "heroes" -> Color(0xFFFFB45C)
+        key == "spells" -> Color(0xFF64B5F6)
+        key == "pets" -> Color(0xFF6FE0B4)
+        key.startsWith("equipment:") -> CocViolet
+        else -> CocCyan
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = if (tab == "army") 140.dp else 100.dp),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        if (baseItems.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        filterChoices.forEach { (key, label) ->
-                            FilterChip(
-                                selected = selectedFilter == key,
-                                onClick = {
-                                    selectedFilter = key
-                                    selectedRarity = "all"
-                                },
-                                label = { Text(label, fontSize = 10.sp) }
-                            )
-                        }
-                    }
-                    if (tab == "army" && rarityChoices.size > 1) {
-                        Text(
-                            "LỌC ĐỘ HIẾM TRANG BỊ",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+            columns = GridCells.Adaptive(minSize = if (tab == "army") 140.dp else 100.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (baseItems.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            rarityChoices.forEach { (key, label) ->
-                                val count = if (key == "all") {
-                                    rarityItems.size
-                                } else {
-                                    rarityItems.count { rarityFor(it) == key }
-                                }
+                            filterChoices.forEach { (key, label) ->
                                 FilterChip(
-                                    selected = selectedRarity == key,
-                                    onClick = { selectedRarity = key },
-                                    label = { Text("$label ($count)", fontSize = 10.sp) }
+                                    selected = selectedFilter == key,
+                                    onClick = {
+                                        selectedFilter = key
+                                        selectedRarity = "all"
+                                    },
+                                    label = { Text(label, fontSize = 10.sp) }
                                 )
+                            }
+                        }
+                        if (tab == "army" && rarityChoices.size > 1) {
+                            Text(
+                                "LỌC ĐỘ HIẾM TRANG BỊ",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Row(
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                rarityChoices.forEach { (key, label) ->
+                                    val count = if (key == "all") rarityItems.size
+                                    else rarityItems.count { rarityFor(it) == key }
+                                    FilterChip(
+                                        selected = selectedRarity == key,
+                                        onClick = { selectedRarity = key },
+                                        label = { Text("$label ($count)", fontSize = 10.sp) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (baseItems.isEmpty() || filtered.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
+                }
+            } else {
+                val grouped = filtered.groupBy(::groupKey)
+                grouped.forEach { (key, rows) ->
+                    item(key = "led_group_$key", span = { GridItemSpan(maxLineSpan) }) {
+                        val ordered = rows.filter { it.timerSeconds == null }.sortedWith(
+                            compareBy<VillageItem> { it.count > 1 }.thenBy { it.level ?: Int.MIN_VALUE }
+                        ) + rows.filter { it.timerSeconds != null }
+                            .sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
+                        NeonPanel(
+                            modifier = Modifier.fillMaxWidth(),
+                            glow = groupGlow(key),
+                            innerPadding = 8.dp
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                SectionTitle(groupTitle(key, rows), rows.sumOf { it.count }.toString())
+                                ordered.filter { it.timerSeconds != null }.forEach { item ->
+                                    UpgradeCard(item, snapshot.timestamp)
+                                }
+                                ordered.filter { it.timerSeconds == null }.chunked(2).forEach { rowItems ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        rowItems.forEach { item ->
+                                            VillageGridItemCard(
+                                                item = item,
+                                                remote = remoteCatalog[item.dataId],
+                                                upgrade = upgradeCatalog[item.dataId],
+                                                catalog = upgradeCatalog,
+                                                hallLevel = hallLevel,
+                                                blacksmithLevel = blacksmithLevel,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                selectedItem = item
+                                            }
+                                        }
+                                        if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
-
-        if (baseItems.isEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
-            }
-        } else if (filtered.isEmpty()) {
-
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
-            }
-        } else {
-            val grouped = if (tab == "army" && selectedFilter == "equipment") {
-                filtered.groupBy { equipmentHero(it.dataId) ?: "Khác" }
-            } else {
-                filtered.groupBy { it.sectionKey }
-            }
-            grouped.forEach { (sectionKey, rows) ->
-                item(key = "section_$sectionKey", span = { GridItemSpan(maxLineSpan) }) {
-                    val title = if (tab == "army" && selectedFilter == "equipment") {
-                        sectionKey.uppercase()
-                    } else {
-                        rows.first().sectionLabel.uppercase()
-                    }
-                    SectionTitle(title, rows.sumOf { it.count }.toString())
-                }
-                val orderedRows = rows.filter { it.timerSeconds == null }.sortedWith(
-                    compareBy<VillageItem> { it.count > 1 }
-                        .thenBy { it.level ?: Int.MIN_VALUE }
-                ) + rows.filter { it.timerSeconds != null }.sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
-                val keyedRows = orderedRows.mapIndexed { index, row -> index to row }
-                gridItems(
-                    items = keyedRows,
-                    key = { entry ->
-                        entry.second.identity + "_" + (entry.second.timerSeconds ?: -1L) + "_" + entry.second.count + "_" + entry.first
-                    },
-                    span = { entry ->
-                        if (entry.second.timerSeconds != null) GridItemSpan(maxLineSpan) else GridItemSpan(1)
-                    }
-                ) { entry ->
-                    val item = entry.second
-                    if (item.timerSeconds != null) {
-                        UpgradeCard(item, snapshot.timestamp)
-                    } else {
-                        VillageGridItemCard(item, remoteCatalog[item.dataId], blacksmithLevel) {
-                            selectedItem = item
-                        }
-                    }
-                }
-            }
-        }
-    }
         selectedItem?.let { item ->
-            VillageItemDetailDialog(item, remoteCatalog[item.dataId], blacksmithLevel) {
+            VillageItemDetailDialog(
+                item = item,
+                remote = remoteCatalog[item.dataId],
+                blacksmithLevel = blacksmithLevel,
+                hallLevel = hallLevel,
+                upgradeCatalog = upgradeCatalog
+            ) {
                 selectedItem = null
             }
         }
     }
 }
 
-
 @Composable
 private fun VillageGridItemCard(
     item: VillageItem,
-    remote: RemoteCatalogEntry? = null,
-    blacksmithLevel: Int? = null,
+    remote: RemoteCatalogEntry?,
+    upgrade: CocUpgradeEntry?,
+    catalog: Map<Int, CocUpgradeEntry>,
+    hallLevel: Int?,
+    blacksmithLevel: Int?,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val rarity = remote?.rarity?.takeIf { it.isNotBlank() }
+    val rarity = upgrade?.rarity?.takeIf { it.isNotBlank() }
+        ?: remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
-    val maxLevel = if (item.sectionKey == "equipment") {
-        equipmentMaxLevel(rarity, blacksmithLevel) ?: remote?.maxLevel
-    } else {
-        remote?.maxLevel
+    val absoluteMax = upgrade?.maxLevel?.takeIf { it > 0 } ?: remote?.maxLevel
+    val hallMax = upgrade?.let { CocUpgradeCatalog.maxLevelAtHall(it, hallLevel, catalog) }
+    val blacksmithMax = upgrade?.let {
+        CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(it, blacksmithLevel, catalog)
     }
+    val effectiveMax = when {
+        item.sectionKey == "equipment" && blacksmithMax != null -> listOfNotNull(hallMax, blacksmithMax).minOrNull()
+        else -> hallMax
+    } ?: absoluteMax
     val itemName = if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
-        remote?.name?.takeIf { it.isNotBlank() } ?: item.name
+        remote?.name?.takeIf { it.isNotBlank() } ?: upgrade?.name?.takeIf { it.isNotBlank() } ?: item.name
     } else {
         item.name
     }
+    val owner = upgrade?.hero?.takeIf { it.isNotBlank() }?.let(::equipmentHeroName)
+        ?: if (item.sectionKey == "equipment") equipmentHero(item.dataId) else null
+    val rarityTint = rarityColor(rarity) ?: MaterialTheme.colorScheme.outlineVariant
 
-    val rarityGlow = when (rarity) {
-        "common" -> Color(0xFF55B9FF)
-        "rare" -> Color(0xFF39D8D0)
-        "epic" -> Color(0xFFB77AFF)
-        "legendary" -> Color(0xFFFFC857)
-        else -> null
-    }
-
-    NeonPanel(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        glow = rarityGlow ?: if (item.tab == "army") CocMagenta else CocCyan,
-        innerPadding = 4.dp
+    Column(
+        modifier = modifier
+            .heightIn(min = 166.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 3.dp, vertical = 5.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 158.dp)
-                .padding(horizontal = 3.dp, vertical = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .size(66.dp)
+                .clip(RoundedCornerShape(15.dp))
+                .background(rarityTint.copy(alpha = 0.12f))
+                .border(2.dp, rarityTint, RoundedCornerShape(15.dp))
+                .padding(5.dp),
+            contentAlignment = Alignment.Center
         ) {
             if (remote?.imageUrl?.isNotBlank() == true) {
                 AsyncImage(
                     model = remote.imageUrl,
                     contentDescription = itemName,
-                    modifier = Modifier.size(52.dp),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit
                 )
             } else {
-                CategoryImage(item, 52)
+                CategoryImage(item, 54)
             }
+        }
+        Text(
+            itemName,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        owner?.let {
             Text(
-                itemName,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-            if (rarity != null) ItemRarityBadge(rarity)
-            Text(
-                item.level?.let { level ->
-                    maxLevel?.let { "CẤP $level/$it" } ?: "CẤP $level"
-                } ?: "CHƯA CÓ CẤP",
-                color = MaterialTheme.colorScheme.tertiary,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Black,
+                "👑 $it",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 8.sp,
                 maxLines = 1,
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.14f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 7.dp, vertical = 2.dp)
+                overflow = TextOverflow.Ellipsis
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                if (item.count > 1) {
-                    Text(
-                        "×${item.count}",
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-                if (item.gearUp) {
-                    Spacer(Modifier.width(5.dp))
-                    Text("ĐÃ GHÉP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                }
-                item.weaponLevel?.let {
-                    Spacer(Modifier.width(5.dp))
-                    Text("VŨ KHÍ $it", color = MaterialTheme.colorScheme.primary, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                }
-            }
+        }
+        if (rarity != null) ItemRarityBadge(rarity)
+        Text(
+            item.level?.let { level ->
+                "CẤP $level" + (effectiveMax?.let { " / $it" } ?: "")
+            } ?: "CHƯA CÓ CẤP",
+            color = MaterialTheme.colorScheme.tertiary,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Black,
+            maxLines = 1
+        )
+        if (hallMax != null || absoluteMax != null) {
             Text(
-                "CHẠM ĐỂ XEM CHI TIẾT",
+                "TH/BH: ${hallMax ?: "—"} • MAX: ${absoluteMax ?: "—"}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 7.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
                 maxLines = 1
             )
         }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (item.count > 1) Text("×${item.count}", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp)
+            if (item.gearUp) Text("⚙ ĐÃ GHÉP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            item.weaponLevel?.let { Text("VŨ KHÍ $it", color = MaterialTheme.colorScheme.primary, fontSize = 8.sp) }
+        }
+        Text(
+            "CHẠM ĐỂ XEM CHI TIẾT",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 7.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
+        )
     }
+}
+
+private fun equipmentHeroName(heroId: String): String = when (heroId.lowercase()) {
+    "barbarian-king" -> "Vua man di"
+    "archer-queen" -> "Nữ hoàng cung thủ"
+    "minion-prince" -> "Hoàng tử tiểu quỷ"
+    "grand-warden" -> "Đại hộ vệ"
+    "royal-champion" -> "Nhà vô địch Hoàng gia"
+    "dragon-duke" -> "Công tước Rồng"
+    else -> heroId.replace('-', ' ').replaceFirstChar { it.uppercase() }
+}
+
+private fun rarityColor(rarity: String?): Color? = when (rarity?.lowercase()) {
+    "common" -> Color(0xFF55B9FF)
+    "rare" -> Color(0xFF39D8D0)
+    "epic" -> Color(0xFFB77AFF)
+    "legendary" -> Color(0xFFFFC857)
+    else -> null
 }
 
 
