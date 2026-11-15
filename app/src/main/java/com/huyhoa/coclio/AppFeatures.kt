@@ -419,6 +419,9 @@ object FirebaseMessagingTopicSubscriptions {
                 messaging.unsubscribeFromTopic(COMMUNITY_TOPIC)
             }).awaitFirebaseResult()
         }
+        runCatching {
+            messaging.unsubscribeFromTopic("coc_lio_updates").awaitFirebaseResult()
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.getSystemService(NotificationManager::class.java)
                 .deleteNotificationChannel("coc_lio_app_updates")
@@ -3007,7 +3010,6 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
 }
 
 private const val COC_LIO_COMMUNITY_CHANNEL = "coc_lio_community_messages"
-private const val COC_LIO_UPDATE_CHANNEL = "coc_lio_app_updates"
 private const val COC_LIO_COMMUNITY_SHORTCUT = "coc_lio_community_conversation"
 
 private fun ensureCommunityBubbleShortcut(context: Context) {
