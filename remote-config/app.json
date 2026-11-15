@@ -41,28 +41,18 @@
   "navigation": {
     "items": [
       {
-        "id": "home",
-        "title": "Tổng quan",
-        "enabled": true
-      },
-      {
-        "id": "buildings",
-        "title": "Thông tin",
-        "enabled": true
-      },
-      {
         "id": "history",
         "title": "JSON",
         "enabled": true
       },
       {
-        "id": "community",
-        "title": "Cộng đồng",
+        "id": "lookup",
+        "title": "Tra cứu ID",
         "enabled": true
       },
       {
-        "id": "lookup",
-        "title": "Tra cứu ID",
+        "id": "community",
+        "title": "Cộng đồng",
         "enabled": true
       },
       {
@@ -73,8 +63,6 @@
     ]
   },
   "features": {
-    "home": true,
-    "buildings": true,
     "history": true,
     "community": true,
     "lookup": true,
