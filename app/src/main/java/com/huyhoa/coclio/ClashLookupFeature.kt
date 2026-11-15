@@ -204,7 +204,7 @@ private suspend fun searchClashKing(
     val primaryResponse = successful.firstOrNull { it.third == requestTerms.first() }
         ?: successful.first()
     ClashLookupSearchPage(
-        matchedCandidates.ifEmpty { allCandidates },
+        matchedCandidates,
         primaryResponse.second
     )
 }
