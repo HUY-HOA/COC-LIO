@@ -185,6 +185,25 @@ private fun paletteForLed(preset: String): List<Color> = when (preset) {
     else -> DefaultLedPalette
 }
 
+internal fun ledCycleDurationMillis(
+    speedPercent: Int,
+    speedMultiplier: Float
+): Int {
+    val speed = speedPercent.coerceIn(0, 100)
+    if (speed == 0) return 0
+
+    val multiplier = speedMultiplier.coerceIn(0.5f, 3f).toDouble()
+    val normalizedSpeed = (speed - 1) / 99.0
+    val minCyclesPerSecond = 1_000.0 / 7_428.75
+    val maxCyclesPerSecond = 1_000.0 / 375.0
+    val cyclesPerSecond = (
+        minCyclesPerSecond +
+            (maxCyclesPerSecond - minCyclesPerSecond) * normalizedSpeed
+        ) * multiplier
+
+    return (1_000.0 / cyclesPerSecond).roundToInt().coerceAtLeast(1)
+}
+
 private fun movingLedColors(
     palette: List<Color>,
     phase: Float,
@@ -378,19 +397,27 @@ private fun NeonButton(
 ) {
     val shape = RoundedCornerShape(14.dp)
     val led = LocalLedTheme.current
-    val palette = led.palette.map { it.copy(alpha = led.brightness) }
-    val buttonFillPalette = led.palette.map { it.copy(alpha = if (enabled) 1f else 0.45f) }
+    val brightness = led.brightness.coerceIn(0f, 1f)
+    val buttonFillAlpha = brightness * if (enabled) 1f else 0.45f
+    val buttonFillPalette = led.palette.map { it.copy(alpha = buttonFillAlpha) }
     Box(
         modifier = modifier
             .shadow(5.dp, shape)
             .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
             .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .background(Brush.horizontalGradient(buttonFillPalette.take(3)))
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, color = Color(0xFF06101F), fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 0.25.sp)
+        Text(
+            text,
+            color = if (buttonFillAlpha < 0.5f) MaterialTheme.colorScheme.onSurface else Color(0xFF06101F),
+            fontWeight = FontWeight.Black,
+            fontSize = 11.sp,
+            letterSpacing = 0.25.sp
+        )
     }
 }
 
@@ -656,14 +683,10 @@ private fun CocLioApp(
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 1f).coerceIn(0f, 1f)) }
     var ledGlowEnabled by remember { mutableStateOf(ledPrefs.getBoolean("glow_enabled", true)) }
     val ledSpeedMultiplier = remoteAppConfig.ledSpeedMultiplier.coerceIn(0.5f, 3f)
-    val minLedSpeedMillis = (375f / ledSpeedMultiplier).roundToInt().coerceAtLeast(125)
-    val maxLedSpeedMillis = (7500f / ledSpeedMultiplier).roundToInt().coerceAtLeast(minLedSpeedMillis)
-    val ledSpeedMillis = if (ledSpeed <= 0 || !ledEnabled) {
-        0
+    val ledSpeedMillis = if (ledEnabled) {
+        ledCycleDurationMillis(ledSpeed, ledSpeedMultiplier)
     } else {
-        ((30000f - (ledSpeed.coerceIn(1, 100) / 100f) * 28500f) / 4f / ledSpeedMultiplier)
-            .roundToInt()
-            .coerceIn(minLedSpeedMillis, maxLedSpeedMillis)
+        0
     }
     val ledProgress = remember { mutableStateOf(0f) }
     val currentLedSpeedMillis by rememberUpdatedState(ledSpeedMillis)
