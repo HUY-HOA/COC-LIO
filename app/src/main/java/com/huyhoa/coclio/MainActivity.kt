@@ -2641,7 +2641,7 @@ private fun rarityColor(rarity: String?): Color? = when (rarity?.lowercase()) {
 }
 
 
-private val EquipmentDescriptionsVi = mapOf(
+internal val EquipmentDescriptionsVi = mapOf(
     90000048 to "Triệu hồi một Đại khổng lồ chiến đấu bên cạnh Nữ hoàng Cung thủ.",
     90000002 to "Triệu hồi một nhóm Cung thủ tàng hình.",
     90000000 to "Triệu hồi một nhóm Man di được tăng sức mạnh cuồng nộ.",
@@ -2687,7 +2687,7 @@ private val EquipmentDescriptionsVi = mapOf(
     90000011 to "Mỗi lần Vua Man di tấn công, ông sẽ tự hồi máu."
 )
 
-private val CatalogDescriptionsVi = mapOf(
+internal val CatalogDescriptionsVi = mapOf(
     4000041 to "Rồng con này hiếu động, thích phun lửa và gây hỗn loạn. Nhỏ bé nhưng có sức tàn phá đáng gờm.",
     4000033 to "Tấn công mục tiêu từ xa, phát sáng trong bóng tối và luôn sẵn sàng khuấy động chiến trường.",
     4000035 to "Ném bom gây sát thương mạnh lên mục tiêu và gây thêm sát thương lên Tường.",
@@ -3016,7 +3016,7 @@ private val EquipmentStatLabelsVi = mapOf(
     "targets" to "Mục tiêu"
 )
 
-private fun localizedCatalogField(label: String, value: String, isEnglish: Boolean): Pair<String, String> {
+internal fun localizedCatalogField(label: String, value: String, isEnglish: Boolean): Pair<String, String> {
     if (isEnglish) return label to value
     val normalizedLabel = label.trim()
         .replace(Regex("([a-z0-9])([A-Z])")) { "${it.groupValues[1]} ${it.groupValues[2]}" }
