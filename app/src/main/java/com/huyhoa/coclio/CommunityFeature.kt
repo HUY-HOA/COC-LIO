@@ -331,7 +331,7 @@ class CommunityArchiveCleanupWorker(
 ) : CoroutineWorker(appContext, workerParams) {
     override suspend fun doWork(): Result {
         val user = FirebaseAuth.getInstance().currentUser ?: return Result.success()
-        if (!user.isEmailVerified || user.email?.equals("phunghuyhoahkb@gmail.com", ignoreCase = true) != true) {
+        if (!user.isEmailVerified || !FirebaseAccountAdministration.isOwner(user.email)) {
             return Result.success()
         }
         return try {
