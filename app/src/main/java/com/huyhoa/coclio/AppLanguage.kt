@@ -1053,6 +1053,7 @@ private val englishTranslations = mapOf(
     "Thao tác sẽ xóa vĩnh viễn tất cả bản ghi trong KHO ĐÃ GỠ trên Firebase: tin nhắn, JSON, ảnh, tệp và APK. Nội dung đang còn trong Cộng đồng và JSON đang hoạt động sẽ không bị xóa. Không thể hoàn tác." to "This permanently deletes all records in the REMOVED ARCHIVE on Firebase: messages, JSON, images, files and APKs. Active Community posts and active JSON will not be deleted. This action cannot be undone.",
     "Xóa toàn bộ lưu trữ Firebase?" to "Delete all Firebase archive data?",
     "XÓA TOÀN BỘ LƯU TRỮ FIREBASE" to "DELETE ALL FIREBASE ARCHIVE DATA",
+    "Đã xóa toàn bộ lưu trữ Firebase." to "All Firebase archive data has been deleted.",
     "Xóa vĩnh viễn toàn bộ Kho đã gỡ?" to "Permanently delete the entire Removed Archive?",
     "Tất cả tin nhắn, ảnh, tệp và APK trong Kho đã gỡ sẽ bị xóa khỏi Firestore. Nội dung đang còn trong Cộng đồng sẽ không bị ảnh hưởng. Thao tác này không thể hoàn tác." to "All messages, images, files and APKs in the Removed Archive will be deleted from Firestore. Content still in the Community will not be affected. This action cannot be undone.",
     "TRA CỨU NGƯỜI CHƠI & BANG HỘI" to "PLAYER & CLAN LOOKUP",
@@ -1253,6 +1254,10 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         Regex("^Kho đã gỡ: (\\d+) tin nhắn, (\\d+) ảnh, (\\d+) tệp và APK$").matchEntire(source) != null ->
             Regex("^Kho đã gỡ: (\\d+) tin nhắn, (\\d+) ảnh, (\\d+) tệp và APK$").matchEntire(source)!!.let {
                 "Removed archive: ${it.groupValues[1]} messages, ${it.groupValues[2]} images, ${it.groupValues[3]} files and APKs"
+            }
+        Regex("^Kho đã gỡ: (\\d+) tin nhắn/JSON, (\\d+) ảnh, (\\d+) tệp, (\\d+) APK$").matchEntire(source) != null ->
+            Regex("^Kho đã gỡ: (\\d+) tin nhắn/JSON, (\\d+) ảnh, (\\d+) tệp, (\\d+) APK$").matchEntire(source)!!.let {
+                "Removed archive: ${it.groupValues[1]} messages/JSON, ${it.groupValues[2]} images, ${it.groupValues[3]} files, ${it.groupValues[4]} APKs"
             }
         source.startsWith("không đọc được") ->
             "Unable to read" + source.removePrefix("không đọc được")
