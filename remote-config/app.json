@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": 5,
+  "version": 6,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -47,7 +47,7 @@
       },
       {
         "id": "lookup",
-        "title": "Tra cứu ID",
+        "title": "ID",
         "enabled": true
       },
       {
