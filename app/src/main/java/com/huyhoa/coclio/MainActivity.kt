@@ -3197,7 +3197,9 @@ private fun VillageItemDetailDialog(
             ?: remote?.description?.takeIf { it.isNotBlank() }
     }
     val levelDetails = remote?.levelDetails.orEmpty()
-    val availableStatsLevels = levelDetails.keys.sorted()
+    val availableStatsLevels = (levelDetails.keys + upgradeEntry?.levels.orEmpty().map { it.level })
+        .distinct()
+        .sorted()
     val initialStatsTarget = item.level ?: availableStatsLevels.firstOrNull() ?: 1
     val initialStatsLevel = availableStatsLevels.minByOrNull {
         kotlin.math.abs(it - initialStatsTarget)
@@ -3416,13 +3418,14 @@ private fun VillageItemDetailDialog(
                         )
                     }
                     val stats = levelDetails[selectedStatsLevel].orEmpty()
-                    if (stats.isEmpty()) {
+                    val catalogStats = upgradeEntry?.level(selectedStatsLevel)?.displayStats().orEmpty()
+                    if (stats.isEmpty() && catalogStats.isEmpty()) {
                         Text(
                             "Chưa có chỉ số cho cấp này.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp
                         )
-                    } else {
+                    } else if (stats.isNotEmpty()) {
                         stats.forEachIndexed { index, rawValue ->
                             val separator = rawValue.indexOf(':')
                             val rawLabel = if (separator > 0) {
@@ -3438,14 +3441,13 @@ private fun VillageItemDetailDialog(
                             val (label, displayValue) = localizedCatalogField(rawLabel, value, isEnglish)
                             VillageItemStatField(label, displayValue)
                         }
+                    } else {
+                        catalogStats.forEach { (rawLabel, rawValue) ->
+                            val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
+                            val (label, value) = localizedCatalogField(normalizedLabel, rawValue, isEnglish)
+                            VillageItemStatField(label, value)
+                        }
                     }
-                }
-                val catalogLevel = upgradeEntry?.level(selectedStatsLevel)
-                    ?: upgradeEntry?.level(currentLevel.coerceAtLeast(1))
-                catalogLevel?.displayStats()?.forEach { (rawLabel, rawValue) ->
-                    val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
-                    val (label, value) = localizedCatalogField(normalizedLabel, rawValue, isEnglish)
-                    VillageItemStatField(label, value)
                 }
                 remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let {
                     VillageItemDetailField("Chi phí nâng cấp", it)
