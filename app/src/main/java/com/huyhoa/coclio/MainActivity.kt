@@ -2241,9 +2241,11 @@ private fun CategoryScreen(
                 "resource" -> "resources"
                 "defense" -> "defense"
                 "trap" -> "traps"
+                "army", "research" -> "army"
+                "wall" -> "walls"
                 else -> null
             }
-        }?.takeIf { it in setOf("defense", "resources", "traps", "other") }
+        }?.takeIf { it in setOf("defense", "resources", "traps", "army", "walls", "other") }
             ?: remoteCatalog[item.dataId]?.category
                 ?.takeIf { it in setOf("defense", "resources", "traps", "other") }
             ?: when {
@@ -2259,14 +2261,16 @@ private fun CategoryScreen(
             "hero" -> "heroes"
             "spell" -> "spells"
             "pet" -> "pets"
+            "guardian" -> "guardians"
             "hero-equipment" -> "equipment"
             else -> remoteCatalog[item.dataId]?.category
-                ?.takeIf { it in setOf("troops", "heroes", "spells", "pets", "equipment", "other") }
+                ?.takeIf { it in setOf("troops", "heroes", "spells", "pets", "guardians", "equipment", "other") }
                 ?: when (item.sectionKey) {
                     "units", "units2", "siege_machines" -> "troops"
                     "heroes", "heroes2" -> "heroes"
                     "spells" -> "spells"
                     "pets" -> "pets"
+                    "guardians" -> "guardians"
                     "equipment" -> "equipment"
                     else -> "other"
                 }
@@ -2277,6 +2281,8 @@ private fun CategoryScreen(
             "all" to "Tất cả",
             "defense" to "Phòng thủ",
             "resources" to "Tài nguyên",
+            "army" to "Công trình quân đội",
+            "walls" to "Tường",
             "traps" to "Bẫy",
             "other" to "Khác"
         ).filter { (key, _) -> key == "all" || baseItems.any { buildingCategory(it) == key } }
@@ -2284,6 +2290,7 @@ private fun CategoryScreen(
         listOf(
             "all" to "Tất cả",
             "troops" to "Quân lính & máy công thành",
+            "guardians" to "Hộ vệ",
             "heroes" to "Anh hùng",
             "spells" to "Thần chú",
             "pets" to "Linh thú",
@@ -2331,9 +2338,12 @@ private fun CategoryScreen(
     fun groupTitle(key: String, rows: List<VillageItem>): String = when (key) {
         "defense" -> "CÔNG TRÌNH PHÒNG THỦ"
         "resources" -> "CÔNG TRÌNH TÀI NGUYÊN"
+        "army" -> "CÔNG TRÌNH QUÂN ĐỘI & NGHIÊN CỨU"
+        "walls" -> "TƯỜNG"
         "traps" -> "BẪY"
         "other" -> if (tab == "buildings") "CÔNG TRÌNH KHÁC" else "MỤC KHÁC"
         "troops" -> "QUÂN LÍNH & MÁY CÔNG THÀNH"
+        "guardians" -> "HỘ VỆ"
         "heroes" -> "ANH HÙNG"
         "spells" -> "THẦN CHÚ"
         "pets" -> "LINH THÚ"
@@ -2346,6 +2356,7 @@ private fun CategoryScreen(
         key == "resources" -> CocGold
         key == "traps" -> CocViolet
         key == "troops" -> CocMagenta
+        key == "guardians" -> Color(0xFFFFB45C)
         key == "heroes" -> Color(0xFFFFB45C)
         key == "spells" -> Color(0xFF64B5F6)
         key == "pets" -> Color(0xFF6FE0B4)
