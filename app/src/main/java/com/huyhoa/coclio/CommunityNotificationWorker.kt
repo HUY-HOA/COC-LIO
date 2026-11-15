@@ -114,6 +114,7 @@ class CommunityNotificationWorker(
                     NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()
             val communityChannelBlocked = communityEnabled &&
                 isNotificationChannelBlocked(applicationContext, "coc_lio_community_messages")
+            if (!notificationsAllowed || communityChannelBlocked) {
                 return@withLock Result.success()
             }
 
