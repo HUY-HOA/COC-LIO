@@ -86,6 +86,7 @@ object RemoteContentManager {
 
     fun startRealtimeUpdates(context: Context) {
         if (!accessAllowed || FirebaseAuth.getInstance().currentUser == null) return
+        val appContext = context.applicationContext
 
         if (listenerRegistration == null) {
             listenerRegistration = FirebaseFirestore.getInstance()
@@ -98,16 +99,16 @@ object RemoteContentManager {
                     } else {
                         RemoteContentState()
                     }
-                    publish(context.applicationContext, parsed)
+                    publish(appContext, parsed)
                 }
         }
 
-        refreshFromCloudflare(context.applicationContext)
+        refreshFromCloudflare(appContext)
         if (cloudflarePollingJob?.isActive != true) {
             cloudflarePollingJob = cloudflareScope.launch {
                 while (isActive && accessAllowed) {
                     delay(5 * 60 * 1000L)
-                    if (accessAllowed) refreshFromCloudflare(context.applicationContext)
+                    if (accessAllowed) refreshFromCloudflare(appContext)
                 }
             }
         }

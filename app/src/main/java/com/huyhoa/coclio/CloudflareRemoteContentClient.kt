@@ -55,8 +55,17 @@ internal object CloudflareRemoteContentClient {
                 return@withContext cachedState
             }
 
-            val raw = connection.inputStream.use(::readLimited).toString(Charsets.UTF_8)
+            val responseBytes = connection.inputStream.use(::readLimited)
+            val expectedHash = connection.getHeaderField("X-COC-LIO-Content-Hash")
+                ?.takeIf { it.matches(Regex("[a-f0-9]{64}")) }
+                ?: return@withContext cachedState
+            if (sha256(responseBytes) != expectedHash) return@withContext cachedState
+
+            val raw = responseBytes.toString(Charsets.UTF_8)
             val remoteState = parseState(raw) ?: return@withContext cachedState
+            val advertisedVersion = connection.getHeaderField("X-COC-LIO-Content-Version")
+                ?.toIntOrNull() ?: return@withContext cachedState
+            if (advertisedVersion != remoteState.version) return@withContext cachedState
             if (cachedState != null && remoteState.version <= cachedState.version) {
                 return@withContext cachedState
             }
@@ -81,6 +90,11 @@ internal object CloudflareRemoteContentClient {
         require((root.optJSONArray("catalog")?.length() ?: 0) <= 500)
         parseRemoteContent(root.toSafeMap())
     }.getOrNull()
+
+    private fun sha256(value: ByteArray): String =
+        java.security.MessageDigest.getInstance("SHA-256")
+            .digest(value)
+            .joinToString("") { byte -> "%02x".format(byte) }
 
     private fun saveAtomically(target: File, value: String) {
         val temporary = File(target.parentFile, target.name + ".tmp")
