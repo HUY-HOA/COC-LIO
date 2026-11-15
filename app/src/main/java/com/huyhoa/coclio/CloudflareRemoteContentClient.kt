@@ -94,7 +94,7 @@ internal object CloudflareRemoteContentClient {
     private fun sha256(value: ByteArray): String =
         java.security.MessageDigest.getInstance("SHA-256")
             .digest(value)
-            .joinToString("") { byte -> "%02x".format(byte) }
+            .joinToString("") { byte -> (byte.toInt() and 0xff).toString(16).padStart(2, '0') }
 
     private fun saveAtomically(target: File, value: String) {
         val temporary = File(target.parentFile, target.name + ".tmp")
