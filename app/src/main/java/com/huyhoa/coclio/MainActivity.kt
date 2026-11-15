@@ -279,80 +279,77 @@ internal fun LedBrandTitle(
     }
 
     val phase = led.progress.value.rem(1f)
-    val fullPalette = led.palette.map { it.copy(alpha = 1f) }
-    val haloPalette = led.palette.map { it.copy(alpha = 0.68f) }
-    val coreBrush = Brush.linearGradient(movingLedColors(fullPalette, phase))
-    val haloBrush = Brush.linearGradient(movingLedColors(haloPalette, phase))
-    val outlineWidth = with(LocalDensity.current) { outlineWidthDp.coerceAtLeast(0.1f).dp.toPx() }
-
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text,
-            style = TextStyle(
-                brush = haloBrush,
-                drawStyle = Stroke(width = outlineWidth * 3f),
-                shadow = androidx.compose.ui.graphics.Shadow(
-                    color = CocCyan.copy(alpha = 0.96f),
-                    blurRadius = outlineWidth * 11f
-                )
-            ),
-            fontSize = fontSize,
-            fontWeight = FontWeight.Black,
-            letterSpacing = letterSpacing,
-            textAlign = textAlign,
-            maxLines = 1
-        )
-        Text(
-            text,
-            style = TextStyle(
-                brush = haloBrush,
-                drawStyle = Stroke(width = outlineWidth),
-                shadow = androidx.compose.ui.graphics.Shadow(
-                    color = CocMagenta.copy(alpha = 0.82f),
-                    blurRadius = outlineWidth * 4f
-                )
-            ),
-            fontSize = fontSize,
-            fontWeight = FontWeight.Black,
-            letterSpacing = letterSpacing,
-            textAlign = textAlign,
-            maxLines = 1
-        )
-        Text(
-            text,
-            style = TextStyle(
-                brush = coreBrush,
-                shadow = androidx.compose.ui.graphics.Shadow(
-                    color = CocCyan.copy(alpha = 0.72f),
-                    blurRadius = outlineWidth * 3f
-                )
-            ),
-            fontSize = fontSize,
-            fontWeight = FontWeight.Black,
-            letterSpacing = letterSpacing,
-            textAlign = textAlign,
-            maxLines = 1
-        )
+    val palette = led.palette.ifEmpty { listOf(CocCyan) }
+    val coreBrush = Brush.linearGradient(
+        movingLedColors(palette.map { it.copy(alpha = 1f) }, phase)
+    )
+    val glowColor = palette.first().copy(alpha = 0.24f)
+    val glowBlur = with(LocalDensity.current) {
+        outlineWidthDp.coerceIn(0.1f, 2f).dp.toPx() * 1.8f
     }
+
+    Text(
+        text,
+        modifier = modifier,
+        style = TextStyle(
+            brush = coreBrush,
+            shadow = if (led.glowEnabled) {
+                androidx.compose.ui.graphics.Shadow(
+                    color = glowColor,
+                    blurRadius = glowBlur
+                )
+            } else {
+                null
+            }
+        ),
+        fontSize = fontSize,
+        fontWeight = FontWeight.Black,
+        letterSpacing = letterSpacing,
+        textAlign = textAlign,
+        maxLines = 1
+    )
 }
 
 @Composable
 internal fun LedAdminAvatar(size: androidx.compose.ui.unit.Dp = 30.dp) {
+    val led = LocalLedTheme.current
+    val phase = led.progress.value.rem(1f)
+    val palette = led.palette.ifEmpty { listOf(CocCyan) }
+    val ringBrush: Brush = if (led.enabled && palette.size >= 2) {
+        Brush.sweepGradient(movingLedColors(palette, phase))
+    } else {
+        SolidColor(MaterialTheme.colorScheme.outlineVariant)
+    }
+    val textBrush: Brush = if (led.enabled) {
+        Brush.linearGradient(movingLedColors(palette, phase))
+    } else {
+        SolidColor(MaterialTheme.colorScheme.onSurface)
+    }
+
     Box(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .background(Color.Black),
+            .background(Color.Black)
+            .border(1.dp, ringBrush, CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        LedBrandTitle(
-            text = "ADMIN",
-            fontSize = (size.value * 0.19f).sp,
-            letterSpacing = 0.05.sp,
-            outlineWidthDp = (size.value * 0.018f).coerceIn(0.35f, 0.7f)
+        Text(
+            "A",
+            style = TextStyle(
+                brush = textBrush,
+                shadow = if (led.enabled && led.glowEnabled) {
+                    androidx.compose.ui.graphics.Shadow(
+                        color = palette.first().copy(alpha = 0.18f),
+                        blurRadius = with(LocalDensity.current) { 1.dp.toPx() }
+                    )
+                } else {
+                    null
+                }
+            ),
+            fontSize = (size.value * 0.52f).sp,
+            fontWeight = FontWeight.Black,
+            maxLines = 1
         )
     }
 }
