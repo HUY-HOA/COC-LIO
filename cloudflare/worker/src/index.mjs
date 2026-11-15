@@ -10,6 +10,17 @@ const baseHeaders = {
 const GITHUB_RAW_ROOT =
   "https://raw.githubusercontent.com/HUY-HOA-1/COC-LIO/main/";
 
+function safeError(error) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: String(error.message || "").slice(0, 240),
+      stack: String(error.stack || "").split("\\n").slice(0, 5).join("\\n")
+    };
+  }
+  return { message: String(error).slice(0, 240) };
+}
+
 function jsonResponse(body, status = 200, extraHeaders = {}) {
   const headers = new Headers(baseHeaders);
   headers.set("Content-Type", "application/json; charset=utf-8");
@@ -36,7 +47,9 @@ async function fetchRepositoryJson(path) {
     headers: { Accept: "application/json" },
     cf: { cacheTtl: 60, cacheEverything: true }
   });
-  if (!response.ok) throw new Error("GitHub content fetch failed: " + path);
+  if (!response.ok) {
+    throw new Error("GITHUB_FETCH_FAILED:" + path + ":HTTP_" + response.status);
+  }
   return response.json();
 }
 
@@ -113,8 +126,9 @@ async function publishLatestRepositoryContent(env, existingPointer) {
   try {
     await env.CONTENT.put(key, content);
     await env.CONTENT.put("content/current", JSON.stringify(pointer));
-  } catch {
+  } catch (error) {
     stored = false;
+    console.error("COC_LIO_KV_PUBLISH_FAILED", safeError(error));
   }
   return { content, pointer, stored };
 }
@@ -226,14 +240,16 @@ export default {
             latest.stored ? "cloudflare-kv" : "github-origin"
           );
         }
-      } catch {
+      } catch (error) {
+        console.error("COC_LIO_CONTENT_SYNC_FAILED", safeError(error));
       }
 
       pointer = await env.CONTENT.get("content/current", { type: "json", cacheTtl: 60 });
       const stored = await readStoredContent(env, pointer);
       if (!stored) return jsonResponse({ error: "CONTENT_SERVICE_UNAVAILABLE" }, 503);
       return contentResponse(request, stored.content, stored.pointer);
-    } catch {
+    } catch (error) {
+      console.error("COC_LIO_WORKER_REQUEST_FAILED", safeError(error));
       return jsonResponse({ error: "CONTENT_SERVICE_UNAVAILABLE" }, 502);
     }
   }
