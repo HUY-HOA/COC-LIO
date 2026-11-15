@@ -3386,6 +3386,46 @@ private fun VillageItemDetailDialog(
                             VillageItemDetailField("🕒 Thời gian bổ sung", formatDuration(totals.durationSeconds))
                         }
                     }
+                    if (entry.superchargeLevels.isNotEmpty()) {
+                        Text(
+                            "SIÊU CƯỜNG HÓA • TIẾN TRÌNH RIÊNG",
+                            color = CocGold,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        val superchargeCap = CocUpgradeCatalog.superchargeMaxAtHall(entry, hallLevel)
+                        if ((item.level ?: 0) < entry.maxLevel) {
+                            VillageItemDetailField(
+                                "Điều kiện",
+                                "Cần đạt cấp thường tối đa ${entry.maxLevel} trước khi tính các bậc Siêu cường hóa."
+                            )
+                        } else if (superchargeCap == null) {
+                            VillageItemDetailField(
+                                "Giới hạn Siêu cường hóa",
+                                "Chưa đủ dữ liệu cấp Nhà chính/Nhà thợ xây để xác định bậc được mở."
+                            )
+                        } else {
+                            VillageItemDetailField("Bậc Siêu cường hóa tối đa được mở", superchargeCap.toString())
+                            val totals = CocUpgradeCatalog.superchargeTotals(entry, 0, superchargeCap)
+                            entry.superchargeLevels.filter { it.level <= superchargeCap }.forEach { tier ->
+                                VillageItemDetailField("BẬC SIÊU CƯỜNG HÓA ${tier.level}", "")
+                                if (tier.cost() > 0L) UpgradeResourceChip(tier.resource(), tier.cost())
+                                tier.oreCosts().forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
+                                if (tier.durationSeconds() > 0L) {
+                                    VillageItemDetailField("⏱️ Thời gian bậc ${tier.level}", formatDuration(tier.durationSeconds()))
+                                }
+                            }
+                            Text("TỔNG CHI PHÍ SIÊU CƯỜNG HÓA ĐANG MỞ", color = CocGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                            totals.resources.forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
+                            if (totals.durationSeconds > 0L) {
+                                VillageItemDetailField("🕒 Tổng thời gian siêu cường hóa", formatDuration(totals.durationSeconds))
+                            }
+                            VillageItemDetailField(
+                                "Lưu ý",
+                                "JSON làng hiện không xác nhận bậc Siêu cường hóa đã hoàn thành. Các bậc trên là dữ liệu có thể nâng cấp, không phải trạng thái thực tế."
+                            )
+                        }
+                    }
                     if (hallMax == null && targetAtMax > currentLevel) {
                         VillageItemDetailField(
                             "Giới hạn theo Nhà chính",
