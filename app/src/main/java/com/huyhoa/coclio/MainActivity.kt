@@ -911,14 +911,14 @@ private fun CocLioApp(
                     AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, true)
                     communityNotificationsEnabled = true
                 }
-}
+            }
         } else {
             when (target) {
                 "community" -> {
                     AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, false)
                     communityNotificationsEnabled = false
                 }
-}
+            }
             scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
         }
     }
