@@ -2636,18 +2636,83 @@ private val EquipmentStatLabelsVi = mapOf(
     "chain distance" to "Khoảng cách dây chuyền",
     "max counter range" to "Tầm phản công tối đa",
     "counter cooldown" to "Thời gian hồi phản công",
-    "barbarian rage duration" to "Thời gian cuồng nộ của Man di"
+    "barbarian rage duration" to "Thời gian cuồng nộ của Man di",
+    "damage per second" to "Sát thương mỗi giây",
+    "damage per hit" to "Sát thương mỗi đòn",
+    "damage per attack" to "Sát thương mỗi lần tấn công",
+    "damage per shot" to "Sát thương mỗi phát bắn",
+    "hitpoints" to "Máu",
+    "hit points" to "Máu",
+    "health" to "Máu",
+    "housing space" to "Không gian nhà",
+    "movement speed" to "Tốc độ di chuyển",
+    "attack speed" to "Tốc độ tấn công",
+    "attack rate" to "Tốc độ tấn công",
+    "range" to "Tầm đánh",
+    "attack range" to "Tầm tấn công",
+    "preferred target" to "Mục tiêu ưu tiên",
+    "target type" to "Loại mục tiêu",
+    "damage type" to "Loại sát thương",
+    "attack type" to "Kiểu tấn công",
+    "training time" to "Thời gian huấn luyện",
+    "training cost" to "Chi phí huấn luyện",
+    "research cost" to "Chi phí nghiên cứu",
+    "research time" to "Thời gian nghiên cứu",
+    "upgrade cost" to "Chi phí nâng cấp",
+    "upgrade time" to "Thời gian nâng cấp",
+    "units per camp" to "Số đơn vị mỗi trại",
+    "troop housing space" to "Không gian nhà của quân",
+    "healing per second" to "Hồi máu mỗi giây",
+    "healing per hit" to "Hồi máu mỗi đòn",
+    "splash radius" to "Bán kính sát thương diện rộng",
+    "attack speed increase" to "Tăng tốc độ tấn công",
+    "movement speed increase" to "Tăng tốc độ di chuyển",
+    "ability level" to "Cấp kỹ năng",
+    "special ability" to "Kỹ năng đặc biệt",
+    "builder hall level required" to "Yêu cầu Nhà thợ xây cấp",
+    "town hall level required" to "Yêu cầu Nhà chính cấp",
+    "star lab required" to "Yêu cầu Phòng thí nghiệm sao cấp",
+    "laboratory level required" to "Yêu cầu Phòng thí nghiệm cấp",
+    "spell duration" to "Thời gian hiệu lực thần chú",
+    "spell radius" to "Bán kính thần chú",
+    "spell housing space" to "Không gian nhà thần chú",
+    "summoned units" to "Số đơn vị được triệu hồi",
+    "summoned unit level" to "Cấp đơn vị được triệu hồi",
+    "number summoned" to "Số lượng triệu hồi",
+    "attack speed bonus" to "Tốc độ tấn công cộng thêm",
+    "damage bonus" to "Sát thương cộng thêm",
+    "health bonus" to "Máu cộng thêm",
+    "duration" to "Thời gian hiệu lực",
+    "radius" to "Bán kính",
+    "speed" to "Tốc độ",
+    "dps" to "Sát thương mỗi giây",
+    "hp" to "Máu"
 )
 
 private fun localizedCatalogField(label: String, value: String, isEnglish: Boolean): Pair<String, String> {
     if (isEnglish) return label to value
-    val translatedLabel = EquipmentStatLabelsVi[label.trim().lowercase()] ?: label
-    val translatedValue = when (value.trim().lowercase()) {
+    val normalizedLabel = label.trim().lowercase().replace('_', ' ')
+    val translatedLabel = EquipmentStatLabelsVi[normalizedLabel] ?: label
+    val normalizedValue = value.trim().lowercase()
+    val translatedValue = when (normalizedValue) {
         "ground" -> "Mặt đất"
         "air" -> "Trên không"
-        "ground & air" -> "Mặt đất và trên không"
+        "ground & air", "ground and air" -> "Mặt đất và trên không"
+        "ground only" -> "Chỉ mặt đất"
+        "air only" -> "Chỉ trên không"
         "active" -> "Chủ động"
         "passive" -> "Bị động"
+        "single target" -> "Đơn mục tiêu"
+        "splash" -> "Sát thương diện rộng"
+        "melee (ground only)" -> "Cận chiến (chỉ mục tiêu mặt đất)"
+        "ranged (ground & air)" -> "Tầm xa (mặt đất và trên không)"
+        "ranged (ground only)" -> "Tầm xa (chỉ mục tiêu mặt đất)"
+        "ranged (air only)" -> "Tầm xa (chỉ mục tiêu trên không)"
+        "defenses" -> "Công trình phòng thủ"
+        "defense" -> "Phòng thủ"
+        "none" -> "Không có"
+        "yes" -> "Có"
+        "no" -> "Không"
         else -> value
     }
     return translatedLabel to translatedValue
@@ -2667,6 +2732,9 @@ private fun localizedCatalogText(value: String, isEnglish: Boolean): String {
     }
     return when (value.trim()) {
         "Available by default" -> "Có sẵn mặc định"
+        "Unlocked by default" -> "Được mở khóa mặc định"
+        "Available in the Shop" -> "Có trong Cửa hàng"
+        "Available from the Trader" -> "Có thể nhận từ Thương nhân"
         else -> value
     }
 }
