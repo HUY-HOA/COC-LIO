@@ -172,14 +172,12 @@ private val COMMUNITY_ARCHIVE_COLLECTIONS = listOf(
 private data class CommunityStorageCounts(
     val activeMessages: Long,
     val activeJsons: Long,
-    val activeApks: Long,
     val archivedMessages: Long,
     val archivedImages: Long,
-    val archivedFiles: Long,
-    val archivedApks: Long
+    val archivedFiles: Long
 ) {
-    val activeTotal: Long get() = activeMessages + activeJsons + activeApks
-    val archivedTotal: Long get() = archivedMessages + archivedImages + archivedFiles + archivedApks
+    val activeTotal: Long get() = activeMessages + activeJsons
+    val archivedTotal: Long get() = archivedMessages + archivedImages + archivedFiles
     val total: Long get() = activeTotal + archivedTotal
 }
 
@@ -195,11 +193,9 @@ private suspend fun countCommunityDocuments(collectionName: String): Long {
 private suspend fun loadCommunityStorageCounts(): CommunityStorageCounts = CommunityStorageCounts(
     activeMessages = countCommunityDocuments("community_messages"),
     activeJsons = countCommunityDocuments("community_shared_jsons"),
-    activeApks = countCommunityDocuments("app_updates"),
     archivedMessages = countCommunityDocuments("community_deleted_messages"),
     archivedImages = countCommunityDocuments("community_deleted_images"),
-    archivedFiles = countCommunityDocuments("community_deleted_files"),
-    archivedApks = countCommunityDocuments("app_update_archive")
+    archivedFiles = countCommunityDocuments("community_deleted_files")
 )
 
 private suspend fun deleteArchiveDocuments(
@@ -867,11 +863,6 @@ fun CommunityScreen(
                 }
 
                 if (archiveCategory == "file") {
-                    var filesLoaded = false
-                    var apksLoaded = false
-                    var archivedFiles = emptyList<CommunityArchiveItem>()
-                    var archivedApks = emptyList<CommunityArchiveItem>()
-
                     archiveRegistrations += firestore.collection("community_deleted_files")
                         .orderBy("archivedAt", Query.Direction.DESCENDING)
                         .addSnapshotListener { snapshot, error ->
@@ -879,24 +870,9 @@ fun CommunityScreen(
                                 archiveError = error.message ?: "Không thể tải kho tệp đã gỡ."
                                 loadingArchive = false
                             } else {
-                                archivedFiles = mapArchiveDocuments(snapshot?.documents.orEmpty(), "file")
-                                archiveItems = (archivedFiles + archivedApks).sortedByDescending { it.archivedAt }
-                                filesLoaded = true
-                                if (filesLoaded && apksLoaded) loadingArchive = false
-                            }
-                        }
-
-                    archiveRegistrations += firestore.collection("app_update_archive")
-                        .orderBy("archivedAt", Query.Direction.DESCENDING)
-                        .addSnapshotListener { snapshot, error ->
-                            if (error != null) {
-                                archiveError = error.message ?: "Không thể tải kho APK đã gỡ."
+                                archiveItems = mapArchiveDocuments(snapshot?.documents.orEmpty(), "file")
+                                archiveError = null
                                 loadingArchive = false
-                            } else {
-                                archivedApks = mapArchiveDocuments(snapshot?.documents.orEmpty(), "apk")
-                                archiveItems = (archivedFiles + archivedApks).sortedByDescending { it.archivedAt }
-                                apksLoaded = true
-                                if (filesLoaded && apksLoaded) loadingArchive = false
                             }
                         }
                 } else {
@@ -1297,12 +1273,12 @@ fun CommunityScreen(
                             Text("TỔNG CỘNG: ${counts.total} BẢN GHI", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Black)
                             Text("Cộng đồng: ${counts.activeTotal}  •  Kho đã gỡ: ${counts.archivedTotal}", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
                             Text(
-                                "Cộng đồng: ${counts.activeMessages} mục tin nhắn/ảnh/tệp, ${counts.activeJsons} JSON riêng, ${counts.activeApks} APK",
+                                "Cộng đồng: ${counts.activeMessages} mục tin nhắn/ảnh, ${counts.activeJsons} JSON riêng",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp
                             )
                             Text(
-                                "Kho đã gỡ: ${counts.archivedMessages} tin nhắn, ${counts.archivedImages} ảnh, ${counts.archivedFiles + counts.archivedApks} tệp và APK",
+                                "Kho đã gỡ: ${counts.archivedMessages} tin nhắn, ${counts.archivedImages} ảnh, ${counts.archivedFiles} tệp",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp
                             )
