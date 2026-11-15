@@ -1333,7 +1333,15 @@ private val englishTranslations = mapOf(
     "Ngày" to "Days",
     "Giờ" to "Hours",
     "Phút" to "Minutes",
-    "Dưới 1 phút" to "Under 1 minute"
+    "Dưới 1 phút" to "Under 1 minute",
+    "TÍNH TỔNG NÂNG CẤP THEO KHOẢNG CẤP" to "CALCULATE UPGRADE COST AND TIME BY LEVEL RANGE",
+    "Từ cấp" to "From level",
+    "Đến cấp" to "To level",
+    "Tổng thời gian nâng cấp" to "Total upgrade time",
+    "Tổng chi phí nâng cấp" to "Total upgrade cost",
+    "Kết quả tính toán" to "Calculation result",
+    "Chọn cấp đích lớn hơn cấp bắt đầu để tính tổng." to "Choose a target level higher than the starting level to calculate totals.",
+    "Nguồn hiện chưa có chi phí hoặc thời gian cho khoảng cấp này." to "The source does not currently provide costs or time for this level range."
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
