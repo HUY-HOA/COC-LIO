@@ -1086,10 +1086,6 @@ fun CommunityScreen(
                                 painter = painterResource(R.drawable.ic_coc_chat),
                                 contentDescription = if (showEmojiPicker) "Đóng bảng biểu cảm" else "Mở bảng biểu cảm",
                                 modifier = Modifier.size(22.dp),
-                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                                    if (showEmojiPicker) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                             )
                         }
                         OutlinedTextField(
