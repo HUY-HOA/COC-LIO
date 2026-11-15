@@ -1271,7 +1271,7 @@ private fun CocLioApp(
                                             "buildings" -> R.drawable.ic_coc_buildings
                                             "history" -> R.drawable.ic_coc_json
                                             "community" -> R.drawable.ic_coc_clan
-                                            "lookup" -> R.drawable.ic_coc_search
+                                            "lookup" -> R.drawable.ic_coc_tag
                                             else -> R.drawable.ic_coc_settings
                                         }
                                     ),
@@ -1359,12 +1359,6 @@ private fun CocLioApp(
                     }
                 }
             )
-            if (selectedTab == 2 && (remoteContent.guides.isNotEmpty() || remoteContent.links.isNotEmpty())) {
-                RemoteGuidesSection(
-                    guides = remoteContent.guides,
-                    links = remoteContent.links
-                )
-            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
