@@ -22,27 +22,26 @@ internal fun normalizeClashSearchText(value: String): String {
 
 internal fun clashSearchTerms(value: String): List<String> {
     val trimmed = value.trim()
-    val chunks = Regex("[\\p{L}\\p{N}]+")
+    val rawChunks = Regex("[\\p{L}\\p{N}]+")
         .findAll(trimmed)
-        .map { normalizeClashSearchText(it.value) }
-        .filter { it.length >= 2 }
+        .map { it.value.trim() }
+        .filter { normalizeClashSearchText(it).length >= 2 }
+        .toList()
+    val normalizedChunks = rawChunks
+        .map(::normalizeClashSearchText)
         .distinct()
-
     val normalized = normalizeClashSearchText(trimmed)
+
     return buildList {
         if (normalized.length >= 2) add(normalized)
-        addAll(chunks)
-        if (chunks.size > 1) add(chunks.joinToString(""))
-        Regex("[\\p{L}\\p{N}]+")
-            .findAll(trimmed)
-            .map { it.value.trim() }
-            .filter { it.length >= 2 }
-            .forEach(::add)
+        addAll(normalizedChunks)
+        if (normalizedChunks.size > 1) add(normalizedChunks.joinToString(""))
+        addAll(rawChunks)
         add(trimmed)
     }
         .map(String::trim)
-        .filter { it.length >= 2 }
-        .distinctBy { normalizeClashSearchText(it) }
+        .filter { normalizeClashSearchText(it).length >= 2 }
+        .distinctBy { it.uppercase(Locale.ROOT) }
         .take(8)
 }
 
