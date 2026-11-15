@@ -1255,7 +1255,24 @@ private val englishTranslations = mapOf(
     "Chi tiết 3" to "Detail 3",
     "Chi tiết 4" to "Detail 4",
     "Chi tiết 5" to "Detail 5",
-    "Chi tiết 6" to "Detail 6"
+    "Chi tiết 6" to "Detail 6",
+
+    "Loại kỹ năng" to "Ability type",
+    "Chủ động" to "Active",
+    "Bị động" to "Passive",
+    "THÔNG SỐ Ở CẤP HIỆN TẠI" to "CURRENT LEVEL STATS",
+    "Chỉ số 1" to "Stat 1",
+    "Chỉ số 2" to "Stat 2",
+    "Chỉ số 3" to "Stat 3",
+    "Chỉ số 4" to "Stat 4",
+    "Chỉ số 5" to "Stat 5",
+    "Chỉ số 6" to "Stat 6",
+    "Chỉ số 7" to "Stat 7",
+    "Chỉ số 8" to "Stat 8",
+    "Chỉ số 9" to "Stat 9",
+    "Chỉ số 10" to "Stat 10",
+    "Chỉ số 11" to "Stat 11",
+    "Chỉ số 12" to "Stat 12"
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
