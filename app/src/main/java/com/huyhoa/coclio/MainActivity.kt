@@ -663,6 +663,7 @@ private fun CocLioApp(
     themeMode: String,
     onThemeModeChanged: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val remoteAppConfig by RemoteAppConfigManager.config.collectAsState()
     val remoteContent by RemoteContentManager.content.collectAsState()
     val baseDensity = LocalDensity.current
@@ -1766,7 +1767,6 @@ private fun GoogleLoginStartScreen(
     readError: String?,
     onGoogleSignIn: () -> Unit
 ) {
-    val context = LocalContext.current
     Box(
         modifier = modifier.padding(10.dp),
         contentAlignment = Alignment.Center
