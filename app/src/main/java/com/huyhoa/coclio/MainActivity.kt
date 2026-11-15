@@ -502,29 +502,20 @@ private fun NeonButton(
     enabled: Boolean = true
 ) {
     val shape = RoundedCornerShape(14.dp)
-    val led = LocalLedTheme.current
-    val brightness = led.brightness.coerceIn(0f, 1f)
-    val buttonFillAlpha = brightness * if (enabled) 1f else 0.45f
-    val buttonPalette = led.palette.map { it.copy(alpha = buttonFillAlpha) }
-    val buttonFillBrush = if (led.enabled && buttonFillAlpha > 0f) {
-        Brush.horizontalGradient(movingLedColors(buttonPalette, led.progress.value.rem(1f)))
-    } else {
-        SolidColor(MaterialTheme.colorScheme.surfaceVariant)
-    }
+    val buttonBackground = Color(0xFF168BFF).copy(alpha = if (enabled) 1f else 0.45f)
     Box(
         modifier = modifier
             .shadow(5.dp, shape)
             .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .background(buttonFillBrush)
+            .background(buttonBackground)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text,
-            color = if (buttonFillAlpha < 0.5f) MaterialTheme.colorScheme.onSurface else Color(0xFF06101F),
+            color = if (enabled) Color(0xFF06101F) else MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Black,
             fontSize = 11.sp,
             letterSpacing = 0.25.sp
