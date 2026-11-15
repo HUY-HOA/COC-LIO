@@ -767,6 +767,7 @@ private fun ClashPlayerClanLookupScreen() {
                     result = null
                     searchResults = emptyList()
                     searchNextCursor = null
+                    searchNextQuery = null
                     error = null
                 },
                 label = { Text("BANG HỘI") }
@@ -779,6 +780,7 @@ private fun ClashPlayerClanLookupScreen() {
                 result = null
                 searchResults = emptyList()
                 searchNextCursor = null
+                searchNextQuery = null
                 error = null
             },
             modifier = Modifier.fillMaxWidth(),
@@ -802,6 +804,7 @@ private fun ClashPlayerClanLookupScreen() {
                         result = null
                         searchResults = emptyList()
                         searchNextCursor = null
+                        searchNextQuery = null
                         error = null
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -817,6 +820,7 @@ private fun ClashPlayerClanLookupScreen() {
                         result = null
                         searchResults = emptyList()
                         searchNextCursor = null
+                        searchNextQuery = null
                         error = null
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -844,6 +848,7 @@ private fun ClashPlayerClanLookupScreen() {
                     result = null
                     searchResults = emptyList()
                     searchNextCursor = null
+                    searchNextQuery = null
                     runCatching {
                         searchClashKing(kind, tagInput, null, townHallFilter, minMembersFilter)
                     }
@@ -941,6 +946,7 @@ private fun ClashPlayerClanLookupScreen() {
                                         tagInput = candidate.profile.optString("tag")
                                         searchResults = emptyList()
                                         searchNextCursor = null
+                                        searchNextQuery = null
                                     }
                                     .onFailure {
                                         error = it.message?.takeIf(String::isNotBlank)
