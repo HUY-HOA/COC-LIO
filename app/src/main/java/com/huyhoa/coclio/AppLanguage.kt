@@ -1319,7 +1319,21 @@ private val englishTranslations = mapOf(
     "Hắc tiên" to "Dark Elixir",
     "Vàng thợ xây" to "Builder Gold",
     "Tiên dược thợ xây" to "Builder Elixir",
-    "Vàng Thủ đô" to "Capital Gold"
+    "Vàng Thủ đô" to "Capital Gold",
+    "Các cấp còn thiếu chưa được tự ước đoán." to "Missing levels are not estimated.",
+    "Dầu đen" to "Dark Elixir",
+    "Quặng sáng" to "Shiny Ore",
+    "Quặng phát sáng" to "Glowy Ore",
+    "Quặng sao" to "Starry Ore",
+    "Căn cứ thợ xây" to "Builder Base",
+    "Nhà chính" to "Town Hall",
+    "Nhà thợ xây" to "Builder Hall",
+    "Anh hùng" to "Heroes",
+    "Công tước Rồng" to "Dragon Duke",
+    "Ngày" to "Days",
+    "Giờ" to "Hours",
+    "Phút" to "Minutes",
+    "Dưới 1 phút" to "Under 1 minute"
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
