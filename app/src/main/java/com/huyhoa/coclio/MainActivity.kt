@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
@@ -199,24 +200,38 @@ internal fun ledCycleDurationMillis(
     return (1_000.0 / cyclesPerSecond).roundToInt().coerceAtLeast(1)
 }
 
-private fun movingLedColors(
+private fun interpolateLedColor(first: Color, second: Color, fraction: Float): Color {
+    val firstHsv = FloatArray(3)
+    val secondHsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(first.toArgb(), firstHsv)
+    android.graphics.Color.colorToHSV(second.toArgb(), secondHsv)
+
+    val hueDelta = ((secondHsv[0] - firstHsv[0] + 540f) % 360f) - 180f
+    val hsv = floatArrayOf(
+        (firstHsv[0] + hueDelta * fraction + 360f) % 360f,
+        firstHsv[1] + (secondHsv[1] - firstHsv[1]) * fraction,
+        firstHsv[2] + (secondHsv[2] - firstHsv[2]) * fraction
+    )
+    val alpha = (first.alpha + (second.alpha - first.alpha) * fraction) * 255f
+
+    return Color(
+        android.graphics.Color.HSVToColor(alpha.roundToInt().coerceIn(0, 255), hsv)
+    )
+}
+
+internal fun movingLedColors(
     palette: List<Color>,
     phase: Float,
-    sampleCount: Int = 128
+    sampleCount: Int = 256
 ): List<Color> {
-    val intervals = (palette.size - 1).coerceAtLeast(1)
-    return List(sampleCount) { index ->
-        val position = ((index / sampleCount.toFloat() - phase + 1f) % 1f) * intervals
+    if (palette.size < 2) return palette
+    val intervals = palette.size - 1
+    val normalizedPhase = phase.rem(1f)
+    return List(sampleCount.coerceAtLeast(2)) { index ->
+        val position = ((index / sampleCount.toFloat() - normalizedPhase + 1f) % 1f) * intervals
         val startIndex = position.toInt().coerceIn(0, intervals - 1)
         val fraction = (position - startIndex).coerceIn(0f, 1f)
-        val first = palette[startIndex]
-        val second = palette[startIndex + 1]
-        Color(
-            red = first.red + (second.red - first.red) * fraction,
-            green = first.green + (second.green - first.green) * fraction,
-            blue = first.blue + (second.blue - first.blue) * fraction,
-            alpha = first.alpha + (second.alpha - first.alpha) * fraction
-        )
+        interpolateLedColor(palette[startIndex], palette[startIndex + 1], fraction)
     }
 }
 
@@ -227,11 +242,15 @@ internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLedStroke(
     glowEnabled: Boolean
 ) {
     if (glowEnabled) {
-        drawPath(path, brush, alpha = 0.10f, style = Stroke(width = strokeWidth * 6f))
-        drawPath(path, brush, alpha = 0.18f, style = Stroke(width = strokeWidth * 3.6f))
-        drawPath(path, brush, alpha = 0.32f, style = Stroke(width = strokeWidth * 2f))
+        drawPath(path, brush, alpha = 0.035f, style = Stroke(width = strokeWidth * 9f))
+        drawPath(path, brush, alpha = 0.065f, style = Stroke(width = strokeWidth * 6f))
+        drawPath(path, brush, alpha = 0.12f, style = Stroke(width = strokeWidth * 4f))
+        drawPath(path, brush, alpha = 0.22f, style = Stroke(width = strokeWidth * 2.2f))
     }
     drawPath(path, brush, style = Stroke(width = strokeWidth))
+    if (glowEnabled) {
+        drawPath(path, brush, alpha = 0.72f, style = Stroke(width = strokeWidth * 0.48f))
+    }
 }
 
 @Composable
@@ -394,14 +413,19 @@ private fun NeonButton(
     val led = LocalLedTheme.current
     val brightness = led.brightness.coerceIn(0f, 1f)
     val buttonFillAlpha = brightness * if (enabled) 1f else 0.45f
-    val buttonFillPalette = led.palette.map { it.copy(alpha = buttonFillAlpha) }
+    val buttonPalette = led.palette.map { it.copy(alpha = buttonFillAlpha) }
+    val buttonFillBrush = if (led.enabled && buttonFillAlpha > 0f) {
+        Brush.horizontalGradient(movingLedColors(buttonPalette, led.progress.value.rem(1f)))
+    } else {
+        SolidColor(MaterialTheme.colorScheme.surfaceVariant)
+    }
     Box(
         modifier = modifier
             .shadow(5.dp, shape)
             .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .background(Brush.horizontalGradient(buttonFillPalette.take(3)))
+            .background(buttonFillBrush)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
