@@ -180,7 +180,12 @@ private fun compareNotificationTimestamps(first: Timestamp, second: Timestamp): 
 private data class NotificationScan(
     val firstRun: Boolean,
     val documents: List<NotificationDocument>,
-    val hasMore: Boolean = false
+    val hasMore: Boolean = false,
+    val secondsKey: String = "",
+    val nanosKey: String = "",
+    val idsKey: String = "",
+    val previousTimestamp: Timestamp? = null,
+    val previousIds: Set<String> = emptySet()
 )
 
 private suspend fun readNotificationChanges(
@@ -269,17 +274,7 @@ private suspend fun readNotificationChanges(
         )
 
     val pendingChanges = changes.take(MAX_NOTIFICATION_DELIVERIES_PER_SCAN)
-    if (pendingChanges.isNotEmpty()) {
-        saveNotificationWatermark(
-            preferences,
-            secondsKey,
-            nanosKey,
-            idsKey,
-            pendingChanges,
-            lastTimestamp,
-            lastIds
-        )
-    } else if (lastTimestamp == null) {
+    if (pendingChanges.isEmpty() && lastTimestamp == null) {
         preferences.edit()
             .putLong(secondsKey, Long.MIN_VALUE)
             .putInt(nanosKey, 0)
@@ -289,7 +284,12 @@ private suspend fun readNotificationChanges(
     return NotificationScan(
         firstRun = false,
         documents = pendingChanges,
-        hasMore = changes.size > pendingChanges.size
+        hasMore = changes.size > pendingChanges.size,
+        secondsKey = secondsKey,
+        nanosKey = nanosKey,
+        idsKey = idsKey,
+        previousTimestamp = lastTimestamp,
+        previousIds = lastIds
     )
 }
 
@@ -338,6 +338,7 @@ private suspend fun checkCommunityMessages(
             )
         }
     }
+    commitNotificationScan(preferences, scan)
     return scan.hasMore
 }
 
@@ -379,7 +380,24 @@ private suspend fun checkAppUpdates(
             body
         )
     }
+    commitNotificationScan(preferences, scan)
     return scan.hasMore
+}
+
+private fun commitNotificationScan(
+    preferences: android.content.SharedPreferences,
+    scan: NotificationScan
+) {
+    if (scan.documents.isEmpty()) return
+    saveNotificationWatermark(
+        preferences,
+        scan.secondsKey,
+        scan.nanosKey,
+        scan.idsKey,
+        scan.documents,
+        scan.previousTimestamp,
+        scan.previousIds
+    )
 }
 
 private fun saveNotificationWatermark(
