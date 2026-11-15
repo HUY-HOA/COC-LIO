@@ -39,6 +39,63 @@ jobs:
       - name: Test Cloudflare Worker
         run: node --test cloudflare/worker/test/index.test.mjs
 
+      - name: Verify deployed Worker and bootstrap the public catalog
+        shell: bash
+        env:
+          WORKER_URL: https://coc-lio-remote-content.coc-lio-data.workers.dev
+        run: |
+          set -euo pipefail
+          curl --retry 10 --retry-delay 2 --retry-all-errors --connect-timeout 10 --max-time 30 -fsS "$WORKER_URL/health"
+          printf '\\n'
+          RESPONSE_CODE="$(curl --retry 10 --retry-delay 2 --retry-all-errors --connect-timeout 10 --max-time 90 -sS -D "$RUNNER_TEMP/coclio-cloudflare-headers.txt" -o "$RUNNER_TEMP/coclio-cloudflare-content.json" -w '%{http_code}' "$WORKER_URL/v1/content")"
+          if [[ "$RESPONSE_CODE" != "200" ]]; then
+            echo "::error::Cloudflare catalog endpoint returned HTTP $RESPONSE_CODE."
+            cat "$RUNNER_TEMP/coclio-cloudflare-content.json" || true
+            exit 1
+          fi
+          python3 - "$RUNNER_TEMP/coclio-cloudflare-headers.txt" "$RUNNER_TEMP/coclio-cloudflare-content.json" <<'PY'
+          import hashlib
+          import json
+          import sys
+
+          headers = {}
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              for line in handle:
+                  if ":" in line:
+                      key, value = line.split(":", 1)
+                      headers[key.strip().lower()] = value.strip()
+
+          with open(sys.argv[2], encoding="utf-8") as handle:
+              raw = handle.read()
+
+          data = json.loads(raw)
+          version = data.get("version")
+          catalog = data.get("catalog")
+          digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+          if not isinstance(version, int) or version < 1:
+              raise SystemExit("Cloudflare catalog version is invalid.")
+          if not isinstance(catalog, list) or not 1 <= len(catalog) <= 500:
+              raise SystemExit("Cloudflare catalog item count is invalid.")
+          if headers.get("x-coc-lio-content-version") != str(version):
+              raise SystemExit("Cloudflare version header does not match the JSON body.")
+          if headers.get("x-coc-lio-content-hash") != digest:
+              raise SystemExit("Cloudflare SHA-256 header does not match the response body.")
+          if headers.get("etag") != '"' + digest + '"':
+              raise SystemExit("Cloudflare ETag does not match the response body.")
+          ids = [item.get("dataId") for item in catalog if isinstance(item, dict)]
+          if len(ids) != len(catalog) or len(set(ids)) != len(ids):
+              raise SystemExit("Cloudflare catalog has invalid or duplicate dataId values.")
+          if not all(isinstance(item.get("name"), str) and item["name"].strip() for item in catalog):
+              raise SystemExit("Cloudflare catalog contains an unnamed item.")
+
+          print("Cloudflare live endpoint check passed.")
+          print("Content version:", version)
+          print("Catalog entries:", len(catalog))
+          print("SHA-256:", digest)
+          print("Storage path:", headers.get("x-coc-lio-content-store", "unknown"))
+          PY
+
       - name: Explain skipped Cloudflare publishing
         if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
         run: |
