@@ -1430,11 +1430,16 @@ fun CommunityScreen(
                                     ?.filter { it.key is String && it.value != null }
                                     ?.associate { it.key as String to it.value as Any }
                                     ?.toMutableMap()
-                                if (type == "json") {
-                                    require(sharedJsonId.isNotBlank() && sharedJsonData?.get("rawJson") is String) {
+                                val jsonDataToRestore = if (type == "json") {
+                                    val data = sharedJsonData
+                                        ?: throw IllegalStateException("Bản JSON lưu trữ không có dữ liệu gốc để khôi phục.")
+                                    require(sharedJsonId.isNotBlank() && data["rawJson"] is String) {
                                         "Bản JSON lưu trữ không có dữ liệu gốc để khôi phục."
                                     }
-                                    sharedJsonData["createdAt"] = FieldValue.serverTimestamp()
+                                    data["createdAt"] = FieldValue.serverTimestamp()
+                                    data
+                                } else {
+                                    null
                                 }
                                 val messageData = mapOf(
                                     "uid" to uid,
@@ -1455,10 +1460,10 @@ fun CommunityScreen(
                                 )
                                 val originalId = archivedDocument.getString("originalId").orEmpty().ifBlank { item.id }
                                 val batch = firestore.batch()
-                                if (type == "json" && sharedJsonData != null) {
+                                if (jsonDataToRestore != null) {
                                     batch.set(
                                         firestore.collection("community_shared_jsons").document(sharedJsonId),
-                                        sharedJsonData
+                                        jsonDataToRestore
                                     )
                                 }
                                 batch.set(
