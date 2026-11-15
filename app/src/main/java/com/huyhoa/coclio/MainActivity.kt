@@ -778,17 +778,13 @@ private fun CocLioApp(
     var communityNotificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.communityNotificationsEnabled(context, activeProfile))
     }
-    var updateNotificationsEnabled by remember(activeProfile) {
-        mutableStateOf(AppPreferences.updateNotificationsEnabled(context, activeProfile))
-    }
-    LaunchedEffect(activeProfile, isGoogleSignedIn, communityNotificationsEnabled, updateNotificationsEnabled) {
+    LaunchedEffect(activeProfile, isGoogleSignedIn, communityNotificationsEnabled) {
         val notificationsAllowed = isGoogleSignedIn
         CommunityNotificationScheduler.update(
             context,
             activeProfile,
             notificationsAllowed,
-            communityNotificationsEnabled,
-            updateNotificationsEnabled
+            communityNotificationsEnabled
         )
         FirebaseMessagingTopicSubscriptions.sync(context, activeProfile, notificationsAllowed)
     }
@@ -896,10 +892,8 @@ private fun CocLioApp(
     ) { granted ->
         AppPreferences.setNotificationsEnabled(context, activeProfile, granted)
         AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, granted)
-        AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, granted)
         notificationsEnabled = granted
         communityNotificationsEnabled = granted
-        updateNotificationsEnabled = granted
         UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, granted)
         if (!granted) {
             scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
@@ -917,22 +911,14 @@ private fun CocLioApp(
                     AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, true)
                     communityNotificationsEnabled = true
                 }
-                "updates" -> {
-                    AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, true)
-                    updateNotificationsEnabled = true
-                }
-            }
+}
         } else {
             when (target) {
                 "community" -> {
                     AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, false)
                     communityNotificationsEnabled = false
                 }
-                "updates" -> {
-                    AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, false)
-                    updateNotificationsEnabled = false
-                }
-            }
+}
             scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
         }
     }
@@ -965,10 +951,8 @@ private fun CocLioApp(
             } else {
                 AppPreferences.setNotificationsEnabled(context, activeProfile, true)
                 AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, true)
-                AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, true)
                 notificationsEnabled = true
                 communityNotificationsEnabled = true
-                updateNotificationsEnabled = true
                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, true)
             }
         }
@@ -980,7 +964,6 @@ private fun CocLioApp(
         AppPreferences.ensureNotificationPreferences(context, activeProfile, notificationPermissionGranted)
         notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
         communityNotificationsEnabled = AppPreferences.communityNotificationsEnabled(context, activeProfile)
-        updateNotificationsEnabled = AppPreferences.updateNotificationsEnabled(context, activeProfile)
         history = VillageStore.loadAll(context, activeProfile)
         current = history.firstOrNull()
         deletedVillages = VillageStore.loadDeleted(context, activeProfile)
@@ -1591,7 +1574,6 @@ private fun CocLioApp(
                         },
                         notificationStyle = notificationStyle,
                         communityNotificationsEnabled = communityNotificationsEnabled,
-                        updateNotificationsEnabled = updateNotificationsEnabled,
                         onCommunityNotificationsChanged = { enabled ->
                             if (enabled && Build.VERSION.SDK_INT >= 33 &&
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -1601,17 +1583,6 @@ private fun CocLioApp(
                             } else {
                                 AppPreferences.setCommunityNotificationsEnabled(context, activeProfile, enabled)
                                 communityNotificationsEnabled = enabled
-                            }
-                        },
-                        onUpdateNotificationsChanged = { enabled ->
-                            if (enabled && Build.VERSION.SDK_INT >= 33 &&
-                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-                            ) {
-                                pendingPushPermission = "updates"
-                                pushNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                AppPreferences.setUpdateNotificationsEnabled(context, activeProfile, enabled)
-                                updateNotificationsEnabled = enabled
                             }
                         },
                         onGoogleSignIn = { signInWithGoogle() },
