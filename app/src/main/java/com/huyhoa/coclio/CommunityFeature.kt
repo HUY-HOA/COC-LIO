@@ -1255,7 +1255,7 @@ fun CommunityScreen(
                         }
                         Button(
                             onClick = { showDeleteAllArchiveConfirmation = true },
-                            enabled = !busy && (communityStorageCounts?.archivedTotal ?: 0L) > 0L,
+                            enabled = !busy,
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                         ) {
