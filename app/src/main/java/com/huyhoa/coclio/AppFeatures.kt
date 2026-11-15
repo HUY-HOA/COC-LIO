@@ -3214,7 +3214,7 @@ private fun createAdminNotificationAvatar(context: Context): IconCompat {
     val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         this.typeface = typeface
-        textSize = size * 0.52f
+        textSize = size * 0.36f
         shader = android.graphics.LinearGradient(
             0f,
             0f,
@@ -3226,7 +3226,7 @@ private fun createAdminNotificationAvatar(context: Context): IconCompat {
         )
     }
     val baseline = center - (textPaint.ascent() + textPaint.descent()) / 2f
-    canvas.drawText("A", center, baseline, textPaint)
+    canvas.drawText("AD", center, baseline, textPaint)
     return IconCompat.createWithBitmap(bitmap)
 }
 
