@@ -36,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
@@ -423,10 +424,10 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
         if (entry.superchargeLevels.isNotEmpty()) {
             val highestSuperchargeTier = entry.superchargeLevels.maxOf { it.level }
             val superchargeTotals = CocUpgradeCatalog.superchargeTotals(entry, 0, highestSuperchargeTier)
-            Text("SIÊU CƯỜNG HÓA", color = CocGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Text("SIÊU CƯỜNG HÓA", color = Color(0xFFFFC857), fontSize = 10.sp, fontWeight = FontWeight.Black)
             LookupValue("Số bậc dữ liệu", highestSuperchargeTier.toString())
             entry.superchargeLevels.forEach { tier ->
-                Text("BẬC SIÊU CƯỜNG HÓA ${tier.level}", color = CocGold, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("BẬC SIÊU CƯỜNG HÓA ${tier.level}", color = Color(0xFFFFC857), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 tier.displayStats().forEach { (label, value) ->
                     LookupValue(label.replace('_', ' ').replaceFirstChar { it.uppercase() }, value)
                 }
