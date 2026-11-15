@@ -3118,15 +3118,26 @@ private fun VillageItemDetailDialog(
     item: VillageItem,
     remote: RemoteCatalogEntry?,
     blacksmithLevel: Int?,
+    hallLevel: Int?,
+    upgradeCatalog: Map<Int, CocUpgradeEntry>,
     onDismiss: () -> Unit
 ) {
-    val rarity = remote?.rarity?.takeIf { it.isNotBlank() }
+    val upgradeEntry = upgradeCatalog[item.dataId]
+    val rarity = upgradeEntry?.rarity?.takeIf { it.isNotBlank() }
+        ?: remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
-    val maxLevel = if (item.sectionKey == "equipment") {
-        equipmentMaxLevel(rarity, blacksmithLevel) ?: remote?.maxLevel
-    } else {
-        remote?.maxLevel
+    val maxLevel = upgradeEntry?.maxLevel?.takeIf { it > 0 } ?: remote?.maxLevel
+    val hallMax = upgradeEntry?.let { CocUpgradeCatalog.maxLevelAtHall(it, hallLevel, upgradeCatalog) }
+    val blacksmithMax = upgradeEntry?.let {
+        CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(it, blacksmithLevel, upgradeCatalog)
     }
+    val isEquipment = upgradeEntry?.category == "hero-equipment" || item.sectionKey == "equipment"
+    val usableCap = if (isEquipment && blacksmithMax != null) {
+        listOfNotNull(hallMax, blacksmithMax).minOrNull()
+    } else {
+        hallMax
+    } ?: maxLevel
+    val currentLevel = item.level ?: 0
     val isEnglish = LocalAppLanguage.current == AppUiLanguage.ENGLISH
     val itemName = if (isEnglish) {
         remote?.name?.takeIf { it.isNotBlank() } ?: item.name
@@ -3202,14 +3213,21 @@ private fun VillageItemDetailDialog(
 
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
                 VillageItemDetailField("Căn cứ", if (item.base == "builder") "Làng đêm" else "Làng chính")
-                equipmentHero(item.dataId)?.takeIf { item.sectionKey == "equipment" }?.let {
-                    VillageItemDetailField("Anh hùng sử dụng", it)
-                }
+                val ownerHero = upgradeEntry?.hero?.takeIf { it.isNotBlank() }?.let(::equipmentHeroName)
+                    ?: equipmentHero(item.dataId)?.takeIf { isEquipment }
+                ownerHero?.let { VillageItemDetailField("👑 Anh hùng sử dụng", it) }
                 val levelText = item.level?.let { level ->
-                    maxLevel?.let { "$level / $it" } ?: level.toString()
+                    usableCap?.let { "$level / $it" } ?: level.toString()
                 } ?: "Chưa có dữ liệu"
-                VillageItemDetailField("Cấp hiện tại / tối đa", levelText)
-                maxLevel?.let { VillageItemDetailField("Giới hạn cấp hiện tại", it.toString()) }
+                VillageItemDetailField("Cấp hiện tại / giới hạn đang mở", levelText)
+                hallMax?.let {
+                    VillageItemDetailField(if (item.base == "builder") "Giới hạn theo Nhà thợ xây" else "Giới hạn theo Nhà chính", it.toString())
+                }
+                if (isEquipment && blacksmithMax != null) {
+                    VillageItemDetailField("Giới hạn theo Lò rèn hiện tại", blacksmithMax.toString())
+                }
+                maxLevel?.let { VillageItemDetailField("Cấp tối đa toàn trò chơi", it.toString()) }
+                VillageItemDetailField(if (item.base == "builder") "Cấp Nhà thợ xây hiện tại" else "Cấp Nhà chính hiện tại", hallLevel?.toString() ?: "Chưa có dữ liệu")
                 VillageItemDetailField("Số lượng", item.count.toString())
                 if (item.gearUp) VillageItemDetailField("Trạng thái", "Đã ghép công trình")
                 item.weaponLevel?.let { VillageItemDetailField("Cấp vũ khí", it.toString()) }
@@ -3221,6 +3239,78 @@ private fun VillageItemDetailDialog(
                 }
                 item.helperCooldownSeconds?.let {
                     VillageItemDetailField("Thời gian hồi trợ thủ", formatDuration(it))
+                }
+
+                upgradeEntry?.let { entry ->
+                    val nextLevel = currentLevel + 1
+                    val nextStep = entry.level(nextLevel)
+                    if (nextStep != null) {
+                        Text(
+                            if (item.timerSeconds != null && item.timerSeconds > 0L) "ĐANG NÂNG CẤP" else "NÂNG CẤP TIẾP THEO",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        if (item.timerSeconds != null && item.timerSeconds > 0L) {
+                            VillageItemDetailField("Mục tiêu hiện tại", "Cấp $nextLevel")
+                        } else {
+                            val requirements = CocUpgradeCatalog.nextRequirements(entry, nextLevel, upgradeCatalog)
+                            if (requirements.isNotEmpty()) {
+                                VillageItemDetailField(
+                                    "Yêu cầu mở cấp tiếp theo",
+                                    requirements.joinToString(" • ") { "${it.label} cấp ${it.level}" }
+                                )
+                            }
+                            if (nextStep.cost() > 0L) {
+                                UpgradeResourceChip(nextStep.resource(), nextStep.cost())
+                            }
+                            nextStep.oreCosts().forEach { (resource, amount) ->
+                                UpgradeResourceChip(resource, amount)
+                            }
+                            if (nextStep.durationSeconds() > 0L) {
+                                VillageItemDetailField("⏱️ Thời gian nâng cấp tiếp theo", formatDuration(nextStep.durationSeconds()))
+                            }
+                        }
+                    }
+                    val targetAtHall = hallMax ?: maxLevel ?: entry.maxLevel
+                    val targetAtMax = maxLevel ?: entry.maxLevel
+                    if (targetAtHall > currentLevel) {
+                        val totals = CocUpgradeCatalog.upgradeTotals(
+                            entry,
+                            currentLevel,
+                            targetAtHall,
+                            skipFirstInProgress = item.timerSeconds != null && item.timerSeconds > 0L
+                        )
+                        Text(
+                            "TỔNG CÒN ĐẾN GIỚI HẠN THEO NHÀ",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        totals.resources.forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
+                        val totalSeconds = totals.durationSeconds + (item.timerSeconds?.coerceAtLeast(0L) ?: 0L)
+                        if (totalSeconds > 0L) VillageItemDetailField("🕒 Thời gian ước tính còn lại", formatDuration(totalSeconds))
+                        if (totals.resources.isEmpty() && totalSeconds == 0L) {
+                            VillageItemDetailField("Tài nguyên và thời gian", "Không cần thêm theo dữ liệu cấp hiện có")
+                        }
+                    }
+                    if (targetAtMax > targetAtHall && targetAtMax > currentLevel) {
+                        val totals = CocUpgradeCatalog.upgradeTotals(
+                            entry,
+                            maxOf(currentLevel, targetAtHall),
+                            targetAtMax
+                        )
+                        Text(
+                            "TỪ GIỚI HẠN HIỆN TẠI ĐẾN CẤP MAX TOÀN TRÒ CHƠI",
+                            color = CocGold,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        totals.resources.forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
+                        if (totals.durationSeconds > 0L) {
+                            VillageItemDetailField("🕒 Thời gian bổ sung", formatDuration(totals.durationSeconds))
+                        }
+                    }
                 }
 
                 description?.let {
@@ -3288,6 +3378,13 @@ private fun VillageItemDetailDialog(
                             VillageItemStatField(label, displayValue)
                         }
                     }
+                }
+                val catalogLevel = upgradeEntry?.level(selectedStatsLevel)
+                    ?: upgradeEntry?.level(currentLevel.coerceAtLeast(1))
+                catalogLevel?.displayStats()?.forEach { (rawLabel, rawValue) ->
+                    val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
+                    val (label, value) = localizedCatalogField(normalizedLabel, rawValue, isEnglish)
+                    VillageItemStatField(label, value)
                 }
                 remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let {
                     VillageItemDetailField("Chi phí nâng cấp", it)
@@ -3361,6 +3458,35 @@ private fun VillageItemStatField(label: String, value: String) {
             Text(label, color = oreColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, lineHeight = 17.sp)
         }
+    }
+}
+
+@Composable
+private fun UpgradeResourceChip(resource: String, amount: Long) {
+    val (icon, label, tint) = when (resource.trim().lowercase()) {
+        "gold" -> Triple("🪙", "Vàng", Color(0xFFFFD166))
+        "elixir" -> Triple("🧪", "Dầu tiên", Color(0xFFFF6EC7))
+        "dark elixir" -> Triple("🖤", "Dầu đen", Color(0xFFB77AFF))
+        "builder gold" -> Triple("🪙", "Vàng thợ xây", Color(0xFFFFD166))
+        "builder elixir" -> Triple("🧪", "Dầu tiên thợ xây", Color(0xFFFF6EC7))
+        "capital gold" -> Triple("🏅", "Vàng thủ đô", Color(0xFFFFD166))
+        "quặng sáng", "shiny ore" -> Triple("💠", "Quặng sáng", Color(0xFF55B9FF))
+        "quặng phát sáng", "glowy ore" -> Triple("🔮", "Quặng phát sáng", Color(0xFFB77AFF))
+        "quặng sao", "starry ore" -> Triple("⭐", "Quặng sao", Color(0xFFFFC857))
+        else -> Triple("📦", resource, MaterialTheme.colorScheme.primary)
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(tint.copy(alpha = 0.10f), RoundedCornerShape(10.dp))
+            .border(1.dp, tint.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(icon, fontSize = 17.sp)
+        Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, modifier = Modifier.weight(1f))
+        Text(java.text.NumberFormat.getIntegerInstance().format(amount), color = tint, fontSize = 12.sp, fontWeight = FontWeight.Black)
     }
 }
 
