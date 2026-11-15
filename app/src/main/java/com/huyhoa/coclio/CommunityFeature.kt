@@ -122,7 +122,7 @@ private data class CommunityMessage(
     val sharedJsonId: String = ""
 )
 
-private data class CommunitySharedJson(
+internal data class CommunitySharedJson(
     val id: String,
     val uid: String,
     val displayName: String,
@@ -418,7 +418,7 @@ suspend fun shareVillageJsonToCommunity(snapshot: VillageSnapshot): String {
             sharedJsonId = sharedJson.id
         )
     ).awaitCommunityResult()
-    return "Đã chia sẻ JSON vào Cộng đồng."
+    return "Đã chia sẻ JSON thành công."
 }
 
 private fun communityFileName(context: Context, uri: Uri): String {
@@ -648,11 +648,6 @@ private fun downloadCommunityFile(context: Context, url: String, fileName: Strin
 @Composable
 fun CommunityScreen(
     isGoogleSignedIn: Boolean,
-    availableJsons: List<VillageSnapshot>,
-    receivedJsons: List<ReceivedSharedJsonRecord>,
-    onDeleteReceivedJson: (String) -> Unit,
-    initialSection: Int = 0,
-    onInitialSectionConsumed: () -> Unit = {},
     onImportJson: (String, String, String, String, String, Long, String) -> Unit,
     onOpenSettings: () -> Unit
 ) {
@@ -661,30 +656,15 @@ fun CommunityScreen(
     val user = FirebaseAuth.getInstance().currentUser?.takeIf { isGoogleSignedIn }
     val isOwner = FirebaseAccountAdministration.isOwner(user?.email)
     var selectedSection by remember { mutableStateOf(0) }
-    var sharedJsonTab by remember { mutableStateOf("sent") }
-    LaunchedEffect(initialSection) {
-        if (initialSection == 3) {
-            selectedSection = 3
-            onInitialSectionConsumed()
-        }
-    }
     var messages by remember { mutableStateOf<List<CommunityMessage>>(emptyList()) }
-    var sharedJsons by remember { mutableStateOf<List<CommunitySharedJson>>(emptyList()) }
     var loadingMessages by remember { mutableStateOf(true) }
-    var loadingSharedJsons by remember { mutableStateOf(true) }
     var messageError by remember { mutableStateOf<String?>(null) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var draft by remember { mutableStateOf("") }
     var showEmojiPicker by remember { mutableStateOf(false) }
-    var showJsonPicker by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
-    val jsonOptions = remember(availableJsons) {
-        availableJsons.distinctBy { it.tag to it.timestamp }.sortedByDescending { it.timestamp }
-    }
     var deleteMessage by remember { mutableStateOf<CommunityMessage?>(null) }
     var deleteArchiveItem by remember { mutableStateOf<CommunityArchiveItem?>(null) }
-    var deleteSharedJson by remember { mutableStateOf<CommunitySharedJson?>(null) }
-    var deleteReceivedJson by remember { mutableStateOf<ReceivedSharedJsonRecord?>(null) }
     var archiveItems by remember { mutableStateOf<List<CommunityArchiveItem>>(emptyList()) }
     var loadingArchive by remember { mutableStateOf(false) }
     var archiveError by remember { mutableStateOf<String?>(null) }
@@ -755,7 +735,7 @@ fun CommunityScreen(
                     document.getLong("timestamp") ?: 0L,
                     jsonId
                 )
-                statusMessage = "Đã nhận JSON. Bản nhận được đã được lưu riêng trong Kho JSON; bản nhập vẫn có trong lịch sử."
+                statusMessage = "Đã nhận JSON. Bản nhận được đã được lưu trong mục Chia sẻ của JSON; bản nhập vẫn có trong lịch sử."
             } catch (error: Exception) {
                 statusMessage = error.message ?: "Không thể nhận JSON được chia sẻ."
             } finally {
@@ -767,10 +747,8 @@ fun CommunityScreen(
     DisposableEffect(user?.uid, selectedSection, archiveCategory, isOwner) {
         if (user == null) {
             messages = emptyList()
-            sharedJsons = emptyList()
             archiveItems = emptyList()
             loadingMessages = false
-            loadingSharedJsons = false
             loadingArchive = false
             onDispose { }
         } else {
@@ -806,29 +784,6 @@ fun CommunityScreen(
                         }
                         messageError = null
                         loadingMessages = false
-                    }
-                }
-            val sharedJsonRegistration = firestore.collection("community_shared_jsons")
-                .whereEqualTo("uid", user.uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        statusMessage = error.message ?: "Không thể tải JSON cộng đồng."
-                        loadingSharedJsons = false
-                    } else {
-                        sharedJsons = snapshot?.documents.orEmpty().mapNotNull { document ->
-                            val rawJson = document.getString("rawJson") ?: return@mapNotNull null
-                            CommunitySharedJson(
-                                id = document.id,
-                                uid = document.getString("uid").orEmpty(),
-                                displayName = document.getString("displayName").orEmpty().ifBlank { "Thành viên" },
-                                playerTag = document.getString("playerTag").orEmpty(),
-                                villageName = document.getString("villageName").orEmpty(),
-                                timestamp = document.getLong("timestamp") ?: 0L,
-                                rawJson = rawJson,
-                                createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L
-                            )
-                        }.sortedByDescending { it.createdAt }
-                        loadingSharedJsons = false
                     }
                 }
             val archiveRegistrations = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
@@ -958,7 +913,7 @@ fun CommunityScreen(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("CỘNG ĐỒNG COC-LIO", color = MaterialTheme.colorScheme.primary, fontSize = 15.sp, fontWeight = FontWeight.Black)
-            Text("Trò chuyện, chia sẻ hình ảnh, tệp nhỏ và JSON với mọi thành viên.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            Text("Trò chuyện, chia sẻ hình ảnh và tệp nhỏ với mọi thành viên.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -968,11 +923,6 @@ fun CommunityScreen(
                 selected = selectedSection == 0,
                 onClick = { selectedSection = 0; statusMessage = null },
                 label = { Text("TRÒ CHUYỆN", fontSize = 10.sp) }
-            )
-            FilterChip(
-                selected = selectedSection == 3,
-                onClick = { selectedSection = 3; statusMessage = null },
-                label = { Text("CHIA SẺ", fontSize = 10.sp) }
             )
             if (isOwner) {
                 FilterChip(
@@ -1051,18 +1001,6 @@ fun CommunityScreen(
                     ) {
                         OutlinedButton(onClick = { imagePicker.launch("image/*") }, enabled = !busy) {
                             Text("🖼 ẢNH", fontSize = 10.sp)
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                if (jsonOptions.isEmpty()) {
-                                    statusMessage = "Kho JSON chưa có dữ liệu. Hãy nhập JSON trước khi chia sẻ."
-                                } else {
-                                    showJsonPicker = true
-                                }
-                            },
-                            enabled = !busy
-                        ) {
-                            Text("📦 GỬI JSON", fontSize = 10.sp)
                         }
                         if (isOwner) {
                             OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !busy) {
@@ -1352,216 +1290,7 @@ fun CommunityScreen(
                     }
                 }
             }
-        } else if (selectedSection == 3) {
-            Column(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    "CHIA SẺ JSON",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
-                    FilterChip(
-                        selected = sharedJsonTab == "sent",
-                        onClick = { sharedJsonTab = "sent" },
-                        label = { Text("ĐÃ GỬI", fontSize = 10.sp) }
-                    )
-                    FilterChip(
-                        selected = sharedJsonTab == "received",
-                        onClick = { sharedJsonTab = "received" },
-                        label = { Text("ĐÃ NHẬN", fontSize = 10.sp) }
-                    )
-                }
-                if (sharedJsonTab == "sent") {
-                    if (loadingSharedJsons) {
-                        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth().weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (sharedJsons.isEmpty()) {
-                                item {
-                                    Text(
-                                        "Bạn chưa chia sẻ JSON nào.",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 11.sp
-                                    )
-                                }
-                            }
-                            items(sharedJsons, key = { it.id }) { sharedJson ->
-                                CommunitySharedJsonCard(
-                                    item = sharedJson,
-                                    enabled = !busy,
-                                    onDelete = { deleteSharedJson = sharedJson }
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (receivedJsons.isEmpty()) {
-                            item {
-                                Text(
-                                    "Bạn chưa nhận JSON nào từ người khác.",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 11.sp
-                                )
-                            }
-                        }
-                        items(receivedJsons, key = { it.id }) { received ->
-                            CommunityReceivedJsonCard(
-                                item = received,
-                                enabled = !busy,
-                                onUse = {
-                                    onImportJson(
-                                        received.rawJson,
-                                        received.senderUid,
-                                        received.senderName,
-                                        received.tag,
-                                        received.villageName,
-                                        received.timestamp,
-                                        received.id
-                                    )
-                                },
-                                onDelete = { deleteReceivedJson = received }
-                            )
-                        }
-                    }
-                }
-            }
         }
-    }
-
-    if (showJsonPicker) {
-        AlertDialog(
-            onDismissRequest = { if (!busy) showJsonPicker = false },
-            title = { Text("CHỌN JSON ĐỂ GỬI") },
-            text = {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 360.dp),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
-                    items(jsonOptions, key = { "${it.tag}_${it.timestamp}" }) { snapshot ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(9.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                    Text(
-                                        snapshot.villageName?.takeIf { it.isNotBlank() } ?: "Làng ${snapshot.tag}",
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        "Mã người chơi: ${snapshot.tag} · ${communityTime(snapshot.timestamp * 1000L)}",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 9.sp
-                                    )
-                                }
-                                TextButton(
-                                    onClick = {
-                                        showJsonPicker = false
-                                        scope.launch {
-                                            busy = true
-                                            statusMessage = null
-                                            try {
-                                                statusMessage = shareVillageJsonToCommunity(snapshot)
-                                            } catch (error: Exception) {
-                                                statusMessage = error.message ?: "Không thể chia sẻ JSON."
-                                            } finally {
-                                                busy = false
-                                            }
-                                        }
-                                    },
-                                    enabled = !busy
-                                ) {
-                                    Text("GỬI", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showJsonPicker = false }, enabled = !busy) {
-                    Text("ĐÓNG")
-                }
-            }
-        )
-    }
-
-    deleteReceivedJson?.let { item ->
-        AlertDialog(
-            onDismissRequest = { if (!busy) deleteReceivedJson = null },
-            title = { Text("Xóa JSON đã nhận?") },
-            text = {
-                Text("Chỉ xóa bản JSON trong danh sách ĐÃ NHẬN trên thiết bị này. Bản trong Lịch sử và JSON gốc của người chia sẻ vẫn được giữ.")
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = !busy,
-                    onClick = {
-                        deleteReceivedJson = null
-                        onDeleteReceivedJson(item.id)
-                    }
-                ) { Text("XÓA", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleteReceivedJson = null }, enabled = !busy) { Text("HỦY") }
-            }
-        )
-    }
-
-    deleteSharedJson?.let { item ->
-        AlertDialog(
-            onDismissRequest = { if (!busy) deleteSharedJson = null },
-            title = { Text("Xóa JSON đã gửi?") },
-            text = {
-                Text("JSON này sẽ bị xóa khỏi danh sách chia sẻ và bài đăng JSON tương ứng trong Cộng đồng. Bản JSON trong Lịch sử và Đang lưu trên thiết bị vẫn được giữ.")
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = !busy,
-                    onClick = {
-                        deleteSharedJson = null
-                        scope.launch {
-                            busy = true
-                            try {
-                                deleteSharedJsonFromCommunity(item.id)
-                                statusMessage = "Đã xóa JSON đã gửi khỏi Cộng đồng."
-                            } catch (error: Exception) {
-                                statusMessage = error.message ?: "Không thể xóa JSON đã gửi."
-                            } finally {
-                                busy = false
-                            }
-                        }
-                    }
-                ) { Text("XÓA JSON", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleteSharedJson = null }, enabled = !busy) { Text("HỦY") }
-            }
-        )
     }
 
     deleteMessage?.let { message ->
@@ -1952,7 +1681,7 @@ private fun CommunityMessageCard(
 }
 
 @Composable
-private fun CommunitySharedJsonCard(
+internal fun CommunitySharedJsonCard(
     item: CommunitySharedJson,
     enabled: Boolean,
     onDelete: () -> Unit
@@ -1999,7 +1728,7 @@ private fun CommunitySharedJsonCard(
 }
 
 @Composable
-private fun CommunityReceivedJsonCard(
+internal fun CommunityReceivedJsonCard(
     item: ReceivedSharedJsonRecord,
     enabled: Boolean,
     onUse: () -> Unit,
