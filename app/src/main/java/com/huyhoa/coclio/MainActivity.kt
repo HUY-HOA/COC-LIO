@@ -2337,18 +2337,18 @@ private fun CategoryScreen(
     }
 
     fun groupTitle(key: String, rows: List<VillageItem>): String = when (key) {
-        "defense" -> "CÔNG TRÌNH PHÒNG THỦ"
-        "resources" -> "CÔNG TRÌNH TÀI NGUYÊN"
-        "army" -> "CÔNG TRÌNH QUÂN ĐỘI & NGHIÊN CỨU"
-        "walls" -> "TƯỜNG"
-        "traps" -> "BẪY"
-        "other" -> if (tab == "buildings") "CÔNG TRÌNH KHÁC" else "MỤC KHÁC"
-        "troops" -> "QUÂN LÍNH & MÁY CÔNG THÀNH"
-        "guardians" -> "HỘ VỆ"
-        "heroes" -> "ANH HÙNG"
-        "spells" -> "THẦN CHÚ"
-        "pets" -> "LINH THÚ"
-        "equipment" -> "TRANG BỊ ANH HÙNG • TẤT CẢ TƯỚNG"
+        "defense" -> "🛡️ CÔNG TRÌNH PHÒNG THỦ"
+        "resources" -> "💰 CÔNG TRÌNH TÀI NGUYÊN"
+        "army" -> "⚔️ CÔNG TRÌNH QUÂN ĐỘI & NGHIÊN CỨU"
+        "walls" -> "🧱 TƯỜNG"
+        "traps" -> "🪤 BẪY"
+        "other" -> if (tab == "buildings") "🏗️ CÔNG TRÌNH KHÁC" else "📦 MỤC KHÁC"
+        "troops" -> "⚔️ QUÂN LÍNH & MÁY CÔNG THÀNH"
+        "guardians" -> "🛡️ HỘ VỆ"
+        "heroes" -> "👑 ANH HÙNG"
+        "spells" -> "✨ THẦN CHÚ"
+        "pets" -> "🐾 LINH THÚ"
+        "equipment" -> "🛡️ TRANG BỊ ANH HÙNG • TẤT CẢ TƯỚNG"
         else -> rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
     }
 
