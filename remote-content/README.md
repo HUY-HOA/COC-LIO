@@ -56,12 +56,13 @@ Danh mục các nhóm quân lính, Anh hùng, Thần chú, Linh thú, Máy công
 
 - Cloudflare Worker: https://coc-lio-remote-content.coc-lio-data.workers.dev
 - Endpoint nội dung: /v1/content
-- KV namespace: COC-LIO Remote Content. Nội dung được phát hành theo khóa phiên bản bất biến, sau đó mới cập nhật con trỏ hiện tại.
-- Worker chỉ cho phép GET, HEAD và OPTIONS; không có API ghi công khai. Mỗi phản hồi nội dung có ETag, phiên bản và SHA-256 để ứng dụng kiểm tra cache và tính toàn vẹn.
-- Ứng dụng tải Cloudflare trước, lưu bản JSON hợp lệ trên thiết bị, không chấp nhận phiên bản thấp hơn bản đã lưu và tiếp tục có thể đọc cache khi ngoại tuyến. Firestore listener vẫn được giữ làm đường dự phòng/thời gian thực.
-- Dữ liệu KV chỉ gồm catalog trò chơi, hướng dẫn, liên kết và mẫu thông báo không chứa thông tin tài khoản. Không đưa hồ sơ, email, Player Tag cá nhân, tin nhắn, token hoặc dữ liệu riêng tư vào đây.
-- Workflow Publish COC-LIO Content to Cloudflare kiểm tra Worker, triển khai Worker và phát hành catalog khi có GitHub Actions secret CLOUDFLARE_API_TOKEN. Token cần quyền Account Workers Scripts: Edit và Workers KV Storage: Edit, giới hạn trong tài khoản COC-LIO.
-- Nếu secret chưa được cấu hình, workflow vẫn chạy unit test nhưng bỏ qua bước phát hành; Firebase vẫn hoạt động như trước.
+- KV namespace: COC-LIO Remote Content. Phiên bản 3 hiện tại đã nhập 134 mục từ 17 shard vào KV. Worker chỉ đọc KV và không gọi trực tiếp GitHub vì repository COC-LIO là private.
+- Nội dung được phát hành theo khóa bất biến `content/vN.json`, sau đó cập nhật con trỏ `content/current`. Worker kiểm tra cấu trúc, dataId, phiên bản và SHA-256 trước khi phục vụ.
+- Endpoint chỉ cho phép GET, HEAD và OPTIONS. Mỗi phản hồi có ETag, version và SHA-256 để Android kiểm tra dữ liệu.
+- Android tải Cloudflare trước, giữ bản cache cục bộ, chỉ chấp nhận phiên bản mới hơn và tiếp tục dùng cache khi ngoại tuyến. Firestore listener được giữ làm dự phòng/thời gian thực.
+- KV chỉ chứa catalog trò chơi, hướng dẫn, liên kết và mẫu thông báo chung. Không lưu email, UID, Player Tag cá nhân, tin nhắn, token hoặc dữ liệu riêng tư.
+- Để tự động phát hành nội dung mới: tạo GitHub Actions secret `CLOUDFLARE_API_TOKEN` bằng token giới hạn quyền Account Workers Scripts: Edit và Account Workers KV Storage: Edit, đúng tài khoản COC-LIO. Không dán token vào mã nguồn hoặc chat.
+- Khi thiếu secret, workflow vẫn chạy kiểm thử và so sánh dữ liệu đang phục vụ với repository. Nếu repository tăng version mà chưa phát hành Cloudflare, workflow sẽ báo lỗi rõ ràng; Firestore vẫn có bản mirror làm dự phòng.
 
 ## Kế hoạch R2 cho hình ảnh và tệp lớn
 
@@ -70,6 +71,10 @@ R2 phù hợp hơn KV cho hình ảnh, ảnh cộng đồng, tệp đính kèm v
 Sau khi chủ tài khoản bật R2 và chấp nhận hạn mức/chi phí, tạo bucket COC-LIO, gắn binding chỉ đọc cho tài nguyên công khai, rồi mới chuyển ảnh/tệp theo từng loại. Tệp riêng tư phải được cấp URL tạm thời qua Worker sau khi xác minh người dùng; không đặt bucket riêng tư ở chế độ public. Trong lúc chưa bật R2, ứng dụng tiếp tục dùng đường ảnh hiện tại và Firestore cho các nội dung nhỏ như trước.
 
 
-## Tự đồng bộ danh mục trực tiếp qua Cloudflare Worker
+## Đồng bộ Cloudflare và Firebase
 
-Worker có thể đọc danh sách `catalogShards` từ `current.json`, lấy từng shard công khai từ repository, kiểm tra trùng `dataId`, ghép JSON rồi lưu phiên bản hợp lệ vào Cloudflare KV. Vì vậy lần đồng bộ đầu tiên không cần Cloudflare API token trong GitHub Actions. Khi phát hành bản catalog mới, tăng `version` và cập nhật `catalogShards`; Worker phát hiện phiên bản mới và tự cập nhật KV. GitHub Actions vẫn có nhiệm vụ kiểm tra và có thể đồng bộ thẳng vào KV khi secret được cấu hình.
+- GitHub Actions `Publish COC-LIO Content to Cloudflare` kiểm tra Worker, dựng catalog từ `current.json` và các shard, xác minh ID trùng, sau đó phát hành phiên bản bất biến vào KV nếu có secret `CLOUDFLARE_API_TOKEN`.
+- Sau khi phát hành, workflow gọi endpoint workers.dev thật và so sánh JSON đã phục vụ với nguồn trong repository, bao gồm version, catalog, ID, ETag và SHA-256.
+- GitHub Actions `Publish COC-LIO Remote Content` tiếp tục đồng bộ mirror sang Firestore. Không xóa Firestore vì app vẫn dùng listener này làm dự phòng.
+- Ứng dụng kiểm tra Cloudflare mỗi 5 phút khi đang hoạt động; Firestore listener vẫn nhận thay đổi thời gian thực. Nếu Cloudflare lỗi, bản cache và Firestore không bị mất.
+- Không build APK chỉ vì nội dung JSON thay đổi; chỉ cần build lại khi sửa mã Android.
