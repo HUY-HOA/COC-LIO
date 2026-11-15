@@ -3025,22 +3025,11 @@ private fun FeaturePanel(content: @Composable androidx.compose.foundation.layout
                     )
                 }
                 onDrawBehind {
-                    val progress = led.progress.value.rem(1f)
-                    val intervals = (palette.size - 1).coerceAtLeast(1)
-                    val colors = List(32) { index ->
-                        val position = ((index / 32f - progress + 1f) % 1f) * intervals
-                        val startIndex = position.toInt().coerceIn(0, intervals - 1)
-                        val fraction = position - startIndex
-                        val first = palette[startIndex]
-                        val second = palette[startIndex + 1]
-                        Color(
-                            red = first.red + (second.red - first.red) * fraction,
-                            green = first.green + (second.green - first.green) * fraction,
-                            blue = first.blue + (second.blue - first.blue) * fraction,
-                            alpha = led.brightness
-                        )
+                    if (led.enabled && palette.size >= 2 && led.brightness > 0f) {
+                        val progress = led.progress.value.rem(1f)
+                        val colors = movingLedColors(palette, progress)
+                        drawLedStroke(path, Brush.sweepGradient(colors), stroke, led.glowEnabled)
                     }
-                    drawLedStroke(path, Brush.sweepGradient(colors), stroke, led.glowEnabled)
                 }
             }
             .padding(8.dp),
