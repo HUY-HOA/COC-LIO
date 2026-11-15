@@ -193,13 +193,8 @@ internal fun ledCycleDurationMillis(
     if (speed == 0) return 0
 
     val multiplier = speedMultiplier.coerceIn(0.5f, 3f).toDouble()
-    val normalizedSpeed = (speed - 1) / 99.0
-    val minCyclesPerSecond = 1_000.0 / 7_428.75
     val maxCyclesPerSecond = 1_000.0 / 375.0
-    val cyclesPerSecond = (
-        minCyclesPerSecond +
-            (maxCyclesPerSecond - minCyclesPerSecond) * normalizedSpeed
-        ) * multiplier
+    val cyclesPerSecond = maxCyclesPerSecond * (speed / 100.0) * multiplier
 
     return (1_000.0 / cyclesPerSecond).roundToInt().coerceAtLeast(1)
 }
