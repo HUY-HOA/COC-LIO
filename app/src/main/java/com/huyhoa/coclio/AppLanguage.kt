@@ -162,7 +162,6 @@ private val englishTranslations = mapOf(
     "Kiểu nhắc nâng cấp" to "Upgrade reminder type",
     "Tin nhắn" to "Message",
     "Báo thức" to "Alarm",
-    "Thời gian hiển thị báo thức" to "Alarm display duration",
     "THỬ NHẮC NÂNG CẤP" to "TEST UPGRADE REMINDER",
     "Gửi một thông báo thử cho chức năng nhắc nâng cấp. Không tự bật lịch nhắc." to "Send a test notification for upgrade reminders. This does not enable reminder schedules.",
     "Thông báo nhắc tự ẩn sau 25 giây. Thời gian banner nổi và âm thanh thực tế còn phụ thuộc Android, kênh thông báo và thiết bị." to "Upgrade reminders are removed after 25 seconds. Heads-up banner visibility and actual sound duration still depend on Android, notification-channel settings and the device.",
@@ -1439,6 +1438,7 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Yêu cầu: ") -> "Requirement: " + source.removePrefix("Yêu cầu: ")
         source.startsWith("Thời gian: ") -> "Duration: " + source.removePrefix("Thời gian: ")
         source.startsWith("MỤC ") -> "ITEM " + source.removePrefix("MỤC ")
+        source.startsWith("Mục ") -> "Item " + source.removePrefix("Mục ")
         source.startsWith("MỨC ") -> "LEVEL " + source.removePrefix("MỨC ")
         source.startsWith("Mở lần cuối: ") -> "Last opened: " + source.removePrefix("Mở lần cuối: ")
         source.startsWith("Đăng nhập ") -> "Signed in " + source.removePrefix("Đăng nhập ")
