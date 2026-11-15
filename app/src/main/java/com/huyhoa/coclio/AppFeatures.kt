@@ -3172,64 +3172,52 @@ private fun createAdminNotificationAvatar(context: Context): IconCompat {
     val size = (96f * density).toInt().coerceAtLeast(96)
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
+    val center = size / 2f
     val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.BLACK
     }
-    canvas.drawCircle(size / 2f, size / 2f, size * 0.48f, backgroundPaint)
+    canvas.drawCircle(center, center, size * 0.48f, backgroundPaint)
 
-    val textSize = size * 0.19f
-    val typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
-    val baselinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        this.typeface = typeface
-        this.textSize = textSize
-    }
-    val baseline = size / 2f - (baselinePaint.ascent() + baselinePaint.descent()) / 2f
-
-    val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.rgb(0, 229, 255)
-        textAlign = Paint.Align.CENTER
-        this.typeface = typeface
-        this.textSize = textSize
-        maskFilter = android.graphics.BlurMaskFilter(size * 0.075f, android.graphics.BlurMaskFilter.Blur.NORMAL)
-    }
-    canvas.drawText("ADMIN", size / 2f, baseline, glowPaint)
-
-    val outlinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.WHITE
-        textAlign = Paint.Align.CENTER
-        this.typeface = typeface
-        this.textSize = textSize
+    val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = size * 0.012f
-    }
-    canvas.drawText("ADMIN", size / 2f, baseline, outlinePaint)
-
-    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        this.typeface = typeface
-        this.textSize = textSize
+        strokeWidth = size * 0.018f
         shader = android.graphics.LinearGradient(
             0f,
             0f,
             size.toFloat(),
-            0f,
+            size.toFloat(),
             intArrayOf(
                 android.graphics.Color.rgb(0, 229, 255),
                 android.graphics.Color.rgb(22, 139, 255),
-                android.graphics.Color.rgb(101, 72, 255),
-                android.graphics.Color.rgb(179, 60, 255),
-                android.graphics.Color.rgb(255, 53, 184),
-                android.graphics.Color.rgb(255, 74, 114),
-                android.graphics.Color.rgb(255, 164, 58),
-                android.graphics.Color.rgb(183, 243, 74),
-                android.graphics.Color.rgb(53, 230, 162)
+                android.graphics.Color.rgb(101, 72, 255)
             ),
             null,
             android.graphics.Shader.TileMode.CLAMP
         )
     }
-    canvas.drawText("ADMIN", size / 2f, baseline, textPaint)
+    canvas.drawCircle(center, center, size * 0.465f, ringPaint)
+
+    val typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        this.typeface = typeface
+        textSize = size * 0.52f
+        shader = android.graphics.LinearGradient(
+            0f,
+            0f,
+            size.toFloat(),
+            size.toFloat(),
+            intArrayOf(
+                android.graphics.Color.rgb(0, 229, 255),
+                android.graphics.Color.rgb(22, 139, 255),
+                android.graphics.Color.rgb(101, 72, 255)
+            ),
+            null,
+            android.graphics.Shader.TileMode.CLAMP
+        )
+    }
+    val baseline = center - (textPaint.ascent() + textPaint.descent()) / 2f
+    canvas.drawText("A", center, baseline, textPaint)
     return IconCompat.createWithBitmap(bitmap)
 }
 
