@@ -332,7 +332,7 @@ internal fun LedBrandTitle(
     }
 
     val palette = led.palette.ifEmpty { listOf(CocCyan) }
-    val coreBrush = Brush.horizontalGradient(palette.map { it.copy(alpha = 1f) })
+    val coreBrush = Brush.horizontalGradient(movingLedColors(palette.map { it.copy(alpha = 1f) }, 0f))
     val glowColor = palette.first().copy(alpha = 0.24f)
     val glowBlur = with(LocalDensity.current) {
         outlineWidthDp.coerceIn(0.1f, 2f).dp.toPx() * 1.8f
@@ -365,12 +365,12 @@ internal fun LedAdminAvatar(size: androidx.compose.ui.unit.Dp = 30.dp) {
     val led = LocalLedTheme.current
     val palette = led.palette.ifEmpty { listOf(CocCyan) }
     val ringBrush: Brush = if (led.enabled && palette.size >= 2) {
-        Brush.sweepGradient(palette)
+        Brush.sweepGradient(movingLedColors(palette, 0f))
     } else {
         SolidColor(MaterialTheme.colorScheme.outlineVariant)
     }
     val textBrush: Brush = if (led.enabled) {
-        Brush.horizontalGradient(palette)
+        Brush.horizontalGradient(movingLedColors(palette, 0f))
     } else {
         SolidColor(MaterialTheme.colorScheme.onSurface)
     }
