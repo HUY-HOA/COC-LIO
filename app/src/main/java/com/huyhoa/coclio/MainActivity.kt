@@ -2700,7 +2700,15 @@ private fun HistoryScreen(
                             selectedSection = "deleted"
                             deletedSaveStatus = null
                         },
-                        label = { Text("ĐÃ GỠ (${deletedVillages.size})", fontSize = 9.sp, maxLines = 1) }
+                        label = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Text("ĐÃ GỠ", fontSize = 9.sp, maxLines = 1)
+                                Text("(${deletedVillages.size})", fontSize = 9.sp, maxLines = 1)
+                            }
+                        }
                     )
                     FilterChip(
                         selected = selectedSection == "shared",
