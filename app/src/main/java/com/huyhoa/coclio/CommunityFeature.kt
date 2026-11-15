@@ -858,7 +858,6 @@ fun CommunityScreen(
             }
             onDispose {
                 messageRegistration.remove()
-                sharedJsonRegistration.remove()
                 archiveRegistrations.forEach { it.remove() }
             }
         }
