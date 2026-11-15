@@ -2280,7 +2280,13 @@ private fun CategoryScreen(
         remoteCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
             ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
 
-    val equipmentItems = baseItems.filter { armyCategory(it) == "equipment" }
+    val categoryFiltered = when {
+        selectedFilter == "all" -> baseItems
+        tab == "buildings" -> baseItems.filter { buildingCategory(it) == selectedFilter }
+        else -> baseItems.filter { armyCategory(it) == selectedFilter }
+    }
+
+    val rarityItems = categoryFiltered.filter { rarityFor(it) != null }
     val rarityChoices = listOf(
         "all" to "TẤT CẢ",
         "common" to "THƯỜNG",
@@ -2288,15 +2294,10 @@ private fun CategoryScreen(
         "epic" to "SỬ THI",
         "legendary" to "HUYỀN THOẠI"
     ).filter { (key, _) ->
-        key == "all" || equipmentItems.any { rarityFor(it) == key }
+        key == "all" || rarityItems.any { rarityFor(it) == key }
     }
 
-    val categoryFiltered = when {
-        selectedFilter == "all" -> baseItems
-        tab == "buildings" -> baseItems.filter { buildingCategory(it) == selectedFilter }
-        else -> baseItems.filter { armyCategory(it) == selectedFilter }
-    }
-    val filtered = if (tab == "army" && selectedFilter == "equipment" && selectedRarity != "all") {
+    val filtered = if (tab == "army" && selectedRarity != "all") {
         categoryFiltered.filter { rarityFor(it) == selectedRarity }
     } else {
         categoryFiltered
@@ -2328,16 +2329,16 @@ private fun CategoryScreen(
                             )
                         }
                     }
-                    if (tab == "army" && selectedFilter == "equipment" && rarityChoices.size > 1) {
+                    if (tab == "army" && rarityChoices.size > 1) {
                         Row(
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             rarityChoices.forEach { (key, label) ->
                                 val count = if (key == "all") {
-                                    equipmentItems.size
+                                    rarityItems.size
                                 } else {
-                                    equipmentItems.count { rarityFor(it) == key }
+                                    rarityItems.count { rarityFor(it) == key }
                                 }
                                 FilterChip(
                                     selected = selectedRarity == key,
