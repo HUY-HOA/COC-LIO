@@ -46,6 +46,7 @@ if actual_names != expected_names:
 
 catalog = {}
 supercharge_count = 0
+supercharge_item_count = 0
 normal_level_count = 0
 for path in local_files:
     document = read_json(path)
@@ -94,6 +95,8 @@ for path in local_files:
             else:
                 normal_levels.append(level_number)
                 normal_level_count += 1
+        if super_levels:
+            supercharge_item_count += 1
         if len(normal_levels) != len(set(normal_levels)):
             fail(f"{label}: cấp thường bị trùng")
         if len(super_levels) != len(set(super_levels)):
@@ -158,8 +161,15 @@ if not re.fullmatch(r"[0-9a-f]{40}", str(source.get("sourceCommit", ""))):
     fail("source.json thiếu sourceCommit SHA hợp lệ")
 if not source.get("snapshotDate"):
     fail("source.json thiếu snapshotDate")
+integrity = source.get("catalogIntegrity", {})
+if integrity.get("localIdCount") != len(catalog):
+    fail(f"source.json localIdCount không khớp: {integrity.get('localIdCount')} != {len(catalog)}")
+if integrity.get("remoteLookupIdCount") != len(remote_ids):
+    fail(f"source.json remoteLookupIdCount không khớp: {integrity.get('remoteLookupIdCount')} != {len(remote_ids)}")
+if integrity.get("superchargeItemCount") != supercharge_item_count:
+    fail(f"source.json superchargeItemCount không khớp: {integrity.get('superchargeItemCount')} != {supercharge_item_count}")
 
-print(f"Danh mục nội bộ: {len(catalog)} ID; {normal_level_count} cấp thường; {supercharge_count} bậc Siêu cường hóa.")
+print(f"Danh mục nội bộ: {len(catalog)} ID; {normal_level_count} cấp thường; {supercharge_count} bậc Siêu cường hóa ở {supercharge_item_count} công trình.")
 print(f"Ánh xạ tên: {len(set(catalog) & name_ids)}/{len(catalog)}; ánh xạ ảnh: {len(set(catalog) & image_ids)}/{len(catalog)}.")
 print(f"Danh mục tra cứu từ xa: {len(remote_ids)} ID.")
 for warning in warnings:
