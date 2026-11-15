@@ -209,6 +209,8 @@ private fun ClashGameDataLookupScreen() {
     var query by remember { mutableStateOf("") }
     var baseFilter by remember { mutableStateOf("all") }
     var categoryFilter by remember { mutableStateOf("all") }
+    var rarityFilter by remember { mutableStateOf("all") }
+    var heroFilter by remember { mutableStateOf("all") }
     var selectedEntry by remember { mutableStateOf<CocUpgradeEntry?>(null) }
     var loading by remember { mutableStateOf(true) }
 
@@ -221,13 +223,15 @@ private fun ClashGameDataLookupScreen() {
         loading = false
     }
 
-    val results = remember(catalog, query, baseFilter, categoryFilter) {
+    val results = remember(catalog, query, baseFilter, categoryFilter, rarityFilter, heroFilter) {
         if (query.isBlank()) emptyList()
-        else CocUpgradeCatalog.search(catalog, query, baseFilter, categoryFilter, 40)
+        else CocUpgradeCatalog.search(catalog, query, baseFilter, categoryFilter, 40, rarityFilter, heroFilter)
     }
     val categoryOptions = remember(catalog) {
         listOf("all") + catalog.map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
     }
+    val rarityOptions = remember(catalog) { catalog.map { it.rarity }.filter { it.isNotBlank() }.distinct().sorted() }
+    val heroOptions = remember(catalog) { catalog.map { it.hero }.filter { it.isNotBlank() }.distinct().sorted() }
 
     Column(
         modifier = Modifier
