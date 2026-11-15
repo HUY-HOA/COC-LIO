@@ -40,6 +40,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -254,12 +255,13 @@ internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLedStroke(
 }
 
 @Composable
-private fun LedBrandTitle(
+internal fun LedBrandTitle(
     text: String,
     fontSize: androidx.compose.ui.unit.TextUnit,
     letterSpacing: androidx.compose.ui.unit.TextUnit,
     modifier: Modifier = Modifier,
-    textAlign: androidx.compose.ui.text.style.TextAlign = androidx.compose.ui.text.style.TextAlign.Start
+    textAlign: androidx.compose.ui.text.style.TextAlign = androidx.compose.ui.text.style.TextAlign.Start,
+    outlineWidthDp: Float = 1.35f
 ) {
     val led = LocalLedTheme.current
     if (!led.enabled) {
@@ -281,7 +283,7 @@ private fun LedBrandTitle(
     val haloPalette = led.palette.map { it.copy(alpha = 0.68f) }
     val coreBrush = Brush.linearGradient(movingLedColors(fullPalette, phase))
     val haloBrush = Brush.linearGradient(movingLedColors(haloPalette, phase))
-    val outlineWidth = with(LocalDensity.current) { 1.35.dp.toPx() }
+    val outlineWidth = with(LocalDensity.current) { outlineWidthDp.coerceAtLeast(0.1f).dp.toPx() }
 
     Box(
         modifier = modifier,
@@ -333,6 +335,24 @@ private fun LedBrandTitle(
             letterSpacing = letterSpacing,
             textAlign = textAlign,
             maxLines = 1
+        )
+    }
+}
+
+@Composable
+internal fun LedAdminAvatar(size: androidx.compose.ui.unit.Dp = 30.dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        LedBrandTitle(
+            text = "ADMIN",
+            fontSize = (size.value * 0.19f).sp,
+            letterSpacing = 0.05.sp,
+            outlineWidthDp = (size.value * 0.018f).coerceIn(0.35f, 0.7f)
         )
     }
 }
