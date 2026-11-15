@@ -319,14 +319,14 @@ private fun ClashGameDataLookupScreen() {
                 Text("ĐANG TẢI DANH MỤC ID...", fontSize = 10.sp)
             }
         } else {
-            Text(
-                "Danh mục hiện có: ${catalog.size} ID. Nhập ID để tra cứu chính xác hoặc nhập tên để tìm gần đúng.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp
-            )
+            LookupValue("Số ID trong danh mục", catalog.size.toString())
+            Text("Nhập ID để tra cứu chính xác hoặc nhập tên để tìm gần đúng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
         catalogWarnings.forEach { warning ->
-            LookupCard { Text("Cảnh báo dữ liệu: $warning", color = MaterialTheme.colorScheme.error, fontSize = 10.sp) }
+            LookupCard {
+                Text("CẢNH BÁO DỮ LIỆU", color = MaterialTheme.colorScheme.error, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(warning, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            }
         }
         if (query.isNotBlank() && results.isEmpty() && !loading) {
             LookupCard {
@@ -335,7 +335,10 @@ private fun ClashGameDataLookupScreen() {
             }
         }
         if (results.isNotEmpty()) {
-            Text("KẾT QUẢ • ${results.size}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("KẾT QUẢ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("• ${results.size}", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+            }
             results.forEach { entry ->
                 val isEnglish = LocalAppLanguage.current == AppUiLanguage.ENGLISH
                 val itemName = if (isEnglish) entry.name else entry.localizedName
@@ -353,7 +356,7 @@ private fun ClashGameDataLookupScreen() {
                             Text(itemName, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             Text("ID: ${entry.dataId}", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
                             Text("${if (entry.base == "builder") "Căn cứ thợ xây" else "Làng chính"} • ${gameDataCategoryLabel(entry.category)}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                            Text("Cấp tối đa: ${entry.maxLevel}", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            LookupValue("Cấp tối đa trong dữ liệu", entry.maxLevel.toString())
                         }
                     }
                     Button(onClick = { selectedEntry = entry }, modifier = Modifier.fillMaxWidth()) {
@@ -406,10 +409,14 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
         LookupValue("Cấp tối đa trong dữ liệu", entry.maxLevel.toString())
         val recordedRegularMax = entry.levels.maxOfOrNull { it.level } ?: 0
         if (recordedRegularMax > 0 && recordedRegularMax < entry.maxLevel) {
-            LookupValue("Độ đầy đủ chỉ số", "Nguồn hiện có dữ liệu đến cấp $recordedRegularMax/${entry.maxLevel}; các cấp còn thiếu chưa được tự ước đoán.")
+            LookupValue("Dữ liệu chỉ số", "$recordedRegularMax/${entry.maxLevel}")
+            Text("Các cấp còn thiếu chưa được tự ước đoán.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
         }
-        if (entry.description.isNotBlank()) {
-            Text(entry.description, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 15.sp)
+        val localizedDescription = if (english) entry.description else {
+            EquipmentDescriptionsVi[entry.dataId] ?: CatalogDescriptionsVi[entry.dataId] ?: entry.description
+        }
+        if (localizedDescription.isNotBlank()) {
+            Text(localizedDescription, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 15.sp)
         }
         if (levels.isNotEmpty()) {
             Text("CHỈ SỐ THEO CẤP", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 10.sp)
@@ -422,12 +429,14 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
                     steps = (levels.size - 2).coerceAtLeast(0)
                 )
             }
-            levelData?.displayStats()?.forEach { (label, value) ->
-                LookupValue(label.replace('_', ' ').replaceFirstChar { it.uppercase() }, value)
+            levelData?.displayStats()?.forEach { (rawLabel, rawValue) ->
+                val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
+                val (label, value) = localizedCatalogField(normalizedLabel, rawValue, english)
+                LookupValue(label, value)
             }
             levelData?.let { level ->
                 if (level.cost() > 0L) {
-                    LookupValue("Chi phí để đạt cấp $selectedLevel", "${lookupNumber(level.cost())} ${gameDataResourceLabel(level.resource())}")
+                    LookupValue("Chi phí nâng cấp", "Cấp $selectedLevel: ${lookupNumber(level.cost())} ${gameDataResourceLabel(level.resource())}")
                 }
                 level.oreCosts().forEach { (name, amount) ->
                     LookupValue("⛏️ $name", lookupNumber(amount))
@@ -450,23 +459,26 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
             Text("SIÊU CƯỜNG HÓA", color = Color(0xFFFFC857), fontSize = 10.sp, fontWeight = FontWeight.Black)
             LookupValue("Số bậc dữ liệu", highestSuperchargeTier.toString())
             entry.superchargeLevels.forEach { tier ->
-                Text("BẬC SIÊU CƯỜNG HÓA ${tier.level}", color = Color(0xFFFFC857), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                tier.displayStats().forEach { (label, value) ->
-                    LookupValue(label.replace('_', ' ').replaceFirstChar { it.uppercase() }, value)
+                Text("BẬC SIÊU CƯỜNG HÓA", color = Color(0xFFFFC857), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("CẤP ${tier.level}", color = Color(0xFFFFC857), fontSize = 9.sp)
+                tier.displayStats().forEach { (rawLabel, rawValue) ->
+                    val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
+                    val (label, value) = localizedCatalogField(normalizedLabel, rawValue, english)
+                    LookupValue(label, value)
                 }
                 if (tier.cost() > 0L) {
-                    LookupValue("Chi phí bậc ${tier.level}", "${lookupNumber(tier.cost())} ${gameDataResourceLabel(tier.resource())}")
+                    LookupValue("Chi phí bậc", "Cấp ${tier.level}: ${lookupNumber(tier.cost())} ${gameDataResourceLabel(tier.resource())}")
                 }
                 tier.oreCosts().forEach { (name, amount) -> LookupValue("⛏️ $name", lookupNumber(amount)) }
                 if (tier.durationSeconds() > 0L) {
-                    LookupValue("⏱️ Thời gian bậc ${tier.level}", lookupDuration(tier.durationSeconds()))
+                    LookupValue("Thời gian bậc", "Cấp ${tier.level}: ${lookupDuration(tier.durationSeconds())}")
                 }
                 tier.int("townHallRequired", "builderHallLevelRequired", "builderHallRequired")?.let {
                     LookupValue("Yêu cầu Nhà chính/Nhà thợ xây", "Cấp $it")
                 }
             }
             superchargeTotals.resources.forEach { (resource, amount) ->
-                LookupValue("Tổng siêu cường hóa • $resource", lookupNumber(amount))
+                LookupValue("Tổng chi phí siêu cường hóa", "$resource: ${lookupNumber(amount)}")
             }
             if (superchargeTotals.durationSeconds > 0L) {
                 LookupValue("Tổng thời gian siêu cường hóa", lookupDuration(superchargeTotals.durationSeconds))
