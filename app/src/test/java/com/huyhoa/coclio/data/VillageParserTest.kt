@@ -230,4 +230,11 @@ class VillageParserTest {
         assertEquals(16, snapshot.townHallLevel)
     }
 
+    @Test
+    fun mapsSiegeBarracksAndKeepsUnknownCosmeticIdsVisible() {
+        assertEquals("Doanh trại công thành", CocNames.name(4000075, "siege_machines"))
+        assertEquals("Trang phục #99999999", CocNames.name(99999999, "skins"))
+        assertEquals("Phong cảnh #99999998", CocNames.name(99999998, "sceneries"))
+    }
+
 }
