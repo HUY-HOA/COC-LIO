@@ -2206,6 +2206,9 @@ private fun CategoryScreen(
     var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf("all")
     }
+    var selectedItem by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
+        mutableStateOf<VillageItem?>(null)
+    }
 
     val resourceIds = setOf(
         1000002, 1000003, 1000004, 1000005, 1000023, 1000024,
@@ -2272,9 +2275,10 @@ private fun CategoryScreen(
         else -> baseItems.filter { armyCategory(it) == selectedFilter }
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 82.dp),
-        modifier = modifier.fillMaxSize(),
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = if (tab == "army") 140.dp else 100.dp),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -2329,8 +2333,299 @@ private fun CategoryScreen(
                     if (item.timerSeconds != null) {
                         UpgradeCard(item, snapshot.timestamp)
                     } else {
-                        VillageGridItemCard(item, remoteCatalog[item.dataId])
+                        VillageGridItemCard(item, remoteCatalog[item.dataId]) {
+                            selectedItem = item
+                        }
                     }
+                }
+            }
+        }
+    }
+        selectedItem?.let { item ->
+            VillageItemDetailDialog(item, remoteCatalog[item.dataId]) {
+                selectedItem = null
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun VillageGridItemCard(
+    item: VillageItem,
+    remote: RemoteCatalogEntry? = null,
+    onClick: () -> Unit
+) {
+    val rarity = remote?.rarity?.takeIf { it.isNotBlank() }
+        ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
+    val maxLevel = remote?.maxLevel
+        ?: if (item.sectionKey == "equipment") equipmentMaxLevel(rarity) else null
+    val itemName = remote?.name?.takeIf { it.isNotBlank() } ?: item.name
+
+    NeonPanel(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        glow = if (item.tab == "army") CocMagenta else CocCyan,
+        innerPadding = 4.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 158.dp)
+                .padding(horizontal = 3.dp, vertical = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (remote?.imageUrl?.isNotBlank() == true) {
+                AsyncImage(
+                    model = remote.imageUrl,
+                    contentDescription = itemName,
+                    modifier = Modifier.size(52.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                CategoryImage(item, 52)
+            }
+            Text(
+                itemName,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            if (rarity != null) ItemRarityBadge(rarity)
+            Text(
+                item.level?.let { level ->
+                    maxLevel?.let { "CẤP $level/$it" } ?: "CẤP $level"
+                } ?: "CHƯA CÓ CẤP",
+                color = MaterialTheme.colorScheme.tertiary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.14f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 7.dp, vertical = 2.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (item.count > 1) {
+                    Text(
+                        "×${item.count}",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                if (item.gearUp) {
+                    Spacer(Modifier.width(5.dp))
+                    Text("ĐÃ GHÉP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                }
+                item.weaponLevel?.let {
+                    Spacer(Modifier.width(5.dp))
+                    Text("VŨ KHÍ $it", color = MaterialTheme.colorScheme.primary, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Text(
+                "CHẠM ĐỂ XEM CHI TIẾT",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 7.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+private val EpicEquipmentIds = setOf(
+    90000010, 90000013, 90000014, 90000015, 90000019, 90000022,
+    90000032, 90000035, 90000039, 90000040, 90000041, 90000048,
+    90000049, 90000050, 90000051, 90000053, 90000059, 90000060,
+    90000061
+)
+
+private val CommonEquipmentIds = setOf(
+    90000000, 90000001, 90000002, 90000003, 90000004, 90000005,
+    90000006, 90000007, 90000008, 90000009, 90000011, 90000012,
+    90000016, 90000017, 90000020, 90000024, 90000034, 90000042,
+    90000043, 90000044, 90000047, 90000052, 90000056, 90000057
+)
+
+private fun equipmentRarity(dataId: Int): String? = when (dataId) {
+    in EpicEquipmentIds -> "epic"
+    in CommonEquipmentIds -> "common"
+    else -> null
+}
+
+private fun equipmentMaxLevel(rarity: String?): Int? = when (rarity?.lowercase()) {
+    "common" -> 18
+    "epic" -> 27
+    else -> null
+}
+
+private fun equipmentHero(dataId: Int): String? = when (dataId) {
+    90000000, 90000001, 90000008, 90000011, 90000010, 90000014, 90000032, 90000051 -> "Vua man di"
+    90000002, 90000003, 90000017, 90000020, 90000015, 90000039, 90000048, 90000059 -> "Nữ hoàng cung thủ"
+    90000042, 90000043, 90000044, 90000047, 90000035, 90000049, 90000061 -> "Hoàng tử tiểu quỷ"
+    90000004, 90000005, 90000024, 90000034, 90000022, 90000041, 90000019 -> "Đại hộ vệ"
+    90000007, 90000006, 90000009, 90000012, 90000013, 90000040, 90000050 -> "Nhà vô địch Hoàng gia"
+    90000052, 90000053, 90000056, 90000057, 90000016, 90000060 -> "Công tước Rồng"
+    else -> null
+}
+
+@Composable
+private fun ItemRarityBadge(rarity: String) {
+    val normalized = rarity.lowercase()
+    val (label, tint) = when (normalized) {
+        "common" -> "THƯỜNG" to Color(0xFF55B9FF)
+        "rare" -> "HIẾM" to Color(0xFF39D8D0)
+        "epic" -> "SỬ THI" to Color(0xFFB77AFF)
+        "legendary" -> "HUYỀN THOẠI" to Color(0xFFFFC857)
+        else -> rarity.uppercase() to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Text(
+        label,
+        color = tint,
+        fontSize = 8.sp,
+        fontWeight = FontWeight.Black,
+        modifier = Modifier
+            .background(tint.copy(alpha = 0.14f), RoundedCornerShape(7.dp))
+            .padding(horizontal = 7.dp, vertical = 2.dp)
+    )
+}
+
+@Composable
+private fun VillageItemDetailDialog(
+    item: VillageItem,
+    remote: RemoteCatalogEntry?,
+    onDismiss: () -> Unit
+) {
+    val rarity = remote?.rarity?.takeIf { it.isNotBlank() }
+        ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
+    val maxLevel = remote?.maxLevel
+        ?: if (item.sectionKey == "equipment") equipmentMaxLevel(rarity) else null
+    val itemName = remote?.name?.takeIf { it.isNotBlank() } ?: item.name
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 620.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (remote?.imageUrl?.isNotBlank() == true) {
+                        AsyncImage(
+                            model = remote.imageUrl,
+                            contentDescription = itemName,
+                            modifier = Modifier.size(70.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        CategoryImage(item, 70)
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            itemName,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Text(
+                            item.sectionLabel,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (rarity != null) ItemRarityBadge(rarity)
+                    }
+                }
+
+                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                VillageItemDetailField("Căn cứ", if (item.base == "builder") "Làng đêm" else "Làng chính")
+                equipmentHero(item.dataId)?.takeIf { item.sectionKey == "equipment" }?.let {
+                    VillageItemDetailField("Anh hùng sử dụng", it)
+                }
+                val levelText = item.level?.let { level ->
+                    maxLevel?.let { "$level / $it" } ?: level.toString()
+                } ?: "Chưa có dữ liệu"
+                VillageItemDetailField("Cấp hiện tại / tối đa", levelText)
+                VillageItemDetailField("Số lượng", item.count.toString())
+                if (item.gearUp) VillageItemDetailField("Trạng thái", "Đã ghép công trình")
+                item.weaponLevel?.let { VillageItemDetailField("Cấp vũ khí", it.toString()) }
+                item.timerSeconds?.let {
+                    VillageItemDetailField(
+                        "Thời gian còn lại",
+                        if (it <= 0L) "Đã hết thời gian" else formatDuration(it)
+                    )
+                }
+                item.helperCooldownSeconds?.let {
+                    VillageItemDetailField("Thời gian hồi trợ thủ", formatDuration(it))
+                }
+
+                remote?.description?.takeIf { it.isNotBlank() }?.let {
+                    VillageItemDetailField("Mô tả", it)
+                }
+                remote?.requirements?.takeIf { it.isNotEmpty() }?.let {
+                    VillageItemDetailField("Yêu cầu", it.joinToString("\n"))
+                }
+                remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let {
+                    VillageItemDetailField("Chi phí nâng cấp", it)
+                }
+                remote?.upgradeDurationSeconds?.let {
+                    VillageItemDetailField("Thời gian nâng cấp", formatDuration(it))
+                }
+
+                if (item.details.isNotEmpty()) {
+                    Text("THÔNG TIN TỪ DỮ LIỆU LÀNG", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    item.details.forEachIndexed { index, value ->
+                        VillageItemDetailField("Thông tin ${index + 1}", value)
+                    }
+                }
+                if (item.properties.isNotEmpty()) {
+                    Text("CHỈ SỐ VÀ THUỘC TÍNH", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    item.properties.forEach { (key, value) ->
+                        VillageItemDetailField(
+                            key.replace('_', ' ').replaceFirstChar { it.uppercase() },
+                            value
+                        )
+                    }
+                }
+                if (remote?.details?.isNotEmpty() == true) {
+                    Text("THÔNG TIN BỔ SUNG", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    remote.details.forEachIndexed { index, value ->
+                        VillageItemDetailField("Chi tiết ${index + 1}", value)
+                    }
+                }
+                if (remote == null && item.details.isEmpty() && item.properties.isEmpty() &&
+                    item.timerSeconds == null && item.helperCooldownSeconds == null
+                ) {
+                    Text(
+                        "JSON hiện không cung cấp thêm chỉ số cho mục này. Có thể bổ sung mô tả, chỉ số, yêu cầu và ảnh trong danh mục dữ liệu cập nhật từ xa.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp
+                    )
+                }
+                TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                    Text("ĐÓNG")
                 }
             }
         }
@@ -2338,90 +2633,15 @@ private fun CategoryScreen(
 }
 
 @Composable
-private fun VillageGridItemCard(
-    item: VillageItem,
-    remote: RemoteCatalogEntry? = null
-) {
-    NeonPanel(
+private fun VillageItemDetailField(label: String, value: String) {
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        glow = if (item.tab == "army") CocMagenta else CocCyan,
-        innerPadding = 4.dp
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(122.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            if (remote?.imageUrl?.isNotBlank() == true) {
-                AsyncImage(
-                    model = remote.imageUrl,
-                    contentDescription = remote.name,
-                    modifier = Modifier.size(58.dp),
-                    contentScale = ContentScale.Fit
-                )
-            } else {
-                CategoryImage(item, 58)
-            }
-            Text(
-                item.level?.let { level ->
-                    remote?.maxLevel?.let { maxLevel -> "CẤP $level/$maxLevel" } ?: "CẤP $level"
-                } ?: "—",
-                color = MaterialTheme.colorScheme.tertiary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Black,
-                maxLines = 1,
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.14f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth().height(18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                if (item.count > 1) {
-                    Text(
-                        "×" + item.count,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 7.dp, vertical = 1.dp)
-                    )
-                }
-                if (item.gearUp) {
-                    Spacer(Modifier.width(5.dp))
-                    Text("⚙", color = CocGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-                item.weaponLevel?.let {
-                    Spacer(Modifier.width(5.dp))
-                    Text("V$it", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                }
-            }
-            val remoteDetails = buildList {
-                remote?.description?.takeIf { it.isNotBlank() }?.let(::add)
-                remote?.requirements?.takeIf { it.isNotEmpty() }?.let { add("Yêu cầu: " + it.joinToString(", ")) }
-                remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let { add("Chi phí: $it") }
-                remote?.upgradeDurationSeconds?.let { add("Thời gian: " + formatDuration(it)) }
-                remote?.details?.forEach(::add)
-            }
-            val detailText = (item.details + item.properties.map { (key, value) -> "$key: $value" } + remoteDetails).joinToString(" • ")
-            if (detailText.isNotBlank()) {
-                Text(
-                    detailText,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 7.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, lineHeight = 17.sp)
     }
 }
-
 @Composable
 private fun HelperCompactCard(item: VillageItem, modifier: Modifier = Modifier) {
     NeonPanel(modifier = modifier.fillMaxWidth(), glow = CocMagenta, innerPadding = 5.dp) {
