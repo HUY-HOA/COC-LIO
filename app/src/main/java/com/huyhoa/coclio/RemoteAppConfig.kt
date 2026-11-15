@@ -77,7 +77,7 @@ data class RemoteAppConfig(
 
 private fun defaultRemoteNavigation() = listOf(
     RemoteNavigationItem("history", "JSON", 2),
-    RemoteNavigationItem("lookup", "Tra cứu ID", 5),
+    RemoteNavigationItem("lookup", "ID", 5),
     RemoteNavigationItem("community", "Cộng đồng", 3),
     RemoteNavigationItem("settings", "Cài đặt", 4)
 )
@@ -87,7 +87,7 @@ object RemoteAppConfigManager {
     private const val DEFAULT_CONFIG_JSON = """
 {
   "schemaVersion": 1,
-  "version": 3,
+  "version": 6,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -128,7 +128,7 @@ object RemoteAppConfigManager {
   "navigation": {
     "items": [
       {"id": "history", "title": "JSON", "enabled": true},
-      {"id": "lookup", "title": "Tra cứu ID", "enabled": true},
+      {"id": "lookup", "title": "ID", "enabled": true},
       {"id": "community", "title": "Cộng đồng", "enabled": true},
       {"id": "settings", "title": "Cài đặt", "enabled": true}
     ]
