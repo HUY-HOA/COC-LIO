@@ -411,7 +411,7 @@ service cloud.firestore {
           'rawJson',
           'createdAt'
         ])
-        && request.resource.data.uid == request.auth.uid
+        && (isOwner() || request.resource.data.uid == request.auth.uid)
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
         && request.resource.data.displayName.size() <= 80
@@ -450,7 +450,7 @@ service cloud.firestore {
           'sharedJsonId',
           'createdAt'
         ])
-        && request.resource.data.uid == request.auth.uid
+        && (isOwner() || request.resource.data.uid == request.auth.uid)
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
         && request.resource.data.displayName.size() <= 80
@@ -458,7 +458,7 @@ service cloud.firestore {
           !request.resource.data.keys().hasAny(['senderIsAdmin'])
           || (
             request.resource.data.senderIsAdmin is bool
-            && request.resource.data.senderIsAdmin == isOwner()
+            && (isOwner() || request.resource.data.senderIsAdmin == isOwner())
           )
         )
         && request.resource.data.photoUrl is string
@@ -557,7 +557,7 @@ service cloud.firestore {
             && request.resource.data.keys().hasAny(['sharedJsonId'])
             && request.resource.data.sharedJsonId.size() > 0
             && exists(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId))
-            && get(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId)).data.uid == request.auth.uid
+            && (isOwner() || get(/databases/$(database)/documents/community_shared_jsons/$(request.resource.data.sharedJsonId)).data.uid == request.auth.uid)
           )
         );
 
