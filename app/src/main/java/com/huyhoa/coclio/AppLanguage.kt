@@ -1199,6 +1199,9 @@ private val englishTranslations = mapOf(
     "THÔNG BÁO BẢO TRÌ" to "MAINTENANCE NOTICE",
     "Một số chức năng có thể tạm thời không hoạt động." to "Some features may be temporarily unavailable.",
     "Mở liên kết" to "Open link",
+    "Không tìm thấy mã JSON." to "The shared JSON ID could not be found.",
+    "Yêu cầu: " to "Requirement: ",
+    "Thời gian: " to "Duration: ",
 )
 
 private fun translateAppText(source: String, language: AppUiLanguage): String {
@@ -1432,6 +1435,11 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         source.startsWith("Tải tệp hiện tạm ngừng trên gói miễn phí.") ->
             "File downloads are currently paused on the free plan."
         source.startsWith("Mở lần cuối: ") -> "Last opened: " + source.removePrefix("Mở lần cuối: ")
+        source.startsWith("Cập nhật ") -> "Updated " + source.removePrefix("Cập nhật ")
+        source.startsWith("Yêu cầu: ") -> "Requirement: " + source.removePrefix("Yêu cầu: ")
+        source.startsWith("Thời gian: ") -> "Duration: " + source.removePrefix("Thời gian: ")
+        source.startsWith("MỤC ") -> "ITEM " + source.removePrefix("MỤC ")
+        source.startsWith("Nhóm ") -> "Group " + source.removePrefix("Nhóm ")
         source.startsWith("MỨC ") -> "LEVEL " + source.removePrefix("MỨC ")
         source.startsWith("Mở lần cuối: ") -> "Last opened: " + source.removePrefix("Mở lần cuối: ")
         source.startsWith("Đăng nhập ") -> "Signed in " + source.removePrefix("Đăng nhập ")
