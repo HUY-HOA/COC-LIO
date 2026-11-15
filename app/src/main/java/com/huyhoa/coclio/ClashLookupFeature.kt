@@ -74,7 +74,8 @@ private data class ClashLookupCandidate(
 
 private data class ClashLookupSearchPage(
     val candidates: List<ClashLookupCandidate>,
-    val nextCursor: String?
+    val nextCursor: String?,
+    val nextQuery: String? = null
 )
 
 private const val CLASHKING_API = "https://api.clashk.ing"
@@ -85,10 +86,24 @@ private fun normalizeClashTag(value: String): String {
     }
     val tag = "#$compact"
     require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(tag)) {
-        "Mã không hợp lệ. Hãy nhập mã người chơi hoặc bang hội dạng #ABC123."
+        "Mã không hợp lệ. Hãy nhập mã người chơi hoặc Clan Tag dạng #2PYLQRC."
     }
     return tag
 }
+
+private fun clashProfileIdentityValues(profile: JSONObject): List<String> = listOf(
+    profile.optString("tag"),
+    profile.optString("playerTag"),
+    profile.optString("player_tag"),
+    profile.optString("clanTag"),
+    profile.optString("clan_tag"),
+    profile.optString("id"),
+    profile.optString("clanId"),
+    profile.optString("clan_id"),
+    profile.optString("playerId"),
+    profile.optString("player_id"),
+    profile.optJSONObject("clan")?.optString("tag").orEmpty()
+).filter(String::isNotBlank)
 
 private fun readClashKingJson(path: String): Any = run {
     val connection = URL("$CLASHKING_API$path").openConnection() as HttpURLConnection
@@ -120,7 +135,8 @@ private suspend fun searchClashKing(
     query: String,
     cursor: String? = null,
     townHallFilter: Int? = null,
-    minMembersFilter: Int? = null
+    minMembersFilter: Int? = null,
+    cursorQuery: String? = null
 ): ClashLookupSearchPage = withContext(Dispatchers.IO) {
     val term = query.trim()
     require(term.length in 2..40) {
@@ -146,7 +162,11 @@ private suspend fun searchClashKing(
     } else {
         clashSearchTerms(term)
     }
-    val requestTerms = if (cursor == null) variants.take(8) else variants.take(1)
+    val requestTerms = if (cursor == null) {
+        variants.take(8)
+    } else {
+        listOf(cursorQuery?.takeIf(String::isNotBlank) ?: variants.firstOrNull() ?: term)
+    }
     val responses = requestTerms.map { searchTerm ->
         async {
             runCatching {
@@ -194,28 +214,18 @@ private suspend fun searchClashKing(
     }
 
     val allCandidates = uniqueCandidates.values.toList()
-    val matchedCandidates = if (exactTag != null) {
-        allCandidates.filter {
-            runCatching { normalizeClashTag(it.profile.optString("tag")) }.getOrNull() == exactTag
+    val normalizedQuery = normalizeClashSearchText(term)
+    val matchedCandidates = allCandidates.filter { candidate ->
+        val profile = candidate.profile
+        val identityValues = clashProfileIdentityValues(profile)
+        val identityMatch = identityValues.any { value ->
+            val normalizedIdentity = normalizeClashSearchText(value)
+            normalizedIdentity == normalizedQuery ||
+                (normalizedQuery.length >= 3 && normalizedIdentity.contains(normalizedQuery)) ||
+                (exactTag != null && runCatching { normalizeClashTag(value) }.getOrNull() == exactTag)
         }
-    } else {
-        allCandidates.filter { candidate ->
-            val profile = candidate.profile
-            val identityValues = listOf(
-                profile.optString("tag"),
-                profile.optString("id"),
-                profile.optString("clanId"),
-                profile.optString("clan_id"),
-                profile.optString("playerId"),
-                profile.optString("player_id")
-            )
-            clashNameMatchesSearch(profile.optString("name"), term) ||
-                identityValues.any { value ->
-                    value.isNotBlank() &&
-                        (normalizeClashSearchText(value) == normalizeClashSearchText(term) ||
-                            value.equals(term.trim(), ignoreCase = true))
-                }
-        }
+        val nameMatch = clashNameMatchesSearch(profile.optString("name"), term)
+        if (exactTag != null) identityMatch else nameMatch || identityMatch
     }
 
     val matchedTags = matchedCandidates.map { it.profile.optString("tag").uppercase(Locale.ROOT) }.toSet()
@@ -224,8 +234,9 @@ private suspend fun searchClashKing(
     } ?: successful.firstOrNull { it.third == requestTerms.first() }
         ?: successful.first()
     ClashLookupSearchPage(
-        matchedCandidates,
-        primaryResponse.second
+        candidates = matchedCandidates,
+        nextCursor = primaryResponse.second,
+        nextQuery = primaryResponse.third.takeIf { primaryResponse.second != null }
     )
 }
 
@@ -685,6 +696,7 @@ private fun ClashPlayerClanLookupScreen() {
     var result by remember { mutableStateOf<ClashLookupResponse?>(null) }
     var searchResults by remember { mutableStateOf<List<ClashLookupCandidate>>(emptyList()) }
     var searchNextCursor by remember { mutableStateOf<String?>(null) }
+    var searchNextQuery by remember { mutableStateOf<String?>(null) }
     var searchFiltersExpanded by remember { mutableStateOf(false) }
     var searchTownHallFilter by remember { mutableStateOf("") }
     var searchMinMembersFilter by remember { mutableStateOf("") }
@@ -743,6 +755,7 @@ private fun ClashPlayerClanLookupScreen() {
                     result = null
                     searchResults = emptyList()
                     searchNextCursor = null
+                    searchNextQuery = null
                     error = null
                 },
                 label = { Text("NGƯỜI CHƠI") }
@@ -769,8 +782,8 @@ private fun ClashPlayerClanLookupScreen() {
                 error = null
             },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(if (kind == ClashLookupKind.PLAYER) "Tên hoặc mã người chơi" else "Tên hoặc mã bang hội") },
-            placeholder = { Text("Nhập tên hoặc #ABC123") },
+            label = { Text(if (kind == ClashLookupKind.PLAYER) "Tên hoặc mã người chơi" else "Tên hoặc mã bang hội (Clan Tag)") },
+            placeholder = { Text(if (kind == ClashLookupKind.PLAYER) "HUY⭐⭐⭐HÒA hoặc #2PYLQRC" else "LIO⭐⭐⭐ONE hoặc #2PYLQRC") },
             singleLine = true,
             enabled = !loading
         )
@@ -840,6 +853,7 @@ private fun ClashPlayerClanLookupScreen() {
                             } else {
                                 searchResults = page.candidates
                                 searchNextCursor = page.nextCursor
+                                searchNextQuery = page.nextQuery
                             }
                         }
                         .onFailure {
@@ -865,7 +879,7 @@ private fun ClashPlayerClanLookupScreen() {
             }
         }
         Text(
-            "Có thể tìm bằng tên người chơi, tên bang hội hoặc mã người chơi / mã bang hội. Không cần nhập Supercell ID hay email.",
+            "Tên có dấu, khoảng trắng hoặc ký hiệu trang trí vẫn được chuẩn hóa khi tìm. Mã bang hội dùng Clan Tag dạng #2PYLQRC; không phải tên Supercell ID.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp
         )
@@ -951,11 +965,15 @@ private fun ClashPlayerClanLookupScreen() {
                             val townHallFilter = searchTownHallFilter.toIntOrNull()?.takeIf { it in 1..20 }
                             val minMembersFilter = searchMinMembersFilter.toIntOrNull()?.takeIf { it in 1..50 }
                             runCatching {
-                                searchClashKing(kind, tagInput, cursor, townHallFilter, minMembersFilter)
+                                searchClashKing(kind, tagInput, cursor, townHallFilter, minMembersFilter, searchNextQuery)
                             }
                                 .onSuccess { page ->
-                                    searchResults = searchResults + page.candidates
+                                    searchResults = (searchResults + page.candidates).distinctBy { candidate ->
+                                        candidate.profile.optString("tag").uppercase(Locale.ROOT)
+                                            .ifBlank { normalizeClashSearchText(candidate.profile.optString("name")) }
+                                    }
                                     searchNextCursor = page.nextCursor
+                                    searchNextQuery = page.nextQuery
                                 }
                                 .onFailure {
                                     error = it.message?.takeIf(String::isNotBlank)
