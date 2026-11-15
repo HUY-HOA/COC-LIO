@@ -224,7 +224,8 @@ object CocUpgradeCatalog {
     ): List<CocUpgradeEntry> {
         val rawQuery = query.trim()
         val normalizedQuery = normalizeSearchText(rawQuery.removePrefix("#"))
-        val idQuery = rawQuery.removePrefix("#").filter(Char::isDigit)
+        val numericInput = rawQuery.removePrefix("#")
+        val idQuery = numericInput.takeIf { it.isNotEmpty() && it.all(Char::isDigit) }.orEmpty()
         return entries.asSequence()
             .filter { baseFilter == "all" || it.base == baseFilter }
             .filter { categoryFilter == "all" || it.category == categoryFilter }
