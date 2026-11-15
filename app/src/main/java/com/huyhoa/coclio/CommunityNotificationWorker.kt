@@ -44,6 +44,12 @@ private const val COC_LIO_NOTIFICATION_CHANNEL_UPDATES = "coc_lio_app_updates"
 private const val MAX_NOTIFICATION_DELIVERIES_PER_SCAN = 5
 private val notificationWorkerMutex = Mutex()
 
+private fun isNotificationChannelBlocked(context: Context, channelId: String): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
+    val manager = context.getSystemService(NotificationManager::class.java)
+    return manager.getNotificationChannel(channelId)?.importance == NotificationManager.IMPORTANCE_NONE
+}
+
 object CommunityNotificationScheduler {
     fun update(
         context: Context,
@@ -110,7 +116,13 @@ class CommunityNotificationWorker(
                         Manifest.permission.POST_NOTIFICATIONS
                     ) == PackageManager.PERMISSION_GRANTED) &&
                     NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()
-            if (!notificationsAllowed) return@withLock Result.success()
+            val communityChannelBlocked = communityEnabled &&
+                isNotificationChannelBlocked(applicationContext, "coc_lio_community_messages")
+            val updatesChannelBlocked = updatesEnabled &&
+                isNotificationChannelBlocked(applicationContext, COC_LIO_NOTIFICATION_CHANNEL_UPDATES)
+            if (!notificationsAllowed || communityChannelBlocked || updatesChannelBlocked) {
+                return@withLock Result.success()
+            }
 
             try {
                 val preferences = applicationContext.getSharedPreferences(
