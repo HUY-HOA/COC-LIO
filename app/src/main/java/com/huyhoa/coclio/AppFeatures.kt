@@ -294,22 +294,11 @@ object AppPreferences {
             .edit().putBoolean(key(profile, "notifications"), enabled).apply()
     }
 
-    fun communityNotificationsEnabled(context: Context, profile: String): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(key(profile, "community_notifications"), false)
-
-    fun setCommunityNotificationsEnabled(context: Context, profile: String, enabled: Boolean) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putBoolean(key(profile, "community_notifications"), enabled).apply()
-    }
-
     fun ensureNotificationPreferences(context: Context, profile: String, defaultEnabled: Boolean) {
         val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val editor = preferences.edit()
         val notificationKey = key(profile, "notifications")
-        val communityKey = key(profile, "community_notifications")
         if (!preferences.contains(notificationKey)) editor.putBoolean(notificationKey, defaultEnabled)
-        if (!preferences.contains(communityKey)) editor.putBoolean(communityKey, defaultEnabled)
         editor.apply()
     }
 
@@ -2398,8 +2387,6 @@ fun SettingsScreen(
     onLedBrightnessChanged: (Float) -> Unit,
     onLedGlowEnabledChanged: (Boolean) -> Unit,
     notificationStyle: String,
-    communityNotificationsEnabled: Boolean,
-    onCommunityNotificationsChanged: (Boolean) -> Unit,
     onGoogleSignIn: () -> Unit,
     onGoogleSwitchAccount: () -> Unit,
     onGoogleSignOut: () -> Unit,
@@ -2802,19 +2789,6 @@ fun SettingsScreen(
                 }
                 Switch(checked = notificationsEnabled, onCheckedChange = onNotificationsChanged)
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("TIN NHẮN CỘNG ĐỒNG", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Cần đăng nhập Google; kiểm tra tin mới khi có mạng, khoảng 15 phút/lần.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-                }
-                Switch(checked = communityNotificationsEnabled, onCheckedChange = onCommunityNotificationsChanged)
-            }
-            Text(
-                "Để hiện bong bóng, hãy bật Bong bóng trong cài đặt thông báo Android hoặc nhấn giữ thông báo tin nhắn cộng đồng rồi chọn hiển thị dạng bong bóng.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 9.sp,
-                lineHeight = 13.sp
-            )
             Text("Kiểu nhắc nâng cấp", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 FilterChip(
