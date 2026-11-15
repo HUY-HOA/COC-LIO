@@ -16,18 +16,18 @@
 
 ## Đường đi của nội dung
 
-1. GitHub là nguồn dữ liệu chuẩn trong remote-content/current.json và remote-content/catalog/*.json.
-2. Workflow ghép các shard, kiểm tra dataId trùng, schema, giới hạn số mục và kích thước.
-3. Worker được triển khai với binding KV. Workflow ghi khóa content/vN.json trước, sau đó mới đổi content/current.
-4. Worker chỉ đọc nội dung công khai, kiểm tra SHA-256 và version trong payload, trả ETag và cache headers.
-5. Ứng dụng Android tải Cloudflare trước, lưu JSON hợp lệ vào bộ nhớ ứng dụng và không ghi đè cache bằng phiên bản cũ hơn.
-6. Firestore listener còn lại làm dự phòng và cập nhật thời gian thực. Nếu Cloudflare không truy cập được, ứng dụng vẫn dùng cache/Firestore.
+1. Repository riêng tư GitHub là nguồn dữ liệu chuẩn: remote-content/current.json và remote-content/catalog/*.json.
+2. Phiên bản hiện tại (v3) đã được nhập vào Cloudflare KV theo từng khóa: source/v3/base.json và 17 shard. source/current là manifest trỏ tới bộ dữ liệu này.
+3. Worker chỉ đọc KV; không cố truy cập repository private. Khi cần dựng phiên bản mới từ manifest, Worker kiểm tra cấu trúc, dataId trùng, giới hạn số mục, ghép JSON, tính SHA-256 và ghi bản bất biến content/vN.json trước khi đổi content/current.
+4. Khi CLOUDFLARE_API_TOKEN được cấu hình trong GitHub Actions, workflow triển khai Worker và đẩy catalog mới từ GitHub vào KV. Workflow kiểm tra endpoint thực tế và so sánh toàn bộ JSON với nguồn GitHub. Nếu chưa có secret, workflow vẫn chạy unit test và kiểm tra dữ liệu đang phục vụ; nếu source tăng version nhưng chưa được xuất bản, kiểm tra sẽ báo lỗi thay vì âm thầm chấp nhận dữ liệu cũ.
+5. Ứng dụng Android tải Cloudflare trước, xác minh SHA-256/version, lưu JSON hợp lệ trên máy và làm mới mỗi 5 phút khi ứng dụng hoạt động. ETag giảm tải khi nội dung không đổi; bản cache không bị ghi đè bởi phiên bản cũ.
+6. Firestore listener được giữ làm đường dự phòng/thời gian thực và publisher riêng tiếp tục tạo bản mirror. Nếu Cloudflare không truy cập được, ứng dụng vẫn có cache/Firestore.
 
 ## Bảo mật và dữ liệu
 
 - KV là kho công khai qua endpoint đọc. Chỉ chứa catalog, hướng dẫn, liên kết và mẫu nội dung chung.
 - Tuyệt đối không đưa email, UID, Player Tag cá nhân, tin nhắn, hồ sơ, token, khóa bí mật, consent hoặc dữ liệu riêng tư vào KV/R2 public.
-- Endpoint catalog không hỗ trợ POST, PUT, PATCH hoặc DELETE. Chỉ GitHub Actions với Cloudflare API token có quyền giới hạn mới được phát hành dữ liệu.
+- Endpoint catalog chỉ hỗ trợ GET, HEAD và OPTIONS; không có API ghi công khai. Quyền ghi KV chỉ nằm ở tài khoản Cloudflare và GitHub Actions token giới hạn quyền.
 - Quyền chủ ứng dụng và quản trị viên tiếp tục được kiểm tra ở Firebase/backend; không dựa vào trạng thái giao diện APK.
 - Ứng dụng không tải hay thực thi mã từ xa. Chỉ parse JSON theo parser đã đóng gói trong APK.
 - Nếu Firebase không hoạt động, dữ liệu Cloudflare công khai và cache vẫn có thể đọc; các chức năng tài khoản/cộng đồng vẫn cần Firebase.
@@ -49,13 +49,11 @@ Tài khoản hiện chưa bật R2. Cloudflare yêu cầu chủ tài khoản và
 
 Sau khi kích hoạt, tạo bucket riêng cho tài nguyên công khai. Tệp cộng đồng hoặc dữ liệu riêng tư phải đặt trong vùng không public và chỉ cấp quyền bằng backend sau xác thực. Không trộn tệp riêng tư với bucket public.
 
-## Kiểm tra
+## Trạng thái nhập dữ liệu và kiểm tra
 
-Unit test Worker được chạy trong workflow bằng Node.js test runner. Kiểm tra bao gồm health, nội dung hợp lệ, ETag/304, chặn phương thức ghi, thiếu dữ liệu, hash sai, key không hợp lệ và đường asset trước khi R2 được gắn.
+- Phiên bản 3 đã được nạp vào KV: 134 mục, 17 shard. Endpoint thực tế trả HTTP 200; workflow xác nhận version, mọi ID, ETag và SHA-256 khớp với JSON nguồn.
+- 11/11 unit test Worker đã qua, gồm bootstrap từ KV, không truy cập repository private, ETag/304, chặn phương thức ghi, dữ liệu thiếu, ID trùng, hash sai và fallback khi thiếu shard.
+- Kiểm thử endpoint chạy từ GitHub Actions vì môi trường công cụ quản trị không gọi trực tiếp được workers.dev.
+- Android đã có đường tải Cloudflare, cache cục bộ và Firebase fallback; cần đợi xác thực Android trên HEAD hiện tại trước khi build APK.
 
 Không tự động build APK khi chỉ cập nhật Worker hoặc dữ liệu. Các thay đổi Kotlin trong ứng dụng cần được kiểm tra Android riêng và chỉ build bản cài đặt theo lệnh BUILD APK.
-
-
-## Tự khởi tạo nội dung từ repository
-
-Nếu GitHub Actions chưa có `CLOUDFLARE_API_TOKEN`, Worker vẫn có thể khởi tạo kho nội dung: đọc `remote-content/current.json`, tải các shard được liệt kê trong `catalogShards`, kiểm tra ID trùng và cấu trúc, ghép JSON, tạo SHA-256 rồi lưu bản phiên bản vào KV. Sau lần đầu, Worker phục vụ bản đã lưu trong KV; khi source tăng version, nó tự phát hiện và phát hành phiên bản kế tiếp. Không phụ thuộc vào secret triển khai Worker trong GitHub Actions.
