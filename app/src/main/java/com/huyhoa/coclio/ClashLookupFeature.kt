@@ -794,7 +794,10 @@ private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
     var detailText by remember { mutableStateOf<Any?>(null) }
     var detailError by remember { mutableStateOf<String?>(null) }
     var showProfileTools by remember { mutableStateOf(false) }
-    var selectedActionCategory by remember { mutableStateOf("Tất cả") }
+    var selectedActionCategory by remember(initialKind) {
+        mutableStateOf(if (initialKind == ClashLookupKind.PLAYER) "Hoạt động & thống kê" else "Quyên góp & tài nguyên")
+    }
+    var selectedGlobalActionCategory by remember { mutableStateOf("Tất cả") }
     var showGlobalTools by remember { mutableStateOf(false) }
     var townHallInput by remember { mutableStateOf("") }
     var leagueTierInput by remember { mutableStateOf("") }
@@ -1003,7 +1006,7 @@ private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
                     } else {
                         Text(
                             "Cấp bang hội " + candidate.profile.optInt("clanLevel") +
-                                "  •  " + candidate.profile.optInt("members") + " thành viên",
+                                "  •  " + clanMemberCount(candidate.profile) + " thành viên",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 10.sp
                         )
@@ -1020,6 +1023,12 @@ private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
                                         searchResults = emptyList()
                                         searchNextCursor = null
                                         searchNextQuery = null
+                                        selectedActionCategory = clashLookupActions(it).firstOrNull()
+                                            ?.let(::clashLookupActionCategory) ?: "Tất cả"
+                                        showProfileTools = false
+                                        detailTitle = null
+                                        detailText = null
+                                        detailError = null
                                     }
                                     .onFailure {
                                         error = it.message?.takeIf(String::isNotBlank)
@@ -1208,7 +1217,23 @@ private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp
         )
-        globalClashActions().chunked(2).forEach { rowActions ->
+        val globalActions = globalClashActions()
+        val globalActionGroups = globalActions.groupBy(::clashLookupActionCategory)
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            (listOf("Tất cả") + globalActionGroups.keys).forEach { category ->
+                FilterChip(
+                    selected = selectedGlobalActionCategory == category,
+                    onClick = { selectedGlobalActionCategory = category },
+                    label = { Text(category, fontSize = 9.sp) }
+                )
+            }
+        }
+        val visibleGlobalActions = if (selectedGlobalActionCategory == "Tất cả") globalActions
+            else globalActionGroups[selectedGlobalActionCategory].orEmpty()
+        visibleGlobalActions.chunked(2).forEach { rowActions ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1368,6 +1393,12 @@ private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
 
 
 private data class ClashLookupAction(val title: String, val path: String)
+
+private fun clanMemberCount(profile: JSONObject): Int {
+    profile.optInt("memberCount", -1).takeIf { it >= 0 }?.let { return it }
+    profile.optJSONArray("members")?.let { return it.length() }
+    return profile.optInt("members").coerceAtLeast(0)
+}
 
 private fun clashLookupActionCategory(action: ClashLookupAction): String {
     val title = action.title.lowercase(Locale.ROOT)
