@@ -146,6 +146,17 @@ private fun saveRecentClashProfile(
     preferences.edit().putString("recent_profiles", values.toString()).apply()
 }
 
+private fun clearRecentClashProfiles(context: Context, kind: ClashLookupKind) {
+    val preferences = context.getSharedPreferences(CLASH_LOOKUP_PREFERENCES, Context.MODE_PRIVATE)
+    val existing = runCatching {
+        val values = JSONArray(preferences.getString("recent_profiles", "[]"))
+        (0 until values.length()).mapNotNull { values.optJSONObject(it) }
+    }.getOrDefault(emptyList())
+    val updated = JSONArray()
+    existing.filterNot { it.optString("kind") == kind.name }.forEach { updated.put(it) }
+    preferences.edit().putString("recent_profiles", updated.toString()).apply()
+}
+
 private fun readRecentGameDataIds(context: Context): List<Int> = runCatching {
     val values = JSONArray(
         context.getSharedPreferences(CLASH_LOOKUP_PREFERENCES, Context.MODE_PRIVATE)
@@ -161,6 +172,13 @@ private fun saveRecentGameDataId(context: Context, dataId: Int) {
     val values = JSONArray()
     updated.forEach { values.put(it) }
     preferences.edit().putString("recent_game_ids", values.toString()).apply()
+}
+
+private fun clearRecentGameDataIds(context: Context) {
+    context.getSharedPreferences(CLASH_LOOKUP_PREFERENCES, Context.MODE_PRIVATE)
+        .edit()
+        .remove("recent_game_ids")
+        .apply()
 }
 
 private fun clashProfileIdentityValues(profile: JSONObject): List<String> = listOf(
@@ -538,7 +556,21 @@ private fun ClashGameDataLookupScreen() {
         }
         if (query.isBlank() && !loading && recentEntries.isNotEmpty()) {
             LookupCard {
-                Text("ĐÃ TRA CỨU GẦN ĐÂY", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("ĐÃ TRA CỨU GẦN ĐÂY", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        "XÓA",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable {
+                            clearRecentGameDataIds(context)
+                            recentDataIds = emptyList()
+                            selectedEntry = null
+                        }
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1071,12 +1103,25 @@ private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
             fontSize = 10.sp
         )
         if (tagInput.isBlank() && recentProfiles.isNotEmpty()) {
-            Text(
-                "TRA CỨU GẦN ĐÂY",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "TRA CỨU GẦN ĐÂY",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "XÓA",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                        clearRecentClashProfiles(context, initialKind)
+                        recentProfiles = emptyList()
+                    }
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
