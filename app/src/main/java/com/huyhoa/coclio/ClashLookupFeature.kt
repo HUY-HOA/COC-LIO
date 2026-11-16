@@ -11,6 +11,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Tag
+import androidx.compose.material3.Icon
+import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -265,31 +272,60 @@ private suspend fun loadClashKingProfile(candidate: ClashLookupCandidate): Clash
 @Composable
 fun ClashLookupScreen() {
     val english = LocalAppLanguage.current == AppUiLanguage.ENGLISH
-    var mode by remember { mutableStateOf("players") }
+    var mode by remember { mutableStateOf("player") }
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = mode == "players",
-                onClick = { mode = "players" },
-                label = { Text(if (english) "PLAYERS & CLANS" else "NGƯỜI CHƠI & BANG HỘI") }
+        LookupCard {
+            Text(
+                if (english) "ID LOOKUP" else "TRUNG TÂM TRA CỨU ID",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
             )
-            FilterChip(
-                selected = mode == "game-data",
-                onClick = { mode = "game-data" },
-                label = { Text(if (english) "IN-GAME ID" else "ID TRONG GAME") }
+            Text(
+                if (english) {
+                    "Choose what you want to find. Search by player or clan name, in-game tag, or game data ID."
+                } else {
+                    "Chọn đúng loại dữ liệu cần tìm: người chơi, bang hội hoặc mã vật phẩm trong trò chơi."
+                },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                lineHeight = 15.sp
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                FilterChip(
+                    selected = mode == "player",
+                    onClick = { mode = "player" },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(16.dp))
+                    },
+                    label = { Text(if (english) "Player" else "Người chơi", fontSize = 9.sp) }
+                )
+                FilterChip(
+                    selected = mode == "clan",
+                    onClick = { mode = "clan" },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Groups, contentDescription = null, modifier = Modifier.size(16.dp))
+                    },
+                    label = { Text(if (english) "Clan" else "Bang hội", fontSize = 9.sp) }
+                )
+                FilterChip(
+                    selected = mode == "game-data",
+                    onClick = { mode = "game-data" },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Tag, contentDescription = null, modifier = Modifier.size(16.dp))
+                    },
+                    label = { Text(if (english) "Game ID" else "ID trò chơi", fontSize = 9.sp) }
+                )
+            }
         }
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            if (mode == "game-data") {
-                ClashGameDataLookupScreen()
-            } else {
-                ClashPlayerClanLookupScreen()
+            when (mode) {
+                "player" -> ClashPlayerClanLookupScreen(ClashLookupKind.PLAYER)
+                "clan" -> ClashPlayerClanLookupScreen(ClashLookupKind.CLAN)
+                else -> ClashGameDataLookupScreen()
             }
         }
     }
@@ -305,6 +341,7 @@ private fun ClashGameDataLookupScreen() {
     var categoryFilter by remember { mutableStateOf("all") }
     var rarityFilter by remember { mutableStateOf("all") }
     var heroFilter by remember { mutableStateOf("all") }
+    var advancedFiltersExpanded by remember { mutableStateOf(false) }
     var selectedEntry by remember { mutableStateOf<CocUpgradeEntry?>(null) }
     var loading by remember { mutableStateOf(true) }
 
@@ -335,15 +372,16 @@ private fun ClashGameDataLookupScreen() {
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            "TRA CỨU ID DỮ LIỆU TRONG GAME",
+            "TRA CỨU ID VẬT PHẨM VÀ ĐƠN VỊ",
             color = MaterialTheme.colorScheme.primary,
-            fontSize = 17.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Black
         )
         Text(
-            "Tìm công trình, quân lính, anh hùng, thần chú, linh thú, trang bị và máy công thành bằng ID, tên tiếng Việt không dấu hoặc tên tiếng Anh.",
+            "Tìm theo mã số, tên tiếng Việt có dấu/không dấu, tên tiếng Anh hoặc tên gọi khác. Chọn một kết quả để xem cấp, chỉ số và chi phí nâng cấp.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 11.sp
+            fontSize = 10.sp,
+            lineHeight = 15.sp
         )
         OutlinedTextField(
             value = query,
@@ -388,19 +426,25 @@ private fun ClashGameDataLookupScreen() {
                 )
             }
         }
-        if (rarityOptions.isNotEmpty() && categoryFilter in setOf("all", "hero-equipment")) {
+        OutlinedButton(
+            onClick = { advancedFiltersExpanded = !advancedFiltersExpanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (advancedFiltersExpanded) "ẨN BỘ LỌC NÂNG CAO" else "BỘ LỌC NÂNG CAO")
+        }
+        if (advancedFiltersExpanded && rarityOptions.isNotEmpty() && categoryFilter in setOf("all", "hero-equipment")) {
             Text("ĐỘ HIẾM", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(selected = rarityFilter == "all", onClick = { rarityFilter = "all" }, label = { Text("TẤT CẢ", fontSize = 9.sp) })
+                FilterChip(selected = rarityFilter == "all", onClick = { rarityFilter = "all" }, label = { Text("Tất cả", fontSize = 9.sp) })
                 rarityOptions.forEach { key ->
                     FilterChip(selected = rarityFilter == key, onClick = { rarityFilter = key }, label = { Text(gameDataRarityLabel(key), fontSize = 9.sp) })
                 }
             }
         }
-        if (heroOptions.isNotEmpty() && categoryFilter in setOf("all", "hero-equipment")) {
-            Text("ANH HÙNG", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        if (advancedFiltersExpanded && heroOptions.isNotEmpty() && categoryFilter in setOf("all", "hero-equipment")) {
+            Text("ANH HÙNG SỬ DỤNG", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
             Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(selected = heroFilter == "all", onClick = { heroFilter = "all" }, label = { Text("TẤT CẢ", fontSize = 9.sp) })
+                FilterChip(selected = heroFilter == "all", onClick = { heroFilter = "all" }, label = { Text("Tất cả", fontSize = 9.sp) })
                 heroOptions.forEach { key ->
                     FilterChip(selected = heroFilter == key, onClick = { heroFilter = key }, label = { Text(gameDataHeroLabel(key), fontSize = 9.sp) })
                 }
@@ -420,6 +464,29 @@ private fun ClashGameDataLookupScreen() {
             LookupCard {
                 Text("CẢNH BÁO DỮ LIỆU", color = MaterialTheme.colorScheme.error, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 Text(warning, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            }
+        }
+        if (query.isBlank() && !loading) {
+            LookupCard {
+                Text("Bắt đầu tra cứu", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text(
+                    "Nhập mã ID hoặc tên. Ví dụ: 4000008 (Rồng), 90000061 (trang bị Anh hùng), hoặc tên công trình/đơn vị.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf("4000008", "90000061", "Rồng").forEach { sample ->
+                        FilterChip(
+                            selected = false,
+                            onClick = { query = sample; selectedEntry = null },
+                            label = { Text(sample, fontSize = 9.sp) }
+                        )
+                    }
+                }
             }
         }
         if (query.isNotBlank() && results.isEmpty() && !loading) {
@@ -450,11 +517,11 @@ private fun ClashGameDataLookupScreen() {
                             Text(itemName, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             Text("ID: ${entry.dataId}", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
                             Text("${if (entry.base == "builder") "Căn cứ thợ xây" else "Làng chính"} • ${gameDataCategoryLabel(entry.category)}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                            LookupValue("Cấp tối đa trong dữ liệu", entry.maxLevel.toString())
+                            LookupValue("Cấp tối đa", entry.maxLevel.toString())
                         }
                     }
                     Button(onClick = { selectedEntry = entry }, modifier = Modifier.fillMaxWidth()) {
-                        Text(if (selectedEntry?.dataId == entry.dataId) "ĐANG XEM CHI TIẾT" else "XEM ĐẦY ĐỦ THÔNG TIN")
+                        Text(if (selectedEntry?.dataId == entry.dataId) "ĐANG CHỌN" else "XEM CHI TIẾT")
                     }
                 }
             }
@@ -463,7 +530,9 @@ private fun ClashGameDataLookupScreen() {
             }
         }
         selectedEntry?.let { entry ->
-            GameDataLookupDetail(entry, catalog.associateBy { it.dataId })
+            GameDataLookupDetail(entry, catalog.associateBy { it.dataId }) {
+                selectedEntry = null
+            }
         }
         Text(
             "Nguồn: bộ dữ liệu cộng đồng MIT, đối chiếu theo các thông báo cập nhật của Supercell. Dữ liệu ID, cấp và chỉ số có thể thay đổi sau bản cập nhật game.",
@@ -474,7 +543,11 @@ private fun ClashGameDataLookupScreen() {
 }
 
 @Composable
-private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUpgradeEntry>) {
+private fun GameDataLookupDetail(
+    entry: CocUpgradeEntry,
+    catalog: Map<Int, CocUpgradeEntry>,
+    onDismiss: () -> Unit
+) {
     val levels = entry.levels.map { it.level }.distinct().sorted()
     var selectedIndex by remember(entry.dataId, levels) { mutableStateOf((levels.lastIndex).coerceAtLeast(0)) }
     var planStartIndex by remember(entry.dataId, levels) { mutableStateOf(0) }
@@ -486,7 +559,16 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
     val nextLevelData = entry.level(selectedLevel + 1)
     val requirements = nextLevelData?.let { CocUpgradeCatalog.nextRequirements(entry, selectedLevel + 1, catalog) }.orEmpty()
 
-    LookupCard {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth().heightIn(max = 660.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val imageUrl = CocAssets.imageUrl(entry)
             if (!imageUrl.isNullOrBlank()) {
@@ -620,6 +702,11 @@ private fun GameDataLookupDetail(entry: CocUpgradeEntry, catalog: Map<Int, CocUp
                 fontSize = 9.sp
             )
         }
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                    Text("ĐÓNG CHI TIẾT")
+                }
+            }
+        }
     }
 }
 
@@ -690,8 +777,8 @@ private fun lookupDuration(totalSeconds: Long): String {
 }
 
 @Composable
-private fun ClashPlayerClanLookupScreen() {
-    var kind by remember { mutableStateOf(ClashLookupKind.PLAYER) }
+private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
+    var kind by remember(initialKind) { mutableStateOf(initialKind) }
     var tagInput by remember { mutableStateOf("") }
     var result by remember { mutableStateOf<ClashLookupResponse?>(null) }
     var searchResults by remember { mutableStateOf<List<ClashLookupCandidate>>(emptyList()) }
@@ -706,6 +793,9 @@ private fun ClashPlayerClanLookupScreen() {
     var detailTitle by remember { mutableStateOf<String?>(null) }
     var detailText by remember { mutableStateOf<Any?>(null) }
     var detailError by remember { mutableStateOf<String?>(null) }
+    var showProfileTools by remember { mutableStateOf(false) }
+    var selectedActionCategory by remember { mutableStateOf("Tất cả") }
+    var showGlobalTools by remember { mutableStateOf(false) }
     var townHallInput by remember { mutableStateOf("") }
     var leagueTierInput by remember { mutableStateOf("") }
     var locationInput by remember { mutableStateOf("") }
@@ -737,42 +827,21 @@ private fun ClashPlayerClanLookupScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            "TRA CỨU NGƯỜI CHƠI & BANG HỘI",
+            if (kind == ClashLookupKind.PLAYER) "TRA CỨU NGƯỜI CHƠI" else "TRA CỨU BANG HỘI",
             color = MaterialTheme.colorScheme.primary,
-            fontSize = 19.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Black
         )
         Text(
-            "Tìm hồ sơ người chơi hoặc bang hội bằng tên hoặc mã trong trò chơi.",
+            if (kind == ClashLookupKind.PLAYER) {
+                "Tìm bằng tên trong game hoặc mã người chơi (Player Tag). Có thể lọc theo cấp Nhà chính."
+            } else {
+                "Tìm bằng tên bang hội hoặc Clan Tag. Có thể lọc theo số thành viên tối thiểu."
+            },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp
+            fontSize = 10.sp,
+            lineHeight = 15.sp
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = kind == ClashLookupKind.PLAYER,
-                onClick = {
-                    kind = ClashLookupKind.PLAYER
-                    result = null
-                    searchResults = emptyList()
-                    searchNextCursor = null
-                    searchNextQuery = null
-                    error = null
-                },
-                label = { Text("NGƯỜI CHƠI") }
-            )
-            FilterChip(
-                selected = kind == ClashLookupKind.CLAN,
-                onClick = {
-                    kind = ClashLookupKind.CLAN
-                    result = null
-                    searchResults = emptyList()
-                    searchNextCursor = null
-                    searchNextQuery = null
-                    error = null
-                },
-                label = { Text("BANG HỘI") }
-            )
-        }
         OutlinedTextField(
             value = tagInput,
             onValueChange = {
@@ -884,7 +953,11 @@ private fun ClashPlayerClanLookupScreen() {
             }
         }
         Text(
-            "Tên có dấu, khoảng trắng hoặc ký hiệu trang trí vẫn được chuẩn hóa khi tìm. Mã bang hội dùng Clan Tag dạng #2PYLQRC; không phải tên Supercell ID.",
+            if (kind == ClashLookupKind.PLAYER) {
+                "Có thể nhập tên có dấu, tên có ký hiệu hoặc mã người chơi dạng #ABC123. Đây là Player Tag trong game, không phải email hay Supercell ID."
+            } else {
+                "Có thể nhập tên có dấu, tên có ký hiệu hoặc Clan Tag dạng #2PYLQRC. Clan Tag khác với tên bang hội và Supercell ID."
+            },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp
         )
@@ -1043,33 +1116,54 @@ private fun ClashPlayerClanLookupScreen() {
                 }
             }
 
-            Text(
-                if (data.kind == ClashLookupKind.PLAYER) "THỐNG KÊ & LỊCH SỬ NGƯỜI CHƠI" else "THỐNG KÊ & LỊCH SỬ CLAN",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                "Chọn mục để tải thêm dữ liệu từ ClashKing.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp
-            )
             val actions = clashLookupActions(data)
-            actions.chunked(2).forEach { rowActions ->
+            val actionGroups = actions.groupBy(::clashLookupActionCategory)
+            OutlinedButton(
+                onClick = { showProfileTools = !showProfileTools },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !detailLoading
+            ) {
+                Text(
+                    if (showProfileTools) "ẨN THỐNG KÊ VÀ LỊCH SỬ"
+                    else "MỞ THỐNG KÊ VÀ LỊCH SỬ (${actions.size} mục)"
+                )
+            }
+            if (showProfileTools) {
+                Text(
+                    "Chọn nhóm dữ liệu cần xem. Mỗi mục sẽ tải thông tin riêng từ ClashKing.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp
+                )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    rowActions.forEach { action ->
-                        OutlinedButton(
-                            onClick = { loadAction(action) },
-                            modifier = Modifier.weight(1f),
-                            enabled = !detailLoading
-                        ) {
-                            Text(action.title, fontSize = 9.sp, lineHeight = 12.sp)
-                        }
+                    (listOf("Tất cả") + actionGroups.keys).forEach { category ->
+                        FilterChip(
+                            selected = selectedActionCategory == category,
+                            onClick = { selectedActionCategory = category },
+                            label = { Text(category, fontSize = 9.sp) }
+                        )
                     }
-                    if (rowActions.size == 1) Spacer(Modifier.weight(1f))
+                }
+                val visibleActions = if (selectedActionCategory == "Tất cả") actions
+                    else actionGroups[selectedActionCategory].orEmpty()
+                visibleActions.chunked(2).forEach { rowActions ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowActions.forEach { action ->
+                            OutlinedButton(
+                                onClick = { loadAction(action) },
+                                modifier = Modifier.weight(1f),
+                                enabled = !detailLoading
+                            ) {
+                                Text(action.title, fontSize = 9.sp, lineHeight = 12.sp)
+                            }
+                        }
+                        if (rowActions.size == 1) Spacer(Modifier.weight(1f))
+                    }
                 }
             }
 
@@ -1101,14 +1195,16 @@ private fun ClashPlayerClanLookupScreen() {
             }
         }
 
+        OutlinedButton(
+            onClick = { showGlobalTools = !showGlobalTools },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !detailLoading
+        ) {
+            Text(if (showGlobalTools) "ẨN CÔNG CỤ TOÀN GAME" else "CÔNG CỤ THỐNG KÊ TOÀN GAME")
+        }
+        if (showGlobalTools) {
         Text(
-            "TOÀN CẢNH CLASH OF CLANS",
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Thống kê cộng đồng, lịch mùa giải và bảng xếp hạng công khai.",
+            "Thống kê cộng đồng, lịch mùa giải, dữ liệu chiến tranh và bảng xếp hạng công khai.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp
         )
@@ -1242,6 +1338,7 @@ private fun ClashPlayerClanLookupScreen() {
                 enabled = !detailLoading && location != null && location > 0
             ) { Text("TOP VÀNG THỦ ĐÔ") }
         }
+        }
 
         LookupCard {
             Text(
@@ -1271,6 +1368,17 @@ private fun ClashPlayerClanLookupScreen() {
 
 
 private data class ClashLookupAction(val title: String, val path: String)
+
+private fun clashLookupActionCategory(action: ClashLookupAction): String {
+    val title = action.title.lowercase(Locale.ROOT)
+    return when {
+        listOf("chiến tranh", "war", "cwl", "trận đánh", "lượt đánh").any(title::contains) -> "Chiến tranh"
+        listOf("quyên góp", "nhận lính", "tài nguyên", "farming", "vàng thủ đô").any(title::contains) -> "Quyên góp & tài nguyên"
+        listOf("xếp hạng", "ranked", "cúp", "top ", "legend", "kỷ lục", "chuỗi thắng").any(title::contains) -> "Xếp hạng"
+        listOf("lịch sử", "thay đổi", "gia nhập", "rời bang", "mùa ").any(title::contains) -> "Lịch sử"
+        else -> "Hoạt động & thống kê"
+    }
+}
 
 private fun globalClashActions(): List<ClashLookupAction> = listOf(
     ClashLookupAction("Số liệu toàn cầu", "/v2/counts"),
