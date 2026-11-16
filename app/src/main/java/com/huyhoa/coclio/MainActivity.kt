@@ -2424,19 +2424,6 @@ private fun CategoryScreen(
         else -> rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
     }
 
-    fun groupGlow(key: String): Color = when {
-        key == "defense" -> Color(0xFFFF626B)
-        key == "resources" -> CocGold
-        key == "traps" -> CocViolet
-        key == "troops" -> CocMagenta
-        key == "guardians" -> Color(0xFFFFB45C)
-        key == "heroes" -> Color(0xFFFFB45C)
-        key == "spells" -> Color(0xFF64B5F6)
-        key == "pets" -> Color(0xFF6FE0B4)
-        key == "equipment" -> CocViolet
-        else -> CocCyan
-    }
-
     Box(modifier = modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = if (tab == "army") 140.dp else 100.dp),
@@ -2528,9 +2515,6 @@ private fun CategoryScreen(
                                                 item = item,
                                                 remote = remoteCatalog[item.dataId],
                                                 upgrade = upgradeCatalog[item.dataId],
-                                                catalog = upgradeCatalog,
-                                                hallLevel = hallLevel,
-                                                blacksmithLevel = blacksmithLevel,
                                                 modifier = Modifier.weight(1f)
                                             ) {
                                                 selectedItem = item
@@ -2564,13 +2548,11 @@ private fun VillageGridItemCard(
     item: VillageItem,
     remote: RemoteCatalogEntry?,
     upgrade: CocUpgradeEntry?,
-    catalog: Map<Int, CocUpgradeEntry>,
-    hallLevel: Int?,
-    blacksmithLevel: Int?,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val itemName = if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
+    val isEnglish = LocalAppLanguage.current == AppUiLanguage.ENGLISH
+    val itemName = if (isEnglish) {
         remote?.name?.takeIf { it.isNotBlank() } ?: upgrade?.name?.takeIf { it.isNotBlank() } ?: item.name
     } else {
         item.name
@@ -2621,7 +2603,8 @@ private fun VillageGridItemCard(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                item.level?.let { "Cấp $it" } ?: "Chưa rõ cấp",
+                item.level?.let { if (isEnglish) "Level $it" else "Cấp $it" }
+                    ?: if (isEnglish) "Level unavailable" else "Chưa rõ cấp",
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
@@ -2664,15 +2647,6 @@ private fun equipmentHeroName(heroId: String): String = when (heroId.lowercase()
     "dragon-duke" -> "Công tước Rồng"
     else -> heroId.replace('-', ' ').replaceFirstChar { it.uppercase() }
 }
-
-private fun rarityColor(rarity: String?): Color? = when (rarity?.lowercase()) {
-    "common" -> Color(0xFF55B9FF)
-    "rare" -> Color(0xFF39D8D0)
-    "epic" -> Color(0xFFB77AFF)
-    "legendary" -> Color(0xFFFFC857)
-    else -> null
-}
-
 
 internal val EquipmentDescriptionsVi = mapOf(
     90000048 to "Triệu hồi một Đại khổng lồ chiến đấu bên cạnh Nữ hoàng Cung thủ.",
