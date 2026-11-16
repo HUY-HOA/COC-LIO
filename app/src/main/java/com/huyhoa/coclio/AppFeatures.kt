@@ -2544,7 +2544,7 @@ fun SettingsScreen(
                     }
                     Switch(checked = privacyDraft.securityTelemetry, onCheckedChange = { privacyDraft = privacyDraft.copy(securityTelemetry = it) })
                 }
-                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("Phân tích mức sử dụng", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
@@ -2552,7 +2552,7 @@ fun SettingsScreen(
                     }
                     Switch(checked = privacyDraft.analytics, onCheckedChange = { privacyDraft = privacyDraft.copy(analytics = it) })
                 }
-                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("Báo lỗi và hiệu năng", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
@@ -2560,7 +2560,7 @@ fun SettingsScreen(
                     }
                     Switch(checked = privacyDraft.diagnostics, onCheckedChange = { privacyDraft = privacyDraft.copy(diagnostics = it) })
                 }
-                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("Đồng bộ JSON của làng lên tài khoản", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
