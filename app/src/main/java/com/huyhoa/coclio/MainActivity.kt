@@ -71,7 +71,6 @@ import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
@@ -82,7 +81,6 @@ import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.AlertDialog
@@ -771,9 +769,13 @@ private fun CocLioApp(
     var selectedTab by remember { mutableStateOf(2) }
     var jsonSection by rememberSaveable { mutableStateOf(0) }
     val remoteNavigationItems = remoteAppConfig.navigationItems
-        .filter { it.enabled && remoteAppConfig.featureEnabled(it.id) }
-        .take(4)
-        .ifEmpty { remoteAppConfig.navigationItems.firstOrNull()?.let { listOf(it.copy(enabled = true)) }.orEmpty() }
+        .filter {
+            it.id != "community" && it.id != "lookup" &&
+                it.page != 3 && it.page != 5 &&
+                it.enabled && remoteAppConfig.featureEnabled(it.id)
+        }
+        .take(2)
+        .ifEmpty { listOf(RemoteNavigationItem("history", "JSON", 2)) }
     LaunchedEffect(remoteNavigationItems, selectedTab) {
         if (remoteNavigationItems.none { it.page == selectedTab }) {
             selectedTab = remoteNavigationItems.firstOrNull()?.page ?: 0
@@ -1270,8 +1272,6 @@ private fun CocLioApp(
                         "home" -> Icons.Outlined.Home
                         "buildings" -> Icons.Outlined.AccountBalanceWallet
                         "history" -> Icons.Outlined.Code
-                        "community" -> Icons.Outlined.Groups
-                        "lookup" -> Icons.Outlined.Tag
                         else -> Icons.Outlined.Settings
                     }
                     NavigationBarItem(
@@ -1350,9 +1350,7 @@ private fun CocLioApp(
                             "import_json" -> requestImportJson()
                             "open_game" -> openClashOfClans(context)
                             "open_settings" -> selectedTab = 4
-                            "open_community" -> selectedTab = 3
                             "open_history" -> selectedTab = 2
-                            "open_lookup" -> selectedTab = 5
                         }
                     }
                 )
@@ -1364,9 +1362,7 @@ private fun CocLioApp(
                         "import_json" -> requestImportJson()
                         "open_game" -> openClashOfClans(context)
                         "open_settings" -> selectedTab = 4
-                        "open_community" -> selectedTab = 3
                         "open_history" -> selectedTab = 2
-                        "open_lookup" -> selectedTab = 5
                     }
                 }
             )
@@ -1477,32 +1473,6 @@ private fun CocLioApp(
                             }
                         }
                     }
-                    3 -> CommunityScreen(
-                        isGoogleSignedIn = isGoogleSignedIn,
-                        jsonOptions = history,
-                        onShareJson = { snapshot -> shareVillageJsonToCommunity(snapshot) },
-                        onImportJson = { rawJson, senderUid, senderName, tag, villageName, timestamp, jsonId ->
-                            val parsed = runCatching { VillageParser.parse(rawJson) }.getOrNull()
-                            if (parsed != null) {
-                                ReceivedSharedJsonStore.saveReceived(
-                                    context = context,
-                                    receiverUid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
-                                    senderUid = senderUid,
-                                    senderName = senderName,
-                                    tag = tag.ifBlank { parsed.tag },
-                                    villageName = villageName.ifBlank { parsed.villageName.orEmpty() },
-                                    timestamp = timestamp.takeIf { it > 0L } ?: parsed.timestamp,
-                                    jsonId = jsonId,
-                                    rawJson = rawJson,
-                                    profile = activeProfile
-                                )
-                            }
-                            importJson(rawJson)
-                            receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
-                        },
-                        onOpenSettings = { selectedTab = 4 }
-                    )
-                    5 -> ClashLookupScreen()
                     4 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
                         isAdmin = FirebaseAccountAdministration.isOwner(activeProfile),
