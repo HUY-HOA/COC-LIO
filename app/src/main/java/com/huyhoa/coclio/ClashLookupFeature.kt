@@ -1,5 +1,6 @@
 package com.huyhoa.coclio
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -68,6 +69,12 @@ import java.util.Locale
 
 private enum class ClashLookupKind { PLAYER, CLAN }
 
+private data class RecentClashProfile(
+    val kind: ClashLookupKind,
+    val name: String,
+    val tag: String
+)
+
 private data class ClashLookupResponse(
     val kind: ClashLookupKind,
     val profile: JSONObject,
@@ -88,14 +95,72 @@ private data class ClashLookupSearchPage(
 private const val CLASHKING_API = "https://api.clashk.ing"
 
 private fun normalizeClashTag(value: String): String {
-    val compact = value.uppercase(Locale.ROOT).filter {
-        it in 'A'..'Z' || it in '0'..'9'
-    }
-    val tag = "#$compact"
-    require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(tag)) {
+    val compact = value.trim().uppercase(Locale.ROOT).removePrefix("#")
+    require(compact.length in 3..15 && compact.all { it in "PYLQGRJCUV0289" }) {
         "Mã không hợp lệ. Hãy nhập mã người chơi hoặc Clan Tag dạng #2PYLQRC."
     }
-    return tag
+    return "#$compact"
+}
+
+private const val CLASH_LOOKUP_PREFERENCES = "coc_lio_lookup"
+
+private fun readRecentClashProfiles(
+    context: Context,
+    kind: ClashLookupKind
+): List<RecentClashProfile> = runCatching {
+    val values = JSONArray(
+        context.getSharedPreferences(CLASH_LOOKUP_PREFERENCES, Context.MODE_PRIVATE)
+            .getString("recent_profiles", "[]")
+    )
+    (0 until values.length()).mapNotNull { index ->
+        val item = values.optJSONObject(index) ?: return@mapNotNull null
+        val itemKind = runCatching { ClashLookupKind.valueOf(item.optString("kind")) }.getOrNull()
+        val tag = item.optString("tag")
+        if (itemKind != kind || tag.isBlank()) null
+        else RecentClashProfile(itemKind, item.optString("name").ifBlank { tag }, tag)
+    }
+}.getOrDefault(emptyList())
+
+private fun saveRecentClashProfile(
+    context: Context,
+    kind: ClashLookupKind,
+    name: String,
+    tag: String
+) {
+    val normalizedTag = runCatching { normalizeClashTag(tag) }.getOrNull() ?: return
+    val preferences = context.getSharedPreferences(CLASH_LOOKUP_PREFERENCES, Context.MODE_PRIVATE)
+    val existing = runCatching {
+        val values = JSONArray(preferences.getString("recent_profiles", "[]"))
+        (0 until values.length()).mapNotNull { values.optJSONObject(it) }
+    }.getOrDefault(emptyList())
+    val updated = buildList {
+        add(JSONObject().put("kind", kind.name).put("name", name).put("tag", normalizedTag))
+        existing.forEach { item ->
+            val sameProfile = item.optString("kind") == kind.name &&
+                item.optString("tag").equals(normalizedTag, ignoreCase = true)
+            if (!sameProfile && size < 12) add(item)
+        }
+    }
+    val values = JSONArray()
+    updated.forEach { values.put(it) }
+    preferences.edit().putString("recent_profiles", values.toString()).apply()
+}
+
+private fun readRecentGameDataIds(context: Context): List<Int> = runCatching {
+    val values = JSONArray(
+        context.getSharedPreferences(CLASH_LOOKUP_PREFERENCES, Context.MODE_PRIVATE)
+            .getString("recent_game_ids", "[]")
+    )
+    (0 until values.length()).map { values.optInt(it) }.filter { it > 0 }.distinct().take(8)
+}.getOrDefault(emptyList())
+
+private fun saveRecentGameDataId(context: Context, dataId: Int) {
+    val preferences = context.getSharedPreferences(CLASH_LOOKUP_PREFERENCES, Context.MODE_PRIVATE)
+    val updated = (listOf(dataId) + readRecentGameDataIds(context).filterNot { it == dataId })
+        .take(8)
+    val values = JSONArray()
+    updated.forEach { values.put(it) }
+    preferences.edit().putString("recent_game_ids", values.toString()).apply()
 }
 
 private fun clashProfileIdentityValues(profile: JSONObject): List<String> = listOf(
@@ -150,7 +215,7 @@ private suspend fun searchClashKing(
         "Hãy nhập ít nhất 2 ký tự, tên hoặc mã tag cần tìm."
     }
 
-    val exactTag = runCatching { normalizeClashTag(term) }.getOrNull()
+    val exactTag = if (term.startsWith("#")) normalizeClashTag(term) else null
     if (kind == ClashLookupKind.CLAN && exactTag != null && cursor == null) {
         val encodedTag = URLEncoder.encode(exactTag, "UTF-8")
         val directProfile = runCatching {
@@ -344,6 +409,11 @@ private fun ClashGameDataLookupScreen() {
     var advancedFiltersExpanded by remember { mutableStateOf(false) }
     var selectedEntry by remember { mutableStateOf<CocUpgradeEntry?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var recentDataIds by remember(context) { mutableStateOf(readRecentGameDataIds(context)) }
+    val recentEntries = remember(catalog, recentDataIds) {
+        val entriesById = catalog.associateBy { it.dataId }
+        recentDataIds.mapNotNull { entriesById[it] }
+    }
 
     LaunchedEffect(context) {
         val loaded = withContext(Dispatchers.IO) {
@@ -466,6 +536,31 @@ private fun ClashGameDataLookupScreen() {
                 Text(warning, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
             }
         }
+        if (query.isBlank() && !loading && recentEntries.isNotEmpty()) {
+            LookupCard {
+                Text("ĐÃ TRA CỨU GẦN ĐÂY", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    recentEntries.forEach { entry ->
+                        FilterChip(
+                            selected = false,
+                            onClick = {
+                                query = entry.dataId.toString()
+                                selectedEntry = entry
+                            },
+                            label = {
+                                Text(
+                                    if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) entry.name else entry.localizedName,
+                                    fontSize = 9.sp
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        }
         if (query.isBlank() && !loading) {
             LookupCard {
                 Text("Bắt đầu tra cứu", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -520,7 +615,14 @@ private fun ClashGameDataLookupScreen() {
                             LookupValue("Cấp tối đa", entry.maxLevel.toString())
                         }
                     }
-                    Button(onClick = { selectedEntry = entry }, modifier = Modifier.fillMaxWidth()) {
+                    Button(
+                        onClick = {
+                            saveRecentGameDataId(context, entry.dataId)
+                            recentDataIds = readRecentGameDataIds(context)
+                            selectedEntry = entry
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(if (selectedEntry?.dataId == entry.dataId) "ĐANG CHỌN" else "XEM CHI TIẾT")
                     }
                 }
@@ -778,6 +880,10 @@ private fun lookupDuration(totalSeconds: Long): String {
 
 @Composable
 private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
+    val context = LocalContext.current
+    var recentProfiles by remember(initialKind) {
+        mutableStateOf(readRecentClashProfiles(context, initialKind))
+    }
     var kind by remember(initialKind) { mutableStateOf(initialKind) }
     var tagInput by remember { mutableStateOf("") }
     var result by remember { mutableStateOf<ClashLookupResponse?>(null) }
@@ -964,6 +1070,29 @@ private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp
         )
+        if (tagInput.isBlank() && recentProfiles.isNotEmpty()) {
+            Text(
+                "TRA CỨU GẦN ĐÂY",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                recentProfiles.forEach { recent ->
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            tagInput = recent.tag
+                            error = null
+                        },
+                        label = { Text(recent.name.take(20), fontSize = 9.sp) }
+                    )
+                }
+            }
+        }
 
         error?.let {
             LookupCard {
@@ -1019,6 +1148,13 @@ private fun ClashPlayerClanLookupScreen(initialKind: ClashLookupKind) {
                                 runCatching { loadClashKingProfile(candidate) }
                                     .onSuccess {
                                         result = it
+                                        saveRecentClashProfile(
+                                            context,
+                                            it.kind,
+                                            it.profile.optString("name"),
+                                            it.profile.optString("tag")
+                                        )
+                                        recentProfiles = readRecentClashProfiles(context, initialKind)
                                         tagInput = candidate.profile.optString("tag")
                                         searchResults = emptyList()
                                         searchNextCursor = null
