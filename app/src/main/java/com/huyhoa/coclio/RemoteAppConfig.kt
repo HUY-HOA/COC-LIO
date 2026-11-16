@@ -77,8 +77,6 @@ data class RemoteAppConfig(
 
 private fun defaultRemoteNavigation() = listOf(
     RemoteNavigationItem("history", "JSON", 2),
-    RemoteNavigationItem("lookup", "ID", 5),
-    RemoteNavigationItem("community", "Cộng đồng", 3),
     RemoteNavigationItem("settings", "Cài đặt", 4)
 )
 
@@ -87,7 +85,7 @@ object RemoteAppConfigManager {
     private const val DEFAULT_CONFIG_JSON = """
 {
   "schemaVersion": 1,
-  "version": 6,
+  "version": 7,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -128,8 +126,6 @@ object RemoteAppConfigManager {
   "navigation": {
     "items": [
       {"id": "history", "title": "JSON", "enabled": true},
-      {"id": "lookup", "title": "ID", "enabled": true},
-      {"id": "community", "title": "Cộng đồng", "enabled": true},
       {"id": "settings", "title": "Cài đặt", "enabled": true}
     ]
   },
@@ -137,8 +133,6 @@ object RemoteAppConfigManager {
     "home": true,
     "buildings": true,
     "history": true,
-    "community": true,
-    "lookup": true,
     "settings": true,
     "importButton": true,
     "dashboardBlocks": true
@@ -286,7 +280,7 @@ object RemoteAppConfigManager {
     private fun parseFeatureFlags(features: JSONObject?): Map<String, Boolean> {
         if (features == null) return emptyMap()
         val allowed = setOf(
-            "home", "buildings", "history", "community", "lookup", "settings",
+            "home", "buildings", "history", "settings",
             "importButton", "dashboardBlocks"
         )
         return allowed.associateWith { key ->
@@ -309,8 +303,6 @@ object RemoteAppConfigManager {
         val items = navigation?.optJSONArray("items") ?: return defaultRemoteNavigation()
         val pages = mapOf(
             "history" to 2,
-            "lookup" to 5,
-            "community" to 3,
             "settings" to 4
         )
         val defaults = defaultRemoteNavigation().associateBy { it.id }
@@ -364,9 +356,7 @@ object RemoteAppConfigManager {
             "import_json",
             "open_game",
             "open_settings",
-            "open_community",
-            "open_history",
-            "open_lookup"
+            "open_history"
         )
         val type = item.optString("type", "card")
         if (type !in allowedTypes) return null
@@ -374,9 +364,7 @@ object RemoteAppConfigManager {
         val page = inheritedPage ?: when (item.optString("pageId", "json")) {
             "all" -> -1
             "home", "buildings", "history", "json" -> 2
-            "community" -> 3
             "settings" -> 4
-            "lookup" -> 5
             else -> return null
         }
 
