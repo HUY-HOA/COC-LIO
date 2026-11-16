@@ -146,8 +146,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.huyhoa.coclio.data.DeletedVillageRecord
-import com.huyhoa.coclio.data.ReceivedSharedJsonRecord
-import com.huyhoa.coclio.data.ReceivedSharedJsonStore
 import com.huyhoa.coclio.data.VillageItem
 import com.huyhoa.coclio.data.VillageExtraItem
 import com.huyhoa.coclio.data.VillageParser
@@ -614,7 +612,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        CommunityNotificationCleanup.disable(this)
+        LegacyCommunityCleanup.disable(this)
         RemoteAppConfigManager.initialize()
         setContent {
             val remoteConfig by RemoteAppConfigManager.config.collectAsState()
@@ -716,6 +714,7 @@ private fun CocLioApp(
     var googleSignInSubmitting by remember { mutableStateOf(false) }
     var accountProfileError by remember { mutableStateOf<String?>(null) }
     var villageDataSyncConsent by remember { mutableStateOf(false) }
+    var accountPrivacyChoice by remember(activeProfile) { mutableStateOf(AccountPrivacyChoice()) }
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
         val listener = FirebaseAuth.AuthStateListener { state ->
@@ -800,11 +799,6 @@ private fun CocLioApp(
     var pinnedTags by remember(activeProfile) {
         mutableStateOf(VillageStore.pinnedTags(context, activeProfile))
     }
-    var receivedSharedJsons by remember(activeProfile) {
-        mutableStateOf(ReceivedSharedJsonStore.loadReceived(context, activeProfile))
-    }
-
-
     val ledPrefs = remember {
         context.getSharedPreferences("coc_lio_led", android.content.Context.MODE_PRIVATE).also { prefs ->
             if (prefs.getInt("settings_version", 0) < 1) {
@@ -946,7 +940,6 @@ private fun CocLioApp(
         current = history.firstOrNull()
         deletedVillages = VillageStore.loadDeleted(context, activeProfile)
         pinnedTags = VillageStore.pinnedTags(context, activeProfile)
-        receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
         notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
         notificationStyle = AppPreferences.notificationStyle(context, activeProfile)
         AccountProfileStore.markLastUsed(context, activeProfile)
@@ -1022,11 +1015,13 @@ private fun CocLioApp(
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
         if (!isGoogleSignedIn) {
             villageDataSyncConsent = false
-            AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+            accountPrivacyChoice = AccountPrivacyChoice()
+            AccountPrivacyConsent.applyCollectionSettings(context, accountPrivacyChoice)
             AccountActivityTracker.stopAndWait(context)
         } else {
             runCatching { AccountPrivacyConsent.load() }
                 .onSuccess { choice ->
+                    accountPrivacyChoice = choice
                     villageDataSyncConsent = choice.villageDataSync
                     AccountPrivacyConsent.applyCollectionSettings(context, choice)
                     if (choice.securityTelemetry) {
@@ -1037,7 +1032,8 @@ private fun CocLioApp(
                 }
                 .onFailure {
                     villageDataSyncConsent = false
-                    AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+                    accountPrivacyChoice = AccountPrivacyChoice()
+                    AccountPrivacyConsent.applyCollectionSettings(context, accountPrivacyChoice)
                     AccountActivityTracker.stopAndWait(context)
                     snackbar.showAppSnackbar(context, "Không tải được lựa chọn dữ liệu tài khoản. Các mục tùy chọn vẫn đang tắt.")
                 }
@@ -1282,14 +1278,27 @@ private fun CocLioApp(
                             unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                            indicatorColor = Color.Transparent
                         ),
                         icon = {
-                            Icon(
-                                imageVector = navigationIcon,
-                                contentDescription = item.title,
-                                modifier = Modifier.size(22.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp, 34.dp)
+                                    .then(
+                                        if (selectedTab == item.page) {
+                                            Modifier.ledRgbBorder(cornerRadiusDp = 10f, strokeWidthDp = 1.8f)
+                                        } else {
+                                            Modifier
+                                        }
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = navigationIcon,
+                                    contentDescription = item.title,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                         },
                         label = {
                             Text(
@@ -1397,34 +1406,7 @@ private fun CocLioApp(
                                     onOpenGame = { openClashOfClans(context) }
                                 )
                                 else -> HistoryScreen(
-                        isGoogleSignedIn = isGoogleSignedIn,
                         history = history,
-                        receivedJsons = receivedSharedJsons,
-                        onDeleteReceivedJson = { jsonId ->
-                            if (ReceivedSharedJsonStore.deleteReceived(context, jsonId, activeProfile)) {
-                                receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
-                                scope.launch { snackbar.showAppSnackbar(context, "Đã xóa JSON nhận được khỏi danh sách chia sẻ. Bản trong lịch sử vẫn được giữ.") }
-                            }
-                        },
-                        onImportJson = { rawJson, senderUid, senderName, tag, villageName, timestamp, jsonId ->
-                            val parsed = runCatching { VillageParser.parse(rawJson) }.getOrNull()
-                            if (parsed != null) {
-                                ReceivedSharedJsonStore.saveReceived(
-                                    context = context,
-                                    receiverUid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty(),
-                                    senderUid = senderUid,
-                                    senderName = senderName,
-                                    tag = tag.ifBlank { parsed.tag },
-                                    villageName = villageName.ifBlank { parsed.villageName.orEmpty() },
-                                    timestamp = timestamp.takeIf { it > 0L } ?: parsed.timestamp,
-                                    jsonId = jsonId,
-                                    rawJson = rawJson,
-                                    profile = activeProfile
-                                )
-                            }
-                            importJson(rawJson)
-                            receivedSharedJsons = ReceivedSharedJsonStore.loadReceived(context, activeProfile)
-                        },
                         deletedVillages = deletedVillages,
                         pinnedTags = pinnedTags,
                         activeTag = current?.tag.orEmpty(),
@@ -1518,6 +1500,31 @@ private fun CocLioApp(
                             ledPrefs.edit().putBoolean("glow_enabled", value).apply()
                         },
                         notificationStyle = notificationStyle,
+                        privacyChoice = accountPrivacyChoice,
+                        onSavePrivacyChoice = { updatedChoice ->
+                            scope.launch {
+                                runCatching {
+                                    AccountPrivacyConsent.save(updatedChoice)
+                                }.onSuccess {
+                                    val savedChoice = updatedChoice.copy(version = AccountPrivacyConsent.CURRENT_VERSION)
+                                    accountPrivacyChoice = savedChoice
+                                    villageDataSyncConsent = savedChoice.villageDataSync
+                                    AccountPrivacyConsent.applyCollectionSettings(context, savedChoice)
+                                    if (savedChoice.securityTelemetry) {
+                                        AccountActivityTracker.start(context)
+                                    } else {
+                                        AccountActivityTracker.stopAndWait(context)
+                                    }
+                                    snackbar.showAppSnackbar(context, "Đã lưu lựa chọn dữ liệu tài khoản.")
+                                }.onFailure { error ->
+                                    snackbar.showAppSnackbar(
+                                        context,
+                                        error.message?.takeIf { it.isNotBlank() }
+                                            ?: "Không thể lưu lựa chọn dữ liệu tài khoản."
+                                    )
+                                }
+                            }
+                        },
                         onGoogleSignIn = { signInWithGoogle() },
                         onGoogleSwitchAccount = {
                             leaveGoogleAccount("Đã đăng xuất tài khoản hiện tại. Hãy chọn tài khoản Google khác trên màn hình đăng nhập.")
@@ -3743,11 +3750,7 @@ private fun CategoryImage(item: VillageItem, size: Int) {
 
 @Composable
 private fun HistoryScreen(
-    isGoogleSignedIn: Boolean,
     history: List<VillageSnapshot>,
-    receivedJsons: List<ReceivedSharedJsonRecord>,
-    onDeleteReceivedJson: (String) -> Unit,
-    onImportJson: (String, String, String, String, String, Long, String) -> Unit,
     deletedVillages: List<DeletedVillageRecord>,
     pinnedTags: List<String>,
     activeTag: String,
@@ -3759,15 +3762,7 @@ private fun HistoryScreen(
     onDeletePermanently: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val signedInUser = FirebaseAuth.getInstance().currentUser?.takeIf { isGoogleSignedIn }
     var selectedSection by remember { mutableStateOf("villages") }
-    var sharedJsonTab by remember { mutableStateOf("sent") }
-    var sharedJsons by remember { mutableStateOf<List<CommunitySharedJson>>(emptyList()) }
-    var loadingSharedJsons by remember { mutableStateOf(true) }
-    var sharedJsonStatus by remember { mutableStateOf<String?>(null) }
-    var pendingSharedJsonDelete by remember { mutableStateOf<CommunitySharedJson?>(null) }
-    var pendingReceivedJsonDelete by remember { mutableStateOf<ReceivedSharedJsonRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<VillageSnapshot?>(null) }
     var pendingPermanentDelete by remember { mutableStateOf<DeletedVillageRecord?>(null) }
     var expandedDeletedRecordId by remember { mutableStateOf<String?>(null) }
@@ -3789,39 +3784,6 @@ private fun HistoryScreen(
             } else {
                 result.exceptionOrNull()?.message ?: "Không thể lưu JSON."
             }
-        }
-    }
-    DisposableEffect(signedInUser?.uid, selectedSection) {
-        if (signedInUser == null || selectedSection != "shared") {
-            onDispose { }
-        } else {
-            loadingSharedJsons = true
-            val registration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("community_shared_jsons")
-                .whereEqualTo("uid", signedInUser.uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        sharedJsonStatus = error.message ?: "Không thể tải JSON đã chia sẻ."
-                        loadingSharedJsons = false
-                    } else {
-                        sharedJsons = snapshot?.documents.orEmpty().mapNotNull { document ->
-                            val rawJson = document.getString("rawJson") ?: return@mapNotNull null
-                            CommunitySharedJson(
-                                id = document.id,
-                                uid = document.getString("uid").orEmpty(),
-                                displayName = document.getString("displayName").orEmpty().ifBlank { "Thành viên" },
-                                playerTag = document.getString("playerTag").orEmpty(),
-                                villageName = document.getString("villageName").orEmpty(),
-                                timestamp = document.getLong("timestamp") ?: 0L,
-                                rawJson = rawJson,
-                                createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L
-                            )
-                        }.sortedByDescending { it.createdAt }
-                        sharedJsonStatus = null
-                        loadingSharedJsons = false
-                    }
-                }
-            onDispose { registration.remove() }
         }
     }
     val nowSeconds = System.currentTimeMillis() / 1000L
@@ -3868,11 +3830,6 @@ private fun HistoryScreen(
                                 Text("(${deletedVillages.size})", fontSize = 9.sp, maxLines = 1)
                             }
                         }
-                    )
-                    FilterChip(
-                        selected = selectedSection == "shared",
-                        onClick = { selectedSection = "shared" },
-                        label = { Text("CHIA SẺ", fontSize = 9.sp, maxLines = 1) }
                     )
                 }
             }
@@ -4063,146 +4020,8 @@ private fun HistoryScreen(
                     }
                 }
             }
-        } else if (selectedSection == "shared") {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                    Text("CHIA SẺ JSON", color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Black)
-                    Row(
-                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(7.dp)
-                    ) {
-                        FilterChip(
-                            selected = sharedJsonTab == "sent",
-                            onClick = { sharedJsonTab = "sent" },
-                            label = { Text("ĐÃ GỬI", fontSize = 10.sp) }
-                        )
-                        FilterChip(
-                            selected = sharedJsonTab == "received",
-                            onClick = { sharedJsonTab = "received" },
-                            label = { Text("ĐÃ NHẬN", fontSize = 10.sp) }
-                        )
-                    }
-                    sharedJsonStatus?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
-                    }
-                }
-            }
-            if (signedInUser == null) {
-                item { InfoCard("Đăng nhập Google", "Đăng nhập để xem JSON đã chia sẻ và JSON nhận được.") }
-            } else if (sharedJsonTab == "sent") {
-                if (loadingSharedJsons) {
-                    item { Box(Modifier.fillMaxWidth().padding(18.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-                } else if (sharedJsons.isEmpty()) {
-                    item { InfoCard("Chưa chia sẻ JSON nào", "Mở Cộng đồng và dùng nút GỬI JSON để đăng một làng. Danh sách đã gửi sẽ xuất hiện tại đây.") }
-                } else {
-                    items(sharedJsons, key = { "shared_" + it.id }) { sharedJson ->
-                        CommunitySharedJsonCard(
-                            item = sharedJson,
-                            enabled = true,
-                            onDelete = { pendingSharedJsonDelete = sharedJson }
-                        )
-                    }
-                }
-            } else {
-                if (receivedJsons.isEmpty()) {
-                    item { InfoCard("Chưa nhận JSON nào", "JSON được người khác gửi trong Cộng đồng sẽ xuất hiện tại đây sau khi bạn nhận.") }
-                } else {
-                    items(receivedJsons, key = { "received_" + it.id }) { received ->
-                        CommunityReceivedJsonCard(
-                            item = received,
-                            enabled = true,
-                            onUse = {
-                                onImportJson(
-                                    received.rawJson,
-                                    received.senderUid,
-                                    received.senderName,
-                                    received.tag,
-                                    received.villageName,
-                                    received.timestamp,
-                                    received.id
-                                )
-                            },
-                            onDelete = { pendingReceivedJsonDelete = received }
-                        )
-                    }
-                }
-            }
+
         }
-    }
-
-    pendingSharedJsonDelete?.let { item ->
-        AlertDialog(
-            onDismissRequest = { pendingSharedJsonDelete = null },
-            title = { Text("Xóa JSON đã gửi?") },
-            text = {
-                Text("JSON này sẽ bị xóa khỏi danh sách chia sẻ và bài đăng JSON tương ứng trong Cộng đồng. Bản JSON trong Lịch sử và Đang lưu trên thiết bị vẫn được giữ.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pendingSharedJsonDelete = null
-                        scope.launch {
-                            try {
-                                deleteSharedJsonFromCommunity(item.id)
-                                sharedJsonStatus = "Đã xóa JSON đã gửi."
-                            } catch (error: Exception) {
-                                sharedJsonStatus = error.message ?: "Không thể xóa JSON đã gửi."
-                            }
-                        }
-                    }
-                ) { Text("XÓA JSON", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingSharedJsonDelete = null }) { Text("HỦY") }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-
-    pendingReceivedJsonDelete?.let { item ->
-        AlertDialog(
-            onDismissRequest = { pendingReceivedJsonDelete = null },
-            title = { Text("Xóa JSON đã nhận?") },
-            text = {
-                Text("Chỉ xóa bản JSON trong danh sách ĐÃ NHẬN trên thiết bị này. Bản trong Lịch sử và JSON gốc của người chia sẻ vẫn được giữ.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pendingReceivedJsonDelete = null
-                        onDeleteReceivedJson(item.id)
-                    }
-                ) { Text("XÓA", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingReceivedJsonDelete = null }) { Text("HỦY") }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-
-    pendingPermanentDelete?.let { record ->
-        AlertDialog(
-            onDismissRequest = { pendingPermanentDelete = null },
-            title = { Text("Xóa vĩnh viễn JSON?") },
-            text = { Text("Toàn bộ ${record.snapshots.size} mốc JSON của ${record.villageName ?: record.tag} sẽ bị xóa khỏi thiết bị và không thể khôi phục.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    onDeletePermanently(record.id)
-                    pendingPermanentDelete = null
-                }) { Text("XÓA VĨNH VIỄN", color = CocRed) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingPermanentDelete = null }) { Text("HỦY") }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 
     pendingDelete?.let { snapshot ->
