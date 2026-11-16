@@ -64,6 +64,27 @@ import com.huyhoa.coclio.data.CocAssetCache
 import com.huyhoa.coclio.data.CocAssetPrefetchWorker
 import com.huyhoa.coclio.data.CocUpgradeCatalog
 import com.huyhoa.coclio.data.CocUpgradeEntry
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.MilitaryTech
+import androidx.compose.material.icons.outlined.Pets
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Tag
+import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material3.Icon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
@@ -1245,40 +1266,30 @@ private fun CocLioApp(
                 ) {
                 val navItems = remoteNavigationItems
                 navItems.forEach { item ->
+                    val navigationIcon = when (item.id) {
+                        "home" -> Icons.Outlined.Home
+                        "buildings" -> Icons.Outlined.AccountBalanceWallet
+                        "history" -> Icons.Outlined.Code
+                        "community" -> Icons.Outlined.Groups
+                        "lookup" -> Icons.Outlined.Tag
+                        else -> Icons.Outlined.Settings
+                    }
                     NavigationBarItem(
                         selected = selectedTab == item.page,
                         onClick = { selectedTab = item.page },
                         colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = Color.Transparent
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
                         ),
                         icon = {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .then(
-                                        if (selectedTab == item.page) {
-                                            Modifier.ledRgbBorder(cornerRadiusDp = 10f, strokeWidthDp = 1.8f)
-                                        } else {
-                                            Modifier
-                                        }
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(
-                                        when (item.id) {
-                                            "home" -> R.drawable.ic_coc_home
-                                            "buildings" -> R.drawable.ic_coc_buildings
-                                            "history" -> R.drawable.ic_coc_json
-                                            "community" -> R.drawable.ic_coc_clan
-                                            "lookup" -> R.drawable.ic_coc_tag
-                                            else -> R.drawable.ic_coc_settings
-                                        }
-                                    ),
-                                    contentDescription = item.title,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = navigationIcon,
+                                contentDescription = item.title,
+                                modifier = Modifier.size(22.dp)
+                            )
                         },
                         label = {
                             Text(
@@ -1753,9 +1764,9 @@ private fun JsonSectionTabs(
 ) {
     val labels = listOf("TỔNG QUAN", "THÔNG TIN", "DỮ LIỆU JSON")
     val icons = listOf(
-        R.drawable.ic_coc_home,
-        R.drawable.ic_coc_buildings,
-        R.drawable.ic_coc_json
+        Icons.Outlined.Home,
+        Icons.Outlined.AccountBalanceWallet,
+        Icons.Outlined.Code
     )
     Row(
         modifier = Modifier
@@ -1774,9 +1785,10 @@ private fun JsonSectionTabs(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Image(
-                            painter = painterResource(icons[index]),
-                            contentDescription = null,
+                        Icon(
+                            imageVector = icons[index],
+                            contentDescription = label,
+                            tint = if (selected == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )
                         MaterialText(
@@ -2039,27 +2051,27 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
 
 @Composable
 private fun GameCategorySectionTitle(key: String, title: String, trailing: String) {
-    val iconRes = when (key) {
-        "defense" -> R.drawable.ic_coc_defense
-        "resources" -> R.drawable.ic_coc_gold
-        "army", "troops" -> R.drawable.ic_coc_swords
-        "walls" -> R.drawable.ic_coc_wall
-        "traps" -> R.drawable.ic_coc_trap
-        "guardians" -> R.drawable.ic_coc_guardian
-        "heroes" -> R.drawable.ic_coc_hero
-        "spells" -> R.drawable.ic_coc_spell
-        "pets" -> R.drawable.ic_coc_pet
-        "equipment" -> R.drawable.ic_coc_equipment
-        else -> R.drawable.ic_coc_buildings
+    val icon = when (key) {
+        "defense" -> Icons.Outlined.Security
+        "resources" -> Icons.Outlined.AccountBalanceWallet
+        "army", "troops" -> Icons.Outlined.MilitaryTech
+        "walls" -> Icons.Outlined.GridView
+        "traps" -> Icons.Outlined.WarningAmber
+        "guardians" -> Icons.Outlined.Shield
+        "heroes" -> Icons.Outlined.Star
+        "spells" -> Icons.Outlined.AutoAwesome
+        "pets" -> Icons.Outlined.Pets
+        "equipment" -> Icons.Outlined.Build
+        else -> Icons.Outlined.Category
     }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 5.dp, bottom = 1.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CocGameIcon(iconRes, Modifier.size(19.dp), title)
+        Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
         Spacer(Modifier.width(7.dp))
-        Text(title, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
-        Text(trailing, color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+        Text(title, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        Text(trailing, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
     }
 }
 
@@ -2489,12 +2501,18 @@ private fun CategoryScreen(
                             compareBy<VillageItem> { it.count > 1 }.thenBy { it.level ?: Int.MIN_VALUE }
                         ) + rows.filter { it.timerSeconds != null }
                             .sortedBy { it.timerSeconds ?: Long.MAX_VALUE }
-                        NeonPanel(
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
-                            glow = groupGlow(key),
-                            innerPadding = 8.dp
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
                                 GameCategorySectionTitle(key, groupTitle(key, rows), rows.sumOf { it.count }.toString())
                                 ordered.filter { it.timerSeconds != null }.forEach { item ->
                                     UpgradeCard(item, snapshot.timestamp)
@@ -2552,44 +2570,28 @@ private fun VillageGridItemCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val rarity = upgrade?.rarity?.takeIf { it.isNotBlank() }
-        ?: remote?.rarity?.takeIf { it.isNotBlank() }
-        ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
-    val absoluteMax = upgrade?.maxLevel?.takeIf { it > 0 } ?: remote?.maxLevel
-    val hallMax = upgrade?.let { CocUpgradeCatalog.maxLevelAtHall(it, hallLevel, catalog) }
-    val blacksmithMax = upgrade?.let {
-        CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(it, blacksmithLevel, catalog)
-    }
-    val currentLimit = when {
-        item.sectionKey == "equipment" -> listOfNotNull(hallMax, blacksmithMax).minOrNull() ?: blacksmithMax
-        else -> hallMax
-    }
-    val effectiveMax = currentLimit ?: absoluteMax
     val itemName = if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
         remote?.name?.takeIf { it.isNotBlank() } ?: upgrade?.name?.takeIf { it.isNotBlank() } ?: item.name
     } else {
         item.name
     }
-    val owner = upgrade?.hero?.takeIf { it.isNotBlank() }?.let(::equipmentHeroName)
-        ?: if (item.sectionKey == "equipment") equipmentHero(item.dataId) else null
-    val rarityTint = rarityColor(rarity) ?: MaterialTheme.colorScheme.outlineVariant
-
     Column(
         modifier = modifier
-            .heightIn(min = 166.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .heightIn(min = 112.dp)
+            .clip(RoundedCornerShape(13.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(13.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 3.dp, vertical = 5.dp),
+            .padding(horizontal = 6.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(66.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(rarityTint.copy(alpha = 0.12f))
-                .border(2.dp, rarityTint, RoundedCornerShape(15.dp))
-                .padding(5.dp),
+                .size(48.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(2.dp),
             contentAlignment = Alignment.Center
         ) {
             if (remote?.imageUrl?.isNotBlank() == true) {
@@ -2600,85 +2602,54 @@ private fun VillageGridItemCard(
                     contentScale = ContentScale.Fit
                 )
             } else {
-                CategoryImage(item, 54)
+                CategoryImage(item, 44)
             }
         }
         Text(
             itemName,
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            lineHeight = 12.sp
         )
-        owner?.let {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                CocGameIcon(R.drawable.ic_coc_hero, Modifier.size(11.dp), "Anh hùng")
-                Text(it, color = MaterialTheme.colorScheme.primary, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
-        if (rarity != null) ItemRarityBadge(rarity)
-        Text(
-            item.level?.let { level ->
-                "CẤP $level" + (effectiveMax?.let { " / $it" } ?: "")
-            } ?: "CHƯA CÓ CẤP",
-            color = MaterialTheme.colorScheme.tertiary,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Black,
-            maxLines = 1
-        )
-        Text(
-            "${if (item.base == "builder") "NHÀ THỢ XÂY" else "NHÀ CHÍNH"}: ${hallLevel?.let { if (item.base == "builder") "BH$it" else "TH$it" } ?: "—"}",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 8.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1
-        )
-        if (currentLimit != null || absoluteMax != null) {
-            Text(
-                "GIỚI HẠN ĐANG MỞ: ${currentLimit ?: "Chưa rõ"}",
-                color = if (currentLimit != null && absoluteMax != null && currentLimit < absoluteMax) CocGold else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-            Text(
-                "MAX TOÀN GAME: ${absoluteMax ?: "Chưa có dữ liệu"}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-        }
-        if (item.sectionKey == "equipment") {
-            Text(
-                "LÒ RÈN: ${blacksmithLevel?.let { "CẤP $it" } ?: "CHƯA CÓ DỮ LIỆU"}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            if (item.count > 1) Text("×${item.count}", color = MaterialTheme.colorScheme.tertiary, fontSize = 9.sp)
-            if (item.gearUp) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    CocGameIcon(R.drawable.ic_coc_gear, Modifier.size(11.dp), "Đã ghép")
-                    Text("ĐÃ GHÉP", color = CocGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                }
+            Text(
+                item.level?.let { "Cấp $it" } ?: "Chưa rõ cấp",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            if (item.count > 1) {
+                Text(
+                    "  ×${item.count}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
             }
-            item.weaponLevel?.let { Text("VŨ KHÍ $it", color = MaterialTheme.colorScheme.primary, fontSize = 8.sp) }
+            if (item.gearUp) {
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Outlined.Build,
+                    contentDescription = "Đã ghép công trình",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(13.dp)
+                )
+            }
         }
         Text(
-            "CHẠM ĐỂ XEM CHI TIẾT",
+            if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) "View details" else "Xem chi tiết",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 7.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontSize = 8.sp,
             maxLines = 1
         )
     }
@@ -3220,10 +3191,10 @@ private fun equipmentHero(dataId: Int): String? = when (dataId) {
 private fun ItemRarityBadge(rarity: String) {
     val normalized = rarity.lowercase()
     val (label, tint) = when (normalized) {
-        "common" -> "THƯỜNG" to Color(0xFF55B9FF)
-        "rare" -> "HIẾM" to Color(0xFF39D8D0)
-        "epic" -> "SỬ THI" to Color(0xFFB77AFF)
-        "legendary" -> "HUYỀN THOẠI" to Color(0xFFFFC857)
+        "common" -> "THƯỜNG" to MaterialTheme.colorScheme.onSurfaceVariant
+        "rare" -> "HIẾM" to Color(0xFF4D9BE6)
+        "epic" -> "SỬ THI" to Color(0xFF9B70D6)
+        "legendary" -> "HUYỀN THOẠI" to Color(0xFFD6A33A)
         else -> rarity.uppercase() to MaterialTheme.colorScheme.onSurfaceVariant
     }
     Text(
@@ -3339,13 +3310,43 @@ private fun VillageItemDetailDialog(
                 }
 
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                description?.takeIf { it.isNotBlank() }?.let {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f), RoundedCornerShape(12.dp))
+                            .padding(11.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            if (isEnglish) "DESCRIPTION" else "MÔ TẢ",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            it,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
+                        )
+                    }
+                }
                 VillageItemDetailField(
-                    "Nguồn dữ liệu nâng cấp",
-                    "Dữ liệu cộng đồng được chốt ngày 15/11/2026; không phải API chính thức của Supercell. Kiểm tra trong trò chơi sau mỗi bản cập nhật."
+                    if (isEnglish) "Data source" else "Nguồn dữ liệu",
+                    if (isEnglish) {
+                        "Reference data from a community-maintained catalog, not an official Supercell API. Check the game after each update."
+                    } else {
+                        "Dữ liệu tham khảo từ danh mục do cộng đồng duy trì, không phải API chính thức của Supercell. Hãy đối chiếu trong trò chơi sau mỗi bản cập nhật."
+                    }
                 )
                 VillageItemDetailField(
-                    "Cách tính thời gian",
-                    "Cộng thời gian cơ bản theo từng cấp; chưa trừ Sách, Búa, trợ thủ, tăng tốc hoặc ưu đãi sự kiện."
+                    if (isEnglish) "Time calculation" else "Cách tính thời gian",
+                    if (isEnglish) {
+                        "Totals use the base duration for each level. Books, Hammers, helpers, boosts and event discounts are not deducted."
+                    } else {
+                        "Tổng thời gian dùng thời lượng cơ bản của từng cấp; chưa trừ thời gian từ Sách, Búa, trợ thủ, vật phẩm tăng tốc hoặc ưu đãi sự kiện."
+                    }
                 )
                 VillageItemDetailField("Căn cứ", if (item.base == "builder") "Làng đêm" else "Làng chính")
                 val ownerHero = upgradeEntry?.hero?.takeIf { it.isNotBlank() }?.let(::equipmentHeroName)
@@ -3496,9 +3497,6 @@ private fun VillageItemDetailDialog(
                     }
                 }
 
-                description?.let {
-                    VillageItemDetailField("Mô tả", it)
-                }
                 remote?.aliases?.takeIf { it.isNotEmpty() }?.let {
                     VillageItemDetailField("Tên gọi khác", it.joinToString(", "))
                 }
@@ -3685,12 +3683,17 @@ private fun UpgradeResourceChip(resource: String, amount: Long) {
 
 @Composable
 private fun VillageIconDetailField(iconRes: Int, label: String, value: String) {
+    val icon = when (iconRes) {
+        R.drawable.ic_coc_time -> Icons.Outlined.AccessTime
+        R.drawable.ic_coc_hero -> Icons.Outlined.Person
+        else -> Icons.Outlined.Info
+    }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
-        CocGameIcon(iconRes, Modifier.size(17.dp), label)
+        Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(17.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
             Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, lineHeight = 17.sp)
