@@ -745,6 +745,25 @@ object AccountPrivacyConsent {
             .awaitFirebaseResult()
     }
 
+    suspend fun save(choice: AccountPrivacyChoice) {
+        val user = FirebaseAuth.getInstance().currentUser
+            ?: throw IllegalStateException("Bạn cần đăng nhập Google để lưu lựa chọn dữ liệu.")
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .update(
+                mapOf(
+                    "dataSharingConsent" to choice.securityTelemetry,
+                    "analyticsConsent" to choice.analytics,
+                    "diagnosticsConsent" to choice.diagnostics,
+                    "villageDataConsent" to choice.villageDataSync,
+                    "activityDataConsentVersion" to CURRENT_VERSION,
+                    "activityConsentAt" to FieldValue.serverTimestamp()
+                )
+            )
+            .awaitFirebaseResult()
+    }
+
     suspend fun load(): AccountPrivacyChoice {
         val user = FirebaseAuth.getInstance().currentUser ?: return AccountPrivacyChoice()
         val profile = FirebaseFirestore.getInstance()
@@ -774,6 +793,10 @@ object AccountPrivacyConsent {
 }
 
 object AccountActivityTracker {
+    @Volatile var lastSuccessfulWriteAt: Long = 0L
+        private set
+    @Volatile var lastWriteError: String? = null
+        private set
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var heartbeatJob: Job? = null
     @Volatile private var sessionStartedAt = 0L
@@ -913,6 +936,13 @@ object AccountActivityTracker {
                 else -> return@runCatching
             }
             profileRef.set(payload, SetOptions.merge()).awaitFirebaseResult()
+        }.onSuccess {
+            lastSuccessfulWriteAt = System.currentTimeMillis()
+            lastWriteError = null
+        }.onFailure { error ->
+            lastWriteError = error.message?.takeIf { it.isNotBlank() }
+                ?: error.javaClass.simpleName
+            android.util.Log.e("COC-LIO", "Không thể ghi dữ liệu hoạt động/thiết bị ($event).", error)
         }
     }
 }
@@ -2376,6 +2406,8 @@ fun SettingsScreen(
     displaySizeLevel: Int,
     onDisplaySizeLevelChanged: (Int) -> Unit,
     notificationsEnabled: Boolean,
+    privacyChoice: AccountPrivacyChoice,
+    onSavePrivacyChoice: (AccountPrivacyChoice) -> Unit,
     ledEnabled: Boolean,
     ledPreset: String,
     ledSpeed: Int,
@@ -2399,6 +2431,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     var showAdminAccounts by remember(accountEmail, isAdmin) { mutableStateOf(false) }
     var selectedSizeSetting by remember { mutableStateOf(0) }
+    var privacyDraft by remember(accountEmail, privacyChoice) { mutableStateOf(privacyChoice) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -2492,6 +2525,63 @@ fun SettingsScreen(
 
         if (isAdmin && showAdminAccounts) {
             AdminAccountsPanel(onClose = { showAdminAccounts = false })
+        }
+
+        FeaturePanel {
+            FeaturePanelTitle(Icons.Filled.Info, "QUYỀN RIÊNG TƯ & DỮ LIỆU")
+            if (accountEmail.isNullOrBlank()) {
+                Text(
+                    "Đăng nhập Google để quản lý các lựa chọn dữ liệu tài khoản. Các mục tùy chọn mặc định tắt.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Ghi nhận thiết bị và hoạt động", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Hãng/model máy, phiên bản Android và ứng dụng, độ phân giải, ngôn ngữ, múi giờ, loại mạng và thời lượng sử dụng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 13.sp)
+                    }
+                    Switch(checked = privacyDraft.securityTelemetry, onCheckedChange = { privacyDraft = privacyDraft.copy(securityTelemetry = it) })
+                }
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Phân tích mức sử dụng", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+                        Text("Firebase Analytics; bật riêng, không phụ thuộc ghi nhận thiết bị.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    }
+                    Switch(checked = privacyDraft.analytics, onCheckedChange = { privacyDraft = privacyDraft.copy(analytics = it) })
+                }
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Báo lỗi và hiệu năng", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+                        Text("Firebase Crashlytics và Performance; bật riêng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    }
+                    Switch(checked = privacyDraft.diagnostics, onCheckedChange = { privacyDraft = privacyDraft.copy(diagnostics = it) })
+                }
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Đồng bộ JSON của làng lên tài khoản", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+                        Text("Chỉ lưu bản JSON mới nhất theo từng mã người chơi vào hồ sơ riêng của bạn; không công khai hoặc gửi cho người khác.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 13.sp)
+                    }
+                    Switch(checked = privacyDraft.villageDataSync, onCheckedChange = { privacyDraft = privacyDraft.copy(villageDataSync = it) })
+                }
+                Text(
+                    "COC-LIO không thu IP, vị trí chính xác, IMEI, số sê-ri hoặc mã nhận dạng phần cứng. Bạn có thể tắt từng lựa chọn bất cứ lúc nào.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    lineHeight = 13.sp
+                )
+                Button(
+                    onClick = { onSavePrivacyChoice(privacyDraft) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF04101D))
+                ) {
+                    Text("LƯU LỰA CHỌN DỮ LIỆU", fontWeight = FontWeight.Black, fontSize = 10.sp)
+                }
+            }
         }
 
         FeaturePanel {
