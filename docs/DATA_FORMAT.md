@@ -59,7 +59,7 @@ These are independent community references, not official Supercell API documenta
 
 ## Upgrade notifications and widgets
 
-- The completion alarm notification includes the saved village name (or player tag if no name is available), base, section, building name, data ID and expected level transition. A large icon is attached only when a matching asset can be downloaded.
+- Upgrade completion notifications and the floating bubble show the village name, base, section, localized item name and expected level transition. Numeric `dataId` values remain internal for matching and scheduling; they are not displayed. Unknown item names use a generic label without exposing the numeric ID. A large icon is attached only when a matching asset can be downloaded.
 - The notification offers a direct game-launch action only when Android resolves the Clash of Clans launch activity. Opening the notification itself opens COC-LIO.
 - Upgrade reminder notifications are configured to expire after 25 seconds. Alarm-style notifications use an approximately 10-second vibration pattern. Android controls the heads-up banner duration, and actual alarm sound playback still depends on the selected system alarm sound, notification-channel settings, Do Not Disturb and device software.
 - An expired JSON countdown is an estimated finish time, not proof that the game upgrade has completed. Import a fresh JSON to confirm the actual level.
