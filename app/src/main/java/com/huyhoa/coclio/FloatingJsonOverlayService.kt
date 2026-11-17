@@ -98,7 +98,7 @@ class FloatingJsonOverlayService : Service() {
         expandedWidth = preferences.getInt("width", DEFAULT_WIDTH_DP.dpValue()).coerceIn(minWidth, maxWidth)
         expandedHeight = preferences.getInt("height", DEFAULT_HEIGHT_DP.dpValue()).coerceIn(minHeight, maxHeight)
         val x = preferences.getInt("x", dp(8)).coerceIn(0, maxWidth - expandedWidth)
-        val y = preferences.getInt("y", dp(92)).coerceIn(0, maxHeight - minHeight)
+        val y = preferences.getInt("y", dp(92)).coerceIn(0, (maxHeight - expandedHeight).coerceAtLeast(0))
 
         val windowType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -238,6 +238,7 @@ class FloatingJsonOverlayService : Service() {
             setPadding(dp(4), dp(5), dp(4), 0)
             maxLines = 2
         }
+        statusText?.text = "Kéo tiêu đề để di chuyển • kéo góc ↘ để thu phóng."
         panel.addView(statusText)
         attachDrag(title)
         attachDrag(account)
