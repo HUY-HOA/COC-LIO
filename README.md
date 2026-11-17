@@ -71,10 +71,10 @@ COC-LIO là ứng dụng không chính thức, không liên kết hoặc đượ
 
 Google Sign-In được dùng để xác thực tài khoản. Analytics, Crashlytics và Performance chỉ thu thập khi người dùng bật lựa chọn tương ứng. Chủ tài khoản có màn hình quản lý hồ sơ; người dùng thường chỉ xem hồ sơ của chính mình. Đồng bộ bản JSON mới nhất theo Player Tag có thể bật riêng. FCM hiện mới có đăng ký chủ đề ở APK, chưa có máy chủ gửi tin; cấp phép trực tuyến và xuất BigQuery chưa hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
 
-## Thu thập dữ liệu tùy chọn và chế độ miễn phí
+## Dữ liệu tài khoản và quyền riêng tư
 
-- Hồ sơ Google cần thiết cho đăng nhập được đồng bộ vào Firestore.
-- Khi người dùng đồng ý riêng, ứng dụng ghi nhận thông tin thiết bị/phiên hoạt động và bật Analytics hoặc Crashlytics/Performance theo đúng lựa chọn.
-- Người dùng có thể chọn đồng bộ JSON Clash of Clans do chính họ nhập lên Firestore. Chỉ bản mới nhất theo từng Player Tag được giữ; dữ liệu chỉ được lưu trong hồ sơ riêng của tài khoản.
+- Khi người dùng chủ động đồng ý điều khoản/chính sách rồi đăng nhập Google, hồ sơ tài khoản cơ bản (UID, email, tên, ảnh đại diện và trạng thái xác minh) được lưu vào Firestore để xác thực và quản lý tài khoản.
+- Ghi nhận thiết bị/hoạt động, Analytics, Crashlytics/Performance và đồng bộ JSON đám mây hiện được tắt; không bật chỉ vì người dùng đăng nhập Google hoặc xác nhận điều khoản.
+- JSON làng được nhập và lưu cục bộ trên điện thoại.
 - COC-LIO không đọc IMEI, số sê-ri, MAC, Android ID, vị trí chính xác, SMS, danh bạ hoặc lịch sử cuộc gọi.
 - Chế độ Firebase Spark không cần thẻ thanh toán, nhưng Firestore có hạn mức miễn phí. Xem [docs/FIREBASE_SPARK_MODE.md](docs/FIREBASE_SPARK_MODE.md) để biết cách thu thập, lưu trữ và giới hạn.
