@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "version": 5,
+  "version": 6,
   "maintenance": {
     "enabled": false,
     "title": "",
@@ -21,7 +21,7 @@
       "id": "import-json",
       "enabled": true,
       "title": "Cách nhập JSON",
-      "body": "Mở Clash of Clans, xuất dữ liệu làng dưới dạng JSON, sao chép rồi dán vào COC-LIO.",
+      "body": "Nhấn MỞ CLASH OF CLANS trong COC-LIO để mở game cùng cửa sổ JSON nổi. Trong game, xuất JSON làng rồi sao chép; dán ngay vào cửa sổ nổi, đặt tên để phân biệt tài khoản và nhấn PHÂN TÍCH VÀ LƯU JSON. Cửa sổ có thể kéo, thu phóng hoặc thu nhỏ thành nút nổi.",
       "imageUrl": ""
     }
   ],
