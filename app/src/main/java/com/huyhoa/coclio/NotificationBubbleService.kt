@@ -135,7 +135,7 @@ class NotificationBubbleService : Service() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("COC-LIO • Bong bóng thông báo")
-            .setContentText("Bong bóng nổi đang bật. Mở COC-LIO để tắt.")
+            .setContentText("Bong bóng sẽ chỉ xuất hiện khi nâng cấp hoàn thành.")
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(openApp)
