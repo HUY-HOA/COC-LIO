@@ -41,7 +41,7 @@ Set `dashboard.blocks` to an ordered array. Each block can use one of these type
 
 Remote images and links are restricted to HTTPS URLs. Dashboard content is data-only; it cannot supply scripts, arbitrary actions or executable code.
 
-Use `pageId` values `home`, `buildings`, `history`, `community`, `settings`, `lookup` or `all`. Available action IDs are allowlisted in the APK: `import_json`, `open_game`, `open_settings`, `open_community`, `open_history`, and `open_lookup`. The app ignores unknown block types, page IDs and actions.
+Use `pageId` values `home`, `buildings`, `history`, `settings` or `all`. Available action IDs are allowlisted in the APK: `import_json`, `open_game`, `open_settings` and `open_history`. The app ignores unknown block types, page IDs and actions.
 
 Example: a notice on every page and two side-by-side quick actions on the overview page:
 
