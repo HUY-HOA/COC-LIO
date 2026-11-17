@@ -463,10 +463,13 @@ private fun LedFrameBox(
 @Composable
 fun Modifier.ledRgbBorder(
     cornerRadiusDp: Float = 18f,
-    strokeWidthDp: Float = 2.6f
+    strokeWidthDp: Float = 2.6f,
+    brightnessIndependent: Boolean = false
 ): Modifier {
     val led = LocalLedTheme.current
-    val palette = led.palette.map { it.copy(alpha = led.brightness.coerceIn(0f, 1f)) }
+    val palette = led.palette.map {
+        it.copy(alpha = if (brightnessIndependent) 1f else led.brightness.coerceIn(0f, 1f))
+    }
     val active = led.enabled && palette.size >= 2 && strokeWidthDp > 0f
     val glowEnabled = led.glowEnabled
     return this.drawWithCache {
@@ -1286,7 +1289,7 @@ private fun CocLioApp(
                                     .size(42.dp, 34.dp)
                                     .then(
                                         if (selectedTab == item.page) {
-                                            Modifier.ledRgbBorder(cornerRadiusDp = 10f, strokeWidthDp = 1.8f)
+                                            Modifier.ledRgbBorder(cornerRadiusDp = 10f, strokeWidthDp = 1.8f, brightnessIndependent = true)
                                         } else {
                                             Modifier
                                         }
