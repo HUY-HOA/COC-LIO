@@ -710,7 +710,22 @@ private fun CocLioApp(
     var accountProfileReady by remember { mutableStateOf(false) }
     var googleSignInSubmitting by remember { mutableStateOf(false) }
     var accountProfileError by remember { mutableStateOf<String?>(null) }
-    var loginPrivacyChoice by remember { mutableStateOf(AccountPrivacyChoice()) }
+    var consentSecurityTelemetry by rememberSaveable { mutableStateOf(false) }
+    var consentAnalytics by rememberSaveable { mutableStateOf(false) }
+    var consentDiagnostics by rememberSaveable { mutableStateOf(false) }
+    var consentVillageDataSync by rememberSaveable { mutableStateOf(false) }
+    val loginPrivacyChoice = AccountPrivacyChoice(
+        securityTelemetry = consentSecurityTelemetry,
+        analytics = consentAnalytics,
+        diagnostics = consentDiagnostics,
+        villageDataSync = consentVillageDataSync
+    )
+    fun updateLoginPrivacyChoice(choice: AccountPrivacyChoice) {
+        consentSecurityTelemetry = choice.securityTelemetry
+        consentAnalytics = choice.analytics
+        consentDiagnostics = choice.diagnostics
+        consentVillageDataSync = choice.villageDataSync
+    }
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
         val listener = FirebaseAuth.AuthStateListener { state ->
@@ -1136,7 +1151,7 @@ private fun CocLioApp(
         } else {
             AccountPrivacyChoice()
         }
-        loginPrivacyChoice = choice
+        updateLoginPrivacyChoice(choice)
         AccountPrivacyConsent.applyCollectionSettings(context, choice)
         if (choice.securityTelemetry) {
             AccountActivityTracker.start(context)
@@ -1293,7 +1308,7 @@ private fun CocLioApp(
             FirebaseTelemetry.logSignOut(context)
             runCatching { AccountPrivacyConsent.save(AccountPrivacyChoice()) }
             AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
-            loginPrivacyChoice = AccountPrivacyChoice()
+            updateLoginPrivacyChoice(AccountPrivacyChoice())
             GoogleAccountAuth.signOut(context)
             AccountProfileStore.setActive(context, null)
             interactiveGoogleSignIn = false
@@ -1460,7 +1475,7 @@ private fun CocLioApp(
                     consentAccepted = loginTermsAccepted,
                     onConsentAcceptedChanged = { loginTermsAccepted = it },
                     privacyChoice = loginPrivacyChoice,
-                    onPrivacyChoiceChanged = { loginPrivacyChoice = it },
+                    onPrivacyChoiceChanged = { updateLoginPrivacyChoice(it) },
                     onGoogleSignIn = { signInWithGoogle() }
                 )
             }
