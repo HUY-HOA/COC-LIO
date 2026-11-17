@@ -64,7 +64,6 @@ private val englishTranslations = mapOf(
     "Không thể đăng nhập Google" to "Unable to sign in with Google",
     "Chi tiết bên dưới giúp xác định chính xác cấu hình OAuth nào chưa khớp. Bạn có thể sao chép để gửi kiểm tra." to "The details below help identify which OAuth setting does not match. You can copy them for troubleshooting.",
     "SAO CHÉP CHẨN ĐOÁN" to "COPY DIAGNOSTICS",
-    "CHÀO MỪNG ĐẾN VỚI CỘNG ĐỒNG COC-LIO" to "WELCOME TO THE COC-LIO COMMUNITY",
     "DỮ LIỆU TÀI KHOẢN ĐƯỢC SỬ DỤNG" to "ACCOUNT DATA USED",
     "Đăng nhập Google không tự bật ghi nhận hoạt động/thiết bị, phân tích, báo lỗi/hiệu năng hoặc đồng bộ JSON. Các mục này mặc định tắt và chỉ được xử lý khi bạn bật riêng trong Cài đặt." to "Google sign-in does not enable activity/device tracking, analytics, crash/performance diagnostics or JSON sync. These options are off by default and are only processed when you enable them separately in Settings.",
     "Không thể hoàn tất thiết lập hồ sơ tài khoản." to "Unable to complete account profile setup.",
@@ -78,7 +77,6 @@ private val englishTranslations = mapOf(
     "1. LOẠI DỮ LIỆU ĐƯỢC XỬ LÝ" to "1. TYPES OF DATA PROCESSED",
     "Mã tài khoản Google (UID); email; tên hiển thị, tên, họ và tên hiển thị do bạn đặt (nếu có); ảnh đại diện; trạng thái xác minh email; nhà cung cấp đăng nhập; số lần, thời điểm đăng nhập; thời điểm tạo, cập nhật hồ sơ; phiên bản và thời điểm xác nhận đồng ý." to "Google account ID (UID); email; display name, first and last name, and your chosen display name (if any); profile photo; email verification status; sign-in provider; sign-in count and times; profile creation and update times; and the version and time of consent.",
     "2. MỤC ĐÍCH XỬ LÝ" to "2. PURPOSES OF PROCESSING",
-    "Xác thực đăng nhập Google; tạo và duy trì tài khoản COC-LIO; quản lý trạng thái, bảo mật tài khoản; hiển thị tên và ảnh đại diện khi bạn đăng nội dung hoặc khi thành viên khác nhận thông báo cộng đồng." to "To authenticate Google sign-in; create and maintain your COC-LIO account; manage account status and security; and display your name and profile photo when you post or when other members receive community notifications.",
     "3. BÊN KIỂM SOÁT DỮ LIỆU" to "3. DATA CONTROLLER",
     "Bên kiểm soát dữ liệu: AILIO, tên thương hiệu của cá nhân vận hành ứng dụng COC-LIO. Dữ liệu có thể được xử lý thông qua các nhà cung cấp dịch vụ cần thiết để cung cấp tính năng. Liên hệ về dữ liệu cá nhân: phunghuyhoahaikba@gmail.com." to "Data controller: AILIO, the brand used by the individual operating the COC-LIO app. Data may be processed through service providers necessary to provide app features. Contact for personal data matters: phunghuyhoahaikba@gmail.com.",
     "4. QUYỀN VÀ NGHĨA VỤ CỦA BẠN" to "4. YOUR RIGHTS AND OBLIGATIONS",
@@ -96,11 +94,9 @@ private val englishTranslations = mapOf(
     "QUÂN ĐỘI" to "TROOPS",
     "ĐANG LƯU" to "SAVING",
     "LỊCH SỬ" to "HISTORY",
-    "JSON CHIA SẺ" to "SHARED JSON",
     "ĐÃ NHẬN" to "RECEIVED",
     "ĐÃ XÓA" to "DELETED",
     "JSON ĐÃ GỠ" to "REMOVED JSON",
-    "CHIA SẺ JSON" to "SHARE JSON",
     "Tối đa 60 mốc nhập gần nhất trên thiết bị" to "Up to the 60 most recent imports on this device",
     "ĐANG XEM" to "VIEWING",
     "NHẬP / SỬ DỤNG" to "IMPORT / USE",
@@ -114,14 +110,8 @@ private val englishTranslations = mapOf(
     "Chưa có JSON nào bị gỡ" to "No JSON villages have been removed.",
     "Những làng bạn xóa khỏi mục ĐANG LƯU sẽ xuất hiện tại đây để xem, lưu hoặc khôi phục." to "Villages removed from SAVING will appear here for viewing, saving or restoring.",
     "Khôi phục nội dung đã gỡ?" to "Restore removed content?",
-    "Nội dung sẽ được đưa trở lại Cộng đồng. Bản lưu trong mục ĐÃ GỠ sẽ bị xóa sau khi khôi phục thành công." to "The content will be returned to Community. Its removed copy will be deleted after restoration succeeds.",
-    "Đã khôi phục nội dung về Cộng đồng." to "Content restored to Community.",
-    "Bản lưu không còn tồn tại." to "The archived item no longer exists.",
-    "Bản lưu thiếu thông tin người gửi nên không thể khôi phục." to "The archived item is missing sender information and cannot be restored.",
-    "Bản JSON lưu trữ không có dữ liệu gốc để khôi phục." to "The archived JSON has no original data to restore.",
     "Không thể khôi phục nội dung đã gỡ." to "Unable to restore the removed content.",
     "Xóa vĩnh viễn JSON?" to "Permanently delete JSON?",
-    "Xóa vĩnh viễn JSON đã nhận?" to "Permanently delete received JSON?",
     "Xóa dữ liệu làng?" to "Delete village data?",
     "NHẬP DỮ LIỆU LÀNG" to "IMPORT VILLAGE DATA",
     "Sao chép JSON trong Clash of Clans rồi dán vào ô bên dưới. Có thể đặt tên riêng cho làng. JSON là ảnh chụp tại thời điểm xuất; nếu dùng sách, potion, trợ thủ hoặc tăng tốc sau đó, hãy nhập JSON mới." to "Copy JSON from Clash of Clans and paste it below. You can give the village a custom name. JSON is a snapshot from the time it was exported; import new JSON after using books, potions, helpers or boosts.",
@@ -168,7 +158,6 @@ private val englishTranslations = mapOf(
     "Sáng" to "Bright",
     "THÔNG BÁO NÂNG CẤP" to "UPGRADE NOTIFICATIONS",
     "Nhắc khi bộ đếm trong JSON đã đếm hết." to "Remind me when the JSON countdown finishes.",
-    "TIN NHẮN CỘNG ĐỒNG" to "COMMUNITY MESSAGES",
     "Cần đăng nhập Google; kiểm tra tin mới khi có mạng, khoảng 15 phút/lần." to "Google sign-in required; checks for new messages when online, about every 15 minutes.",
     "Kiểu nhắc nâng cấp" to "Upgrade reminder type",
     "Tin nhắn" to "Message",
@@ -188,66 +177,38 @@ private val englishTranslations = mapOf(
     "THÔNG TIN ỨNG DỤNG" to "ABOUT THE APP",
     "COC-LIO là ứng dụng cộng đồng không chính thức, không được Supercell chứng thực. Hình ảnh game thuộc quyền sở hữu của Supercell." to "COC-LIO is an unofficial community app and is not endorsed by Supercell. Game images are owned by Supercell.",
     "Đây là nội dung không chính thức và không được Supercell bảo trợ. Xem chính sách nội dung người hâm mộ tại www.supercell.com/fan-content-policy." to "This is unofficial content and is not sponsored by Supercell. See the Fan Content Policy at www.supercell.com/fan-content-policy.",
-    "CỘNG ĐỒNG COC-LIO" to "COC-LIO COMMUNITY",
-    "Trò chuyện, chia sẻ hình ảnh, tệp nhỏ và JSON với mọi thành viên." to "Chat and share images, small files and JSON with other members.",
-    "TRÒ CHUYỆN" to "CHAT",
-    "KHO ĐÃ GỠ" to "ARCHIVE",
     "ĐĂNG NHẬP ĐỂ THAM GIA" to "SIGN IN TO JOIN",
-    "Đăng nhập Google để trò chuyện và chia sẻ cùng cộng đồng." to "Sign in with Google to chat and share with the community.",
     "ĐĂNG NHẬP" to "SIGN IN",
-    "Chưa có tin nhắn. Hãy gửi lời chào đầu tiên!" to "No messages yet. Send the first greeting!",
     "ẢNH" to "IMAGE",
-    "GỬI JSON" to "SEND JSON",
-    "Mở Cộng đồng và dùng nút GỬI JSON để đăng một làng. Danh sách đã gửi sẽ xuất hiện tại đây." to "Open Community and use SEND JSON to post a village. Your sent list will appear here.",
     "TỆP" to "FILE",
-    "Viết tin nhắn…" to "Write a message…",
     "GỬI" to "SEND",
-    "Đang gửi…" to "Sending…",
-    "THỜI HẠN LƯU KHO" to "ARCHIVE RETENTION",
-    "GIỮ MÃI" to "KEEP FOREVER",
-    "TỰ ĐỘNG XÓA" to "DELETE AUTOMATICALLY",
     "Số lượng" to "Quantity",
     "NGÀY" to "DAYS",
     "THÁNG" to "MONTHS",
-    "LƯU THIẾT LẬP LƯU TRỮ" to "SAVE ARCHIVE SETTINGS",
-    "JSON DO CỘNG ĐỒNG CHIA SẺ" to "JSON SHARED BY THE COMMUNITY",
-    "Tất cả thành viên đã đăng nhập đều có thể nhận JSON và nhập vào tài khoản của mình." to "All signed-in members can receive JSON and import it into their own account.",
     "Chưa có JSON nào được chia sẻ." to "No JSON has been shared yet.",
     "Tạm dừng trên gói miễn phí hiện tại. Tải lên và phân phối APK chưa được hỗ trợ." to "Paused on the current free plan. APK uploads and distribution are not supported.",
     "Chưa có bản cập nhật nào được đăng." to "No updates have been posted yet.",
     "CHỌN JSON ĐỂ GỬI" to "SELECT JSON TO SEND",
-    "Gỡ tin nhắn vào kho?" to "Move message to archive?",
-    "Bản ghi tin nhắn/JSON sẽ được chuyển vào Kho đã gỡ. Tệp đính kèm cũ hiện có thể chưa truy cập được." to "The message/JSON record will be moved to the archive. Older attachments may currently be inaccessible.",
-    "GỠ VÀ LƯU" to "REMOVE AND ARCHIVE",
-    "Gỡ bản cập nhật vào kho?" to "Move update to archive?",
-    "Xóa vĩnh viễn khỏi kho?" to "Permanently delete from archive?",
     "Bản ghi dữ liệu này sẽ bị xóa vĩnh viễn. Tệp đính kèm cũ không bị xóa và hiện vẫn không thể truy cập." to "This data record will be permanently deleted. The old attachment will not be deleted and remains inaccessible.",
     "ADMIN" to "ADMIN",
     "Ảnh đính kèm hiện chưa thể xem trên gói miễn phí." to "Attachments cannot currently be viewed on the free plan.",
     "NHẬN JSON" to "RECEIVE JSON",
     "GỠ TIN" to "REMOVE MESSAGE",
-    "Ảnh lưu trữ hiện chưa thể xem trên gói miễn phí." to "Archived images cannot currently be viewed on the free plan.",
     "Tệp đính kèm hiện chưa thể tải xuống" to "Attachments cannot currently be downloaded",
     "Tải APK hiện đang tạm dừng trên gói miễn phí." to "APK downloads are currently paused on the free plan.",
-    "GỠ VÀO KHO" to "MOVE TO ARCHIVE",
-    "TRA CỨU TÀI KHOẢN & CLAN" to "PLAYER & CLAN LOOKUP",
     "Tìm hồ sơ người chơi hoặc Clan bằng tên hoặc mã tag trong game." to "Find player or Clan profiles by in-game name or tag.",
     "NGƯỜI CHƠI" to "PLAYER",
     "CLAN" to "CLAN",
     "Nhập tên hoặc #ABC123" to "Enter a name or #ABC123",
     "Lọc theo cấp Nhà chính (1–20)" to "Filter by Town Hall level (1–20)",
     "Số thành viên tối thiểu (1–50)" to "Minimum member count (1–50)",
-    "ĐANG TRA CỨU..." to "SEARCHING...",
-    "TRA CỨU" to "SEARCH",
     "Có thể tìm bằng tên người chơi, tên Clan hoặc Player Tag / Clan Tag. Không cần nhập Supercell ID hay email." to "Search by player name, Clan name, Player Tag or Clan Tag. No Supercell ID or email is required.",
     "CHỌN KẾT QUẢ TÌM ĐƯỢC" to "SELECT A SEARCH RESULT",
     "MỞ HỒ SƠ" to "OPEN PROFILE",
     "SO SÁNH THỜI GIAN Ở CLAN" to "COMPARE CLAN TENURE",
     "Player Tag thứ hai" to "Second Player Tag",
     "SO SÁNH" to "COMPARE",
-    "Chọn mục để tải thêm dữ liệu từ ClashKing." to "Select a section to load more data from ClashKing.",
     "TOÀN CẢNH CLASH OF CLANS" to "CLASH OF CLANS OVERVIEW",
-    "Thống kê cộng đồng, lịch mùa giải và bảng xếp hạng công khai." to "Community statistics, season schedule and public leaderboards.",
     "BẢNG XẾP HẠNG THEO ĐIỀU KIỆN" to "FILTERED LEADERBOARDS",
     "Cấp Nhà chính (1–20)" to "Town Hall level (1–20)",
     "TOP NHÀ CHÍNH" to "TOP TOWN HALL",
@@ -260,9 +221,6 @@ private val englishTranslations = mapOf(
     "TOP QUYÊN GÓP" to "TOP DONATIONS",
     "TOP CHIẾN THẮNG" to "TOP WINS",
     "TOP VÀNG THỦ ĐÔ" to "TOP CAPITAL GOLD",
-    "Nguồn dữ liệu: ClashKing · Creator Code: ClashKing" to "Data source: ClashKing · Creator Code: ClashKing",
-    "Dữ liệu do ClashKing thu thập bằng cách đồng bộ nguồn trò chơi; có thể chậm hoặc chưa đầy đủ. COC-LIO không liên kết, được bảo trợ hoặc xác nhận bởi Supercell." to "Data is collected by ClashKing by synchronizing game sources and may be delayed or incomplete. COC-LIO is not affiliated with, sponsored or endorsed by Supercell.",
-    "MỞ CLASHKING" to "OPEN CLASHKING",
     "Không có dữ liệu chi tiết." to "No detailed data available.",
     "Có dữ liệu chi tiết." to "Detailed data available.",
     "XEM THÊM TRƯỜNG" to "SHOW MORE FIELDS",
@@ -296,9 +254,7 @@ private val englishTranslations = mapOf(
     "Ngôn ngữ đang dùng: Tiếng Việt" to "Current language: Vietnamese",
     "Ngôn ngữ đang dùng: English" to "Current language: English",
     "Lựa chọn ngôn ngữ được lưu trên thiết bị này." to "Your language preference is saved on this device.",
-    "Tin nhắn cộng đồng" to "Community messages",
     "Bản cập nhật COC-LIO" to "COC-LIO updates",
-    "Thông báo mới trong cộng đồng." to "New community message.",
     "MỞ GAME" to "OPEN GAME",
     "Thợ rảnh" to "Free builders",
     "Mở ứng dụng và nhập dữ liệu JSON" to "Open the app and import JSON",
@@ -312,15 +268,10 @@ private val englishTranslations = mapOf(
     "HOÀN THÀNH" to "COMPLETE",
     "Chưa có làng để theo dõi" to "No village to track",
     "Hãy mở COC-LIO, đăng nhập tài khoản cần dùng (nếu có), nhập JSON ít nhất một lần rồi thêm tiện ích." to "Open COC-LIO, sign in to the desired account (if needed), import JSON at least once, then add the widget.",
-    "Cộng đồng COC-LIO" to "COC-LIO Community",
     "COC-LIO có bản cập nhật" to "COC-LIO update available",
-    "Có tin nhắn mới trong cộng đồng." to "There is a new community message.",
     "Có phiên bản APK mới." to "A new APK version is available.",
-    "Thông báo tin nhắn mới trong cộng đồng COC-LIO" to "Notifications for new community messages in COC-LIO",
     "Thông báo khi quản lý chọn gửi tin bản cập nhật" to "Notifications when an administrator posts an app update",
-    "Tin nhắn cộng đồng mới" to "New community message",
     "COC-LIO có bản cập nhật mới" to "COC-LIO update available",
-    "Đã chia sẻ dữ liệu JSON." to "Shared JSON data.",
     "MỞ COC-LIO" to "OPEN COC-LIO",
     "NHẬN JSON VÀ SỬ DỤNG" to "RECEIVE AND USE JSON",
     "XÓA" to "DELETE",
@@ -380,8 +331,6 @@ private val englishTranslations = mapOf(
     "Tổng quan" to "Overview",
     "Thông tin" to "Information",
     "Công trình Quân đội" to "Information",
-    "Cộng đồng" to "Community",
-    "Tra cứu ID" to "ID Lookup",
     "Cài đặt" to "Settings",
     "Theo thiết bị" to "Follow device",
     "＋ NHẬP JSON" to "＋ IMPORT JSON",
@@ -417,9 +366,7 @@ private val englishTranslations = mapOf(
     "Đã khôi phục dữ liệu làng." to "Village data restored.",
     "Đã xóa vĩnh viễn dữ liệu JSON." to "JSON data permanently deleted.",
     "Đã chuyển JSON nhận được vào mục ĐÃ GỠ. Bản trong lịch sử vẫn được giữ." to "Received JSON moved to REMOVED. The copy in HISTORY is kept.",
-    "Đã khôi phục JSON đã nhận." to "Received JSON restored.",
     "Đã xóa vĩnh viễn JSON nhận được khỏi thiết bị." to "Received JSON permanently deleted from this device.",
-    "Không thể chia sẻ JSON." to "Unable to share JSON.",
     "Bạn đã hủy đăng nhập Google." to "You cancelled Google sign-in.",
     "Không thể đăng nhập Google. Hãy kiểm tra kết nối mạng và cấu hình OAuth." to "Unable to sign in with Google. Check your network connection and OAuth configuration.",
     "Bạn đã từ chối xử lý dữ liệu tài khoản cần thiết và đã đăng xuất." to "You declined the required account data processing and have been signed out.",
@@ -533,14 +480,10 @@ private val englishTranslations = mapOf(
     "Top Legend của Clan" to "Top Clan Legend",
     "Kỷ lục Clan" to "Clan records",
     "Bảng xếp hạng Clan" to "Clan leaderboard",
-    "Trò chuyện cộng đồng" to "Community chat",
     "Mở ứng dụng" to "Open app",
-    "Đăng nhập Google để trò chuyện và gửi tin nhắn." to "Sign in with Google to chat and send messages.",
     "Đang tải tin nhắn…" to "Loading messages…",
     "Không thể tải tin nhắn." to "Unable to load messages.",
     "Không gửi được tin nhắn." to "Unable to send the message.",
-    "Bong bóng chat cộng đồng" to "Community chat bubbles",
-    "Để hiện bong bóng, hãy bật Bong bóng trong cài đặt thông báo Android hoặc nhấn giữ thông báo tin nhắn cộng đồng rồi chọn hiển thị dạng bong bóng." to "To show chat bubbles, enable Bubbles in Android notification settings or long-press a community message notification and choose to show it as a bubble.",
     "Thần chú" to "SPELLS",
     "Nhà máy Thần chú" to "Spell Factory",
     "Nhà máy Thần chú Hắc ám" to "Dark Spell Factory",
@@ -602,41 +545,22 @@ private val englishTranslations = mapOf(
     "Chưa có lịch sử nhập" to "No import history yet",
     "Các lần dán JSON sẽ được ghi nhận tại đây." to "Your JSON imports will be recorded here.",
     "Chưa có JSON nhận từ người khác" to "No JSON received from others",
-    "JSON bạn nhận và nhập từ Cộng đồng sẽ được lưu riêng ở đây. JSON tự chia sẻ của chính bạn không được đưa vào danh sách này." to "JSON received and imported from the Community is stored here separately. JSON you share yourself is not included in this list.",
     "Chưa có JSON đã gỡ" to "No removed JSON",
-    "JSON đã gỡ khỏi mục ĐÃ NHẬN sẽ được lưu riêng tại đây, không làm mất bản trong LỊCH SỬ." to "JSON removed from RECEIVED is stored here separately; the copy in HISTORY is kept.",
     "Chưa có dữ liệu bị xóa" to "No deleted data",
     "Khi xóa một làng khỏi ĐANG LƯU, dữ liệu sẽ được lưu tại đây để khôi phục." to "When you delete a village from SAVED, its data is kept here so you can restore it.",
     " ngày " to " days ",
     " giờ " to " hours ",
     " phút" to " minutes",
     " giây" to " seconds",
-    "Đã chia sẻ JSON vào Cộng đồng." to "JSON shared with the Community.",
     "Vừa gửi" to "Just sent",
     "Đang tải từ COC-LIO" to "Downloading from COC-LIO",
-    "Hiện tại, gửi ảnh đang tạm dừng trên gói miễn phí. Bạn vẫn có thể gửi tin nhắn văn bản và chia sẻ JSON." to "Image sharing is currently paused on the free plan. You can still send text messages and share JSON.",
     "Hiện tại, gửi tệp đính kèm đang tạm dừng trên gói miễn phí." to "File attachments are currently paused on the free plan.",
-    "Không tìm thấy mã JSON được chia sẻ." to "Shared JSON code not found.",
-    "JSON chia sẻ không còn dữ liệu." to "The shared JSON is no longer available.",
-    "JSON chia sẻ vượt quá giới hạn cho phép." to "The shared JSON exceeds the allowed limit.",
     "Đã nhận JSON. Bản nhận được đã được lưu trong mục Chia sẻ của JSON; bản nhập vẫn có trong lịch sử." to "JSON received. The received copy was saved in the Sharing section of JSON; the imported copy remains in history.",
-    "Không thể nhận JSON được chia sẻ." to "Unable to receive the shared JSON.",
-    "Không thể tải JSON cộng đồng." to "Unable to load community JSON.",
     "Không thể tải danh sách cập nhật." to "Unable to load the update list.",
-    "Không thể tải kho đã gỡ." to "Unable to load the archive.",
-    "Không thể kiểm tra thời hạn lưu trữ." to "Unable to check the archive retention period.",
     "Đóng bảng emoji" to "Close emoji panel",
     "Mở bảng emoji" to "Open emoji panel",
     "Dữ liệu đã gỡ được giữ lại cho đến khi quản lý xóa vĩnh viễn." to "Removed data is kept until an administrator permanently deletes it.",
-    "Áp dụng thời hạn cho các bản ghi trong kho. Tệp đính kèm cũ hiện chưa thể truy cập hoặc dọn dẹp trên gói miễn phí." to "Apply a retention period to archived records. Older attachments cannot currently be accessed or cleaned up on the free plan.",
     "Nhập thời hạn từ 1 đến 1200 ngày hoặc tháng." to "Enter a retention period from 1 to 1,200 days or months.",
-    "Đã lưu chế độ lưu trữ." to "Archive settings saved.",
-    "Không thể lưu thời hạn lưu trữ." to "Unable to save the archive retention period.",
-    "Đã gỡ và lưu vào Kho đã gỡ." to "Removed and moved to the archive.",
-    "Không thể chuyển tin nhắn vào kho." to "Unable to move the message to the archive.",
-    "Đã gỡ và lưu APK cập nhật." to "Update APK removed and moved to the archive.",
-    "Không thể chuyển APK vào kho." to "Unable to move the APK update to the archive.",
-    "Đã xóa vĩnh viễn khỏi kho." to "Permanently deleted from the archive.",
     "Không thể xóa vĩnh viễn." to "Unable to permanently delete.",
     "Ảnh đại diện" to "Profile photo",
     "HÌNH ẢNH ĐÃ GỠ" to "REMOVED IMAGE",
@@ -726,8 +650,6 @@ private val englishTranslations = mapOf(
     "Tiếng Việt" to "Vietnamese",
     "KÍCH THƯỚC GIAO DIỆN" to "INTERFACE SIZE",
     "CỠ CHỮ TOÀN ỨNG DỤNG" to "APP-WIDE TEXT SIZE",
-    "Không thể hoàn tất thao tác cộng đồng. Vui lòng thử lại." to "Unable to complete the community operation. Please try again.",
-    "Bạn cần đăng nhập Google để chia sẻ JSON." to "Sign in with Google to share JSON.",
     "JSON trống hoặc quá lớn. Dung lượng tối đa là 700 KB." to "The JSON is empty or too large. The maximum size is 700 KB.",
     "Đã tự dọn " to "Automatically cleaned up ",
     "Đã lưu thời hạn và dọn " to "Retention period saved; cleaned up ",
@@ -1010,7 +932,6 @@ private val englishTranslations = mapOf(
     "Đang thử kiểu báo thức" to "Testing alarm notification",
     "Đang thử kiểu tin nhắn" to "Testing message notification",
     "COC-LIO • Thử thông báo" to "COC-LIO • Test notification",
-    "Đã chia sẻ JSON" to "Shared JSON",
     "Đã lưu dữ liệu" to "Data saved",
     "Làng" to "Village",
     "Căn cứ" to "Base",
@@ -1031,10 +952,8 @@ private val englishTranslations = mapOf(
     "Mục" to "Item",
     "BẢN GHI CÒN LƯU TRONG FIREBASE" to "RECORDS STILL STORED IN FIREBASE",
     "Bản ghi và dữ liệu đính kèm/JSON được lưu bên trong bản ghi này sẽ bị xóa vĩnh viễn khỏi Firestore." to "This record and any attachment or JSON data stored inside it will be permanently deleted from Firestore.",
-    "Bản lưu hiện chỉ có thông tin phiên bản, chưa có đường dẫn tải APK." to "This archive only contains version information; no APK download link is available.",
     "BẬT" to "ON",
     "TẮT" to "OFF",
-    "Bộ đếm lấy tổng số tài liệu thật từ các mục Cộng đồng và Kho đã gỡ trên Firestore; không tính hồ sơ, cài đặt và dữ liệu khác của ứng dụng." to "The counter totals actual documents in the Community and Removed Archive collections in Firestore. It excludes profiles, settings and other app data.",
     "Danh sách lấy từ hồ sơ Firestore. Nếu bạn đã xóa tài khoản trong Firebase Authentication nhưng dòng này vẫn còn, hãy dùng XÓA HỒ SƠ sau khi kiểm tra đúng UID. Nút này chỉ xóa hồ sơ Firestore, không xóa tài khoản Authentication." to "This list comes from Firestore profiles. If you deleted an account from Firebase Authentication but it still appears here, verify the UID and use DELETE PROFILE. This button deletes only the Firestore profile, not the Authentication account.",
     "Đang kiểm tra dữ liệu trên máy chủ…" to "Checking data on the server…",
     "Độ sáng" to "Brightness",
@@ -1044,19 +963,10 @@ private val englishTranslations = mapOf(
     "LÀM MỚI SỐ LIỆU" to "REFRESH STATISTICS",
     "LƯU THIẾT LẬP" to "SAVE SETTINGS",
     "Số ngày giữ nội dung" to "Content retention days",
-    "TỰ ĐỘNG XÓA TOÀN BỘ CỘNG ĐỒNG" to "AUTOMATICALLY DELETE ALL COMMUNITY CONTENT",
     "XÓA HỒ SƠ FIREBASE" to "DELETE FIREBASE PROFILE",
     "Xóa hồ sơ Firebase cũ?" to "Delete old Firebase profile?",
     "XÓA TẤT CẢ" to "DELETE ALL",
     "XÓA VĨNH VIỄN TẤT CẢ" to "DELETE ALL PERMANENTLY",
-    "Đã xóa toàn bộ lưu trữ Firebase: " to "Deleted all Firebase archive data: ",
-    "Thao tác sẽ xóa vĩnh viễn tất cả bản ghi trong KHO ĐÃ GỠ trên Firebase: tin nhắn, JSON, ảnh, tệp và APK. Nội dung đang còn trong Cộng đồng và JSON đang hoạt động sẽ không bị xóa. Không thể hoàn tác." to "This permanently deletes all records in the REMOVED ARCHIVE on Firebase: messages, JSON, images, files and APKs. Active Community posts and active JSON will not be deleted. This action cannot be undone.",
-    "Xóa toàn bộ lưu trữ Firebase?" to "Delete all Firebase archive data?",
-    "XÓA TOÀN BỘ LƯU TRỮ FIREBASE" to "DELETE ALL FIREBASE ARCHIVE DATA",
-    "Đã xóa toàn bộ lưu trữ Firebase." to "All Firebase archive data has been deleted.",
-    "Xóa vĩnh viễn toàn bộ Kho đã gỡ?" to "Permanently delete the entire Removed Archive?",
-    "Tất cả tin nhắn, ảnh, tệp và APK trong Kho đã gỡ sẽ bị xóa khỏi Firestore. Nội dung đang còn trong Cộng đồng sẽ không bị ảnh hưởng. Thao tác này không thể hoàn tác." to "All messages, images, files and APKs in the Removed Archive will be deleted from Firestore. Content still in the Community will not be affected. This action cannot be undone.",
-    "TRA CỨU NGƯỜI CHƠI & BANG HỘI" to "PLAYER & CLAN LOOKUP",
     "Tìm hồ sơ người chơi hoặc bang hội bằng tên hoặc mã trong game." to "Find player or Clan profiles by in-game name or tag.",
     "BANG HỘI" to "CLAN",
     "Tên hoặc mã người chơi" to "Name or Player Tag",
@@ -1066,7 +976,6 @@ private val englishTranslations = mapOf(
     "SO SÁNH THỜI GIAN TRONG BANG HỘI" to "COMPARE CLAN TENURE",
     "Mã cấp bậc giải đấu" to "League Tier ID",
     "Mã khu vực / quốc gia" to "Region / country code (Location ID)",
-    "Nguồn dữ liệu: ClashKing · Mã nhà sáng tạo: ClashKing" to "Data source: ClashKing · Creator Code: ClashKing",
     "Mã bang hội" to "Clan Tag",
     "Bang hội" to "Clan",
     "Cấp bang hội" to "Clan Level",
@@ -1143,19 +1052,12 @@ private val englishTranslations = mapOf(
     "Không thể hoàn tất xác nhận dữ liệu tài khoản. Hãy thử lại." to "Unable to complete account data consent. Please try again.",
     "CHIA SẺ" to "SHARING",
     "ĐÃ GỬI" to "SENT",
-    "XÓA JSON ĐÃ GỬI" to "DELETE SENT JSON",
-    "Bạn chưa chia sẻ JSON nào." to "You haven't shared any JSON yet.",
     "Bạn chưa nhận JSON nào từ người khác." to "You haven't received any JSON from others.",
-    "Xóa JSON đã gửi?" to "Delete sent JSON?",
-    "JSON này sẽ bị xóa khỏi danh sách chia sẻ và bài đăng JSON tương ứng trong Cộng đồng. Bản JSON trong Lịch sử và Đang lưu trên thiết bị vẫn được giữ." to "This JSON will be removed from your sharing list and its matching Community post. The copy in History and Saved on this device will remain.",
     "Bạn chỉ có thể xóa JSON do chính mình chia sẻ." to "You can only delete JSON that you shared yourself.",
-    "Đã xóa JSON đã gửi khỏi Cộng đồng." to "Sent JSON was deleted from the Community.",
     "Đã xóa JSON nhận được khỏi danh sách chia sẻ. Bản trong lịch sử vẫn được giữ." to "Received JSON was removed from the sharing list. Its copy in History is still kept.",
     "NHẬP LẠI" to "IMPORT AGAIN",
     "XÓA JSON" to "DELETE JSON",
-    "Không thể xóa JSON đã gửi." to "Unable to delete sent JSON.",
     "Không thể xóa JSON nhận được khỏi danh sách chia sẻ." to "Unable to delete received JSON from the sharing list.",
-    "Xóa JSON đã nhận?" to "Delete received JSON?",
     "Chỉ xóa bản JSON trong danh sách ĐÃ NHẬN trên thiết bị này. Bản trong Lịch sử và JSON gốc của người chia sẻ vẫn được giữ." to "Only the JSON copy in this device's RECEIVED list will be deleted. The copy in History and the sender's original JSON will remain.",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
@@ -1184,20 +1086,14 @@ private val englishTranslations = mapOf(
     "Điều chỉnh cỡ chữ trong toàn ứng dụng. Mức 5 (100%) là mặc định." to "Adjust text size throughout the app. Level 5 (100%) is the default.",
     "Không thể gửi ảnh." to "Unable to send the image.",
     "Không thể gửi tệp." to "Unable to send the file.",
-    "Không thể tải kho tệp đã gỡ." to "Unable to load archived files.",
-    "Không thể tải kho APK đã gỡ." to "Unable to load archived APKs.",
     "Không thể đọc số lượng bản ghi trên Firestore." to "Unable to read the Firestore record counts.",
-    "Tin nhắn, JSON, ảnh, tệp, APK và bản đã gỡ sẽ bị xóa khỏi Firestore khi đủ số ngày tính từ lúc đăng. Ứng dụng quản lý sẽ tự dọn định kỳ; thời điểm xóa có thể trễ khi máy ngoại tuyến hoặc Android hạn chế chạy nền." to "Messages, JSON, images, files, APKs and archived items are deleted from Firestore after the selected number of days from posting. The administrator app performs cleanup periodically; deletion may be delayed while the device is offline or Android restricts background work.",
-    "Đang tắt tự động xóa. Nội dung trong Cộng đồng và Kho đã gỡ sẽ không bị xóa theo thời hạn mới." to "Automatic deletion is off. Community and archived content will not be deleted according to the new retention period.",
     "Nhập số ngày tự động xóa từ 1 đến 1200." to "Enter an automatic deletion period from 1 to 1,200 days.",
     "Không thể lưu thiết lập tự động xóa." to "Unable to save automatic deletion settings.",
     "Không thể xóa toàn bộ Kho đã gỡ." to "Unable to delete the entire removed archive.",
     "Đã xóa vĩnh viễn bản ghi và dữ liệu JSON liên quan khỏi Firebase." to "The record and its related JSON data were permanently deleted from Firebase.",
     "Tệp trống." to "The file is empty.",
     "Nội dung trống." to "The content is empty.",
-    "JSON CHIA SẺ ĐÃ GỠ" to "REMOVED SHARED JSON",
     "JSON làng" to "Village JSON",
-    "Bản lưu cũ chưa có dữ liệu JSON gốc." to "The older archive entry does not contain the original JSON data.",
     "Đã gỡ: " to "Removed: ",
     "LƯU TỆP" to "SAVE FILE",
     "LƯU JSON" to "SAVE JSON",
@@ -1211,7 +1107,6 @@ private val englishTranslations = mapOf(
     "THÔNG BÁO BẢO TRÌ" to "MAINTENANCE NOTICE",
     "Một số chức năng có thể tạm thời không hoạt động." to "Some features may be temporarily unavailable.",
     "Mở liên kết" to "Open link",
-    "Không tìm thấy mã JSON." to "The shared JSON ID could not be found.",
     "Yêu cầu: " to "Requirement: ",
     "Thời gian: " to "Duration: ",
     "THƯỜNG" to "COMMON",
@@ -1273,7 +1168,6 @@ private val englishTranslations = mapOf(
     "Chỉ số 10" to "Stat 10",
     "Chỉ số 11" to "Stat 11",
     "Chỉ số 12" to "Stat 12",
-    "TRA CỨU ID DỮ LIỆU TRONG GAME" to "IN-GAME DATA ID LOOKUP",
     "Tìm công trình, quân lính, anh hùng, thần chú, linh thú, trang bị và máy công thành bằng ID, tên tiếng Việt không dấu hoặc tên tiếng Anh." to "Find buildings, troops, heroes, spells, pets, equipment and siege machines by ID, Vietnamese name, English name or alias.",
     "ID hoặc tên trong game" to "Game ID or name",
     "Ví dụ: 4000008, 90000061, Rồng, Portal Pendant" to "Example: 4000008, 90000061, Dragon, Portal Pendant",
@@ -1376,26 +1270,8 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Google vẫn từ chối xác thực sau khi làm mới phiên\\. Web Client ID đang nhúng trong APK: (.+)\\. Package APK: (.+)\\. SHA-1 thực tế: (.+)\\. Kiểm tra Android OAuth Client theo đúng SHA-1 này và dùng Web application Client ID của cùng dự án\\.$").matchEntire(source)!!.let {
                 "Google still rejected authentication after refreshing the session. Web Client ID embedded in APK: ${it.groupValues[1]}. APK package: ${it.groupValues[2]}. Actual SHA-1: ${it.groupValues[3]}. Check the Android OAuth Client against this package and SHA-1, and use the Web application Client ID from the same project."
             }
-        Regex("^Thao tác này chỉ xóa hồ sơ users/(.+), dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore\\. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication\\. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication\\. Bài đăng Cộng đồng không bị xóa\\.$").matchEntire(source) != null ->
-            Regex("^Thao tác này chỉ xóa hồ sơ users/(.+), dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore\\. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication\\. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication\\. Bài đăng Cộng đồng không bị xóa\\.$").matchEntire(source)!!.let {
-                "This only deletes the users/${it.groupValues[1]} profile, the village-synced JSON data and the profile's entitlements from Firestore. It does NOT delete the sign-in account in Firebase Authentication. Use this only after deleting that account from Authentication. Community posts are not deleted."
-            }
         Regex("^TỔNG CỘNG: (\\d+) BẢN GHI$").matchEntire(source) != null ->
             Regex("^TỔNG CỘNG: (\\d+) BẢN GHI$").matchEntire(source)!!.let { "TOTAL: ${it.groupValues[1]} RECORDS" }
-        Regex("^Cộng đồng: (\\d+)  •  Kho đã gỡ: (\\d+)$").matchEntire(source) != null ->
-            Regex("^Cộng đồng: (\\d+)  •  Kho đã gỡ: (\\d+)$").matchEntire(source)!!.let { "Community: ${it.groupValues[1]}  •  Removed archive: ${it.groupValues[2]}" }
-        Regex("^Cộng đồng: (\\d+) mục tin nhắn/ảnh/tệp, (\\d+) JSON riêng, (\\d+) APK$").matchEntire(source) != null ->
-            Regex("^Cộng đồng: (\\d+) mục tin nhắn/ảnh/tệp, (\\d+) JSON riêng, (\\d+) APK$").matchEntire(source)!!.let {
-                "Community: ${it.groupValues[1]} message/image/file items, ${it.groupValues[2]} separate JSON records, ${it.groupValues[3]} APKs"
-            }
-        Regex("^Kho đã gỡ: (\\d+) tin nhắn, (\\d+) ảnh, (\\d+) tệp và APK$").matchEntire(source) != null ->
-            Regex("^Kho đã gỡ: (\\d+) tin nhắn, (\\d+) ảnh, (\\d+) tệp và APK$").matchEntire(source)!!.let {
-                "Removed archive: ${it.groupValues[1]} messages, ${it.groupValues[2]} images, ${it.groupValues[3]} files and APKs"
-            }
-        Regex("^Kho đã gỡ: (\\d+) tin nhắn/JSON, (\\d+) ảnh, (\\d+) tệp, (\\d+) APK$").matchEntire(source) != null ->
-            Regex("^Kho đã gỡ: (\\d+) tin nhắn/JSON, (\\d+) ảnh, (\\d+) tệp, (\\d+) APK$").matchEntire(source)!!.let {
-                "Removed archive: ${it.groupValues[1]} messages/JSON, ${it.groupValues[2]} images, ${it.groupValues[3]} files, ${it.groupValues[4]} APKs"
-            }
         source.startsWith("không đọc được") ->
             "Unable to read" + source.removePrefix("không đọc được")
         Regex("^(.+) • cần nhập lại để xác nhận cấp độ mới$").matchEntire(source) != null ->
@@ -1449,10 +1325,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Nhắc nâng cấp kiểu báo thức • (\\d+)s$").matchEntire(source)!!.let { "Upgrade alarm reminder • ${it.groupValues[1]}s" }
         Regex("^Thông báo báo thức tự đóng sau (\\d+) giây$").matchEntire(source) != null ->
             Regex("^Thông báo báo thức tự đóng sau (\\d+) giây$").matchEntire(source)!!.let { "Alarm notification closes after ${it.groupValues[1]} seconds" }
-        Regex("^ClashKing trả về lỗi HTTP (.+)\\.$").matchEntire(source) != null ->
-            Regex("^ClashKing trả về lỗi HTTP (.+)\\.$").matchEntire(source)!!.let { "ClashKing returned HTTP error ${it.groupValues[1]}." }
-        Regex("^Chưa có hồ sơ bang hội (.+) trong kho dữ liệu ClashKing\\.$").matchEntire(source) != null ->
-            Regex("^Chưa có hồ sơ bang hội (.+) trong kho dữ liệu ClashKing\\.$").matchEntire(source)!!.let { "No Clan profile for ${it.groupValues[1]} is available in the ClashKing database." }
         Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source) != null ->
             Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source)!!.let {
                 "Update ${it.groupValues[1]} will be moved to the archive. The old APK file will be retained but will not be accessible."
@@ -1470,25 +1342,8 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         } != null -> Regex("^Đăng nhập (\\d+) lần · (.+)$").matchEntire(source)!!.let {
             "Signed in ${it.groupValues[1]} times · ${it.groupValues[2]}"
         }
-        Regex("^Đã tải (\\d+) kết quả\\. Chọn đúng hồ sơ để xem chi tiết\\.$").matchEntire(source)?.let {
-            "Loaded ${it.groupValues[1]} results. Select the correct profile to view details."
-        } != null -> Regex("^Đã tải (\\d+) kết quả\\. Chọn đúng hồ sơ để xem chi tiết\\.$").matchEntire(source)!!.let {
-            "Loaded ${it.groupValues[1]} results. Select the correct profile to view details."
-        }
         Regex("^Phát hiện (\\d+) thay đổi$").matchEntire(source) != null ->
             Regex("^Phát hiện (\\d+) thay đổi$").matchEntire(source)!!.let { "Detected ${it.groupValues[1]} changes" }
-        Regex("^Đã tự xóa (\\d+) bản ghi cộng đồng/kho đã gỡ hết hạn\\.$").matchEntire(source) != null ->
-            Regex("^Đã tự xóa (\\d+) bản ghi cộng đồng/kho đã gỡ hết hạn\\.$").matchEntire(source)!!.let {
-                "Automatically deleted ${it.groupValues[1]} expired community/archive records."
-            }
-        Regex("^Đã lưu\\. Tự động xóa toàn bộ nội dung sau (\\d+) ngày; đã dọn (\\d+) bản ghi hết hạn\\.$").matchEntire(source) != null ->
-            Regex("^Đã lưu\\. Tự động xóa toàn bộ nội dung sau (\\d+) ngày; đã dọn (\\d+) bản ghi hết hạn\\.$").matchEntire(source)!!.let {
-                "Saved. All content will be automatically deleted after ${it.groupValues[1]} days; cleaned up ${it.groupValues[2]} expired records."
-            }
-        Regex("^Đã lưu\\. Tự động xóa toàn bộ cộng đồng đã tắt; đã dọn (\\d+) mục lưu trữ đến hạn cũ\\.$").matchEntire(source) != null ->
-            Regex("^Đã lưu\\. Tự động xóa toàn bộ cộng đồng đã tắt; đã dọn (\\d+) mục lưu trữ đến hạn cũ\\.$").matchEntire(source)!!.let {
-                "Saved. Automatic community deletion is off; cleaned up ${it.groupValues[1]} previously due archive items."
-            }
         Regex("^Đã xóa vĩnh viễn (\\d+) mục trong Kho đã gỡ\\.$").matchEntire(source) != null ->
             Regex("^Đã xóa vĩnh viễn (\\d+) mục trong Kho đã gỡ\\.$").matchEntire(source)!!.let {
                 "Permanently deleted ${it.groupValues[1]} items from the removed archive."
@@ -1497,16 +1352,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Đã tự dọn (\\d+) mục lưu trữ hết hạn\\.$").matchEntire(source)!!.let { "Automatically cleaned up ${it.groupValues[1]} expired archive items." }
         Regex("^Đã lưu thời hạn và dọn (\\d+) mục hết hạn\\.$").matchEntire(source) != null ->
             Regex("^Đã lưu thời hạn và dọn (\\d+) mục hết hạn\\.$").matchEntire(source)!!.let { "Retention period saved; cleaned up ${it.groupValues[1]} expired items." }
-        Regex("^Thống kê Ranked TH(\\d+) – Giải (\\d+)$").matchEntire(source) != null ->
-            Regex("^Thống kê Ranked TH(\\d+) – Giải (\\d+)$").matchEntire(source)!!.let { "Ranked statistics TH${it.groupValues[1]} – League ${it.groupValues[2]}" }
-        Regex("^Hạng khu vực (.+)$").matchEntire(source) != null ->
-            "Regional rank " + source.removePrefix("Hạng khu vực ")
-        Regex("^Nhà chính (\\d+)  •  Bang hội (.+)$").matchEntire(source) != null ->
-            Regex("^Nhà chính (\\d+)  •  Bang hội (.+)$").matchEntire(source)!!.let { "Town Hall ${it.groupValues[1]}  •  Clan ${it.groupValues[2]}" }
-        Regex("^Cấp bang hội (\\d+)  •  (\\d+) thành viên$").matchEntire(source) != null ->
-            Regex("^Cấp bang hội (\\d+)  •  (\\d+) thành viên$").matchEntire(source)!!.let { "Clan Level ${it.groupValues[1]}  •  ${it.groupValues[2]} members" }
-        Regex("^(\\d+) thành viên$").matchEntire(source) != null ->
-            Regex("^(\\d+) thành viên$").matchEntire(source)!!.let { "${it.groupValues[1]} members" }
         Regex("^(\\d+) mục đang nâng • Thợ rảnh (\\d+)/(\\d+)$").matchEntire(source) != null ->
             Regex("^(\\d+) mục đang nâng • Thợ rảnh (\\d+)/(\\d+)$").matchEntire(source)!!.let {
                 "${it.groupValues[1]} upgrades in progress • Builders available: ${it.groupValues[2]}/${it.groupValues[3]}"
@@ -1552,8 +1397,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             "Saved data for " + source.removePrefix("Đã lưu dữ liệu cho ")
         source.startsWith("JSON này có thời điểm cũ hơn dữ liệu mới nhất đã lưu cho ") ->
             "This JSON is older than the latest saved data for " + source.removePrefix("JSON này có thời điểm cũ hơn dữ liệu mới nhất đã lưu cho ")
-        source.startsWith("Đã chia sẻ JSON ") ->
-            "Shared JSON " + source.removePrefix("Đã chia sẻ JSON ")
         source.startsWith("JSON làng ") ->
             "Village JSON " + source.removePrefix("JSON làng ")
         source.startsWith("Làng #") ->
