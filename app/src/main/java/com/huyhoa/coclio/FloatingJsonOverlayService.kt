@@ -505,9 +505,16 @@ class FloatingJsonOverlayService : Service() {
 
             if (result.isSuccess) {
                 val (snapshot, previousExists, count) = result.getOrThrow()
-                val choice = runCatching { AccountPrivacyConsent.load() }.getOrNull()
+                val choice = try {
+                    AccountPrivacyConsent.load()
+                } catch (_: Exception) {
+                    null
+                }
                 if (choice?.villageDataSync == true) {
-                    runCatching { FirebaseVillageDataSync.saveLatest(snapshot) }
+                    try {
+                        FirebaseVillageDataSync.saveLatest(snapshot)
+                    } catch (_: Exception) {
+                    }
                 }
                 sendBroadcast(
                     Intent(ACTION_JSON_IMPORTED)
