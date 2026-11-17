@@ -381,7 +381,9 @@ class NotificationBubbleService : Service() {
                             0,
                             (resources.displayMetrics.heightPixels - windowParams.height).coerceAtLeast(0)
                         )
-                        runCatching { windowManager.updateViewLayout(activeView, windowParams) }
+                        activeView?.let { view ->
+                            runCatching { windowManager.updateViewLayout(view, windowParams) }
+                        }
                     }
                     true
                 }
