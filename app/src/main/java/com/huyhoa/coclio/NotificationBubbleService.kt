@@ -37,7 +37,6 @@ class NotificationBubbleService : Service() {
         private const val CHANNEL_ID = "coc_lio_notification_bubble"
         private const val FOREGROUND_NOTIFICATION_ID = 7816
         private const val PREFS = "coc_lio_notification_bubble"
-        private const val HIDE_DELAY_MS = 25_000L
     }
 
     private lateinit var windowManager: WindowManager
@@ -93,8 +92,6 @@ class NotificationBubbleService : Service() {
                 intent.getStringExtra(EXTRA_TITLE).orEmpty(),
                 intent.getStringExtra(EXTRA_BODY).orEmpty()
             )
-        } else {
-            ensureBubble()
         }
         return START_STICKY
     }
@@ -206,9 +203,7 @@ class NotificationBubbleService : Service() {
             .putString("last_body", currentBody)
             .apply()
         ensureBubble()
-        showPanel()
-        handler.removeCallbacksAndMessages(null)
-        handler.postDelayed({ collapsePanel() }, HIDE_DELAY_MS)
+        if (expanded) updatePanelText()
     }
 
     private fun togglePanel() {
@@ -269,7 +264,7 @@ class NotificationBubbleService : Service() {
             setTextColor(Color.WHITE)
             background = rounded(Color.rgb(112, 38, 67), Color.TRANSPARENT, 0, dp(8))
             isClickable = true
-            setOnClickListener { collapsePanel() }
+            setOnClickListener { dismissBubble() }
         }
         header.addView(close, LinearLayout.LayoutParams(dp(34), dp(32)))
         attachDrag(heading)
@@ -307,7 +302,7 @@ class NotificationBubbleService : Service() {
             background = rounded(Color.rgb(54, 244, 255), Color.TRANSPARENT, 0, dp(9))
             isClickable = true
             setOnClickListener {
-                collapsePanel()
+                dismissBubble()
                 startActivity(
                     Intent(this@NotificationBubbleService, MainActivity::class.java)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -325,6 +320,16 @@ class NotificationBubbleService : Service() {
     private fun updatePanelText(target: LinearLayout? = panelView) {
         target?.findViewWithTag<TextView>("bubble_title")?.text = currentTitle
         target?.findViewWithTag<TextView>("bubble_body")?.text = currentBody
+    }
+
+    private fun dismissBubble() {
+        handler.removeCallbacksAndMessages(null)
+        savePosition()
+        activeView?.let { runCatching { windowManager.removeViewImmediate(it) } }
+        activeView = null
+        bubbleView = null
+        panelView = null
+        expanded = false
     }
 
     private fun collapsePanel() {
