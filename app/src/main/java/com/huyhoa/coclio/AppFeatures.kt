@@ -1245,7 +1245,7 @@ object GoogleAccountAuth {
 fun openClashOfClans(context: Context) {
     val launch = context.packageManager.getLaunchIntentForPackage("com.supercell.clashofclans")
     if (launch != null) {
-        context.startActivity(launch)
+        FloatingJsonOverlayController.openGame(context, launch)
     } else {
         val store = Intent(
             Intent.ACTION_VIEW,
