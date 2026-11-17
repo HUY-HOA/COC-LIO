@@ -10,7 +10,7 @@ AILIO là thương hiệu phát triển dự án Android COC-LIO, ứng dụng t
 - Không cần kết nối mạng để phân tích JSON đã có và xem dữ liệu đã lưu cục bộ; những nội dung cần tải từ Internet có thể chưa hiển thị khi ngoại tuyến.
 - Mỗi lần nhập là một ảnh chụp dữ liệu tại thời điểm game xuất JSON.
 - Lần nhập đầu tạo mốc ban đầu; lần nhập kế tiếp cùng Player Tag được so sánh để tìm thay đổi.
-- Mỗi tài khoản COC-LIO lưu tối đa 50 bản JSON trên thiết bị. Khi đủ giới hạn, cần xóa vĩnh viễn bản cũ trước khi lưu thêm; mục Đã xóa vẫn tính vào giới hạn.
+- Mỗi tài khoản COC-LIO lưu tối đa 50 bản JSON trên thiết bị. Khi lưu vượt giới hạn, bản JSON cũ nhất tự động bị xóa; các bản trong mục Đã xóa vẫn được tính vào giới hạn.
 - Nút **Mở game** mở Clash of Clans đồng thời bật cửa sổ nhập JSON nổi. Có thể kéo cửa sổ, thu nhỏ thành nút nổi hoặc kéo góc để thay đổi kích thước; Android cần cấp quyền Hiển thị trên ứng dụng khác.
 
 ## Cách xuất JSON trong game
@@ -63,7 +63,7 @@ COC-LIO là ứng dụng không chính thức, không liên kết hoặc đượ
 
 - Biểu tượng ứng dụng dùng ảnh minh họa do người dùng cung cấp.
 - Tổng quan chia riêng Làng chính và Làng đêm (Căn cứ thợ xây).
-- Nhập dữ liệu bằng cách sao chép JSON trong trò chơi rồi dán vào ứng dụng; không còn chọn tệp.
+- Khi nhấn Mở game, COC-LIO khởi chạy Clash of Clans và cửa sổ nhập JSON nổi. Người chơi có thể dán JSON ngay trên game, đặt tên riêng cho từng tài khoản game, di chuyển/thu phóng/thu nhỏ cửa sổ; dữ liệu được phân biệt bằng Player Tag.
 - Thời gian được chuẩn hóa về giây khi JSON dùng timestamp mili-giây hoặc timer mili-giây rõ ràng.
 - Thẻ nâng cấp và tiện ích màn hình chính được thu gọn; đồng hồ trong tiện ích không có nền nhãn riêng.
 
