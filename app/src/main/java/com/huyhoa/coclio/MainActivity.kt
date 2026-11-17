@@ -785,6 +785,9 @@ private fun CocLioApp(
     var notificationsEnabled by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationsEnabled(context, activeProfile))
     }
+    var bubbleNotificationsEnabled by remember(activeProfile) {
+        mutableStateOf(AppPreferences.bubbleNotificationsEnabled(context, activeProfile))
+    }
     var notificationStyle by remember(activeProfile) {
         mutableStateOf(AppPreferences.notificationStyle(context, activeProfile))
     }
@@ -937,6 +940,77 @@ private fun CocLioApp(
         }
     }
 
+    fun enableBubbleNotifications(profile: String) {
+        AppPreferences.setBubbleNotificationsEnabled(context, profile, true)
+        if (profile == activeProfile) bubbleNotificationsEnabled = true
+        val serviceIntent = Intent(context, NotificationBubbleService::class.java)
+            .setAction(NotificationBubbleService.ACTION_ENABLE)
+            .putExtra(NotificationBubbleService.EXTRA_PROFILE, profile)
+        runCatching {
+            ContextCompat.startForegroundService(context, serviceIntent)
+        }.onFailure { error ->
+            AppPreferences.setBubbleNotificationsEnabled(context, profile, false)
+            if (profile == activeProfile) bubbleNotificationsEnabled = false
+            scope.launch {
+                snackbar.showAppSnackbar(
+                    context,
+                    error.message?.takeIf { it.isNotBlank() }
+                        ?: "Không thể khởi động bong bóng thông báo."
+                )
+            }
+        }
+    }
+
+    fun disableBubbleNotifications(profile: String) {
+        AppPreferences.setBubbleNotificationsEnabled(context, profile, false)
+        if (profile == activeProfile) bubbleNotificationsEnabled = false
+        context.stopService(Intent(context, NotificationBubbleService::class.java))
+    }
+
+    fun bubbleOverlayPermissionIntent(): Intent =
+        Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+            .setData(android.net.Uri.parse("package:${context.packageName}"))
+
+    val bubbleOverlayPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+            android.provider.Settings.canDrawOverlays(context)
+        ) {
+            enableBubbleNotifications(activeProfile)
+        } else {
+            disableBubbleNotifications(activeProfile)
+            scope.launch {
+                snackbar.showAppSnackbar(
+                    context,
+                    "Bạn chưa cấp quyền Hiển thị trên ứng dụng khác. Bong bóng chưa được bật."
+                )
+            }
+        }
+    }
+
+    val bubbleNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                android.provider.Settings.canDrawOverlays(context)
+            ) {
+                enableBubbleNotifications(activeProfile)
+            } else {
+                bubbleOverlayPermissionLauncher.launch(bubbleOverlayPermissionIntent())
+            }
+        } else {
+            disableBubbleNotifications(activeProfile)
+            scope.launch {
+                snackbar.showAppSnackbar(
+                    context,
+                    "Bạn chưa cấp quyền thông báo. Bong bóng thông báo chưa được bật."
+                )
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         val permissionPrefs = context.getSharedPreferences("coc_lio_permission_state", android.content.Context.MODE_PRIVATE)
         if (!permissionPrefs.getBoolean("notification_permission_requested_v1", false)) {
@@ -965,6 +1039,27 @@ private fun CocLioApp(
         pinnedTags = VillageStore.pinnedTags(context, activeProfile)
         notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
         notificationStyle = AppPreferences.notificationStyle(context, activeProfile)
+        bubbleNotificationsEnabled = AppPreferences.bubbleNotificationsEnabled(context, activeProfile)
+        if (bubbleNotificationsEnabled) {
+            val overlayAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                android.provider.Settings.canDrawOverlays(context)
+            if (overlayAllowed) {
+                runCatching {
+                    ContextCompat.startForegroundService(
+                        context,
+                        Intent(context, NotificationBubbleService::class.java)
+                            .setAction(NotificationBubbleService.ACTION_ENABLE)
+                            .putExtra(NotificationBubbleService.EXTRA_PROFILE, activeProfile)
+                    )
+                }
+            } else {
+                AppPreferences.setBubbleNotificationsEnabled(context, activeProfile, false)
+                bubbleNotificationsEnabled = false
+                context.stopService(Intent(context, NotificationBubbleService::class.java))
+            }
+        } else {
+            context.stopService(Intent(context, NotificationBubbleService::class.java))
+        }
         AccountProfileStore.markLastUsed(context, activeProfile)
         lastUsedAt = AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L
         UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
@@ -1498,6 +1593,7 @@ private fun CocLioApp(
                             AppWidgetUpdater.updateAll(context)
                         },
                         notificationsEnabled = notificationsEnabled,
+                        bubbleNotificationsEnabled = bubbleNotificationsEnabled,
                         ledEnabled = ledEnabled,
                         ledPreset = ledPreset,
                         ledSpeed = ledSpeed,
@@ -1566,6 +1662,27 @@ private fun CocLioApp(
                                 AppPreferences.setNotificationsEnabled(context, activeProfile, enabled)
                                 notificationsEnabled = enabled
                                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, enabled)
+                            }
+                        },
+                        onBubbleNotificationsChanged = { enabled ->
+                            if (!enabled) {
+                                disableBubbleNotifications(activeProfile)
+                            } else {
+                                val notificationAllowed = Build.VERSION.SDK_INT < 33 ||
+                                    ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.POST_NOTIFICATIONS
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                if (!notificationAllowed) {
+                                    bubbleNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else if (
+                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                                    !android.provider.Settings.canDrawOverlays(context)
+                                ) {
+                                    bubbleOverlayPermissionLauncher.launch(bubbleOverlayPermissionIntent())
+                                } else {
+                                    enableBubbleNotifications(activeProfile)
+                                }
                             }
                         },
                         onNotificationStyleChanged = { style ->
