@@ -7,6 +7,7 @@ import android.content.pm.ServiceInfo
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
@@ -49,6 +50,8 @@ class FloatingJsonOverlayService : Service() {
         private const val DEFAULT_HEIGHT_DP = 500
         private const val MIN_WIDTH_DP = 270
         private const val MIN_HEIGHT_DP = 350
+        private const val MIN_LANDSCAPE_WIDTH_DP = 320
+        private const val MIN_LANDSCAPE_HEIGHT_DP = 240
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -65,6 +68,7 @@ class FloatingJsonOverlayService : Service() {
     private var saveButton: TextView? = null
     private var expandedWidth = 0
     private var expandedHeight = 0
+    private var currentOrientationKey = "portrait"
     private var collapsed = false
     private var saving = false
 
@@ -82,6 +86,55 @@ class FloatingJsonOverlayService : Service() {
             showOverlay()
         }
         return START_STICKY
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (!::windowManager.isInitialized || activeView == null) {
+            currentOrientationKey = orientationKey(newConfig.orientation)
+            return
+        }
+
+        val nextOrientationKey = orientationKey(newConfig.orientation)
+        val orientationChanged = nextOrientationKey != currentOrientationKey
+        if (orientationChanged) {
+            if (!collapsed) {
+                expandedWidth = windowParams.width
+                expandedHeight = windowParams.height
+                saveExpandedSize()
+            }
+            savePosition()
+            currentOrientationKey = nextOrientationKey
+        }
+
+        val limits = overlayLimits(currentOrientationKey)
+        if (orientationChanged) {
+            val size = loadExpandedSize(currentOrientationKey, limits)
+            expandedWidth = size.first
+            expandedHeight = size.second
+            val position = loadPosition(currentOrientationKey, expandedWidth, expandedHeight)
+            windowParams.x = position.first
+            windowParams.y = position.second
+        } else if (!collapsed) {
+            expandedWidth = windowParams.width
+            expandedHeight = windowParams.height
+        }
+
+        expandedWidth = expandedWidth.coerceIn(limits.minWidth, limits.maxWidth)
+        expandedHeight = expandedHeight.coerceIn(limits.minHeight, limits.maxHeight)
+
+        if (collapsed) {
+            windowParams.width = dp(100)
+            windowParams.height = dp(50)
+        } else {
+            windowParams.width = expandedWidth
+            windowParams.height = expandedHeight
+        }
+
+        clampWindowPosition()
+        updateWindow()
+        if (!collapsed) saveExpandedSize()
+        savePosition()
     }
 
     override fun onDestroy() {
@@ -146,15 +199,14 @@ class FloatingJsonOverlayService : Service() {
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         val metrics = resources.displayMetrics
-        val maxWidth = (metrics.widthPixels - dp(16)).coerceAtLeast(dp(240))
-        val maxHeight = (metrics.heightPixels - dp(48)).coerceAtLeast(dp(300))
-        val minWidth = MIN_WIDTH_DP.dpValue().coerceAtMost(maxWidth)
-        val minHeight = MIN_HEIGHT_DP.dpValue().coerceAtMost(maxHeight)
-        val preferences = getSharedPreferences(OVERLAY_PREFS, Context.MODE_PRIVATE)
-        expandedWidth = preferences.getInt("width", DEFAULT_WIDTH_DP.dpValue()).coerceIn(minWidth, maxWidth)
-        expandedHeight = preferences.getInt("height", DEFAULT_HEIGHT_DP.dpValue()).coerceIn(minHeight, maxHeight)
-        val x = preferences.getInt("x", dp(8)).coerceIn(0, maxWidth - expandedWidth)
-        val y = preferences.getInt("y", dp(92)).coerceIn(0, (maxHeight - expandedHeight).coerceAtLeast(0))
+        currentOrientationKey = orientationKey()
+        val limits = overlayLimits(currentOrientationKey)
+        val size = loadExpandedSize(currentOrientationKey, limits)
+        expandedWidth = size.first
+        expandedHeight = size.second
+        val position = loadPosition(currentOrientationKey, expandedWidth, expandedHeight)
+        val x = position.first.coerceIn(0, (metrics.widthPixels - expandedWidth).coerceAtLeast(0))
+        val y = position.second.coerceIn(0, (metrics.heightPixels - dp(48) - expandedHeight).coerceAtLeast(0))
 
         val windowType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -294,7 +346,7 @@ class FloatingJsonOverlayService : Service() {
             setPadding(dp(4), dp(5), dp(4), 0)
             maxLines = 2
         }
-        statusText?.text = "Kéo tiêu đề để di chuyển • kéo góc ↘ để thu phóng."
+        statusText?.text = "Xoay màn hình để tự điều chỉnh • kéo góc ↘ để đổi kích thước."
         panel.addView(statusText)
         attachDrag(title)
         attachDrag(account)
@@ -439,12 +491,11 @@ class FloatingJsonOverlayService : Service() {
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    val maxWidth = (resources.displayMetrics.widthPixels - dp(16)).coerceAtLeast(dp(MIN_WIDTH_DP))
-                    val maxHeight = (resources.displayMetrics.heightPixels - dp(48)).coerceAtLeast(dp(MIN_HEIGHT_DP))
+                    val limits = overlayLimits(currentOrientationKey)
                     windowParams.width = (startWidth + (event.rawX - startX).toInt())
-                        .coerceIn(dp(MIN_WIDTH_DP).coerceAtMost(maxWidth), maxWidth)
+                        .coerceIn(limits.minWidth, limits.maxWidth)
                     windowParams.height = (startHeight + (event.rawY - startY).toInt())
-                        .coerceIn(dp(MIN_HEIGHT_DP).coerceAtMost(maxHeight), maxHeight)
+                        .coerceIn(limits.minHeight, limits.maxHeight)
                     expandedWidth = windowParams.width
                     expandedHeight = windowParams.height
                     clampWindowPosition()
@@ -461,6 +512,97 @@ class FloatingJsonOverlayService : Service() {
         }
     }
 
+    private data class OverlayLimits(
+        val maxWidth: Int,
+        val maxHeight: Int,
+        val minWidth: Int,
+        val minHeight: Int
+    )
+
+    private fun orientationKey(orientation: Int = resources.configuration.orientation): String =
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) "landscape" else "portrait"
+
+    private fun overlayLimits(orientation: String = currentOrientationKey): OverlayLimits {
+        val metrics = resources.displayMetrics
+        val isLandscape = orientation == "landscape"
+        val maxWidth = (metrics.widthPixels - dp(16)).coerceAtLeast(dp(240))
+        val maxHeight = (metrics.heightPixels - dp(48)).coerceAtLeast(dp(if (isLandscape) 220 else 300))
+        val minWidth = dp(if (isLandscape) MIN_LANDSCAPE_WIDTH_DP else MIN_WIDTH_DP)
+            .coerceAtMost(maxWidth)
+        val minHeight = dp(if (isLandscape) MIN_LANDSCAPE_HEIGHT_DP else MIN_HEIGHT_DP)
+            .coerceAtMost(maxHeight)
+        return OverlayLimits(maxWidth, maxHeight, minWidth, minHeight)
+    }
+
+    private fun defaultExpandedSize(
+        orientation: String,
+        limits: OverlayLimits
+    ): Pair<Int, Int> {
+        val isLandscape = orientation == "landscape"
+        val widthRatio = if (isLandscape) 0.88f else 0.94f
+        val heightRatio = if (isLandscape) 0.90f else 0.72f
+        val widthCap = dp(if (isLandscape) 900 else 460)
+        val heightCap = dp(if (isLandscape) 420 else 680)
+        val width = (limits.maxWidth * widthRatio).toInt()
+            .coerceAtMost(widthCap)
+            .coerceIn(limits.minWidth, limits.maxWidth)
+        val height = (limits.maxHeight * heightRatio).toInt()
+            .coerceAtMost(heightCap)
+            .coerceIn(limits.minHeight, limits.maxHeight)
+        return width to height
+    }
+
+    private fun loadExpandedSize(
+        orientation: String,
+        limits: OverlayLimits
+    ): Pair<Int, Int> {
+        val preferences = getSharedPreferences(OVERLAY_PREFS, Context.MODE_PRIVATE)
+        val defaults = defaultExpandedSize(orientation, limits)
+        val widthKey = "width_$orientation"
+        val heightKey = "height_$orientation"
+        val useLegacyPortraitSize = orientation == "portrait"
+        val storedWidth = when {
+            preferences.contains(widthKey) -> preferences.getInt(widthKey, defaults.first)
+            useLegacyPortraitSize && preferences.contains("width") ->
+                preferences.getInt("width", defaults.first)
+            else -> defaults.first
+        }
+        val storedHeight = when {
+            preferences.contains(heightKey) -> preferences.getInt(heightKey, defaults.second)
+            useLegacyPortraitSize && preferences.contains("height") ->
+                preferences.getInt("height", defaults.second)
+            else -> defaults.second
+        }
+        return storedWidth.coerceIn(limits.minWidth, limits.maxWidth) to
+            storedHeight.coerceIn(limits.minHeight, limits.maxHeight)
+    }
+
+    private fun loadPosition(
+        orientation: String,
+        panelWidth: Int,
+        panelHeight: Int
+    ): Pair<Int, Int> {
+        val preferences = getSharedPreferences(OVERLAY_PREFS, Context.MODE_PRIVATE)
+        val xKey = "x_$orientation"
+        val yKey = "y_$orientation"
+        val useLegacyPortraitPosition = orientation == "portrait"
+        val defaultX = ((resources.displayMetrics.widthPixels - panelWidth) / 2).coerceAtLeast(0)
+        val defaultY = dp(if (orientation == "landscape") 16 else 72)
+        val x = when {
+            preferences.contains(xKey) -> preferences.getInt(xKey, defaultX)
+            useLegacyPortraitPosition && preferences.contains("x") ->
+                preferences.getInt("x", defaultX)
+            else -> defaultX
+        }
+        val y = when {
+            preferences.contains(yKey) -> preferences.getInt(yKey, defaultY)
+            useLegacyPortraitPosition && preferences.contains("y") ->
+                preferences.getInt("y", defaultY)
+            else -> defaultY
+        }
+        return x to y
+    }
+
     private fun clampWindowPosition() {
         val width = resources.displayMetrics.widthPixels
         val height = resources.displayMetrics.heightPixels
@@ -475,6 +617,8 @@ class FloatingJsonOverlayService : Service() {
 
     private fun savePosition() {
         getSharedPreferences(OVERLAY_PREFS, Context.MODE_PRIVATE).edit()
+            .putInt("x_$currentOrientationKey", windowParams.x)
+            .putInt("y_$currentOrientationKey", windowParams.y)
             .putInt("x", windowParams.x)
             .putInt("y", windowParams.y)
             .apply()
@@ -482,6 +626,8 @@ class FloatingJsonOverlayService : Service() {
 
     private fun saveExpandedSize() {
         getSharedPreferences(OVERLAY_PREFS, Context.MODE_PRIVATE).edit()
+            .putInt("width_$currentOrientationKey", expandedWidth)
+            .putInt("height_$currentOrientationKey", expandedHeight)
             .putInt("width", expandedWidth)
             .putInt("height", expandedHeight)
             .apply()
