@@ -14,6 +14,7 @@
 - Android 8.0 trở lên dùng Notification Channels; người dùng có thể chỉnh âm thanh, rung và mức ưu tiên trong cài đặt hệ thống.
 - Android 7.0–7.1 dùng cấu hình âm thanh và rung trực tiếp trên thông báo.
 - Android 13 trở lên cần quyền thông báo runtime.
+- Bong bóng nổi nhắc nâng cấp có công tắc riêng trong Cài đặt; khi bật cần quyền Hiển thị trên ứng dụng khác và quyền thông báo trên Android 13 trở lên. Bong bóng có thể kéo, chạm để xem nội dung nhắc và tự thu gọn sau 25 giây; dịch vụ nền sẽ duy trì đến khi tắt công tắc.
 - Nhà sản xuất hoặc chế độ tiết kiệm pin có thể trì hoãn tác vụ nền; không thể bảo đảm thời điểm thông báo tuyệt đối trên mọi thiết bị.
 
 ## Thành phần phụ thuộc
