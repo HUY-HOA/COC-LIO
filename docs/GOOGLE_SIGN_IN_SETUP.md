@@ -118,9 +118,9 @@ Không đưa khóa Admin SDK, service account private key hoặc bí mật quả
 
 - **Authentication:** đăng nhập Google bằng Firebase Auth; đăng xuất cũng kết thúc phiên Firebase.
 - **Firestore:** tạo/cập nhật hồ sơ Google tại `users/{uid}`, gồm thông tin tên/email/ảnh và metadata đăng nhập. Chỉ chủ sở hữu được liệt kê hồ sơ toàn bộ người dùng; mỗi người dùng chỉ đọc hồ sơ của chính mình. Lịch sử JSON, hồ sơ tên hiển thị cục bộ và giấy phép chưa đồng bộ lên đám mây.
-- **Analytics:** ghi các sự kiện `login`, `logout` và `village_json_import`; không gửi email, Player Tag hoặc nội dung JSON vào Analytics.
-- **Crashlytics:** SDK và Gradle plugin đã được thêm để thu thập sự cố của bản phát hành.
-- **Performance Monitoring:** SDK và Gradle plugin đã được thêm để thu thập hiệu năng tự động.
+- **Analytics:** SDK ghi các sự kiện `login`, `logout` và `village_json_import` chỉ khi người dùng bật lựa chọn Analytics trong Cài đặt; không gửi email, Player Tag hoặc nội dung JSON vào Analytics.
+- **Crashlytics:** chỉ bật thu thập sự cố khi người dùng bật lựa chọn chẩn đoán trong Cài đặt.
+- **Performance Monitoring:** chỉ bật theo dõi hiệu năng khi người dùng bật lựa chọn chẩn đoán trong Cài đặt.
 
 **Chưa triển khai:** Firebase Cloud Messaging cho thông báo từ máy chủ, đồng bộ lịch sử JSON nhiều thiết bị, hệ thống cấp phép/Admin và xuất BigQuery. BigQuery cần bật liên kết/xuất dữ liệu từ Google Analytics/Firebase Console; chỉ thêm SDK vào APK không tự bật tính năng này.
 
