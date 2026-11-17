@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": 6,
+  "version": 7,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -46,16 +46,6 @@
         "enabled": true
       },
       {
-        "id": "lookup",
-        "title": "ID",
-        "enabled": true
-      },
-      {
-        "id": "community",
-        "title": "Cộng đồng",
-        "enabled": true
-      },
-      {
         "id": "settings",
         "title": "Cài đặt",
         "enabled": true
@@ -64,8 +54,6 @@
   },
   "features": {
     "history": true,
-    "community": true,
-    "lookup": true,
     "settings": true,
     "importButton": true,
     "dashboardBlocks": true
