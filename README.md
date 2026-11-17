@@ -74,7 +74,7 @@ Google Sign-In được dùng để xác thực tài khoản. Analytics, Crashly
 ## Dữ liệu tài khoản và quyền riêng tư
 
 - Khi người dùng chủ động đồng ý điều khoản/chính sách rồi đăng nhập Google, hồ sơ tài khoản cơ bản (UID, email, tên, ảnh đại diện và trạng thái xác minh) được lưu vào Firestore để xác thực và quản lý tài khoản.
-- Ghi nhận thiết bị/hoạt động, Analytics, Crashlytics/Performance và đồng bộ JSON đám mây hiện được tắt; không bật chỉ vì người dùng đăng nhập Google hoặc xác nhận điều khoản.
+- Bốn mục đích tùy chọn — dữ liệu thiết bị/hoạt động, Analytics, Crashlytics/Performance và đồng bộ JSON đám mây — mặc định tắt; người dùng có thể đọc chi tiết, chọn riêng từng mục hoặc chọn tất cả trên màn hình đăng nhập. Đăng nhập Google không tự động bật các mục này.
 - JSON làng được nhập và lưu cục bộ trên điện thoại.
 - COC-LIO không đọc IMEI, số sê-ri, MAC, Android ID, vị trí chính xác, SMS, danh bạ hoặc lịch sử cuộc gọi.
 - Chế độ Firebase Spark không cần thẻ thanh toán, nhưng Firestore có hạn mức miễn phí. Xem [docs/FIREBASE_SPARK_MODE.md](docs/FIREBASE_SPARK_MODE.md) để biết cách thu thập, lưu trữ và giới hạn.
