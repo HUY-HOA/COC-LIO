@@ -14,7 +14,10 @@ service cloud.firestore {
     function signedIn() {
       return verifiedAccount()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requiredAccountDataConsentVersion', 0) == 2
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requiredAccountDataConsentVersion', 0) == 1
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requiredAccountDataConsentVersion', 0) == 2
+        )
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountDisabled', false) != true;
     }
 
@@ -87,7 +90,8 @@ service cloud.firestore {
           isVerifiedSelf(userId)
           && resource.data.get('accountDisabled', false) != true
           && (
-            resource.data.get('requiredAccountDataConsentVersion', 0) == 2
+            resource.data.get('requiredAccountDataConsentVersion', 0) == 1
+            || resource.data.get('requiredAccountDataConsentVersion', 0) == 2
             || (
               request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                 'requiredAccountDataConsentVersion',
@@ -184,7 +188,10 @@ service cloud.firestore {
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['requiredAccountDataConsentVersion'])
             || (
               request.resource.data.requiredAccountDataConsentVersion is int
-              && request.resource.data.requiredAccountDataConsentVersion == 2
+              && (
+                request.resource.data.requiredAccountDataConsentVersion == 1
+                || request.resource.data.requiredAccountDataConsentVersion == 2
+              )
             )
           )
           && (
@@ -197,7 +204,10 @@ service cloud.firestore {
               'requiredAccountDataConsentAt'
             ])
             || (
-              request.resource.data.requiredAccountDataConsentVersion == 2
+              (
+                request.resource.data.requiredAccountDataConsentVersion == 1
+                || request.resource.data.requiredAccountDataConsentVersion == 2
+              )
               && request.resource.data.requiredAccountDataConsentAt is timestamp
             )
           )
