@@ -17,7 +17,7 @@ data class DeletedVillageRecord(
 object VillageStore {
     private const val PREFS = "coc_lio_local"
     private const val KEY_HISTORY = "village_snapshots"
-    private const val MAX_SNAPSHOTS = 60
+    private const val MAX_SNAPSHOTS = 50
     private const val MAX_DELETED_RECORDS = 20
 
     private fun historyKey(profile: String): String =
@@ -63,6 +63,7 @@ object VillageStore {
     }
 
     fun loadAll(context: Context, profile: String = "local"): List<VillageSnapshot> {
+        enforceSnapshotLimit(context, profile)
         val prefs = preferences(context)
         val rawHistory = prefs.getString(historyKey(profile), "[]") ?: "[]"
         val array = runCatching { JSONArray(rawHistory) }.getOrElse { JSONArray() }
@@ -86,6 +87,107 @@ object VillageStore {
             compareBy<VillageSnapshot> { pinOrder[it.tag] ?: Int.MAX_VALUE }
                 .thenByDescending { it.timestamp }
         )
+    }
+
+    private fun enforceSnapshotLimit(context: Context, profile: String) {
+        val prefs = preferences(context)
+        val historyKey = historyKey(profile)
+        val deletedKey = deletedKey(profile)
+        val history = runCatching {
+            JSONArray(prefs.getString(historyKey, "[]") ?: "[]")
+        }.getOrElse { JSONArray() }
+        val deleted = runCatching {
+            JSONArray(prefs.getString(deletedKey, "[]") ?: "[]")
+        }.getOrElse { JSONArray() }
+
+        val timestamps = linkedMapOf<String, Long>()
+        for (index in 0 until history.length()) {
+            val entry = history.optJSONObject(index) ?: continue
+            val tag = entry.optString("tag", "")
+            val timestamp = entry.optLong("timestamp", 0L)
+            if (tag.isNotBlank() && timestamp > 0L) {
+                timestamps["$tag|$timestamp"] = timestamp
+            }
+        }
+        for (index in 0 until deleted.length()) {
+            val record = deleted.optJSONObject(index) ?: continue
+            val tag = record.optString("tag", "")
+            val snapshots = record.optJSONArray("snapshots") ?: JSONArray()
+            for (snapshotIndex in 0 until snapshots.length()) {
+                val snapshot = snapshots.optJSONObject(snapshotIndex) ?: continue
+                val timestamp = snapshot.optLong("timestamp", 0L)
+                if (tag.isNotBlank() && timestamp > 0L) {
+                    timestamps["$tag|$timestamp"] = timestamp
+                }
+            }
+        }
+
+        val keep = timestamps.entries
+            .sortedByDescending { it.value }
+            .take(MAX_SNAPSHOTS)
+            .map { it.key }
+            .toSet()
+
+        val keptHistory = JSONArray()
+        val seen = mutableSetOf<String>()
+        for (index in 0 until history.length()) {
+            val entry = history.optJSONObject(index) ?: continue
+            val tag = entry.optString("tag", "")
+            val timestamp = entry.optLong("timestamp", 0L)
+            val key = "$tag|$timestamp"
+            if (key in keep && seen.add(key)) keptHistory.put(entry)
+        }
+
+        val keptDeleted = JSONArray()
+        for (index in 0 until deleted.length()) {
+            val record = deleted.optJSONObject(index) ?: continue
+            val tag = record.optString("tag", "")
+            val snapshots = record.optJSONArray("snapshots") ?: JSONArray()
+            val keptSnapshots = JSONArray()
+            for (snapshotIndex in 0 until snapshots.length()) {
+                val snapshot = snapshots.optJSONObject(snapshotIndex) ?: continue
+                val timestamp = snapshot.optLong("timestamp", 0L)
+                val key = "$tag|$timestamp"
+                if (key in keep && seen.add(key)) keptSnapshots.put(snapshot)
+            }
+            val copiedRecord = runCatching { JSONObject(record.toString()) }
+                .getOrElse { JSONObject() }
+            copiedRecord.put("snapshots", keptSnapshots)
+            keptDeleted.put(copiedRecord)
+        }
+
+        prefs.edit()
+            .putString(historyKey, keptHistory.toString())
+            .putString(deletedKey, keptDeleted.toString())
+            .apply()
+    }
+
+    fun storedSnapshotCount(context: Context, profile: String = "local"): Int {
+        enforceSnapshotLimit(context, profile)
+        val prefs = preferences(context)
+        val history = runCatching {
+            JSONArray(prefs.getString(historyKey(profile), "[]") ?: "[]")
+        }.getOrElse { JSONArray() }
+        val deleted = runCatching {
+            JSONArray(prefs.getString(deletedKey(profile), "[]") ?: "[]")
+        }.getOrElse { JSONArray() }
+        val keys = mutableSetOf<String>()
+        for (index in 0 until history.length()) {
+            val entry = history.optJSONObject(index) ?: continue
+            val tag = entry.optString("tag", "")
+            val timestamp = entry.optLong("timestamp", 0L)
+            if (tag.isNotBlank() && timestamp > 0L) keys.add("$tag|$timestamp")
+        }
+        for (index in 0 until deleted.length()) {
+            val record = deleted.optJSONObject(index) ?: continue
+            val tag = record.optString("tag", "")
+            val snapshots = record.optJSONArray("snapshots") ?: JSONArray()
+            for (snapshotIndex in 0 until snapshots.length()) {
+                val timestamp = snapshots.optJSONObject(snapshotIndex)?.optLong("timestamp", 0L) ?: 0L
+                if (tag.isNotBlank() && timestamp > 0L) keys.add("$tag|$timestamp")
+            }
+        }
+        return keys.size.coerceAtMost(MAX_SNAPSHOTS)
     }
 
     private fun writeHistory(context: Context, snapshots: List<VillageSnapshot>, profile: String) {
@@ -121,6 +223,7 @@ object VillageStore {
         val existing = loadAll(context, profile)
             .filterNot { it.tag == snapshot.tag && it.timestamp == snapshot.timestamp }
         writeHistory(context, listOf(snapshot) + existing, profile)
+        enforceSnapshotLimit(context, profile)
     }
 
     fun deleteVillage(context: Context, tag: String, profile: String = "local"): Boolean {
@@ -159,10 +262,12 @@ object VillageStore {
 
         writeHistory(context, all.filterNot { it.tag == tag }, profile)
         if (wasPinned) setPinned(context, tag, false, profile)
+        enforceSnapshotLimit(context, profile)
         return true
     }
 
     fun loadDeleted(context: Context, profile: String = "local"): List<DeletedVillageRecord> {
+        enforceSnapshotLimit(context, profile)
         val raw = preferences(context).getString(deletedKey(profile), "[]") ?: "[]"
         val array = runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
         val names = readNames(context, profile)
@@ -238,6 +343,7 @@ object VillageStore {
             if (id != recordId) updated.put(entry)
         }
         preferences(context).edit().putString(deletedKey(profile), updated.toString()).apply()
+        enforceSnapshotLimit(context, profile)
         return true
     }
 }
