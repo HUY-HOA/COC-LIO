@@ -530,8 +530,15 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
         val accounts = result.documents.map { document ->
             val email = document.getString("email").orEmpty()
-            val lastActiveAt = document.getTimestamp("lastActiveAt")?.toDate()?.time ?: 0L
-            val lastBackgroundAt = document.getTimestamp("lastBackgroundAt")?.toDate()?.time ?: 0L
+            val hasActivityConsent =
+                document.getLong("activityDataConsentVersion") == AccountPrivacyConsent.CURRENT_VERSION &&
+                    document.getBoolean("dataSharingConsent") == true
+            val lastActiveAt = if (hasActivityConsent) {
+                document.getTimestamp("lastActiveAt")?.toDate()?.time ?: 0L
+            } else 0L
+            val lastBackgroundAt = if (hasActivityConsent) {
+                document.getTimestamp("lastBackgroundAt")?.toDate()?.time ?: 0L
+            } else 0L
             AdminGoogleAccount(
                 uid = document.getString("uid") ?: document.id,
                 email = email,
@@ -547,35 +554,35 @@ object FirebaseAccountAdministration {
                 lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
                 updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L,
                 isAdmin = isOwner(email),
-                isOnline = lastActiveAt > lastBackgroundAt &&
+                isOnline = hasActivityConsent && lastActiveAt > lastBackgroundAt &&
                     lastActiveAt > 0L &&
                     System.currentTimeMillis() - lastActiveAt <= 660_000L,
                 lastActiveAt = lastActiveAt,
-                firstOpenedAt = document.getTimestamp("firstOpenedAt")?.toDate()?.time ?: 0L,
-                lastOpenedAt = document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L,
+                firstOpenedAt = if (hasActivityConsent) document.getTimestamp("firstOpenedAt")?.toDate()?.time ?: 0L else 0L,
+                lastOpenedAt = if (hasActivityConsent) document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L else 0L,
                 lastBackgroundAt = lastBackgroundAt,
-                sessionStartedAt = document.getTimestamp("sessionStartedAt")?.toDate()?.time ?: 0L,
-                activityUpdatedAt = document.getTimestamp("activityUpdatedAt")?.toDate()?.time ?: 0L,
-                lastActivityEvent = document.getString("lastActivityEvent").orEmpty(),
-                appOpenCount = document.getLong("appOpenCount") ?: 0L,
-                lastSessionDurationSeconds = document.getLong("lastSessionDurationSeconds") ?: 0L,
-                totalForegroundSeconds = document.getLong("totalForegroundSeconds") ?: 0L,
-                deviceManufacturer = document.getString("deviceManufacturer").orEmpty(),
-                deviceModel = document.getString("deviceModel").orEmpty(),
-                deviceBrand = document.getString("deviceBrand").orEmpty(),
-                deviceProduct = document.getString("deviceProduct").orEmpty(),
-                deviceCodeName = document.getString("deviceCodeName").orEmpty(),
-                supportedAbis = document.getString("supportedAbis").orEmpty(),
-                localeTag = document.getString("localeTag").orEmpty(),
-                timeZoneId = document.getString("timeZoneId").orEmpty(),
-                screenWidthPx = document.getLong("screenWidthPx") ?: 0L,
-                screenHeightPx = document.getLong("screenHeightPx") ?: 0L,
-                densityDpi = document.getLong("densityDpi") ?: 0L,
-                networkType = document.getString("networkType").orEmpty(),
-                androidVersion = document.getString("androidVersion").orEmpty(),
-                sdkInt = document.getLong("sdkInt") ?: 0L,
-                appVersionName = document.getString("appVersionName").orEmpty(),
-                appVersionCode = document.getLong("appVersionCode") ?: 0L,
+                sessionStartedAt = if (hasActivityConsent) document.getTimestamp("sessionStartedAt")?.toDate()?.time ?: 0L else 0L,
+                activityUpdatedAt = if (hasActivityConsent) document.getTimestamp("activityUpdatedAt")?.toDate()?.time ?: 0L else 0L,
+                lastActivityEvent = if (hasActivityConsent) document.getString("lastActivityEvent").orEmpty() else "",
+                appOpenCount = if (hasActivityConsent) document.getLong("appOpenCount") ?: 0L else 0L,
+                lastSessionDurationSeconds = if (hasActivityConsent) document.getLong("lastSessionDurationSeconds") ?: 0L else 0L,
+                totalForegroundSeconds = if (hasActivityConsent) document.getLong("totalForegroundSeconds") ?: 0L else 0L,
+                deviceManufacturer = if (hasActivityConsent) document.getString("deviceManufacturer").orEmpty() else "",
+                deviceModel = if (hasActivityConsent) document.getString("deviceModel").orEmpty() else "",
+                deviceBrand = if (hasActivityConsent) document.getString("deviceBrand").orEmpty() else "",
+                deviceProduct = if (hasActivityConsent) document.getString("deviceProduct").orEmpty() else "",
+                deviceCodeName = if (hasActivityConsent) document.getString("deviceCodeName").orEmpty() else "",
+                supportedAbis = if (hasActivityConsent) document.getString("supportedAbis").orEmpty() else "",
+                localeTag = if (hasActivityConsent) document.getString("localeTag").orEmpty() else "",
+                timeZoneId = if (hasActivityConsent) document.getString("timeZoneId").orEmpty() else "",
+                screenWidthPx = if (hasActivityConsent) document.getLong("screenWidthPx") ?: 0L else 0L,
+                screenHeightPx = if (hasActivityConsent) document.getLong("screenHeightPx") ?: 0L else 0L,
+                densityDpi = if (hasActivityConsent) document.getLong("densityDpi") ?: 0L else 0L,
+                networkType = if (hasActivityConsent) document.getString("networkType").orEmpty() else "",
+                androidVersion = if (hasActivityConsent) document.getString("androidVersion").orEmpty() else "",
+                sdkInt = if (hasActivityConsent) document.getLong("sdkInt") ?: 0L else 0L,
+                appVersionName = if (hasActivityConsent) document.getString("appVersionName").orEmpty() else "",
+                appVersionCode = if (hasActivityConsent) document.getLong("appVersionCode") ?: 0L else 0L,
                 activityDataConsentVersion = document.getLong("activityDataConsentVersion") ?: 0L,
                 dataSharingConsent = document.getBoolean("dataSharingConsent") ?: false,
                 analyticsConsent = document.getBoolean("analyticsConsent") ?: false,
@@ -609,57 +616,6 @@ object FirebaseAccountAdministration {
                     if (legacyFields.isNotEmpty()) batch.update(document.reference, legacyFields)
                 }
                 if (chunk.isNotEmpty()) batch.commit().awaitFirebaseResult()
-            }
-            val packageInfo = runCatching {
-                context.packageManager.getPackageInfo(context.packageName, 0)
-            }.getOrNull()
-            val appVersionCode = if (Build.VERSION.SDK_INT >= 28) {
-                packageInfo?.longVersionCode ?: 0L
-            } else {
-                @Suppress("DEPRECATION")
-                packageInfo?.versionCode?.toLong() ?: 0L
-            }
-            val now = System.currentTimeMillis()
-            val ownerIndex = accounts.indexOfFirst { it.uid == owner.uid }
-            if (ownerIndex >= 0 && accounts[ownerIndex].activityDataConsentVersion < AccountPrivacyConsent.CURRENT_VERSION) {
-                accounts[ownerIndex] = accounts[ownerIndex].copy(
-                    isOnline = true,
-                    lastActiveAt = now,
-                    deviceManufacturer = Build.MANUFACTURER.orEmpty(),
-                    deviceModel = Build.MODEL.orEmpty(),
-                    androidVersion = Build.VERSION.RELEASE.orEmpty(),
-                    sdkInt = Build.VERSION.SDK_INT.toLong(),
-                    appVersionName = packageInfo?.versionName.orEmpty(),
-                    appVersionCode = appVersionCode
-                )
-            } else if (ownerIndex < 0) {
-                accounts.add(
-                    AdminGoogleAccount(
-                        uid = owner.uid,
-                        email = owner.email.orEmpty(),
-                        preferredName = "Tài khoản quản lý",
-                        displayName = owner.displayName.orEmpty(),
-                        givenName = "",
-                        familyName = "",
-                        photoUrl = owner.photoUrl?.toString().orEmpty(),
-                        emailVerified = owner.isEmailVerified,
-                        providerId = owner.providerData.firstOrNull { it.providerId == "google.com" }?.providerId.orEmpty(),
-                        signInCount = 0L,
-                        createdAt = owner.metadata?.creationTimestamp ?: 0L,
-                        lastSignInAt = owner.metadata?.lastSignInTimestamp ?: 0L,
-                        updatedAt = owner.metadata?.lastSignInTimestamp ?: 0L,
-                        isAdmin = true,
-                        isOnline = true,
-                        lastActiveAt = now,
-                        lastOpenedAt = now,
-                        deviceManufacturer = Build.MANUFACTURER.orEmpty(),
-                        deviceModel = Build.MODEL.orEmpty(),
-                        androidVersion = Build.VERSION.RELEASE.orEmpty(),
-                        sdkInt = Build.VERSION.SDK_INT.toLong(),
-                        appVersionName = packageInfo?.versionName.orEmpty(),
-                        appVersionCode = appVersionCode
-                    )
-                )
             }
         }
         return accounts.sortedWith(
@@ -716,8 +672,8 @@ data class AccountPrivacyChoice(
 )
 
 object AccountPrivacyConsent {
-    const val CURRENT_VERSION = 6L
-    const val REQUIRED_ACCOUNT_DATA_VERSION = 1L
+    const val CURRENT_VERSION = 7L
+    const val REQUIRED_ACCOUNT_DATA_VERSION = 2L
 
     suspend fun hasRequiredAccountDataConsent(): Boolean {
         val user = FirebaseAuth.getInstance().currentUser ?: return false
@@ -2485,8 +2441,6 @@ fun SettingsScreen(
     onDisplaySizeLevelChanged: (Int) -> Unit,
     notificationsEnabled: Boolean,
     bubbleNotificationsEnabled: Boolean,
-    privacyChoice: AccountPrivacyChoice,
-    onSavePrivacyChoice: (AccountPrivacyChoice) -> Unit,
     ledEnabled: Boolean,
     ledPreset: String,
     ledSpeed: Int,
@@ -2511,7 +2465,6 @@ fun SettingsScreen(
     val context = LocalContext.current
     var showAdminAccounts by remember(accountEmail, isAdmin) { mutableStateOf(false) }
     var selectedSizeSetting by remember { mutableStateOf(0) }
-    var privacyDraft by remember(accountEmail, privacyChoice) { mutableStateOf(privacyChoice) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -2605,63 +2558,6 @@ fun SettingsScreen(
 
         if (isAdmin && showAdminAccounts) {
             AdminAccountsPanel(onClose = { showAdminAccounts = false })
-        }
-
-        FeaturePanel {
-            FeaturePanelTitle(Icons.Filled.Info, "QUYỀN RIÊNG TƯ & DỮ LIỆU")
-            if (accountEmail.isNullOrBlank()) {
-                Text(
-                    "Đăng nhập Google để quản lý các lựa chọn dữ liệu tài khoản. Các mục tùy chọn mặc định tắt.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp,
-                    lineHeight = 15.sp
-                )
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("Ghi nhận thiết bị và hoạt động", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text("Hãng/model máy, phiên bản Android và ứng dụng, độ phân giải, ngôn ngữ, múi giờ, loại mạng và thời lượng sử dụng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 13.sp)
-                    }
-                    Switch(checked = privacyDraft.securityTelemetry, onCheckedChange = { privacyDraft = privacyDraft.copy(securityTelemetry = it) })
-                }
-                Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("Phân tích mức sử dụng", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
-                        Text("Firebase Analytics; bật riêng, không phụ thuộc ghi nhận thiết bị.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                    }
-                    Switch(checked = privacyDraft.analytics, onCheckedChange = { privacyDraft = privacyDraft.copy(analytics = it) })
-                }
-                Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("Báo lỗi và hiệu năng", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
-                        Text("Firebase Crashlytics và Performance; bật riêng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                    }
-                    Switch(checked = privacyDraft.diagnostics, onCheckedChange = { privacyDraft = privacyDraft.copy(diagnostics = it) })
-                }
-                Spacer(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("Đồng bộ JSON của làng lên tài khoản", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
-                        Text("Chỉ lưu bản JSON mới nhất theo từng mã người chơi vào hồ sơ riêng của bạn; không công khai hoặc gửi cho người khác.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 13.sp)
-                    }
-                    Switch(checked = privacyDraft.villageDataSync, onCheckedChange = { privacyDraft = privacyDraft.copy(villageDataSync = it) })
-                }
-                Text(
-                    "COC-LIO không thu IP, vị trí chính xác, IMEI, số sê-ri hoặc mã nhận dạng phần cứng. Bạn có thể tắt từng lựa chọn bất cứ lúc nào.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 9.sp,
-                    lineHeight = 13.sp
-                )
-                Button(
-                    onClick = { onSavePrivacyChoice(privacyDraft) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF04101D))
-                ) {
-                    Text("LƯU LỰA CHỌN DỮ LIỆU", fontWeight = FontWeight.Black, fontSize = 10.sp)
-                }
-            }
         }
 
         FeaturePanel {
