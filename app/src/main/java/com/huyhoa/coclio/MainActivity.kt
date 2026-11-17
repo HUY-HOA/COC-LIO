@@ -615,6 +615,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LegacyCommunityCleanup.disable(this)
+        AppLanguageSettings.clearLegacyLanguagePreference(this)
         RemoteAppConfigManager.initialize()
         setContent {
             val remoteConfig by RemoteAppConfigManager.config.collectAsState()
