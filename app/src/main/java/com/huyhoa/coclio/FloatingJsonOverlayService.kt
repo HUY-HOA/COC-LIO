@@ -319,6 +319,7 @@ class FloatingJsonOverlayService : Service() {
         collapsed = false
         windowParams.width = expandedWidth
         windowParams.height = expandedHeight
+        clampWindowPosition()
         val panel = panelView ?: buildPanel().also { panelView = it }
         activeView = panel
         runCatching { windowManager.addView(panel, windowParams) }
