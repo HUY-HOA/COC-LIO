@@ -161,7 +161,7 @@ class FloatingJsonOverlayService : Service() {
             setTextColor(Color.WHITE)
             setHintTextColor(Color.rgb(135, 151, 179))
             textSize = 12f
-            singleLine = true
+            setSingleLine(true)
             imeOptions = EditorInfo.IME_ACTION_NEXT
             setPadding(dp(10), dp(6), dp(10), dp(6))
             background = rounded(Color.rgb(24, 37, 64), Color.rgb(101, 72, 255), dp(1), dp(9))
