@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import android.widget.Toast
 
 object FloatingJsonOverlayController {
@@ -79,7 +80,8 @@ object FloatingJsonOverlayController {
 
     private fun startOverlayService(context: Context) {
         runCatching {
-            context.startService(
+            ContextCompat.startForegroundService(
+                context,
                 Intent(context, FloatingJsonOverlayService::class.java)
                     .setAction(FloatingJsonOverlayService.ACTION_SHOW)
             )
