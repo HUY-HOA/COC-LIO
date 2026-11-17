@@ -30,14 +30,21 @@
       <li><strong>Dữ liệu tài khoản:</strong> mã tài khoản, email, tên, ảnh hồ sơ Google, trạng thái xác minh và thông tin đăng nhập cần thiết để xác thực, quản lý tài khoản.</li>
       <li><strong>Dữ liệu làng:</strong> JSON, mã người chơi, tên làng, cấp độ và tiến trình do bạn tự nhập; dữ liệu được xử lý và lưu cục bộ trên thiết bị.</li>
     </ul>
-    <p>Phiên bản hiện tại không gửi dữ liệu thiết bị/hoạt động, trạng thái online/offline, sự kiện phân tích, báo lỗi/hiệu năng hoặc JSON làng lên máy chủ chỉ vì bạn đăng nhập Google. COC-LIO không đọc vị trí chính xác, IMEI, số sê-ri hoặc mã nhận dạng phần cứng.</p>
+    <p>Hồ sơ Google cơ bản được xử lý để xác thực và quản lý tài khoản. Ngoài phần cần thiết này, màn hình đăng nhập có bốn lựa chọn riêng, mặc định tắt: dữ liệu thiết bị và hoạt động tài khoản; phân tích sử dụng ứng dụng; báo lỗi và hiệu năng; sao lưu và đồng bộ dữ liệu JSON. Mỗi lựa chọn chỉ được bật khi bạn chủ động tích ô tương ứng hoặc chọn tất cả. COC-LIO không đọc vị trí GPS, IMEI hoặc số sê-ri thiết bị theo các mục này.</p>
 
     <h2>2. Mục đích sử dụng</h2>
-    <p>Dữ liệu được sử dụng để cung cấp chức năng của ứng dụng; xác thực và quản lý tài khoản; lưu hoặc đồng bộ dữ liệu làng theo lựa chọn của bạn; tải dữ liệu hình ảnh trò chơi; bảo vệ hệ thống và hỗ trợ xử lý lỗi.</p>
+    <ul>
+      <li><strong>Dữ liệu thiết bị và hoạt động tài khoản:</strong> hỗ trợ quản lý hoạt động tài khoản, kiểm tra tương thích thiết bị và hỗ trợ kỹ thuật.</li>
+      <li><strong>Phân tích sử dụng ứng dụng:</strong> đo lường các sự kiện sử dụng tính năng để hiểu cách ứng dụng được sử dụng và cải thiện trải nghiệm.</li>
+      <li><strong>Báo lỗi và hiệu năng:</strong> phát hiện sự cố, phân tích dấu vết lỗi và cải thiện độ ổn định/tốc độ ứng dụng.</li>
+      <li><strong>Sao lưu và đồng bộ dữ liệu JSON:</strong> lưu bản JSON và thông tin làng gắn với tài khoản để hỗ trợ đồng bộ giữa các lần sử dụng.</li>
+    </ul>
+    <p>Các lựa chọn tùy chọn được ghi nhận riêng theo từng mục đích. Chọn tất cả chỉ là thao tác thuận tiện để bật cả bốn lựa chọn; bạn vẫn có thể bỏ chọn từng mục.</p>
 
     <h2>3. Lựa chọn xử lý dữ liệu</h2>
-    <p>Hồ sơ Google cơ bản được xử lý khi bạn chủ động xác nhận điều khoản/chính sách và đăng nhập để sử dụng tính năng tài khoản. Việc xác nhận này không tự động cho phép COC-LIO thu thập dữ liệu thiết bị/hoạt động, trạng thái online/offline, phân tích, chẩn đoán hoặc đồng bộ JSON đám mây; các hoạt động này hiện đang tắt trong phiên bản ứng dụng.</p>
-    <p>Để vận hành chức năng tài khoản, thông tin hồ sơ cần thiết được xử lý bởi Google Firebase Authentication và Cloud Firestore. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
+    <p>Hồ sơ Google cơ bản được xử lý khi bạn xác nhận Điều khoản sử dụng và việc xử lý hồ sơ tài khoản cần thiết, sau đó chủ động đăng nhập. Bốn mục đích tùy chọn được hiển thị riêng trên màn hình đăng nhập; chạm vào tên từng mục để đọc nội dung chi tiết. Bạn có thể bật từng mục hoặc dùng ô “Chọn tất cả 4 mục”. Việc đăng nhập không tự động bật các mục tùy chọn.</p>
+    <p>Nếu không chọn dữ liệu thiết bị/hoạt động, ứng dụng không ghi nhận các trường hoạt động thiết bị/tài khoản nêu tại mục 1. Nếu không chọn phân tích, Firebase Analytics không được bật. Nếu không chọn báo lỗi/hiệu năng, Firebase Crashlytics và Firebase Performance không được bật. Nếu không chọn đồng bộ JSON, dữ liệu làng tiếp tục được lưu cục bộ và không được gửi lên Cloud Firestore qua tính năng đồng bộ JSON.</p>
+    <p>Thông tin hồ sơ Google cần thiết được xử lý bởi Google Firebase Authentication và Cloud Firestore để cung cấp chức năng tài khoản. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
     <p>Tùy dịch vụ và vị trí máy chủ, dữ liệu trực tuyến có thể được lưu trữ hoặc xử lý ngoài Việt Nam. Việc chuyển dữ liệu xuyên biên giới, nếu phát sinh, phải được thực hiện theo quy định pháp luật áp dụng.</p>
 
     <h2>4. Lưu trữ và xóa dữ liệu</h2>
