@@ -70,6 +70,9 @@ class NotificationBubbleService : Service() {
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        val savedAlert = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        currentTitle = savedAlert.getString("last_title", currentTitle) ?: currentTitle
+        currentBody = savedAlert.getString("last_body", currentBody) ?: currentBody
         ContextCompat.registerReceiver(
             this,
             alertReceiver,
