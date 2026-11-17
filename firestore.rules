@@ -224,7 +224,7 @@ service cloud.firestore {
               'activityConsentAt'
             ])
             || (
-              request.resource.data.activityDataConsentVersion in [6, 7]
+              request.resource.data.activityDataConsentVersion in [6, 7, 8]
               && request.resource.data.activityConsentAt is timestamp
             )
           )
@@ -263,8 +263,8 @@ service cloud.firestore {
             ])
             || (
               resource.data.dataSharingConsent == true
-              && resource.data.activityDataConsentVersion in [6, 7]
-              && request.resource.data.activityDataConsentVersion in [6, 7]
+              && resource.data.activityDataConsentVersion in [6, 7, 8]
+              && request.resource.data.activityDataConsentVersion in [6, 7, 8]
               && request.resource.data.lastActivityEvent in ['open', 'heartbeat', 'background']
               && request.resource.data.activityUpdatedAt == request.time
               && request.resource.data.deviceManufacturer is string
@@ -346,7 +346,7 @@ service cloud.firestore {
             ])
             || (
               resource.data.villageDataConsent == true
-              && resource.data.activityDataConsentVersion in [6, 7]
+              && resource.data.activityDataConsentVersion in [6, 7, 8]
               && request.resource.data.lastVillageTag is string
               && request.resource.data.lastVillageTag.matches('^#[A-Za-z0-9]+$')
               && request.resource.data.lastVillageTag.size() <= 20
@@ -378,7 +378,7 @@ service cloud.firestore {
 
       allow create, update: if isSelf(userId)
         && get(/databases/$(database)/documents/users/$(userId)).data.villageDataConsent == true
-        && get(/databases/$(database)/documents/users/$(userId)).data.activityDataConsentVersion in [6, 7]
+        && get(/databases/$(database)/documents/users/$(userId)).data.activityDataConsentVersion in [6, 7, 8]
         && request.resource.data.keys().hasOnly([
           'uid', 'playerTag', 'villageName', 'snapshotTimestamp', 'rawJson',
           'rawJsonBytes', 'itemCount', 'extraItemCount', 'activeUpgradeCount',
