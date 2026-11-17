@@ -149,8 +149,6 @@ object RemoteContentManager {
         listOf("title", "text", "body").forEach { key ->
             val value = state.notificationTemplates[key]
             val preferenceKey = "notification_$key"
-            editor.remove("notification_vi_$key")
-            editor.remove("notification_en_$key")
             if (value.isNullOrBlank()) editor.remove(preferenceKey)
             else editor.putString(preferenceKey, value)
         }
