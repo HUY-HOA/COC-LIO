@@ -3884,7 +3884,7 @@ private fun HistoryScreen(
                 }
             }
         } else if (selectedSection == "history") {
-            item { Text("Tối đa 50 bản JSON trên mỗi tài khoản. Bản cũ nhất tự động bị xóa khi vượt giới hạn.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp) }
+            item { Text("Tối đa 50 bản JSON trên mỗi tài khoản. Khi đủ 50, hãy xóa vĩnh viễn bản cũ trước khi lưu bản mới; mục Đã xóa vẫn chiếm chỗ.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp) }
             if (history.isEmpty() && deletedVillages.none { it.snapshots.isNotEmpty() }) {
                 item { InfoCard("Chưa có lịch sử nhập", "Các lần dán JSON sẽ được ghi nhận tại đây.") }
             } else {
