@@ -120,7 +120,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.State
@@ -620,8 +619,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             val remoteConfig by RemoteAppConfigManager.config.collectAsState()
             var themeMode by remember { mutableStateOf(AppPreferences.themeMode(this@MainActivity)) }
-            var languagePreference by remember { mutableStateOf(AppLanguageSettings.load(this@MainActivity)) }
-            val deviceLanguage = LocalConfiguration.current.locales[0].language
             val dark = when (themeMode) {
                 "light" -> false
                 "dark" -> true
@@ -654,24 +651,14 @@ class MainActivity : ComponentActivity() {
                     onSurfaceVariant = Color(remoteConfig.lightOnSurfaceVariant)
                 )
             }
-            CompositionLocalProvider(
-                LocalAppLanguage provides AppLanguageSettings.resolve(languagePreference, deviceLanguage)
-            ) {
-                MaterialTheme(colorScheme = colors) {
-                    CocLioApp(
-                        languagePreference = languagePreference,
-                        onLanguagePreferenceChanged = { preference ->
-                            AppLanguageSettings.save(this@MainActivity, preference)
-                            languagePreference = preference
-                            AppWidgetUpdater.updateAll(this@MainActivity)
-                        },
-                        themeMode = themeMode,
-                        onThemeModeChanged = {
-                            themeMode = it
-                            AppPreferences.setThemeMode(this@MainActivity, it)
-                        }
-                    )
-                }
+            MaterialTheme(colorScheme = colors) {
+                CocLioApp(
+                    themeMode = themeMode,
+                    onThemeModeChanged = {
+                        themeMode = it
+                        AppPreferences.setThemeMode(this@MainActivity, it)
+                    }
+                )
             }
         }
     }
@@ -680,8 +667,6 @@ class MainActivity : ComponentActivity() {
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun CocLioApp(
-    languagePreference: String,
-    onLanguagePreferenceChanged: (String) -> Unit,
     themeMode: String,
     onThemeModeChanged: (String) -> Unit
 ) {
@@ -1467,8 +1452,6 @@ private fun CocLioApp(
                         knownProfiles = AccountProfileStore.knownProfiles(context, activeProfile),
                         themeMode = themeMode,
                         onThemeModeChanged = onThemeModeChanged,
-                        languagePreference = languagePreference,
-                        onLanguagePreferenceChanged = onLanguagePreferenceChanged,
                         textScale = appFontScale,
                         displaySizeLevel = displaySizeLevel,
                         onDisplaySizeLevelChanged = { level ->
@@ -2531,12 +2514,7 @@ private fun VillageGridItemCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val isEnglish = LocalAppLanguage.current == AppUiLanguage.ENGLISH
-    val itemName = if (isEnglish) {
-        remote?.name?.takeIf { it.isNotBlank() } ?: upgrade?.name?.takeIf { it.isNotBlank() } ?: item.name
-    } else {
-        item.name
-    }
+    val itemName = item.name
     Column(
         modifier = modifier
             .heightIn(min = 112.dp)
@@ -2583,8 +2561,7 @@ private fun VillageGridItemCard(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                item.level?.let { if (isEnglish) "Level $it" else "Cấp $it" }
-                    ?: if (isEnglish) "Level unavailable" else "Chưa rõ cấp",
+                item.level?.let { "Cấp $it" } ?: "Chưa rõ cấp",
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
@@ -2610,7 +2587,7 @@ private fun VillageGridItemCard(
             }
         }
         Text(
-            if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) "View details" else "Xem chi tiết",
+            "Xem chi tiết",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 8.sp,
             maxLines = 1
@@ -3003,8 +2980,7 @@ private val EquipmentStatLabelsVi = mapOf(
     "targets" to "Mục tiêu"
 )
 
-internal fun localizedCatalogField(label: String, value: String, isEnglish: Boolean): Pair<String, String> {
-    if (isEnglish) return label to value
+internal fun localizedCatalogField(label: String, value: String): Pair<String, String> {
     val normalizedLabel = label.trim()
         .replace(Regex("([a-z0-9])([A-Z])")) { "${it.groupValues[1]} ${it.groupValues[2]}" }
         .lowercase()
@@ -3051,13 +3027,12 @@ internal fun localizedCatalogField(label: String, value: String, isEnglish: Bool
         "melee (with nearby air units)/ranged (otherwise); (ground & air)" -> "Cận chiến khi có đơn vị bay gần, nếu không thì tầm xa (mặt đất và trên không)"
         "dark" -> "Hắc ám"
         "regular" -> "Thông thường"
-        else -> localizedCatalogText(value, isEnglish)
+        else -> localizedCatalogText(value)
     }
     return translatedLabel to translatedValue
 }
 
-private fun localizedCatalogText(value: String, isEnglish: Boolean): String {
-    if (isEnglish) return value
+private fun localizedCatalogText(value: String): String {
     Regex("(?i)^Blacksmith level (\\d+)$").matchEntire(value.trim())?.let {
         return "Lò rèn cấp ${it.groupValues[1]}"
     }
@@ -3188,19 +3163,10 @@ private fun VillageItemDetailDialog(
         hallMax
     } ?: maxLevel
     val currentLevel = item.level ?: 0
-    val isEnglish = LocalAppLanguage.current == AppUiLanguage.ENGLISH
-    val itemName = if (isEnglish) {
-        remote?.name?.takeIf { it.isNotBlank() } ?: item.name
-    } else {
-        item.name
-    }
-    val description = if (isEnglish) {
-        remote?.description?.takeIf { it.isNotBlank() }
-    } else {
-        EquipmentDescriptionsVi[item.dataId]
-            ?: CatalogDescriptionsVi[item.dataId]
-            ?: remote?.description?.takeIf { it.isNotBlank() }
-    }
+    val itemName = item.name
+    val description = EquipmentDescriptionsVi[item.dataId]
+        ?: CatalogDescriptionsVi[item.dataId]
+        ?: remote?.description?.takeIf { it.isNotBlank() }
     val levelDetails = remote?.levelDetails.orEmpty()
     val availableStatsLevels = (levelDetails.keys + upgradeEntry?.levels.orEmpty().map { it.level })
         .distinct()
@@ -3273,7 +3239,7 @@ private fun VillageItemDetailDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            if (isEnglish) "DESCRIPTION" else "MÔ TẢ",
+                            "MÔ TẢ",
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
@@ -3287,20 +3253,12 @@ private fun VillageItemDetailDialog(
                     }
                 }
                 VillageItemDetailField(
-                    if (isEnglish) "Data source" else "Nguồn dữ liệu",
-                    if (isEnglish) {
-                        "Reference data from a community-maintained catalog, not an official Supercell API. Check the game after each update."
-                    } else {
-                        "Dữ liệu tham khảo từ danh mục do cộng đồng duy trì, không phải API chính thức của Supercell. Hãy đối chiếu trong trò chơi sau mỗi bản cập nhật."
-                    }
+                    "Nguồn dữ liệu",
+                    "Dữ liệu tham khảo từ danh mục do cộng đồng duy trì, không phải API chính thức của Supercell. Hãy đối chiếu trong trò chơi sau mỗi bản cập nhật."
                 )
                 VillageItemDetailField(
-                    if (isEnglish) "Time calculation" else "Cách tính thời gian",
-                    if (isEnglish) {
-                        "Totals use the base duration for each level. Books, Hammers, helpers, boosts and event discounts are not deducted."
-                    } else {
-                        "Tổng thời gian dùng thời lượng cơ bản của từng cấp; chưa trừ thời gian từ Sách, Búa, trợ thủ, vật phẩm tăng tốc hoặc ưu đãi sự kiện."
-                    }
+                    "Cách tính thời gian",
+                    "Tổng thời gian dùng thời lượng cơ bản của từng cấp; chưa trừ thời gian từ Sách, Búa, trợ thủ, vật phẩm tăng tốc hoặc ưu đãi sự kiện."
                 )
                 VillageItemDetailField("Căn cứ", if (item.base == "builder") "Làng đêm" else "Làng chính")
                 val ownerHero = upgradeEntry?.hero?.takeIf { it.isNotBlank() }?.let(::equipmentHeroName)
@@ -3457,7 +3415,7 @@ private fun VillageItemDetailDialog(
                 remote?.requirements?.takeIf { it.isNotEmpty() }?.let { requirements ->
                     VillageItemDetailField(
                         "Yêu cầu mở khóa",
-                        requirements.joinToString("\n") { localizedCatalogText(it, isEnglish) }
+                        requirements.joinToString("\n") { localizedCatalogText(it) }
                     )
                 }
                 remote?.abilityType?.takeIf { it.isNotBlank() }?.let {
@@ -3510,13 +3468,13 @@ private fun VillageItemDetailDialog(
                             } else {
                                 rawValue
                             }
-                            val (label, displayValue) = localizedCatalogField(rawLabel, value, isEnglish)
+                            val (label, displayValue) = localizedCatalogField(rawLabel, value)
                             VillageItemStatField(label, displayValue)
                         }
                     } else {
                         catalogStats.forEach { (rawLabel, rawValue) ->
                             val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
-                            val (label, value) = localizedCatalogField(normalizedLabel, rawValue, isEnglish)
+                            val (label, value) = localizedCatalogField(normalizedLabel, rawValue)
                             VillageItemStatField(label, value)
                         }
                     }
@@ -3549,7 +3507,7 @@ private fun VillageItemDetailDialog(
                         val separator = value.indexOf(':')
                         val rawLabel = if (separator > 0) value.substring(0, separator).trim() else "Chi tiết ${index + 1}"
                         val rawValue = if (separator > 0) value.substring(separator + 1).trim() else value
-                        val (label, displayValue) = localizedCatalogField(rawLabel, rawValue, isEnglish)
+                        val (label, displayValue) = localizedCatalogField(rawLabel, rawValue)
                         VillageItemDetailField(label, displayValue)
                     }
                 }
