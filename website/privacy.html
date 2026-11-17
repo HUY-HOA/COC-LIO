@@ -28,8 +28,7 @@
     <h2>1. Dữ liệu được xử lý</h2>
     <ul>
       <li><strong>Dữ liệu tài khoản:</strong> mã tài khoản, email, tên và ảnh hồ sơ Google, trạng thái xác minh và thông tin cần thiết để đăng nhập, quản lý tài khoản.</li>
-      <li><strong>Dữ liệu làng:</strong> JSON, mã người chơi, tên làng, cấp độ và tiến trình. Khi chỉ nhập để xem trong ứng dụng, dữ liệu được lưu trên thiết bị; dữ liệu chỉ được gửi lên dịch vụ trực tuyến khi bạn chọn đồng bộ hoặc chia sẻ.</li>
-      <li><strong>Dữ liệu Cộng đồng:</strong> tin nhắn, ảnh, tệp hoặc JSON bạn chủ động gửi, cùng mã tài khoản, tên hiển thị, ảnh đại diện người gửi (nếu có) và thời điểm gửi. Ảnh đại diện có thể xuất hiện trong thông báo tin nhắn cộng đồng. Nội dung đăng trong Cộng đồng có thể được các thành viên đã đăng nhập xem.</li>
+      <li><strong>Dữ liệu làng:</strong> JSON, mã người chơi, tên làng, cấp độ và tiến trình. Khi chỉ nhập để xem trong ứng dụng, dữ liệu được lưu trên thiết bị; dữ liệu chỉ được đồng bộ lên hồ sơ Firestore riêng khi bạn bật lựa chọn đồng bộ.</li>
       <li><strong>Dữ liệu hoạt động và thiết bị:</strong> sự kiện mở ứng dụng, thời lượng phiên và thông tin kỹ thuật như model thiết bị, phiên bản Android, ngôn ngữ, múi giờ, màn hình và loại kết nối mạng. Dữ liệu này chỉ được ghi nhận khi bạn bật lựa chọn chia sẻ tương ứng.</li>
       <li><strong>Dữ liệu thông báo:</strong> mã đăng ký nhận thông báo do nền tảng tạo và lựa chọn nhận thông báo của bạn; chỉ được sử dụng khi bạn bật thông báo tương ứng.</li>
       <li><strong>Dữ liệu phân tích và chẩn đoán:</strong> thông tin sử dụng tổng quát, lỗi và hiệu năng chỉ được thu thập khi bạn bật riêng các lựa chọn tương ứng.</li>
@@ -37,11 +36,11 @@
     <p>Khi bạn chủ động tra cứu người chơi hoặc bang hội, mã tra cứu được gửi đến dịch vụ cung cấp dữ liệu trò chơi để trả kết quả. Yêu cầu tải ảnh tài sản trò chơi cũng có thể được gửi đến nguồn ảnh tương ứng; các yêu cầu này không gửi toàn bộ JSON làng của bạn.</p>
 
     <h2>2. Mục đích sử dụng</h2>
-    <p>Dữ liệu được sử dụng để cung cấp chức năng của ứng dụng; xác thực và quản lý tài khoản; lưu hoặc đồng bộ dữ liệu theo lựa chọn của bạn; vận hành Cộng đồng; trả kết quả tra cứu; bảo vệ hệ thống, kiểm duyệt nội dung và hỗ trợ xử lý lỗi.</p>
+    <p>Dữ liệu được sử dụng để cung cấp chức năng của ứng dụng; xác thực và quản lý tài khoản; lưu hoặc đồng bộ dữ liệu làng theo lựa chọn của bạn; tải dữ liệu hình ảnh trò chơi; bảo vệ hệ thống và hỗ trợ xử lý lỗi.</p>
 
     <h2>3. Lựa chọn và chia sẻ dữ liệu</h2>
-    <p>Đăng nhập Google là lựa chọn để sử dụng các chức năng tài khoản và trực tuyến. Đồng bộ JSON, chia sẻ dữ liệu hoạt động, phân tích và chẩn đoán là các lựa chọn riêng, được bật theo lựa chọn của bạn và có thể thay đổi trong phần Cài đặt.</p>
-    <p>Nội dung bạn tự đăng trong Cộng đồng được cung cấp cho các thành viên đã đăng nhập. Để vận hành các tính năng trực tuyến, một số dữ liệu cần được xử lý bởi nhà cung cấp dịch vụ kỹ thuật về xác thực, lưu trữ, hạ tầng, tra cứu hoặc chẩn đoán. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
+    <p>Đăng nhập Google là lựa chọn để sử dụng các chức năng tài khoản và trực tuyến. Ghi nhận dữ liệu thiết bị/hoạt động, đồng bộ JSON cá nhân, phân tích và chẩn đoán là các lựa chọn riêng, mặc định tắt và có thể thay đổi trong phần Cài đặt.</p>
+    <p>Để vận hành các tính năng trực tuyến, một số dữ liệu cần được xử lý bởi nhà cung cấp dịch vụ kỹ thuật về xác thực, lưu trữ, hạ tầng hình ảnh hoặc chẩn đoán. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
     <p>Tùy dịch vụ và vị trí máy chủ, dữ liệu trực tuyến có thể được lưu trữ hoặc xử lý ngoài Việt Nam. Việc chuyển dữ liệu xuyên biên giới, nếu phát sinh, phải được thực hiện theo quy định pháp luật áp dụng.</p>
 
     <h2>4. Lưu trữ và xóa dữ liệu</h2>
