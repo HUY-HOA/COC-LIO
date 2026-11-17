@@ -146,7 +146,7 @@ object RemoteContentManager {
         val editor = preferences.edit()
             .putInt("version", state.version)
 
-        listOf("vi", "en").forEach { languageKey ->
+        listOf("vi").forEach { languageKey ->
             val templates = state.notificationTemplates[languageKey].orEmpty()
             listOf("title", "text", "body").forEach { key ->
                 val preferenceKey = "notification_${languageKey}_$key"
