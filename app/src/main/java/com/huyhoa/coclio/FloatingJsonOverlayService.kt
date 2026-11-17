@@ -408,7 +408,7 @@ class FloatingJsonOverlayService : Service() {
         val width = resources.displayMetrics.widthPixels
         val height = resources.displayMetrics.heightPixels
         windowParams.x = windowParams.x.coerceIn(0, (width - windowParams.width).coerceAtLeast(0))
-        windowParams.y = windowParams.y.coerceIn(0, (height - dp(30)).coerceAtLeast(0))
+        windowParams.y = windowParams.y.coerceIn(0, (height - dp(48) - windowParams.height).coerceAtLeast(0))
     }
 
     private fun updateWindow() {
