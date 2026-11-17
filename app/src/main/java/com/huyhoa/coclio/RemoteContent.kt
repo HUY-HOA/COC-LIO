@@ -171,7 +171,7 @@ internal fun parseRemoteContent(data: Map<String, Any?>): RemoteContentState {
         val message = (value["message"] as? String).orEmpty().take(800)
         if (title.isBlank() && message.isBlank()) null else {
             val actionId = (value["actionId"] as? String).orEmpty()
-                .takeIf { it in setOf("import_json", "open_game", "open_settings", "open_community", "open_history", "open_lookup") }
+                .takeIf { it in setOf("import_json", "open_game", "open_settings", "open_history") }
                 .orEmpty()
             RemoteContentAnnouncement(
                 title = title,
