@@ -211,7 +211,14 @@ object VillageStore {
         snapshot: VillageSnapshot,
         profile: String = "local",
         villageNameOverride: String? = null
-    ) {
+    ): Boolean {
+        val alreadyStored = loadAll(context, profile).any {
+            it.tag == snapshot.tag && it.timestamp == snapshot.timestamp
+        }
+        if (!alreadyStored && storedSnapshotCount(context, profile) >= MAX_SNAPSHOTS) {
+            return false
+        }
+
         val prefs = preferences(context)
         val nameOverride = villageNameOverride?.trim().orEmpty()
         if (nameOverride.isNotBlank()) {
@@ -224,6 +231,7 @@ object VillageStore {
             .filterNot { it.tag == snapshot.tag && it.timestamp == snapshot.timestamp }
         writeHistory(context, listOf(snapshot) + existing, profile)
         enforceSnapshotLimit(context, profile)
+        return true
     }
 
     fun deleteVillage(context: Context, tag: String, profile: String = "local"): Boolean {
