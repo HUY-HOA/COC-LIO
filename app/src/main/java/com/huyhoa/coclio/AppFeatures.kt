@@ -1335,6 +1335,7 @@ object UpgradeReminderScheduler {
         manager.cancelAllWorkByTag(tag)
 
         val nowSeconds = System.currentTimeMillis() / 1000L
+        val remindersEnabled = enabled || AppPreferences.bubbleNotificationsEnabled(context, profile)
         snapshots.distinctBy { it.tag }.forEach { snapshot ->
             (snapshot.upgrades + snapshot.gearUps).forEachIndexed { itemIndex, item ->
                 val delay = item.remainingSecondsAt(snapshot.timestamp, nowSeconds)
@@ -1349,7 +1350,7 @@ object UpgradeReminderScheduler {
                     .build()
                 manager.enqueueUniqueWork(refreshName, ExistingWorkPolicy.REPLACE, refreshRequest)
 
-                if (!enabled) return@forEachIndexed
+                if (!remindersEnabled) return@forEachIndexed
 
                 val uniqueName = "coc_lio_" + profile.hashCode() + "_" + snapshot.tag +
                     "_" + item.identity.hashCode() + "_" + endAt + "_" + itemIndex
@@ -1382,7 +1383,9 @@ class UpgradeReminderWorker(
 ) : CoroutineWorker(context, parameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val profile = inputData.getString("profile") ?: "local"
-        if (!AppPreferences.notificationsEnabled(applicationContext, profile)) {
+        val normalNotificationsEnabled = AppPreferences.notificationsEnabled(applicationContext, profile)
+        val bubbleNotificationsEnabled = AppPreferences.bubbleNotificationsEnabled(applicationContext, profile)
+        if (!normalNotificationsEnabled && !bubbleNotificationsEnabled) {
             return@withContext Result.success()
         }
 
@@ -1498,17 +1501,19 @@ class UpgradeReminderWorker(
         if (iconBitmap != null) notificationBuilder.setLargeIcon(iconBitmap)
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
         val notification = notificationBuilder.build()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return@withContext Result.success()
-        }
-        runCatching {
-            NotificationManagerCompat.from(applicationContext)
-                .notify(notificationId, notification)
+        val notificationPermissionGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(
+                applicationContext,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        if (normalNotificationsEnabled && notificationPermissionGranted) {
+            runCatching {
+                NotificationManagerCompat.from(applicationContext)
+                    .notify(notificationId, notification)
+            }
         }
         if (
-            AppPreferences.bubbleNotificationsEnabled(applicationContext, profile) &&
+            bubbleNotificationsEnabled &&
             (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
                 Settings.canDrawOverlays(applicationContext))
         ) {
@@ -2908,7 +2913,7 @@ fun SettingsScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("BONG BÓNG THÔNG BÁO", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text("Hiện lời nhắc nâng cấp thành cửa sổ nổi trên màn hình.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 14.sp)
+                    Text("Hiện lời nhắc nâng cấp thành cửa sổ nổi, kể cả khi tắt thông báo thường.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 14.sp)
                 }
                 Switch(
                     checked = bubbleNotificationsEnabled,
