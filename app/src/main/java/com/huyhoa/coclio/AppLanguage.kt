@@ -175,24 +175,17 @@ private val englishTranslations = mapOf(
     "Mở Zalo để liên hệ nhà phát triển COC-LIO." to "Open Zalo to contact the COC-LIO developer.",
     "MỞ ZALO LIÊN HỆ" to "CONTACT VIA ZALO",
     "THÔNG TIN ỨNG DỤNG" to "ABOUT THE APP",
-    "COC-LIO là ứng dụng cộng đồng không chính thức, không được Supercell chứng thực. Hình ảnh game thuộc quyền sở hữu của Supercell." to "COC-LIO is an unofficial community app and is not endorsed by Supercell. Game images are owned by Supercell.",
     "Đây là nội dung không chính thức và không được Supercell bảo trợ. Xem chính sách nội dung người hâm mộ tại www.supercell.com/fan-content-policy." to "This is unofficial content and is not sponsored by Supercell. See the Fan Content Policy at www.supercell.com/fan-content-policy.",
-    "ĐĂNG NHẬP ĐỂ THAM GIA" to "SIGN IN TO JOIN",
     "ĐĂNG NHẬP" to "SIGN IN",
     "ẢNH" to "IMAGE",
     "TỆP" to "FILE",
-    "GỬI" to "SEND",
     "Số lượng" to "Quantity",
     "NGÀY" to "DAYS",
     "THÁNG" to "MONTHS",
-    "Chưa có JSON nào được chia sẻ." to "No JSON has been shared yet.",
     "Tạm dừng trên gói miễn phí hiện tại. Tải lên và phân phối APK chưa được hỗ trợ." to "Paused on the current free plan. APK uploads and distribution are not supported.",
     "Chưa có bản cập nhật nào được đăng." to "No updates have been posted yet.",
-    "CHỌN JSON ĐỂ GỬI" to "SELECT JSON TO SEND",
     "Bản ghi dữ liệu này sẽ bị xóa vĩnh viễn. Tệp đính kèm cũ không bị xóa và hiện vẫn không thể truy cập." to "This data record will be permanently deleted. The old attachment will not be deleted and remains inaccessible.",
     "ADMIN" to "ADMIN",
-    "Ảnh đính kèm hiện chưa thể xem trên gói miễn phí." to "Attachments cannot currently be viewed on the free plan.",
-    "NHẬN JSON" to "RECEIVE JSON",
     "GỠ TIN" to "REMOVE MESSAGE",
     "Tệp đính kèm hiện chưa thể tải xuống" to "Attachments cannot currently be downloaded",
     "Tải APK hiện đang tạm dừng trên gói miễn phí." to "APK downloads are currently paused on the free plan.",
@@ -273,7 +266,6 @@ private val englishTranslations = mapOf(
     "Thông báo khi quản lý chọn gửi tin bản cập nhật" to "Notifications when an administrator posts an app update",
     "COC-LIO có bản cập nhật mới" to "COC-LIO update available",
     "MỞ COC-LIO" to "OPEN COC-LIO",
-    "NHẬN JSON VÀ SỬ DỤNG" to "RECEIVE AND USE JSON",
     "XÓA" to "DELETE",
     "Băng" to "Ice",
     "Tím" to "Violet",
@@ -555,7 +547,6 @@ private val englishTranslations = mapOf(
     "Vừa gửi" to "Just sent",
     "Đang tải từ COC-LIO" to "Downloading from COC-LIO",
     "Hiện tại, gửi tệp đính kèm đang tạm dừng trên gói miễn phí." to "File attachments are currently paused on the free plan.",
-    "Đã nhận JSON. Bản nhận được đã được lưu trong mục Chia sẻ của JSON; bản nhập vẫn có trong lịch sử." to "JSON received. The received copy was saved in the Sharing section of JSON; the imported copy remains in history.",
     "Không thể tải danh sách cập nhật." to "Unable to load the update list.",
     "Đóng bảng emoji" to "Close emoji panel",
     "Mở bảng emoji" to "Open emoji panel",
@@ -566,7 +557,6 @@ private val englishTranslations = mapOf(
     "HÌNH ẢNH ĐÃ GỠ" to "REMOVED IMAGE",
     "TỆP ĐÃ GỠ" to "REMOVED FILE",
     "APK CẬP NHẬT ĐÃ GỠ" to "REMOVED APK UPDATE",
-    "TIN NHẮN ĐÃ GỠ" to "REMOVED MESSAGE",
     "Không rõ dung lượng" to "Unknown size",
     "Không thể hoàn tất thao tác tài khoản. Vui lòng thử lại." to "Unable to complete the account operation. Please try again.",
     "Không nhận được email từ tài khoản Google." to "No email was received from the Google account.",
@@ -655,9 +645,6 @@ private val englishTranslations = mapOf(
     "Đã lưu thời hạn và dọn " to "Retention period saved; cleaned up ",
     " mục hết hạn." to " expired items.",
     "Mã không hợp lệ. Hãy nhập tag người chơi hoặc Clan dạng #ABC123." to "Invalid tag. Enter a player or Clan tag in the format #ABC123.",
-    "Không tìm thấy hồ sơ hoặc dữ liệu này chưa có trong kho ClashKing." to "Profile not found, or this data is not yet available in the ClashKing database.",
-    "ClashKing đang giới hạn lượt tra cứu. Vui lòng thử lại sau." to "ClashKing is rate-limiting requests. Please try again later.",
-    "Máy chủ ClashKing đang gặp sự cố. Vui lòng thử lại sau." to "The ClashKing server is experiencing issues. Please try again later.",
     "Hãy nhập ít nhất 2 ký tự, tên hoặc mã tag cần tìm." to "Enter at least 2 characters, a name or a tag to search.",
     "Dữ liệu tìm kiếm không đúng định dạng." to "The search data has an invalid format.",
     "Không thể tải dữ liệu này." to "Unable to load this data.",
@@ -958,8 +945,6 @@ private val englishTranslations = mapOf(
     "Đang kiểm tra dữ liệu trên máy chủ…" to "Checking data on the server…",
     "Độ sáng" to "Brightness",
     "HƯỚNG DẪN VÀ LIÊN KẾT" to "GUIDES & LINKS",
-    "JSON gốc không có trong bản lưu cũ." to "The original JSON is not available in this older archive.",
-    "Không thể tải JSON gốc từ bản lưu cũ vì tài liệu JSON riêng không còn trong kho." to "The original JSON cannot be downloaded from this older archive because its separate JSON document is no longer available.",
     "LÀM MỚI SỐ LIỆU" to "REFRESH STATISTICS",
     "LƯU THIẾT LẬP" to "SAVE SETTINGS",
     "Số ngày giữ nội dung" to "Content retention days",
@@ -1050,15 +1035,8 @@ private val englishTranslations = mapOf(
     "Bạn đã hủy xác nhận và giữ nguyên tài khoản đang sử dụng." to "You cancelled consent and kept the current account.",
     "Bạn cần chọn tài khoản Google trước." to "Select a Google account first.",
     "Không thể hoàn tất xác nhận dữ liệu tài khoản. Hãy thử lại." to "Unable to complete account data consent. Please try again.",
-    "CHIA SẺ" to "SHARING",
-    "ĐÃ GỬI" to "SENT",
-    "Bạn chưa nhận JSON nào từ người khác." to "You haven't received any JSON from others.",
-    "Bạn chỉ có thể xóa JSON do chính mình chia sẻ." to "You can only delete JSON that you shared yourself.",
-    "Đã xóa JSON nhận được khỏi danh sách chia sẻ. Bản trong lịch sử vẫn được giữ." to "Received JSON was removed from the sharing list. Its copy in History is still kept.",
     "NHẬP LẠI" to "IMPORT AGAIN",
     "XÓA JSON" to "DELETE JSON",
-    "Không thể xóa JSON nhận được khỏi danh sách chia sẻ." to "Unable to delete received JSON from the sharing list.",
-    "Chỉ xóa bản JSON trong danh sách ĐÃ NHẬN trên thiết bị này. Bản trong Lịch sử và JSON gốc của người chia sẻ vẫn được giữ." to "Only the JSON copy in this device's RECEIVED list will be deleted. The copy in History and the sender's original JSON will remain.",
     "Không nhận được thông tin đăng nhập Google hợp lệ." to "No valid Google sign-in credential was received.",
     "Google không trả về địa chỉ email hợp lệ." to "Google did not return a valid email address.",
     "Không nhận được tài khoản Google sau khi xác thực." to "No Google account was received after authentication.",
@@ -1089,7 +1067,6 @@ private val englishTranslations = mapOf(
     "Không thể đọc số lượng bản ghi trên Firestore." to "Unable to read the Firestore record counts.",
     "Nhập số ngày tự động xóa từ 1 đến 1200." to "Enter an automatic deletion period from 1 to 1,200 days.",
     "Không thể lưu thiết lập tự động xóa." to "Unable to save automatic deletion settings.",
-    "Không thể xóa toàn bộ Kho đã gỡ." to "Unable to delete the entire removed archive.",
     "Đã xóa vĩnh viễn bản ghi và dữ liệu JSON liên quan khỏi Firebase." to "The record and its related JSON data were permanently deleted from Firebase.",
     "Tệp trống." to "The file is empty.",
     "Nội dung trống." to "The content is empty.",
@@ -1099,7 +1076,6 @@ private val englishTranslations = mapOf(
     "LƯU JSON" to "SAVE JSON",
     "Người gửi: " to "Sender: ",
     "Ngày gửi: " to "Date sent: ",
-    "LƯU TIN NHẮN" to "SAVE MESSAGE",
     "LƯU APK" to "SAVE APK",
     "Không thể hoàn tất đăng nhập. Hãy kiểm tra quyền truy cập tài khoản và cấu hình Firebase." to "Sign-in could not be completed. Check account access and Firebase configuration.",
     "Đã gửi một hình ảnh." to "Sent an image.",
@@ -1168,18 +1144,9 @@ private val englishTranslations = mapOf(
     "Chỉ số 10" to "Stat 10",
     "Chỉ số 11" to "Stat 11",
     "Chỉ số 12" to "Stat 12",
-    "Tìm công trình, quân lính, anh hùng, thần chú, linh thú, trang bị và máy công thành bằng ID, tên tiếng Việt không dấu hoặc tên tiếng Anh." to "Find buildings, troops, heroes, spells, pets, equipment and siege machines by ID, Vietnamese name, English name or alias.",
-    "ID hoặc tên trong game" to "Game ID or name",
-    "Ví dụ: 4000008, 90000061, Rồng, Portal Pendant" to "Example: 4000008, 90000061, Dragon, Portal Pendant",
-    "NHÓM DỮ LIỆU" to "DATA CATEGORY",
-    "ĐỘ HIẾM" to "RARITY",
     "ANH HÙNG" to "HERO",
-    "ĐANG TẢI DANH MỤC ID..." to "LOADING GAME ID CATALOG...",
     "Số ID trong danh mục" to "IDs in catalog",
-    "Nhập ID để tra cứu chính xác hoặc nhập tên để tìm gần đúng." to "Enter an ID for an exact match or a name for a broader search.",
     "CẢNH BÁO DỮ LIỆU" to "DATA WARNING",
-    "Không tìm thấy ID phù hợp." to "No matching game ID found.",
-    "Kiểm tra lại mã hoặc tên. ID chưa có trong danh mục sẽ vẫn được giữ nguyên trong dữ liệu JSON gốc." to "Check the ID or name. Unknown IDs are still preserved in the original JSON export.",
     "KẾT QUẢ" to "RESULTS",
     "Cấp tối đa trong dữ liệu" to "Maximum level in data",
     "Độ đầy đủ chỉ số" to "Stats data coverage",
@@ -1325,10 +1292,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             Regex("^Nhắc nâng cấp kiểu báo thức • (\\d+)s$").matchEntire(source)!!.let { "Upgrade alarm reminder • ${it.groupValues[1]}s" }
         Regex("^Thông báo báo thức tự đóng sau (\\d+) giây$").matchEntire(source) != null ->
             Regex("^Thông báo báo thức tự đóng sau (\\d+) giây$").matchEntire(source)!!.let { "Alarm notification closes after ${it.groupValues[1]} seconds" }
-        Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source) != null ->
-            Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source)!!.let {
-                "Update ${it.groupValues[1]} will be moved to the archive. The old APK file will be retained but will not be accessible."
-            }
         source.startsWith("ĐANG TẢI ") ->
             "LOADING " + translateAppText(source.removePrefix("ĐANG TẢI ").removeSuffix("..."), AppUiLanguage.ENGLISH) + "..."
         source.startsWith("Tăng tốc ") ->
@@ -1344,12 +1307,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         }
         Regex("^Phát hiện (\\d+) thay đổi$").matchEntire(source) != null ->
             Regex("^Phát hiện (\\d+) thay đổi$").matchEntire(source)!!.let { "Detected ${it.groupValues[1]} changes" }
-        Regex("^Đã xóa vĩnh viễn (\\d+) mục trong Kho đã gỡ\\.$").matchEntire(source) != null ->
-            Regex("^Đã xóa vĩnh viễn (\\d+) mục trong Kho đã gỡ\\.$").matchEntire(source)!!.let {
-                "Permanently deleted ${it.groupValues[1]} items from the removed archive."
-            }
-        Regex("^Đã tự dọn (\\d+) mục lưu trữ hết hạn\\.$").matchEntire(source) != null ->
-            Regex("^Đã tự dọn (\\d+) mục lưu trữ hết hạn\\.$").matchEntire(source)!!.let { "Automatically cleaned up ${it.groupValues[1]} expired archive items." }
         Regex("^Đã lưu thời hạn và dọn (\\d+) mục hết hạn\\.$").matchEntire(source) != null ->
             Regex("^Đã lưu thời hạn và dọn (\\d+) mục hết hạn\\.$").matchEntire(source)!!.let { "Retention period saved; cleaned up ${it.groupValues[1]} expired items." }
         Regex("^(\\d+) mục đang nâng • Thợ rảnh (\\d+)/(\\d+)$").matchEntire(source) != null ->
@@ -1421,10 +1378,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
         Regex("^(.+) • (\\d+) mốc • (.+)$").matchEntire(source) != null ->
             Regex("^(.+) • (\\d+) mốc • (.+)$").matchEntire(source)!!.let {
                 "${it.groupValues[1]} • ${it.groupValues[2]} entries • ${it.groupValues[3]}"
-            }
-        Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source) != null ->
-            Regex("^Bản ghi (.+) sẽ được chuyển vào kho đã gỡ\\. Tệp APK cũ vẫn được giữ nhưng hiện không thể truy cập\\.$").matchEntire(source)!!.let {
-                "Release ${it.groupValues[1]} will be moved to the removed archive. The old APK file will be kept but will not be accessible for now."
             }
         Regex("^Dữ liệu JSON: (.+)$").matchEntire(source) != null ->
             Regex("^Dữ liệu JSON: (.+)$").matchEntire(source)!!.let { "JSON data: ${it.groupValues[1]}" }
@@ -1498,11 +1451,6 @@ private fun translateAppText(source: String, language: AppUiLanguage): String {
             val tag = source.removePrefix("Đã chuyển ").removeSuffix(" vào mục ĐÃ GỠ.")
             "Moved " + tag + " to REMOVED."
         }
-        source.startsWith("Chia sẻ bởi: ") -> "Shared by: " + source.removePrefix("Chia sẻ bởi: ")
-        Regex("^Ngày dữ liệu: (.+) • Nhận: (.+)$").matchEntire(source) != null ->
-            Regex("^Ngày dữ liệu: (.+) • Nhận: (.+)$").matchEntire(source)!!.let {
-                "Data date: ${it.groupValues[1]} • Received: ${it.groupValues[2]}"
-            }
         source.startsWith("Độ sáng: ") -> "Brightness: " + source.removePrefix("Độ sáng: ")
         source.startsWith("COC-LIO ") && source.endsWith(" đã có bản cập nhật mới.") -> source.removeSuffix(" đã có bản cập nhật mới.") + " has a new update."
         source.startsWith("ID: ") -> source
