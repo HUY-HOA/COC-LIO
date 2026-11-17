@@ -21,7 +21,7 @@ The APK includes matching local defaults. The first APK that contains this remot
 - Bottom navigation order, labels and visibility.
 - Feature switches for navigation pages, the JSON import shortcut and remote UI blocks.
 - Remote text, notices, cards, dividers, spacers, buttons, rows and columns on individual pages or all pages. Rows and columns can contain nested blocks, allowing the order and grouping of remote panels to be rearranged.
-- Existing Vietnamese and English strings through the `translations.vi` and `translations.en` dictionaries.
+- The application interface is Vietnamese-only; Remote Config does not provide language switching or translation dictionaries.
 
 ### Remote UI blocks
 
