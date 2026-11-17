@@ -97,7 +97,10 @@ service cloud.firestore {
                 'requiredAccountDataConsentVersion',
                 'requiredAccountDataConsentAt'
               ])
-              && request.resource.data.requiredAccountDataConsentVersion == 2
+              && (
+                request.resource.data.requiredAccountDataConsentVersion == 1
+                || request.resource.data.requiredAccountDataConsentVersion == 2
+              )
               && request.resource.data.requiredAccountDataConsentAt == request.time
             )
           )
