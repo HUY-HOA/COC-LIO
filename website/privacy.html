@@ -29,17 +29,16 @@
     <ul>
       <li><strong>Dữ liệu tài khoản:</strong> mã tài khoản, email, tên và ảnh hồ sơ Google, trạng thái xác minh và thông tin cần thiết để đăng nhập, quản lý tài khoản.</li>
       <li><strong>Dữ liệu làng:</strong> JSON, mã người chơi, tên làng, cấp độ và tiến trình. Khi chỉ nhập để xem trong ứng dụng, dữ liệu được lưu trên thiết bị; dữ liệu chỉ được đồng bộ lên hồ sơ Firestore riêng khi bạn bật lựa chọn đồng bộ.</li>
-      <li><strong>Dữ liệu hoạt động và thiết bị:</strong> sự kiện mở ứng dụng, thời lượng phiên và thông tin kỹ thuật như model thiết bị, phiên bản Android, ngôn ngữ, múi giờ, màn hình và loại kết nối mạng. Dữ liệu này chỉ được ghi nhận khi bạn bật lựa chọn chia sẻ tương ứng.</li>
-      <li><strong>Dữ liệu thông báo:</strong> mã đăng ký nhận thông báo do nền tảng tạo và lựa chọn nhận thông báo của bạn; chỉ được sử dụng khi bạn bật thông báo tương ứng.</li>
+      <li><strong>Dữ liệu hoạt động và thiết bị:</strong> sự kiện mở ứng dụng, thời lượng phiên, hãng/model/brand sản phẩm của thiết bị, tối đa bốn ABI CPU, phiên bản Android và ứng dụng, ngôn ngữ, múi giờ, độ phân giải màn hình, mật độ điểm ảnh và loại kết nối mạng. Dữ liệu chỉ được ghi nhận khi bạn bật riêng lựa chọn này trong Cài đặt.</li>
       <li><strong>Dữ liệu phân tích và chẩn đoán:</strong> thông tin sử dụng tổng quát, lỗi và hiệu năng chỉ được thu thập khi bạn bật riêng các lựa chọn tương ứng.</li>
     </ul>
-    <p>Khi bạn chủ động tra cứu người chơi hoặc bang hội, mã tra cứu được gửi đến dịch vụ cung cấp dữ liệu trò chơi để trả kết quả. Yêu cầu tải ảnh tài sản trò chơi cũng có thể được gửi đến nguồn ảnh tương ứng; các yêu cầu này không gửi toàn bộ JSON làng của bạn.</p>
+    <p>Khi tải ảnh tài sản trò chơi, ứng dụng gửi yêu cầu đến nguồn ảnh tương ứng. Yêu cầu tải ảnh không gửi toàn bộ JSON làng của bạn.</p>
 
     <h2>2. Mục đích sử dụng</h2>
     <p>Dữ liệu được sử dụng để cung cấp chức năng của ứng dụng; xác thực và quản lý tài khoản; lưu hoặc đồng bộ dữ liệu làng theo lựa chọn của bạn; tải dữ liệu hình ảnh trò chơi; bảo vệ hệ thống và hỗ trợ xử lý lỗi.</p>
 
-    <h2>3. Lựa chọn và chia sẻ dữ liệu</h2>
-    <p>Đăng nhập Google là lựa chọn để sử dụng các chức năng tài khoản và trực tuyến. Ghi nhận dữ liệu thiết bị/hoạt động, đồng bộ JSON cá nhân, phân tích và chẩn đoán là các lựa chọn riêng, mặc định tắt và có thể thay đổi trong phần Cài đặt.</p>
+    <h2>3. Lựa chọn xử lý dữ liệu</h2>
+    <p>Đăng nhập Google dùng để xác thực và duy trì hồ sơ tài khoản. Ghi nhận dữ liệu thiết bị/hoạt động, đồng bộ JSON cá nhân, Firebase Analytics và báo lỗi/hiệu năng là các lựa chọn riêng, mặc định tắt và có thể thay đổi trong phần Cài đặt. JSON đồng bộ chỉ được lưu trong hồ sơ Firestore riêng của chính tài khoản đó, không được đăng công khai hoặc gửi cho người dùng khác.</p>
     <p>Để vận hành các tính năng trực tuyến, một số dữ liệu cần được xử lý bởi nhà cung cấp dịch vụ kỹ thuật về xác thực, lưu trữ, hạ tầng hình ảnh hoặc chẩn đoán. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
     <p>Tùy dịch vụ và vị trí máy chủ, dữ liệu trực tuyến có thể được lưu trữ hoặc xử lý ngoài Việt Nam. Việc chuyển dữ liệu xuyên biên giới, nếu phát sinh, phải được thực hiện theo quy định pháp luật áp dụng.</p>
 
@@ -52,7 +51,7 @@
     <p>Để thực hiện quyền, hãy gửi yêu cầu từ email liên quan đến tài khoản, nêu rõ nội dung cần xử lý. Yêu cầu sẽ được xác minh và giải quyết theo thời hạn pháp luật quy định. Bạn có trách nhiệm cung cấp thông tin chính xác, bảo vệ tài khoản và chỉ chia sẻ dữ liệu của người khác khi có quyền hoặc sự cho phép phù hợp.</p>
 
     <h2>6. Bảo vệ dữ liệu và cập nhật chính sách</h2>
-    <p>COC-LIO áp dụng các biện pháp kỹ thuật và quản lý phù hợp để hạn chế truy cập trái phép, mất mát hoặc sử dụng dữ liệu sai mục đích. Bạn không nên gửi mật khẩu, thông tin tài chính hoặc dữ liệu cá nhân nhạy cảm vào Cộng đồng.</p>
+    <p>COC-LIO áp dụng các biện pháp kỹ thuật và quản lý phù hợp để hạn chế truy cập trái phép, mất mát hoặc sử dụng dữ liệu sai mục đích. Không nhập mật khẩu, thông tin tài chính hoặc dữ liệu cá nhân nhạy cảm vào JSON hay các trường nội dung của ứng dụng.</p>
     <p>Dữ liệu của trẻ em, nếu phát sinh, được xử lý theo điều kiện đồng ý của người đại diện và quy định pháp luật về bảo vệ trẻ em. Chính sách này sẽ được cập nhật khi cách xử lý dữ liệu thay đổi; phiên bản mới được đăng tại trang này cùng ngày cập nhật.</p>
 
     <p><a href="/">Quay lại trang chủ AILIO · COC-LIO</a></p>
