@@ -76,7 +76,11 @@ class FloatingJsonOverlayService : Service() {
             return START_NOT_STICKY
         }
         promoteToForeground()
-        showOverlay()
+        if (activeView != null && collapsed) {
+            expandOverlay()
+        } else {
+            showOverlay()
+        }
         return START_STICKY
     }
 
@@ -507,7 +511,7 @@ class FloatingJsonOverlayService : Service() {
         }
         accountText?.text = account
         val count = VillageStore.storedSnapshotCount(this, profile)
-        countText?.text = "JSON đã lưu: $count/50  •  Tính cả mục Đã xóa"
+        countText?.text = "JSON đã lưu: $count/50  •  Mục Đã xóa vẫn chiếm chỗ"
     }
 
     private fun saveJson() {
@@ -542,7 +546,15 @@ class FloatingJsonOverlayService : Service() {
                 val previousExists = VillageStore.loadAll(this@FloatingJsonOverlayService, profile)
                     .any { it.tag == parsed.tag }
                 val saved = if (customName.isBlank()) parsed else parsed.copy(villageName = customName)
-                VillageStore.save(this@FloatingJsonOverlayService, saved, profile, customName)
+                val savedSuccessfully = VillageStore.save(
+                    this@FloatingJsonOverlayService,
+                    saved,
+                    profile,
+                    customName
+                )
+                check(savedSuccessfully) {
+                    "Đã đạt giới hạn 50 JSON. Hãy xóa vĩnh viễn JSON cũ trước khi thêm bản mới."
+                }
                 val history = VillageStore.loadAll(this@FloatingJsonOverlayService, profile)
                 UpgradeReminderScheduler.scheduleAll(
                     this@FloatingJsonOverlayService,
