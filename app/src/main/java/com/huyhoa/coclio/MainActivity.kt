@@ -1,6 +1,8 @@
 package com.huyhoa.coclio
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -606,6 +608,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         AccountActivityTracker.start(this)
+        FloatingJsonOverlayController.onHostResume(this)
     }
 
     override fun onPause() {
@@ -788,6 +791,34 @@ private fun CocLioApp(
     }
     var pinnedTags by remember(activeProfile) {
         mutableStateOf(VillageStore.pinnedTags(context, activeProfile))
+    }
+    DisposableEffect(context, activeProfile) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(receiverContext: Context, intent: Intent) {
+                if (intent.action != FloatingJsonOverlayService.ACTION_JSON_IMPORTED) return
+                val importedProfile = intent.getStringExtra(FloatingJsonOverlayService.EXTRA_PROFILE).orEmpty()
+                if (!importedProfile.equals(activeProfile, ignoreCase = true)) return
+                val importedTag = intent.getStringExtra(FloatingJsonOverlayService.EXTRA_TAG).orEmpty()
+                history = VillageStore.loadAll(context, activeProfile)
+                deletedVillages = VillageStore.loadDeleted(context, activeProfile)
+                pinnedTags = VillageStore.pinnedTags(context, activeProfile)
+                current = history.firstOrNull { it.tag == importedTag } ?: history.firstOrNull()
+                val importedName = intent.getStringExtra(FloatingJsonOverlayService.EXTRA_NAME).orEmpty()
+                scope.launch {
+                    snackbar.showAppSnackbar(
+                        context,
+                        "Đã lưu JSON ${importedName.ifBlank { importedTag }} từ cửa sổ nổi."
+                    )
+                }
+            }
+        }
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(FloatingJsonOverlayService.ACTION_JSON_IMPORTED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
     val ledPrefs = remember {
         context.getSharedPreferences("coc_lio_led", android.content.Context.MODE_PRIVATE).also { prefs ->
@@ -1420,7 +1451,7 @@ private fun CocLioApp(
                                 if (current?.tag == tag) current = history.firstOrNull()
                                 UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
                                 AppWidgetUpdater.updateAll(context)
-                                scope.launch { snackbar.showAppSnackbar(context, "Đã chuyển $tag vào mục ĐÃ GỠ.") }
+                                scope.launch { snackbar.showAppSnackbar(context, "Đã chuyển $tag vào mục ĐÃ XÓA.") }
                             }
                         },
                         onRestore = { recordId ->
@@ -3789,7 +3820,7 @@ private fun HistoryScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
-                                Text("ĐÃ GỠ", fontSize = 9.sp, maxLines = 1)
+                                Text("ĐÃ XÓA", fontSize = 9.sp, maxLines = 1)
                                 Text("(${deletedVillages.size})", fontSize = 9.sp, maxLines = 1)
                             }
                         }
@@ -3848,7 +3879,7 @@ private fun HistoryScreen(
                 }
             }
         } else if (selectedSection == "history") {
-            item { Text("Tối đa 60 mốc nhập gần nhất trên thiết bị", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp) }
+            item { Text("Tối đa 50 bản JSON trên mỗi tài khoản. Bản cũ nhất tự động bị xóa khi vượt giới hạn.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp) }
             if (history.isEmpty() && deletedVillages.none { it.snapshots.isNotEmpty() }) {
                 item { InfoCard("Chưa có lịch sử nhập", "Các lần dán JSON sẽ được ghi nhận tại đây.") }
             } else {
@@ -3882,7 +3913,7 @@ private fun HistoryScreen(
                 item { Text(it, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp) }
             }
             if (deletedVillages.isEmpty()) {
-                item { InfoCard("Chưa có JSON nào bị gỡ", "Những làng bạn xóa khỏi mục ĐANG LƯU sẽ xuất hiện tại đây để xem, lưu hoặc khôi phục.") }
+                item { InfoCard("Chưa có JSON nào bị xóa", "Những làng bạn xóa khỏi mục ĐANG LƯU sẽ xuất hiện tại đây để xem, lưu hoặc khôi phục.") }
             } else {
                 items(deletedVillages, key = { "deleted_village_" + it.id }) { record ->
                     val expanded = expandedDeletedRecordId == record.id
@@ -3912,7 +3943,7 @@ private fun HistoryScreen(
                                 )
                             }
                             Text(
-                                "Mã người chơi: ${record.tag}  •  Đã gỡ: ${formatTimestamp(record.deletedAt)}",
+                                "Mã người chơi: ${record.tag}  •  Đã xóa: ${formatTimestamp(record.deletedAt)}",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 9.sp
                             )
