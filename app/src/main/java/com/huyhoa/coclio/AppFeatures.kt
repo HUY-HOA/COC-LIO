@@ -672,7 +672,7 @@ data class AccountPrivacyChoice(
 )
 
 object AccountPrivacyConsent {
-    const val CURRENT_VERSION = 7L
+    const val CURRENT_VERSION = 8L
     const val REQUIRED_ACCOUNT_DATA_VERSION = 2L
 
     suspend fun hasRequiredAccountDataConsent(): Boolean {
