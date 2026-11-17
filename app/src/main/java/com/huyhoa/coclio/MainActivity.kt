@@ -720,6 +720,10 @@ private fun CocLioApp(
         diagnostics = consentDiagnostics,
         villageDataSync = consentVillageDataSync
     )
+    val allLoginPrivacyChoicesSelected = loginPrivacyChoice.securityTelemetry &&
+        loginPrivacyChoice.analytics &&
+        loginPrivacyChoice.diagnostics &&
+        loginPrivacyChoice.villageDataSync
     fun updateLoginPrivacyChoice(choice: AccountPrivacyChoice) {
         consentSecurityTelemetry = choice.securityTelemetry
         consentAnalytics = choice.analytics
@@ -794,7 +798,6 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
-    var loginTermsAccepted by rememberSaveable { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var lastUsedAt by remember(activeProfile) {
         mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
@@ -1262,7 +1265,7 @@ private fun CocLioApp(
     }
 
     suspend fun finishGoogleSignIn(googleAccount: GoogleAccountData) {
-        check(loginTermsAccepted) { "Bạn cần đồng ý với điều khoản và chính sách trước khi đăng nhập." }
+        check(allLoginPrivacyChoicesSelected) { "Bạn cần chọn đủ cả 4 mục trước khi đăng nhập." }
         val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
         val profileName = (
             savedName?.takeIf { it.isNotBlank() }
@@ -1315,7 +1318,6 @@ private fun CocLioApp(
             activeProfile = "local"
             selectedTab = 2
             jsonSection = 0
-            loginTermsAccepted = false
             snackbar.showAppSnackbar(context, message)
         }
     }
@@ -1323,7 +1325,7 @@ private fun CocLioApp(
 
 
     fun signInWithGoogle() {
-        if (!loginTermsAccepted || googleSignInSubmitting || interactiveGoogleSignIn) return
+        if (!allLoginPrivacyChoicesSelected || googleSignInSubmitting || interactiveGoogleSignIn) return
         scope.launch {
             interactiveGoogleSignIn = true
             googleSignInSubmitting = true
@@ -1472,8 +1474,6 @@ private fun CocLioApp(
                     appSubtitle = remoteAppConfig.appSubtitle,
                     isBusy = googleSignInSubmitting || interactiveGoogleSignIn,
                     readError = accountProfileError,
-                    consentAccepted = loginTermsAccepted,
-                    onConsentAcceptedChanged = { loginTermsAccepted = it },
                     privacyChoice = loginPrivacyChoice,
                     onPrivacyChoiceChanged = { updateLoginPrivacyChoice(it) },
                     onGoogleSignIn = { signInWithGoogle() }
@@ -1814,8 +1814,6 @@ private fun GoogleLoginStartScreen(
     appSubtitle: String,
     isBusy: Boolean,
     readError: String?,
-    consentAccepted: Boolean,
-    onConsentAcceptedChanged: (Boolean) -> Unit,
     privacyChoice: AccountPrivacyChoice,
     onPrivacyChoiceChanged: (AccountPrivacyChoice) -> Unit,
     onGoogleSignIn: () -> Unit
@@ -1889,42 +1887,14 @@ private fun GoogleLoginStartScreen(
                     )
                 }
                 Text(
-                    "ĐỒNG Ý ĐIỀU KHOẢN VÀ DỮ LIỆU TÀI KHOẢN",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Checkbox(
-                        checked = consentAccepted,
-                        onCheckedChange = onConsentAcceptedChanged,
-                        modifier = Modifier.ledRgbBorder(
-                            cornerRadiusDp = 5f,
-                            strokeWidthDp = if (consentAccepted) 0f else 1.8f
-                        )
-                    )
-                    Text(
-                        "Tôi đồng ý Điều khoản sử dụng và việc xử lý hồ sơ Google cơ bản cần thiết để xác thực, tạo và quản lý tài khoản COC-LIO.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp,
-                        lineHeight = 15.sp
-                    )
-                }
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                Text(
-                    "CÁC LỰA CHỌN DỮ LIỆU TÙY CHỌN",
+                    "BẮT BUỘC XÁC NHẬN ĐỦ 4 MỤC",
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
-                    "Chạm vào tên từng mục để đọc chi tiết. Bạn có thể chọn riêng từng mục hoặc chọn tất cả.",
+                    "Chạm vào tên từng mục để đọc chi tiết. Phải chọn đủ cả 4 mục để đăng nhập; có thể dùng CHỌN TẤT CẢ 4 MỤC.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
                     lineHeight = 14.sp,
@@ -2020,7 +1990,7 @@ private fun GoogleLoginStartScreen(
                     )
                 }
                 Text(
-                    "Các mục tùy chọn không được bật chỉ vì bạn đăng nhập. Từ chối mục nào thì COC-LIO không thực hiện xử lý dữ liệu cho mục đó.",
+                    "Nút đăng nhập chỉ được mở khi cả 4 mục đều đã tích.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
                     lineHeight = 14.sp,
@@ -2030,8 +2000,8 @@ private fun GoogleLoginStartScreen(
                     text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
                     onClick = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = consentAccepted && !isBusy,
-                    showLed = consentAccepted
+                    enabled = allSelected && !isBusy,
+                    showLed = allSelected
                 )
             }
         }
