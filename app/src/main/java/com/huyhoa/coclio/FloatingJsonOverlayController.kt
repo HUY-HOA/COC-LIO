@@ -24,6 +24,11 @@ object FloatingJsonOverlayController {
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                 Uri.parse("package:${context.packageName}")
             )
+            Toast.makeText(
+                context,
+                "Hãy bật quyền Hiển thị trên ứng dụng khác để dùng cửa sổ nhập JSON khi chơi game.",
+                Toast.LENGTH_LONG
+            ).show()
             if (context is Activity) {
                 context.startActivityForResult(permissionIntent, REQUEST_OVERLAY_PERMISSION)
             } else {
