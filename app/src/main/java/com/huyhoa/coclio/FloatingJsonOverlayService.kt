@@ -139,6 +139,7 @@ class FloatingJsonOverlayService : Service() {
             return
         }
         if (activeView != null) {
+            if (collapsed) expandOverlay()
             refreshAccountDetails()
             return
         }
