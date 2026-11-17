@@ -1435,12 +1435,7 @@ class UpgradeReminderWorker(
             "coc_lio_remote_content",
             Context.MODE_PRIVATE
         )
-        val notificationLanguage = if (
-            AppLanguageSettings.resolve(
-                AppLanguageSettings.load(applicationContext),
-                applicationContext.resources.configuration.locales[0].language
-            ) == AppUiLanguage.ENGLISH
-        ) "en" else "vi"
+        val notificationLanguage = "vi"
         fun remoteNotificationText(key: String, fallback: String): String {
             val template = remoteTemplates.getString("notification_${notificationLanguage}_$key", null)
                 ?.takeIf { it.isNotBlank() && it.length <= 1800 }
@@ -2455,8 +2450,6 @@ fun SettingsScreen(
     knownProfiles: List<LocalProfileSummary>,
     themeMode: String,
     onThemeModeChanged: (String) -> Unit,
-    languagePreference: String,
-    onLanguagePreferenceChanged: (String) -> Unit,
     textScale: Float,
     displaySizeLevel: Int,
     onDisplaySizeLevelChanged: (Int) -> Unit,
@@ -2643,66 +2636,17 @@ fun SettingsScreen(
             FeaturePanelTitle(Icons.Filled.Palette, "GIAO DIỆN ỨNG DỤNG")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
-                    Triple("system", "Theo thiết bị", "System"),
-                    Triple("light", "Sáng", "Light"),
-                    Triple("dark", "Tối", "Dark")
-                ).forEach { (mode, labelVi, labelEn) ->
+                    "system" to "Theo thiết bị",
+                    "light" to "Sáng",
+                    "dark" to "Tối"
+                ).forEach { (mode, label) ->
                     FilterChip(
                         selected = themeMode == mode,
                         onClick = { onThemeModeChanged(mode) },
-                        label = {
-                            Text(
-                                if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) labelEn else labelVi,
-                                fontSize = 10.sp
-                            )
-                        }
-                    )
-                }
-            }
-        }
-
-        FeaturePanel {
-            FeaturePanelTitle(Icons.Filled.Language, "NGÔN NGỮ")
-            Text(
-                "Tự động dùng ngôn ngữ thiết bị. Có thể chọn Tiếng Việt hoặc English bên dưới.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp,
-                lineHeight = 15.sp
-            )
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                listOf(
-                    "system" to "Theo hệ thống",
-                    "vi" to "Tiếng Việt",
-                    "en" to "English"
-                ).forEach { (preference, label) ->
-                    FilterChip(
-                        selected = languagePreference == preference,
-                        onClick = { onLanguagePreferenceChanged(preference) },
                         label = { Text(label, fontSize = 10.sp) }
                     )
                 }
             }
-            Text(
-                when (languagePreference) {
-                    "system" -> if (LocalAppLanguage.current == AppUiLanguage.ENGLISH) {
-                        "Đang dùng ngôn ngữ hệ thống: English"
-                    } else {
-                        "Đang dùng ngôn ngữ hệ thống: Tiếng Việt"
-                    }
-                    "en" -> "Ngôn ngữ đang dùng: English"
-                    else -> "Ngôn ngữ đang dùng: Tiếng Việt"
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp
-            )
-            Text(
-                "Lựa chọn ngôn ngữ được lưu trên thiết bị này.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 9.sp
-            )
         }
 
         val currentFontLevel = AppPreferences.textScaleLevel(textScale)
