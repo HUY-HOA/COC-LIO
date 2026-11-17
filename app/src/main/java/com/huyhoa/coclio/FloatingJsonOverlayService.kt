@@ -455,11 +455,12 @@ class FloatingJsonOverlayService : Service() {
         }
         accountText?.text = account
         val count = VillageStore.storedSnapshotCount(this, profile)
-        countText?.text = "JSON đã lưu: $count/50  •  Mỗi tài khoản COC-LIO có kho riêng"
+        countText?.text = "JSON đã lưu: $count/50  •  Tính cả mục Đã xóa"
     }
 
     private fun saveJson() {
         if (saving) return
+        refreshAccountDetails()
         val raw = jsonInput?.text?.toString().orEmpty().trim()
         val customName = villageNameInput?.text?.toString()?.trim().orEmpty().take(40)
         if (raw.isBlank()) {
