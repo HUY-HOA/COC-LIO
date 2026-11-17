@@ -294,6 +294,15 @@ object AppPreferences {
             .edit().putBoolean(key(profile, "notifications"), enabled).apply()
     }
 
+    fun bubbleNotificationsEnabled(context: Context, profile: String): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getBoolean(key(profile, "bubble_notifications"), false)
+
+    fun setBubbleNotificationsEnabled(context: Context, profile: String, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(key(profile, "bubble_notifications"), enabled).apply()
+    }
+
     fun ensureNotificationPreferences(context: Context, profile: String, defaultEnabled: Boolean) {
         val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val editor = preferences.edit()
@@ -2452,6 +2461,7 @@ fun SettingsScreen(
     displaySizeLevel: Int,
     onDisplaySizeLevelChanged: (Int) -> Unit,
     notificationsEnabled: Boolean,
+    bubbleNotificationsEnabled: Boolean,
     privacyChoice: AccountPrivacyChoice,
     onSavePrivacyChoice: (AccountPrivacyChoice) -> Unit,
     ledEnabled: Boolean,
@@ -2470,6 +2480,7 @@ fun SettingsScreen(
     onGoogleSignOut: () -> Unit,
     onOpenGame: () -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
+    onBubbleNotificationsChanged: (Boolean) -> Unit,
     onNotificationStyleChanged: (String) -> Unit,
     onTestNotification: () -> Unit,
     onTextScaleChanged: (Float) -> Unit
@@ -2876,6 +2887,22 @@ fun SettingsScreen(
                 }
                 Switch(checked = notificationsEnabled, onCheckedChange = onNotificationsChanged)
             }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("BONG BÓNG THÔNG BÁO", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Hiện lời nhắc nâng cấp thành cửa sổ nổi trên màn hình.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 14.sp)
+                }
+                Switch(
+                    checked = bubbleNotificationsEnabled,
+                    onCheckedChange = onBubbleNotificationsChanged
+                )
+            }
+            Text(
+                "Khi bật, COC-LIO cần quyền Hiển thị trên ứng dụng khác. Android 13 trở lên cần thêm quyền thông báo.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                lineHeight = 14.sp
+            )
             Text("Kiểu nhắc nâng cấp", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 FilterChip(
