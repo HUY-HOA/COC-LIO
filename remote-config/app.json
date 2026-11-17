@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": 7,
+  "version": 8,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -61,8 +61,4 @@
   "dashboard": {
     "blocks": []
   },
-  "translations": {
-    "vi": {},
-    "en": {}
-  }
 }
