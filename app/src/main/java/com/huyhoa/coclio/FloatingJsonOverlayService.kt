@@ -1,6 +1,9 @@
 package com.huyhoa.coclio
 
 import android.app.Service
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.pm.ServiceInfo
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -18,6 +21,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.huyhoa.coclio.data.VillageParser
 import com.huyhoa.coclio.data.VillageSnapshot
@@ -38,6 +43,8 @@ class FloatingJsonOverlayService : Service() {
         const val EXTRA_TAG = "tag"
         const val EXTRA_NAME = "village_name"
         private const val OVERLAY_PREFS = "coc_lio_floating_json"
+        private const val FOREGROUND_CHANNEL_ID = "coc_lio_floating_json"
+        private const val FOREGROUND_NOTIFICATION_ID = 7815
         private const val DEFAULT_WIDTH_DP = 320
         private const val DEFAULT_HEIGHT_DP = 500
         private const val MIN_WIDTH_DP = 270
@@ -68,6 +75,7 @@ class FloatingJsonOverlayService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        promoteToForeground()
         showOverlay()
         return START_STICKY
     }
@@ -75,7 +83,50 @@ class FloatingJsonOverlayService : Service() {
     override fun onDestroy() {
         removeCurrentView()
         serviceScope.cancel()
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         super.onDestroy()
+    }
+
+    private fun promoteToForeground() {
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.createNotificationChannel(
+                NotificationChannel(
+                    FOREGROUND_CHANNEL_ID,
+                    "Cửa sổ nhập JSON",
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    description = "Giữ cửa sổ nhập JSON nổi hoạt động khi Clash of Clans đang mở."
+                    setShowBadge(false)
+                }
+            )
+        }
+
+        val notification = NotificationCompat.Builder(this, FOREGROUND_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_menu_edit)
+            .setContentTitle("COC-LIO • Cửa sổ nhập JSON")
+            .setContentText("Cửa sổ nổi đang sẵn sàng khi bạn chơi Clash of Clans.")
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= 34) {
+            ServiceCompat.startForeground(
+                this,
+                FOREGROUND_NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else {
+            ServiceCompat.startForeground(
+                this,
+                FOREGROUND_NOTIFICATION_ID,
+                notification,
+                0
+            )
+        }
     }
 
     private fun showOverlay() {
