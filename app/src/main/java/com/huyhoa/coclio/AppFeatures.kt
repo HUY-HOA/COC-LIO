@@ -2932,7 +2932,7 @@ fun SettingsScreen(
         FeaturePanel {
             FeaturePanelTitle(Icons.Filled.Code, "CÁCH LẤY JSON")
             Text(
-                "1. Mở Clash of Clans và vào làng cần theo dõi.\n2. Nhấn bánh răng Cài đặt → Cài đặt khác.\n3. Tìm mục Xuất dữ liệu → Xuất dữ liệu làng dưới dạng JSON → Sao chép.\n4. Trở lại COC-LIO, nhấn Nhập JSON, dán nội dung rồi phân tích.",
+                "1. Nhấn MỞ CLASH OF CLANS trong COC-LIO. Lần đầu, bật quyền Hiển thị trên ứng dụng khác để dùng cửa sổ nổi.\n2. Khi game mở, vào làng/tài khoản cần lưu. Nhấn Cài đặt → Cài đặt khác → Xuất dữ liệu làng dưới dạng JSON → Sao chép.\n3. Cửa sổ COC-LIO vẫn nằm trên game. Dán JSON vào đó, nhập tên làng hoặc tên tài khoản để dễ phân biệt rồi nhấn PHÂN TÍCH VÀ LƯU JSON.\n4. Lặp lại với các tài khoản game khác. COC-LIO nhận diện từng làng bằng Player Tag; tối đa 50 bản JSON cho mỗi tài khoản COC-LIO.\nKéo thanh tiêu đề để di chuyển, kéo góc ↘ để thu phóng, nhấn − để thu nhỏ thành nút nổi hoặc × để đóng.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.sp,
                 lineHeight = 18.sp
