@@ -84,7 +84,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
@@ -1268,7 +1267,7 @@ private fun ensureUpgradeNotificationChannel(
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val manager = context.getSystemService(NotificationManager::class.java)
-    val channelName = AppLanguageSettings.translate(
+    val channelName = AppText.translate(
         context,
         if (alarmStyle) "Nhắc nâng cấp kiểu báo thức" else "Tin nhắn nâng cấp"
     )
@@ -1277,7 +1276,7 @@ private fun ensureUpgradeNotificationChannel(
         channelName,
         if (alarmStyle) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
     )
-    channel.description = AppLanguageSettings.translate(
+    channel.description = AppText.translate(
         context,
         if (alarmStyle) {
             "Thông báo nhắc nâng cấp bằng âm thanh và rung theo cài đặt Android"
@@ -1404,7 +1403,7 @@ class UpgradeReminderWorker(
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val levelText = AppLanguageSettings.translate(
+        val levelText = AppText.translate(
             applicationContext,
             if (level >= 0) {
                 if (gearUp) "Cấp $level • Tấn công nhanh" else "Cấp $level → ${level + 1}"
@@ -1412,20 +1411,20 @@ class UpgradeReminderWorker(
                 if (gearUp) "TẤN CÔNG NHANH" else "Chưa rõ cấp độ"
             }
         )
-        val baseText = AppLanguageSettings.translate(
+        val baseText = AppText.translate(
             applicationContext,
             if (base == "builder") "Làng đêm" else "Làng chính"
         )
-        val localizedItem = AppLanguageSettings.translate(applicationContext, item)
-        val localizedSection = AppLanguageSettings.translate(applicationContext, section)
+        val localizedItem = AppText.translate(applicationContext, item)
+        val localizedSection = AppText.translate(applicationContext, section)
         val notificationBody = listOf(
-            "${AppLanguageSettings.translate(applicationContext, "Làng")}: $villageName ($tag)",
-            "${AppLanguageSettings.translate(applicationContext, "Căn cứ")}: $baseText",
-            "${AppLanguageSettings.translate(applicationContext, "Nhóm")}: $localizedSection",
-            "${AppLanguageSettings.translate(applicationContext, "Công trình")}: $localizedItem",
+            "${AppText.translate(applicationContext, "Làng")}: $villageName ($tag)",
+            "${AppText.translate(applicationContext, "Căn cứ")}: $baseText",
+            "${AppText.translate(applicationContext, "Nhóm")}: $localizedSection",
+            "${AppText.translate(applicationContext, "Công trình")}: $localizedItem",
             "$dataId",
-            "${AppLanguageSettings.translate(applicationContext, "Dự kiến")}: $levelText",
-            AppLanguageSettings.translate(
+            "${AppText.translate(applicationContext, "Dự kiến")}: $levelText",
+            AppText.translate(
                 applicationContext,
                 "Bộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
             )
@@ -1435,9 +1434,8 @@ class UpgradeReminderWorker(
             "coc_lio_remote_content",
             Context.MODE_PRIVATE
         )
-        val notificationLanguage = "vi"
         fun remoteNotificationText(key: String, fallback: String): String {
-            val template = remoteTemplates.getString("notification_${notificationLanguage}_$key", null)
+            val template = remoteTemplates.getString("notification_$key", null)
                 ?.takeIf { it.isNotBlank() && it.length <= 1800 }
                 ?: fallback
             return template
@@ -1466,7 +1464,7 @@ class UpgradeReminderWorker(
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
             .setContentTitle(remoteNotificationText(
                 "title",
-                AppLanguageSettings.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
+                AppText.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
             ))
             .setContentText(remoteNotificationText("text", "$villageName • ID $dataId • $levelText"))
             .setStyle(NotificationCompat.BigTextStyle().bigText(remoteNotificationText("body", notificationBody)))
@@ -1483,7 +1481,7 @@ class UpgradeReminderWorker(
                 gameIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(applicationContext, "MỞ TRÒ CHƠI"), gamePendingIntent)
+            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppText.translate(applicationContext, "MỞ TRÒ CHƠI"), gamePendingIntent)
         }
         if (iconBitmap != null) notificationBuilder.setLargeIcon(iconBitmap)
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
@@ -1522,8 +1520,8 @@ object UpgradeNotificationTester {
             openApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val title = AppLanguageSettings.translate(context, "COC-LIO • Thử thông báo")
-        val message = AppLanguageSettings.translate(
+        val title = AppText.translate(context, "COC-LIO • Thử thông báo")
+        val message = AppText.translate(
             context,
             if (alarmStyle) {
                 "Đây là thông báo thử kiểu báo thức. Âm thanh và rung phụ thuộc cài đặt thông báo của Android."
@@ -1535,7 +1533,7 @@ object UpgradeNotificationTester {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
             .setContentTitle(title)
-            .setContentText(AppLanguageSettings.translate(context, if (alarmStyle) "Đang thử kiểu báo thức" else "Đang thử kiểu tin nhắn"))
+            .setContentText(AppText.translate(context, if (alarmStyle) "Đang thử kiểu báo thức" else "Đang thử kiểu tin nhắn"))
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -1553,7 +1551,7 @@ object UpgradeNotificationTester {
                 gameIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppLanguageSettings.translate(context, "MỞ TRÒ CHƠI"), gamePendingIntent)
+            notificationBuilder.addAction(android.R.drawable.ic_media_play, AppText.translate(context, "MỞ TRÒ CHƠI"), gamePendingIntent)
         }
         applyLegacyNotificationSettings(notificationBuilder, alarmStyle)
         val notification = notificationBuilder.build()
@@ -1760,7 +1758,7 @@ private class UpgradeWidgetListFactory(
         }
         views.setTextViewText(
             R.id.row_title,
-            AppLanguageSettings.translate(
+            AppText.translate(
                 context,
                 if (remaining > 0L) "$levelText • $progressPercent%" else levelText
             )
@@ -1811,7 +1809,7 @@ private class UpgradeWidgetListFactory(
         } else {
             views.setChronometerCountDown(R.id.row_timer, false)
             views.setChronometer(R.id.row_timer, SystemClock.elapsedRealtime(), "%s", false)
-            views.setTextViewText(R.id.row_timer, AppLanguageSettings.translate(context, "HOÀN THÀNH"))
+            views.setTextViewText(R.id.row_timer, AppText.translate(context, "HOÀN THÀNH"))
         }
         return views
     }
@@ -1825,9 +1823,9 @@ private class UpgradeWidgetListFactory(
     override fun getLoadingView(): RemoteViews? {
         return RemoteViews(context.packageName, R.layout.widget_upgrade_row).apply {
             setViewVisibility(R.id.row_icon, View.GONE)
-            setTextViewText(R.id.row_title, AppLanguageSettings.translate(context, "Đang tải danh sách nâng cấp…"))
+            setTextViewText(R.id.row_title, AppText.translate(context, "Đang tải danh sách nâng cấp…"))
             setTextViewText(R.id.row_subtitle, "COC-LIO")
-            setTextViewText(R.id.row_timer, AppLanguageSettings.translate(context, "ĐANG CẬP NHẬT"))
+            setTextViewText(R.id.row_timer, AppText.translate(context, "ĐANG CẬP NHẬT"))
             setProgressBar(R.id.row_progress, 100, 0, false)
         }
     }
@@ -1841,9 +1839,9 @@ private class UpgradeWidgetListFactory(
 object AppWidgetUpdater {
     private fun updateLocalizedPreview(context: Context) {
         if (Build.VERSION.SDK_INT < 35) return
-        val status = AppLanguageSettings.translate(context, "2 mục đang nâng • Thợ rảnh 4/6")
-        val firstTitle = AppLanguageSettings.translate(context, "CẤP 14 → 15 • CÒN 56%")
-        val secondTitle = AppLanguageSettings.translate(context, "CẤP 8 → 9 • CÒN 32%")
+        val status = AppText.translate(context, "2 mục đang nâng • Thợ rảnh 4/6")
+        val firstTitle = AppText.translate(context, "CẤP 14 → 15 • CÒN 56%")
+        val secondTitle = AppText.translate(context, "CẤP 8 → 9 • CÒN 32%")
         val signature = listOf(status, firstTitle, secondTitle).joinToString("|")
         val previewPrefs = context.getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
         if (previewPrefs.getString("generated_preview_signature", null) == signature) return
@@ -1894,7 +1892,7 @@ object AppWidgetUpdater {
         views.setTextViewTextSize(R.id.widget_village, TypedValue.COMPLEX_UNIT_SP, 10f * combinedScale)
         views.setTextViewTextSize(R.id.widget_status, TypedValue.COMPLEX_UNIT_SP, 9f * combinedScale)
         views.setTextViewTextSize(R.id.widget_empty, TypedValue.COMPLEX_UNIT_SP, 9f * combinedScale)
-        views.setTextViewText(R.id.widget_empty, AppLanguageSettings.translate(context, "Chưa có mục nào đang nâng cấp"))
+        views.setTextViewText(R.id.widget_empty, AppText.translate(context, "Chưa có mục nào đang nâng cấp"))
         val widgetPadding = (5f * AppPreferences.displaySizeScale(context) * context.resources.displayMetrics.density).roundToInt()
         views.setViewPadding(R.id.widget_root, widgetPadding, widgetPadding, widgetPadding, widgetPadding)
 
@@ -1903,20 +1901,20 @@ object AppWidgetUpdater {
             (builderTotal - snapshot.homeBuildersBusyAt(nowSeconds)).coerceAtLeast(0)
         views.setTextViewText(
             R.id.widget_village,
-            if (snapshot == null) "COC-LIO • " + AppLanguageSettings.translate(context, "Chưa có dữ liệu")
+            if (snapshot == null) "COC-LIO • " + AppText.translate(context, "Chưa có dữ liệu")
             else (snapshot.villageName ?: snapshot.tag) +
                 (if (snapshot.villageName.isNullOrBlank()) "" else " • " + snapshot.tag) +
-                " • " + AppLanguageSettings.translate(context, "Nhà chính") + " " + (snapshot.townHallLevel ?: "—") +
-                (if (builderTotal == null) "" else " • " + AppLanguageSettings.translate(context, "Thợ rảnh") + " $buildersFree/$builderTotal")
+                " • " + AppText.translate(context, "Nhà chính") + " " + (snapshot.townHallLevel ?: "—") +
+                (if (builderTotal == null) "" else " • " + AppText.translate(context, "Thợ rảnh") + " $buildersFree/$builderTotal")
         )
         views.setTextViewText(
             R.id.widget_status,
             when {
-                snapshot == null -> AppLanguageSettings.translate(context, "Mở ứng dụng và nhập dữ liệu JSON")
-                activeCount == 0 && expiredCount == 0 -> AppLanguageSettings.translate(context, "Không có mục nào đang nâng cấp")
-                activeCount > 0 && expiredCount > 0 -> "$activeCount " + AppLanguageSettings.translate(context, "đang nâng") + " • $expiredCount " + AppLanguageSettings.translate(context, "hoàn thành")
-                activeCount > 0 -> "$activeCount " + AppLanguageSettings.translate(context, "mục đang nâng cấp")
-                else -> "$expiredCount " + AppLanguageSettings.translate(context, "hoàn thành • chờ JSON mới")
+                snapshot == null -> AppText.translate(context, "Mở ứng dụng và nhập dữ liệu JSON")
+                activeCount == 0 && expiredCount == 0 -> AppText.translate(context, "Không có mục nào đang nâng cấp")
+                activeCount > 0 && expiredCount > 0 -> "$activeCount " + AppText.translate(context, "đang nâng") + " • $expiredCount " + AppText.translate(context, "hoàn thành")
+                activeCount > 0 -> "$activeCount " + AppText.translate(context, "mục đang nâng cấp")
+                else -> "$expiredCount " + AppText.translate(context, "hoàn thành • chờ JSON mới")
             }
         )
 
@@ -1995,9 +1993,9 @@ class UpgradeWidgetConfigActivity : Activity() {
         val villages = VillageStore.loadAll(this, profile).distinctBy { it.tag }
         if (villages.isEmpty()) {
             AlertDialog.Builder(this)
-                .setTitle(AppLanguageSettings.translate(this, "Chưa có làng để theo dõi"))
-                .setMessage(AppLanguageSettings.translate(this, "Hãy mở COC-LIO, đăng nhập tài khoản cần dùng (nếu có), nhập JSON ít nhất một lần rồi thêm tiện ích."))
-                .setPositiveButton(AppLanguageSettings.translate(this, "Đóng")) { _, _ -> finish() }
+                .setTitle(AppText.translate(this, "Chưa có làng để theo dõi"))
+                .setMessage(AppText.translate(this, "Hãy mở COC-LIO, đăng nhập tài khoản cần dùng (nếu có), nhập JSON ít nhất một lần rồi thêm tiện ích."))
+                .setPositiveButton(AppText.translate(this, "Đóng")) { _, _ -> finish() }
                 .show()
             return
         }
@@ -2005,10 +2003,10 @@ class UpgradeWidgetConfigActivity : Activity() {
         val labels = villages.map {
             (it.villageName?.takeIf { name -> name.isNotBlank() } ?: it.tag) +
                 (if (it.villageName.isNullOrBlank()) "" else " • " + it.tag) +
-                " • " + AppLanguageSettings.translate(this, "Nhà chính") + " " + (it.townHallLevel ?: "—")
+                " • " + AppText.translate(this, "Nhà chính") + " " + (it.townHallLevel ?: "—")
         }.toTypedArray()
         AlertDialog.Builder(this)
-            .setTitle(AppLanguageSettings.translate(this, "Chọn làng cho tiện ích"))
+            .setTitle(AppText.translate(this, "Chọn làng cho tiện ích"))
             .setItems(labels) { _, which ->
                 getSharedPreferences("coc_lio_widgets", Context.MODE_PRIVATE)
                     .edit()
@@ -2231,7 +2229,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                         if (account.photoUrl.isNotBlank()) {
                             AsyncImage(
                                 model = account.photoUrl,
-                                contentDescription = AppLanguageSettings.translate(context, "Ảnh đại diện Google"),
+                                contentDescription = AppText.translate(context, "Ảnh đại diện Google"),
                                 modifier = Modifier.size(42.dp).clip(CircleShape)
                             )
                         }
@@ -2527,7 +2525,7 @@ fun SettingsScreen(
                     if (!accountData?.profilePictureUri.isNullOrBlank()) {
                         AsyncImage(
                             model = accountData?.profilePictureUri,
-                            contentDescription = AppLanguageSettings.translate(context, "Ảnh hồ sơ Google"),
+                            contentDescription = AppText.translate(context, "Ảnh hồ sơ Google"),
                             modifier = Modifier.size(52.dp).clip(CircleShape)
                         )
                     }
@@ -2780,8 +2778,8 @@ fun SettingsScreen(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(AppLanguageSettings.translate(context, "Ánh sáng lan tỏa"), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
-                    Text(AppLanguageSettings.translate(context, "Tạo vùng sáng mờ quanh viền LED"), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                    Text(AppText.translate(context, "Ánh sáng lan tỏa"), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp)
+                    Text(AppText.translate(context, "Tạo vùng sáng mờ quanh viền LED"), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
                 }
                 Switch(checked = ledGlowEnabled, onCheckedChange = onLedGlowEnabledChanged)
             }
