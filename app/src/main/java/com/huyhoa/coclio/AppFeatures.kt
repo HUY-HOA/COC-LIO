@@ -1383,14 +1383,13 @@ class UpgradeReminderWorker(
             applicationContext,
             if (base == "builder") "Làng đêm" else "Làng chính"
         )
-        val localizedItem = AppText.translate(applicationContext, item)
+        val localizedItem = notificationDisplayItemName(AppText.translate(applicationContext, item))
         val localizedSection = AppText.translate(applicationContext, section)
         val notificationBody = listOf(
             "${AppText.translate(applicationContext, "Làng")}: $villageName ($tag)",
             "${AppText.translate(applicationContext, "Căn cứ")}: $baseText",
             "${AppText.translate(applicationContext, "Nhóm")}: $localizedSection",
             "${AppText.translate(applicationContext, "Công trình")}: $localizedItem",
-            "$dataId",
             "${AppText.translate(applicationContext, "Dự kiến")}: $levelText",
             AppText.translate(
                 applicationContext,
@@ -1407,10 +1406,11 @@ class UpgradeReminderWorker(
                 ?.takeIf { it.isNotBlank() && it.length <= 1800 }
                 ?: fallback
             return template
+                .replace(Regex("(?i)\\b(?:ID|Mã)\\s*[:#]?\\s*\\{id\\}"), "")
                 .replace("{item}", localizedItem)
                 .replace("{village}", villageName)
                 .replace("{tag}", tag)
-                .replace("{id}", dataId.toString())
+                .replace("{id}", "")
                 .replace("{level}", levelText)
                 .replace("{base}", baseText)
                 .replace("{section}", localizedSection)
@@ -1431,7 +1431,7 @@ class UpgradeReminderWorker(
             "title",
             AppText.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
         )
-        val notificationText = remoteNotificationText("text", "$villageName • ID $dataId • $levelText")
+        val notificationText = remoteNotificationText("text", "$villageName • $baseText • $levelText")
         val notificationExpandedText = remoteNotificationText("body", notificationBody)
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
