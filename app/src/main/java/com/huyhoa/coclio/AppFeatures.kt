@@ -149,6 +149,7 @@ import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -798,41 +799,96 @@ object AccountActivityTracker {
     @Volatile var lastWriteError: String? = null
         private set
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val lifecycleLock = Any()
     private var heartbeatJob: Job? = null
+    private var pendingStopJob: Job? = null
+    private var lifecycleGeneration = 0L
     @Volatile private var sessionStartedAt = 0L
 
     fun start(context: Context) {
-        if (heartbeatJob?.isActive == true) return
-        heartbeatJob = scope.launch {
-            val user = FirebaseAuth.getInstance().currentUser ?: return@launch
-            if (!hasConsent(user.uid)) return@launch
-            sessionStartedAt = System.currentTimeMillis()
-            record(context.applicationContext, "open", 0L)
-            while (isActive) {
-                delay(600_000L)
-                if (!hasConsent(user.uid)) break
-                record(context.applicationContext, "heartbeat", 0L)
+        synchronized(lifecycleLock) {
+            if (heartbeatJob?.isActive == true) return
+            val previousStop = pendingStopJob
+            val generation = ++lifecycleGeneration
+            val job = scope.launch(start = CoroutineStart.LAZY) {
+                previousStop?.join()
+                val user = FirebaseAuth.getInstance().currentUser ?: return@launch
+                if (!hasConsent(user.uid)) return@launch
+                val started = synchronized(lifecycleLock) {
+                    if (generation != lifecycleGeneration) {
+                        false
+                    } else {
+                        sessionStartedAt = System.currentTimeMillis()
+                        true
+                    }
+                }
+                if (!started) return@launch
+                record(context.applicationContext, "open", 0L)
+                while (isActive) {
+                    delay(600_000L)
+                    val isCurrentSession = synchronized(lifecycleLock) {
+                        generation == lifecycleGeneration
+                    }
+                    if (!isCurrentSession) return@launch
+                    if (!hasConsent(user.uid)) break
+                    record(context.applicationContext, "heartbeat", 0L)
+                }
+                synchronized(lifecycleLock) {
+                    if (generation == lifecycleGeneration) {
+                        heartbeatJob = null
+                        sessionStartedAt = 0L
+                    }
+                }
             }
+            heartbeatJob = job
+            job.start()
         }
     }
 
     fun stop(context: Context) {
-        scope.launch { stopAndWait(context) }
+        requestStop(context)
     }
 
     suspend fun stopAndWait(context: Context) {
-        heartbeatJob?.cancel()
-        heartbeatJob = null
-        val user = FirebaseAuth.getInstance().currentUser
-        val duration = if (sessionStartedAt > 0L) {
-            ((System.currentTimeMillis() - sessionStartedAt) / 1000L).coerceAtLeast(0L)
-        } else {
-            0L
-        }
-        sessionStartedAt = 0L
-        val uid = user?.uid ?: return
-        if (hasConsent(uid)) {
-            record(context.applicationContext, "background", duration)
+        requestStop(context).join()
+    }
+
+    private fun requestStop(context: Context): Job {
+        synchronized(lifecycleLock) {
+            val activeJob = heartbeatJob
+            heartbeatJob = null
+            val startedAt = sessionStartedAt
+            sessionStartedAt = 0L
+            val duration = if (startedAt > 0L) {
+                ((System.currentTimeMillis() - startedAt) / 1000L).coerceAtLeast(0L)
+            } else {
+                0L
+            }
+            val uidAtStop = FirebaseAuth.getInstance().currentUser?.uid
+            val previousStop = pendingStopJob
+            ++lifecycleGeneration
+            activeJob?.cancel()
+            val stopJob = scope.launch(start = CoroutineStart.LAZY) {
+                previousStop?.join()
+                activeJob?.join()
+                if (
+                    uidAtStop != null &&
+                    FirebaseAuth.getInstance().currentUser?.uid == uidAtStop &&
+                    hasConsent(uidAtStop)
+                ) {
+                    record(context.applicationContext, "background", duration)
+                }
+            }
+            pendingStopJob = stopJob
+            stopJob.invokeOnCompletion {
+                synchronized(lifecycleLock) {
+                    if (pendingStopJob === stopJob) {
+                        pendingStopJob = null
+                    }
+                }
+            }
+            stopJob.start()
+            return stopJob
         }
     }
 
@@ -946,7 +1002,6 @@ object AccountActivityTracker {
         }
     }
 }
-
 object FirebaseVillageDataSync {
     suspend fun saveLatest(snapshot: VillageSnapshot): Boolean {
         val user = FirebaseAuth.getInstance().currentUser ?: return false
@@ -2091,7 +2146,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             title = { Text("Xóa hồ sơ Firebase cũ?") },
             text = {
                 Text(
-                    "Thao tác này chỉ xóa hồ sơ users/${account.uid}, dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication. Bài đăng Cộng đồng không bị xóa.",
+                    "Thao tác này chỉ xóa hồ sơ users/${account.uid}, dữ liệu JSON đồng bộ theo làng và giấy phép của hồ sơ khỏi Firestore. Nó KHÔNG xóa tài khoản đăng nhập trong Firebase Authentication. Chỉ dùng sau khi bạn đã xóa tài khoản đó ở Authentication.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
