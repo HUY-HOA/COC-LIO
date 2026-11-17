@@ -1713,7 +1713,7 @@ private fun GoogleLoginStartScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
-                    "CHÀO MỪNG ĐẾN VỚI CỘNG ĐỒNG COC-LIO",
+                    "CHÀO MỪNG ĐẾN VỚI COC-LIO",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
