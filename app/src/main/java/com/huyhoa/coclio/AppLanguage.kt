@@ -22,6 +22,13 @@ import androidx.compose.ui.unit.TextUnit
 object AppLanguageSettings {
     @Suppress("UNUSED_PARAMETER")
     fun translate(context: Context, source: String): String = source
+
+    fun clearLegacyLanguagePreference(context: Context) {
+        context.getSharedPreferences("coc_lio_language", Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .apply()
+    }
 }
 
 @Composable
