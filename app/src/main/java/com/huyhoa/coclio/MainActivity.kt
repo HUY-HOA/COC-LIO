@@ -710,7 +710,7 @@ private fun CocLioApp(
     var accountProfileReady by remember { mutableStateOf(false) }
     var googleSignInSubmitting by remember { mutableStateOf(false) }
     var accountProfileError by remember { mutableStateOf<String?>(null) }
-    val villageDataSyncConsent = false
+    var loginPrivacyChoice by remember { mutableStateOf(AccountPrivacyChoice()) }
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
         val listener = FirebaseAuth.AuthStateListener { state ->
@@ -1131,8 +1131,18 @@ private fun CocLioApp(
     }
 
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
-        AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
-        AccountActivityTracker.stopAndWait(context)
+        val choice = if (isGoogleSignedIn) {
+            runCatching { AccountPrivacyConsent.load() }.getOrDefault(AccountPrivacyChoice())
+        } else {
+            AccountPrivacyChoice()
+        }
+        loginPrivacyChoice = choice
+        AccountPrivacyConsent.applyCollectionSettings(context, choice)
+        if (choice.securityTelemetry) {
+            AccountActivityTracker.start(context)
+        } else {
+            AccountActivityTracker.stopAndWait(context)
+        }
     }
 
     LaunchedEffect(isGoogleSignedIn) {
@@ -1208,7 +1218,7 @@ private fun CocLioApp(
             check(savedSuccessfully) {
                 "Đã đạt giới hạn 50 JSON. Hãy xóa vĩnh viễn JSON cũ trước khi thêm bản mới."
             }
-            if (isGoogleSignedIn && villageDataSyncConsent) {
+            if (isGoogleSignedIn && loginPrivacyChoice.villageDataSync) {
                 scope.launch {
                     try {
                         if (FirebaseVillageDataSync.saveLatest(parsed)) {
@@ -1256,6 +1266,13 @@ private fun CocLioApp(
         if (!accountProfileExists) {
             AccountPrivacyConsent.saveRequiredAccountDataConsent()
         }
+        AccountPrivacyConsent.save(loginPrivacyChoice)
+        AccountPrivacyConsent.applyCollectionSettings(context, loginPrivacyChoice)
+        if (loginPrivacyChoice.securityTelemetry) {
+            AccountActivityTracker.start(context)
+        } else {
+            AccountActivityTracker.stopAndWait(context)
+        }
         FirebaseAccountAdministration.savePreferredName(profileName)
         AccountProfileStore.setActive(context, googleAccount.email)
         accountProfileReady = true
@@ -1275,6 +1292,7 @@ private fun CocLioApp(
             AccountActivityTracker.stopAndWait(context)
             FirebaseTelemetry.logSignOut(context)
             AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+            loginPrivacyChoice = AccountPrivacyChoice()
             GoogleAccountAuth.signOut(context)
             AccountProfileStore.setActive(context, null)
             interactiveGoogleSignIn = false
@@ -1440,6 +1458,8 @@ private fun CocLioApp(
                     readError = accountProfileError,
                     consentAccepted = loginTermsAccepted,
                     onConsentAcceptedChanged = { loginTermsAccepted = it },
+                    privacyChoice = loginPrivacyChoice,
+                    onPrivacyChoiceChanged = { loginPrivacyChoice = it },
                     onGoogleSignIn = { signInWithGoogle() }
                 )
             }
@@ -1780,8 +1800,35 @@ private fun GoogleLoginStartScreen(
     readError: String?,
     consentAccepted: Boolean,
     onConsentAcceptedChanged: (Boolean) -> Unit,
+    privacyChoice: AccountPrivacyChoice,
+    onPrivacyChoiceChanged: (AccountPrivacyChoice) -> Unit,
     onGoogleSignIn: () -> Unit
 ) {
+    var selectedPrivacyDetail by rememberSaveable { mutableStateOf<String?>(null) }
+    val allSelected = privacyChoice.securityTelemetry &&
+        privacyChoice.analytics &&
+        privacyChoice.diagnostics &&
+        privacyChoice.villageDataSync
+    val detail = when (selectedPrivacyDetail) {
+        "securityTelemetry" -> Pair(
+            "DỮ LIỆU THIẾT BỊ VÀ HOẠT ĐỘNG TÀI KHOẢN",
+            "Nếu bật, COC-LIO gửi thông tin kỹ thuật gồm hãng và mẫu thiết bị, phiên bản Android và ứng dụng, kích thước/mật độ màn hình, ngôn ngữ, múi giờ, loại kết nối mạng; cùng thời điểm mở ứng dụng, hoạt động gần nhất và thời lượng phiên. Dữ liệu được lưu trong hồ sơ tài khoản Firebase để quản lý hoạt động và hỗ trợ tương thích/kỹ thuật. Không thu thập IMEI, số sê-ri hoặc vị trí GPS theo mục này."
+        )
+        "analytics" -> Pair(
+            "PHÂN TÍCH SỬ DỤNG ỨNG DỤNG",
+            "Nếu bật, Firebase Analytics ghi nhận một số sự kiện sử dụng tính năng, chẳng hạn đăng nhập Google, nhập JSON và các thao tác trong ứng dụng đã được lập trình để đo lường. Mục này dùng để hiểu mức độ sử dụng và cải thiện COC-LIO; không đồng nghĩa với việc tải nội dung JSON thô lên máy chủ."
+        )
+        "diagnostics" -> Pair(
+            "BÁO LỖI VÀ HIỆU NĂNG",
+            "Nếu bật, Firebase Crashlytics và Firebase Performance có thể gửi báo cáo ứng dụng bị lỗi, dấu vết kỹ thuật liên quan đến lỗi, thông tin môi trường ứng dụng/thiết bị và số liệu hiệu năng. Mục này giúp phát hiện lỗi và cải thiện độ ổn định. Báo cáo có thể chứa thông tin kỹ thuật phát sinh tại thời điểm lỗi."
+        )
+        "villageDataSync" -> Pair(
+            "SAO LƯU VÀ ĐỒNG BỘ DỮ LIỆU JSON",
+            "Nếu bật, khi bạn nhập JSON trong lúc đăng nhập, COC-LIO có thể gửi nội dung JSON, mã người chơi, tên làng, thời điểm dữ liệu, cấp Nhà chính/Nhà thợ xây và thông tin tiến trình liên quan lên Cloud Firestore, gắn với tài khoản Google để lưu và đồng bộ. JSON có thể chứa dữ liệu làng của bạn; chỉ bật khi bạn chấp nhận lưu dữ liệu này trên máy chủ."
+        )
+        else -> null
+    }
+
     Box(
         modifier = modifier.padding(10.dp),
         contentAlignment = Alignment.Center
@@ -1792,7 +1839,9 @@ private fun GoogleLoginStartScreen(
             innerPadding = 20.dp
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -1823,6 +1872,13 @@ private fun GoogleLoginStartScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
+                Text(
+                    "ĐỒNG Ý ĐIỀU KHOẢN VÀ DỮ LIỆU TÀI KHOẢN",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -1837,12 +1893,123 @@ private fun GoogleLoginStartScreen(
                         )
                     )
                     Text(
-                        "Tôi đồng ý với Điều khoản sử dụng và Chính sách bảo vệ dữ liệu cá nhân của COC-LIO",
+                        "Tôi đồng ý Điều khoản sử dụng và việc xử lý hồ sơ Google cơ bản cần thiết để xác thực, tạo và quản lý tài khoản COC-LIO.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 10.sp,
                         lineHeight = 15.sp
                     )
                 }
+                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                Text(
+                    "CÁC LỰA CHỌN DỮ LIỆU TÙY CHỌN",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Text(
+                    "Chạm vào tên từng mục để đọc chi tiết. Bạn có thể chọn riêng từng mục hoặc chọn tất cả.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    lineHeight = 14.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = allSelected,
+                        onCheckedChange = { checked ->
+                            onPrivacyChoiceChanged(
+                                privacyChoice.copy(
+                                    securityTelemetry = checked,
+                                    analytics = checked,
+                                    diagnostics = checked,
+                                    villageDataSync = checked
+                                )
+                            )
+                        },
+                        modifier = Modifier.ledRgbBorder(
+                            cornerRadiusDp = 5f,
+                            strokeWidthDp = if (allSelected) 0f else 1.8f
+                        )
+                    )
+                    Text(
+                        "CHỌN TẤT CẢ 4 MỤC",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = privacyChoice.securityTelemetry,
+                        onCheckedChange = { onPrivacyChoiceChanged(privacyChoice.copy(securityTelemetry = it)) }
+                    )
+                    Text(
+                        "Dữ liệu thiết bị và hoạt động tài khoản  ›",
+                        modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "securityTelemetry" },
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 10.sp
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = privacyChoice.analytics,
+                        onCheckedChange = { onPrivacyChoiceChanged(privacyChoice.copy(analytics = it)) }
+                    )
+                    Text(
+                        "Phân tích sử dụng ứng dụng  ›",
+                        modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "analytics" },
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 10.sp
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = privacyChoice.diagnostics,
+                        onCheckedChange = { onPrivacyChoiceChanged(privacyChoice.copy(diagnostics = it)) }
+                    )
+                    Text(
+                        "Báo lỗi và hiệu năng  ›",
+                        modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "diagnostics" },
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 10.sp
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = privacyChoice.villageDataSync,
+                        onCheckedChange = { onPrivacyChoiceChanged(privacyChoice.copy(villageDataSync = it)) }
+                    )
+                    Text(
+                        "Sao lưu và đồng bộ dữ liệu JSON  ›",
+                        modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "villageDataSync" },
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 10.sp
+                    )
+                }
+                Text(
+                    "Các mục tùy chọn không được bật chỉ vì bạn đăng nhập. Từ chối mục nào thì COC-LIO không thực hiện xử lý dữ liệu cho mục đó.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    lineHeight = 14.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
                 NeonButton(
                     text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
                     onClick = onGoogleSignIn,
@@ -1851,6 +2018,32 @@ private fun GoogleLoginStartScreen(
                     showLed = consentAccepted
                 )
             }
+        }
+        if (detail != null) {
+            AlertDialog(
+                onDismissRequest = { selectedPrivacyDetail = null },
+                title = {
+                    Text(
+                        detail.first,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        detail.second,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 11.sp,
+                        lineHeight = 17.sp
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { selectedPrivacyDetail = null }) {
+                        Text("ĐÃ HIỂU")
+                    }
+                }
+            )
         }
     }
 }
