@@ -943,6 +943,12 @@ private fun CocLioApp(
     fun enableBubbleNotifications(profile: String) {
         AppPreferences.setBubbleNotificationsEnabled(context, profile, true)
         if (profile == activeProfile) bubbleNotificationsEnabled = true
+        UpgradeReminderScheduler.scheduleAll(
+            context,
+            history,
+            profile,
+            AppPreferences.notificationsEnabled(context, profile)
+        )
         val serviceIntent = Intent(context, NotificationBubbleService::class.java)
             .setAction(NotificationBubbleService.ACTION_ENABLE)
             .putExtra(NotificationBubbleService.EXTRA_PROFILE, profile)
@@ -951,6 +957,12 @@ private fun CocLioApp(
         }.onFailure { error ->
             AppPreferences.setBubbleNotificationsEnabled(context, profile, false)
             if (profile == activeProfile) bubbleNotificationsEnabled = false
+            UpgradeReminderScheduler.scheduleAll(
+                context,
+                history,
+                profile,
+                AppPreferences.notificationsEnabled(context, profile)
+            )
             scope.launch {
                 snackbar.showAppSnackbar(
                     context,
@@ -964,6 +976,12 @@ private fun CocLioApp(
     fun disableBubbleNotifications(profile: String) {
         AppPreferences.setBubbleNotificationsEnabled(context, profile, false)
         if (profile == activeProfile) bubbleNotificationsEnabled = false
+        UpgradeReminderScheduler.scheduleAll(
+            context,
+            history,
+            profile,
+            AppPreferences.notificationsEnabled(context, profile)
+        )
         context.stopService(Intent(context, NotificationBubbleService::class.java))
     }
 
