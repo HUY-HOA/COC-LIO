@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "version": 4,
+  "version": 5,
   "maintenance": {
     "enabled": false,
     "title": "",
@@ -34,11 +34,9 @@
     }
   ],
   "notificationTemplates": {
-    "vi": {
-      "title": "Đến giờ hoàn thành • {item}",
-      "text": "{village} • ID {id} • {level}",
-      "body": "{village} ({tag})\nCăn cứ: {base}\nNhóm: {section}\nCông trình: {item}\nID: {id}\nDự kiến: {level}\nBộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
-    }
+    "title": "Đến giờ hoàn thành • {item}",
+    "text": "{village} • ID {id} • {level}",
+    "body": "{village} ({tag})\nCăn cứ: {base}\nNhóm: {section}\nCông trình: {item}\nID: {id}\nDự kiến: {level}\nBộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
   },
   "catalogShards": [
     "part-01.json",
