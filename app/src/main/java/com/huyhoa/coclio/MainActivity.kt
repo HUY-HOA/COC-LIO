@@ -93,6 +93,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
@@ -570,14 +571,15 @@ private fun NeonButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    showLed: Boolean = true
 ) {
     val shape = RoundedCornerShape(14.dp)
     val buttonBackground = Color(0xFF168BFF).copy(alpha = if (enabled) 1f else 0.45f)
     Box(
         modifier = modifier
             .shadow(5.dp, shape)
-            .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = 2f)
+            .ledRgbBorder(cornerRadiusDp = 14f, strokeWidthDp = if (showLed) 2f else 0f)
             .clip(shape)
             .background(buttonBackground)
             .clickable(enabled = enabled, onClick = onClick)
@@ -708,8 +710,7 @@ private fun CocLioApp(
     var accountProfileReady by remember { mutableStateOf(false) }
     var googleSignInSubmitting by remember { mutableStateOf(false) }
     var accountProfileError by remember { mutableStateOf<String?>(null) }
-    var villageDataSyncConsent by remember { mutableStateOf(false) }
-    var accountPrivacyChoice by remember(activeProfile) { mutableStateOf(AccountPrivacyChoice()) }
+    val villageDataSyncConsent = false
     DisposableEffect(Unit) {
         val auth = FirebaseAuth.getInstance()
         val listener = FirebaseAuth.AuthStateListener { state ->
@@ -778,6 +779,7 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
+    var loginTermsAccepted by rememberSaveable { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var lastUsedAt by remember(activeProfile) {
         mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
@@ -1110,33 +1112,13 @@ private fun CocLioApp(
         accountProfileReadyForEmail = null
         accountProfileError = null
         runCatching {
-            if (!AccountPrivacyConsent.hasRequiredAccountDataConsent()) {
-                val user = FirebaseAuth.getInstance().currentUser
-                    ?: throw IllegalStateException("Bạn cần đăng nhập Google trước.")
-                val googleAccount = GoogleAccountData(
-                    email = user.email?.trim()?.lowercase()
-                        ?: throw IllegalStateException("Google không trả về địa chỉ email hợp lệ."),
-                    displayName = user.displayName?.trim()?.takeIf { it.isNotBlank() },
-                    givenName = null,
-                    familyName = null,
-                    profilePictureUri = user.photoUrl?.toString()
-                )
-                val profileExists = AccountPrivacyConsent.hasAccountProfile()
-                if (profileExists) {
-                    AccountPrivacyConsent.saveRequiredAccountDataConsent()
-                }
-                GoogleAccountAuth.shareProfile(googleAccount, countAsSignIn = false)
-                if (!profileExists) {
-                    AccountPrivacyConsent.saveRequiredAccountDataConsent()
-                }
-            }
             AccountPrivacyConsent.hasRequiredAccountDataConsent()
         }
             .onSuccess { ready ->
                 accountProfileReady = ready
                 accountProfileReadyForEmail = email
                 if (!ready) {
-                    accountProfileError = "Không thể hoàn tất thiết lập hồ sơ tài khoản."
+                    accountProfileError = "Bạn cần xác nhận điều khoản và chính sách trước khi đăng nhập Google."
                 }
             }
             .onFailure { error ->
@@ -1149,31 +1131,8 @@ private fun CocLioApp(
     }
 
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
-        if (!isGoogleSignedIn) {
-            villageDataSyncConsent = false
-            accountPrivacyChoice = AccountPrivacyChoice()
-            AccountPrivacyConsent.applyCollectionSettings(context, accountPrivacyChoice)
-            AccountActivityTracker.stopAndWait(context)
-        } else {
-            runCatching { AccountPrivacyConsent.load() }
-                .onSuccess { choice ->
-                    accountPrivacyChoice = choice
-                    villageDataSyncConsent = choice.villageDataSync
-                    AccountPrivacyConsent.applyCollectionSettings(context, choice)
-                    if (choice.securityTelemetry) {
-                        AccountActivityTracker.start(context)
-                    } else {
-                        AccountActivityTracker.stopAndWait(context)
-                    }
-                }
-                .onFailure {
-                    villageDataSyncConsent = false
-                    accountPrivacyChoice = AccountPrivacyChoice()
-                    AccountPrivacyConsent.applyCollectionSettings(context, accountPrivacyChoice)
-                    AccountActivityTracker.stopAndWait(context)
-                    snackbar.showAppSnackbar(context, "Không tải được lựa chọn dữ liệu tài khoản. Các mục tùy chọn vẫn đang tắt.")
-                }
-        }
+        AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
+        AccountActivityTracker.stopAndWait(context)
     }
 
     LaunchedEffect(isGoogleSignedIn) {
@@ -1278,6 +1237,7 @@ private fun CocLioApp(
     }
 
     suspend fun finishGoogleSignIn(googleAccount: GoogleAccountData) {
+        check(loginTermsAccepted) { "Bạn cần đồng ý với điều khoản và chính sách trước khi đăng nhập." }
         val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
         val profileName = (
             savedName?.takeIf { it.isNotBlank() }
@@ -1321,6 +1281,7 @@ private fun CocLioApp(
             activeProfile = "local"
             selectedTab = 2
             jsonSection = 0
+            loginTermsAccepted = false
             snackbar.showAppSnackbar(context, message)
         }
     }
@@ -1328,7 +1289,7 @@ private fun CocLioApp(
 
 
     fun signInWithGoogle() {
-        if (googleSignInSubmitting || interactiveGoogleSignIn) return
+        if (!loginTermsAccepted || googleSignInSubmitting || interactiveGoogleSignIn) return
         scope.launch {
             interactiveGoogleSignIn = true
             googleSignInSubmitting = true
@@ -1477,6 +1438,8 @@ private fun CocLioApp(
                     appSubtitle = remoteAppConfig.appSubtitle,
                     isBusy = googleSignInSubmitting || interactiveGoogleSignIn,
                     readError = accountProfileError,
+                    consentAccepted = loginTermsAccepted,
+                    onConsentAcceptedChanged = { loginTermsAccepted = it },
                     onGoogleSignIn = { signInWithGoogle() }
                 )
             }
@@ -1638,31 +1601,6 @@ private fun CocLioApp(
                             ledPrefs.edit().putBoolean("glow_enabled", value).apply()
                         },
                         notificationStyle = notificationStyle,
-                        privacyChoice = accountPrivacyChoice,
-                        onSavePrivacyChoice = { updatedChoice ->
-                            scope.launch {
-                                runCatching {
-                                    AccountPrivacyConsent.save(updatedChoice)
-                                }.onSuccess {
-                                    val savedChoice = updatedChoice.copy(version = AccountPrivacyConsent.CURRENT_VERSION)
-                                    accountPrivacyChoice = savedChoice
-                                    villageDataSyncConsent = savedChoice.villageDataSync
-                                    AccountPrivacyConsent.applyCollectionSettings(context, savedChoice)
-                                    if (savedChoice.securityTelemetry) {
-                                        AccountActivityTracker.start(context)
-                                    } else {
-                                        AccountActivityTracker.stopAndWait(context)
-                                    }
-                                    snackbar.showAppSnackbar(context, "Đã lưu lựa chọn dữ liệu tài khoản.")
-                                }.onFailure { error ->
-                                    snackbar.showAppSnackbar(
-                                        context,
-                                        error.message?.takeIf { it.isNotBlank() }
-                                            ?: "Không thể lưu lựa chọn dữ liệu tài khoản."
-                                    )
-                                }
-                            }
-                        },
                         onGoogleSignIn = { signInWithGoogle() },
                         onGoogleSwitchAccount = {
                             leaveGoogleAccount("Đã đăng xuất tài khoản hiện tại. Hãy chọn tài khoản Google khác trên màn hình đăng nhập.")
@@ -1840,6 +1778,8 @@ private fun GoogleLoginStartScreen(
     appSubtitle: String,
     isBusy: Boolean,
     readError: String?,
+    consentAccepted: Boolean,
+    onConsentAcceptedChanged: (Boolean) -> Unit,
     onGoogleSignIn: () -> Unit
 ) {
     Box(
@@ -1883,11 +1823,32 @@ private fun GoogleLoginStartScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = consentAccepted,
+                        onCheckedChange = onConsentAcceptedChanged,
+                        modifier = Modifier.ledRgbBorder(
+                            cornerRadiusDp = 5f,
+                            strokeWidthDp = if (consentAccepted) 0f else 1.8f
+                        )
+                    )
+                    Text(
+                        "Tôi đồng ý với Điều khoản sử dụng và Chính sách bảo vệ dữ liệu cá nhân của COC-LIO",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 10.sp,
+                        lineHeight = 15.sp
+                    )
+                }
                 NeonButton(
                     text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
                     onClick = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isBusy
+                    enabled = consentAccepted && !isBusy,
+                    showLed = consentAccepted
                 )
             }
         }
