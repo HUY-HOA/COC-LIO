@@ -1828,7 +1828,7 @@ private fun EmptyWelcome(onImport: () -> Unit, onOpenGame: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         NeonButton(text = "NHẬP JSON ĐẦU TIÊN", onClick = onImport, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        Text("Nút mở trò chơi chỉ đưa bạn vào trò chơi. Bạn cần tự thao tác xuất và sao chép JSON trong trò chơi.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 15.sp)
+        Text("Nút MỞ CLASH OF CLANS đồng thời bật cửa sổ nhập JSON nổi. Cấp quyền Hiển thị trên ứng dụng khác nếu được yêu cầu; kéo tiêu đề để di chuyển và kéo góc ↘ để thu phóng.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
@@ -3836,7 +3836,7 @@ private fun HistoryScreen(
 
         if (selectedSection == "villages") {
             if (villages.isEmpty()) {
-                item { InfoCard("Chưa có làng nào", "Sao chép JSON trong trò chơi rồi dán vào ứng dụng để thêm làng.") }
+                item { InfoCard("Chưa có làng nào", "Nhấn MỞ CLASH OF CLANS để mở game cùng cửa sổ nhập JSON nổi. Sao chép JSON trong game rồi dán vào cửa sổ đó để lưu làng.") }
             } else {
                 items(villages, key = { "village_" + it.tag }) { snapshot ->
                     val pinned = snapshot.tag in pinnedTags
