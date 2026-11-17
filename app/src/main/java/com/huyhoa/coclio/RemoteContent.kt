@@ -155,6 +155,9 @@ object RemoteContentManager {
                 else editor.putString(preferenceKey, value)
             }
         }
+        listOf("title", "text", "body").forEach { key ->
+            editor.remove("notification_en_$key")
+        }
         editor.apply()
         mutableContent.value = state
     }
@@ -263,7 +266,7 @@ internal fun parseRemoteContent(data: Map<String, Any?>): RemoteContentState {
         .orEmpty()
 
     val templatesRaw = data["notificationTemplates"] as? Map<*, *>
-    val templates = listOf("vi", "en").mapNotNull { language ->
+    val templates = listOf("vi").mapNotNull { language ->
         val languageData = templatesRaw?.get(language) as? Map<*, *>
             ?: return@mapNotNull null
         val values = listOf("title", "text", "body").mapNotNull { key ->
