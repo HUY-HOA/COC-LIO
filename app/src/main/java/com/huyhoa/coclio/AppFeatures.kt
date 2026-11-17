@@ -1281,6 +1281,19 @@ private fun applyLegacyNotificationSettings(
         )
 }
 
+internal fun notificationDisplayItemName(itemName: String): String {
+    val cleanName = itemName.replace(Regex("""\s*#\s*\d+\b"""), "").trim()
+    return if (
+        cleanName.isBlank() ||
+        cleanName.equals("Mục", ignoreCase = true) ||
+        cleanName.equals("Item", ignoreCase = true)
+    ) {
+        "Mục chưa được nhận diện"
+    } else {
+        cleanName
+    }
+}
+
 object UpgradeReminderScheduler {
     private fun profileTag(profile: String) =
         "coc_lio_upgrade_" + profile.hashCode().toUInt().toString(16)
