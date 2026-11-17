@@ -62,7 +62,7 @@ data class RemoteContentState(
     val catalog: Map<Int, RemoteCatalogEntry> = emptyMap(),
     val guides: List<RemoteGuide> = emptyList(),
     val links: List<RemoteContentLink> = emptyList(),
-    val notificationTemplates: Map<String, Map<String, String>> = emptyMap()
+    val notificationTemplates: Map<String, String> = emptyMap()
 )
 
 object RemoteContentManager {
@@ -146,17 +146,13 @@ object RemoteContentManager {
         val editor = preferences.edit()
             .putInt("version", state.version)
 
-        listOf("vi").forEach { languageKey ->
-            val templates = state.notificationTemplates[languageKey].orEmpty()
-            listOf("title", "text", "body").forEach { key ->
-                val preferenceKey = "notification_${languageKey}_$key"
-                val value = templates[key]
-                if (value.isNullOrBlank()) editor.remove(preferenceKey)
-                else editor.putString(preferenceKey, value)
-            }
-        }
         listOf("title", "text", "body").forEach { key ->
+            val value = state.notificationTemplates[key]
+            val preferenceKey = "notification_$key"
+            editor.remove("notification_vi_$key")
             editor.remove("notification_en_$key")
+            if (value.isNullOrBlank()) editor.remove(preferenceKey)
+            else editor.putString(preferenceKey, value)
         }
         editor.apply()
         mutableContent.value = state
@@ -266,16 +262,11 @@ internal fun parseRemoteContent(data: Map<String, Any?>): RemoteContentState {
         .orEmpty()
 
     val templatesRaw = data["notificationTemplates"] as? Map<*, *>
-    val templates = listOf("vi").mapNotNull { language ->
-        val languageData = templatesRaw?.get(language) as? Map<*, *>
+    val templates = listOf("title", "text", "body").mapNotNull { key ->
+        val value = (templatesRaw?.get(key) as? String)?.trim()
+            ?.takeIf { it.isNotBlank() && it.length <= 1800 }
             ?: return@mapNotNull null
-        val values = listOf("title", "text", "body").mapNotNull { key ->
-            val value = (languageData[key] as? String)?.trim()
-                ?.takeIf { it.isNotBlank() && it.length <= 1800 }
-                ?: return@mapNotNull null
-            key to value
-        }.toMap()
-        language to values
+        key to value
     }.toMap()
 
     return RemoteContentState(
