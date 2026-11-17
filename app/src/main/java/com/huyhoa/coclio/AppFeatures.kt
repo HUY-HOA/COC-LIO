@@ -1468,15 +1468,18 @@ class UpgradeReminderWorker(
                     ?.let { BitmapFactory.decodeFile(it.absolutePath) }
             }.getOrNull()
         }
+        val notificationTitle = remoteNotificationText(
+            "title",
+            AppText.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
+        )
+        val notificationText = remoteNotificationText("text", "$villageName • ID $dataId • $levelText")
+        val notificationExpandedText = remoteNotificationText("body", notificationBody)
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
-            .setContentTitle(remoteNotificationText(
-                "title",
-                AppText.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
-            ))
-            .setContentText(remoteNotificationText("text", "$villageName • ID $dataId • $levelText"))
-            .setStyle(NotificationCompat.BigTextStyle().bigText(remoteNotificationText("body", notificationBody)))
+            .setContentTitle(notificationTitle)
+            .setContentText(notificationText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(notificationExpandedText))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setOngoing(false)
@@ -1503,6 +1506,21 @@ class UpgradeReminderWorker(
         runCatching {
             NotificationManagerCompat.from(applicationContext)
                 .notify(notificationId, notification)
+        }
+        if (
+            AppPreferences.bubbleNotificationsEnabled(applicationContext, profile) &&
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                Settings.canDrawOverlays(applicationContext))
+        ) {
+            applicationContext.sendBroadcast(
+                Intent(NotificationBubbleService.ACTION_SHOW_ALERT)
+                    .setPackage(applicationContext.packageName)
+                    .putExtra(NotificationBubbleService.EXTRA_TITLE, notificationTitle)
+                    .putExtra(
+                        NotificationBubbleService.EXTRA_BODY,
+                        (notificationText + "\n" + notificationExpandedText).take(1800)
+                    )
+            )
         }
         Result.success()
     }
