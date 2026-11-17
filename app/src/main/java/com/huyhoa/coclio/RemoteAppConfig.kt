@@ -56,7 +56,6 @@ data class RemoteAppConfig(
     val lightOnSurface: Int = 0xFF172235.toInt(),
     val lightOnSurfaceVariant: Int = 0xFF526176.toInt(),
     val ledSpeedMultiplier: Float = 1f,
-    val translations: Map<String, Map<String, String>> = emptyMap(),
     val navigationItems: List<RemoteNavigationItem> = defaultRemoteNavigation(),
     val showImportButton: Boolean = true,
     val dashboardBlocks: List<RemoteDashboardBlock> = emptyList(),
@@ -68,11 +67,6 @@ data class RemoteAppConfig(
     fun featureEnabled(id: String, fallback: Boolean = true): Boolean =
         featureFlags[id] ?: fallback
 
-    fun translation(source: String, language: AppUiLanguage): String? {
-        if (!enabled) return null
-        val key = if (language == AppUiLanguage.ENGLISH) "en" else "vi"
-        return translations[key]?.get(source)
-    }
 }
 
 private fun defaultRemoteNavigation() = listOf(
@@ -85,7 +79,7 @@ object RemoteAppConfigManager {
     private const val DEFAULT_CONFIG_JSON = """
 {
   "schemaVersion": 1,
-  "version": 7,
+  "version": 8,
   "enabled": true,
   "app": {
     "title": "COC-LIO",
@@ -140,10 +134,6 @@ object RemoteAppConfigManager {
   "dashboard": {
     "blocks": []
   },
-  "translations": {
-    "vi": {},
-    "en": {}
-  }
 }
 
 """
@@ -214,28 +204,12 @@ object RemoteAppConfigManager {
 
         val theme = root.optJSONObject("theme") ?: JSONObject()
         val led = root.optJSONObject("led") ?: JSONObject()
-        val translationsJson = root.optJSONObject("translations")
-        val translations = linkedMapOf<String, Map<String, String>>()
         val navigationItems = parseNavigation(root.optJSONObject("navigation"))
         val features = root.optJSONObject("features")
         val featureFlags = parseFeatureFlags(features)
         val dashboardBlocks = parseDashboardBlocks(root.optJSONObject("dashboard"))
         val app = root.optJSONObject("app") ?: JSONObject()
         val ledPalette = parsePalette(led.optJSONArray("palette"))
-
-        for (language in listOf("vi", "en")) {
-            val languageJson = translationsJson?.optJSONObject(language) ?: continue
-            val entries = linkedMapOf<String, String>()
-            val keys = languageJson.keys()
-            while (keys.hasNext() && entries.size < 1500) {
-                val key = keys.next()
-                val value = languageJson.optString(key, "")
-                if (key.isNotBlank() && key.length <= 2048 && value.length <= 2048) {
-                    entries[key] = value
-                }
-            }
-            translations[language] = entries
-        }
 
         val speed = led.optDouble("speedMultiplier", 1.0).toFloat()
             .takeIf { it.isFinite() }
@@ -266,7 +240,6 @@ object RemoteAppConfigManager {
             lightOnSurface = color(theme, "lightOnSurface", defaults.lightOnSurface),
             lightOnSurfaceVariant = color(theme, "lightOnSurfaceVariant", defaults.lightOnSurfaceVariant),
             ledSpeedMultiplier = speed,
-            translations = translations,
             navigationItems = navigationItems,
             showImportButton = featureFlags["importButton"] ?: true,
             dashboardBlocks = dashboardBlocks,
