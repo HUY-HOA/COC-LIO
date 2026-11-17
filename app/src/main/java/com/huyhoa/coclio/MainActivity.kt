@@ -1291,6 +1291,7 @@ private fun CocLioApp(
         scope.launch {
             AccountActivityTracker.stopAndWait(context)
             FirebaseTelemetry.logSignOut(context)
+            runCatching { AccountPrivacyConsent.save(AccountPrivacyChoice()) }
             AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
             loginPrivacyChoice = AccountPrivacyChoice()
             GoogleAccountAuth.signOut(context)
