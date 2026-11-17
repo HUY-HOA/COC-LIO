@@ -503,7 +503,7 @@ class FloatingJsonOverlayService : Service() {
     private fun refreshAccountDetails() {
         val profile = AccountProfileStore.active(this)
         val account = if (profile == "local") {
-            "Tài khoản COC-LIO: Chưa đăng nhập Google"
+            "Đang lưu JSON trên thiết bị • Chưa đăng nhập Google"
         } else {
             val name = AccountProfileStore.preferredName(this, profile)
                 ?: AccountProfileStore.googleData(this, profile)?.displayName
@@ -525,14 +525,12 @@ class FloatingJsonOverlayService : Service() {
         }
 
         val profile = AccountProfileStore.active(this)
-        if (profile == "local") {
-            setStatus("Hãy đăng nhập Google trong COC-LIO trước khi lưu JSON.")
-            return
-        }
-        val signedInEmail = FirebaseAuth.getInstance().currentUser?.email
-        if (signedInEmail.isNullOrBlank() || !signedInEmail.equals(profile, ignoreCase = true)) {
-            setStatus("Tài khoản đã thay đổi. Hãy mở COC-LIO và chọn đúng tài khoản trước khi lưu.")
-            return
+        if (profile != "local") {
+            val signedInEmail = FirebaseAuth.getInstance().currentUser?.email
+            if (signedInEmail.isNullOrBlank() || !signedInEmail.equals(profile, ignoreCase = true)) {
+                setStatus("Tài khoản đã thay đổi. Hãy mở COC-LIO và chọn đúng tài khoản trước khi lưu.")
+                return
+            }
         }
 
         saving = true
