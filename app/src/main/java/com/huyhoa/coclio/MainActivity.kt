@@ -1132,7 +1132,10 @@ private fun CocLioApp(
                     comparisonEvents.map { it.title + ": " + it.detail }
                 )
             }
-            VillageStore.save(context, parsed, activeProfile, customName)
+            val savedSuccessfully = VillageStore.save(context, parsed, activeProfile, customName)
+            check(savedSuccessfully) {
+                "Đã đạt giới hạn 50 JSON. Hãy xóa vĩnh viễn JSON cũ trước khi thêm bản mới."
+            }
             if (isGoogleSignedIn && villageDataSyncConsent) {
                 scope.launch {
                     try {
