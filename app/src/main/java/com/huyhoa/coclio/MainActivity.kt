@@ -2567,7 +2567,7 @@ private fun VillageGridItemCard(
     Column(
         modifier = modifier
             .heightIn(min = if (isEquipment) 148.dp else 112.dp)
-            .ledRgbBorder(cornerRadiusDp = 13f, strokeWidthDp = 2.2f)
+            .ledRgbBorder(cornerRadiusDp = 13f, strokeWidthDp = 2.2f, brightnessIndependent = true)
             .clip(cardShape)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f))
             .border(
@@ -3202,7 +3202,7 @@ private fun equipmentHeroId(dataId: Int): String? = when (dataId) {
 }
 
 private fun equipmentRarityColor(rarity: String?): Color? = when (rarity?.lowercase()) {
-    "common" -> Color(0xFFD5DEE9)
+    "common" -> Color(0xFF8F9CAB)
     "rare" -> Color(0xFF55AFFF)
     "epic" -> Color(0xFFB58AFF)
     "legendary" -> Color(0xFFFFC857)
@@ -3321,7 +3321,7 @@ private fun VillageItemDetailDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 620.dp)
-                .ledRgbBorder(cornerRadiusDp = 18f, strokeWidthDp = 2.6f),
+                .ledRgbBorder(cornerRadiusDp = 18f, strokeWidthDp = 2.6f, brightnessIndependent = true),
             shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
