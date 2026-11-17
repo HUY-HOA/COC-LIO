@@ -272,6 +272,22 @@ object CocAssets {
         107000001 to "smasher"
     )
 
+    fun heroImageUrl(heroId: String): String? {
+        val dataId = when (heroId.trim().lowercase()) {
+            "barbarian-king" -> 28000000
+            "archer-queen" -> 28000001
+            "grand-warden" -> 28000002
+            "royal-champion" -> 28000004
+            "minion-prince" -> 28000006
+            "dragon-duke" -> 28000007
+            else -> return null
+        }
+        val folder = heroes[dataId] ?: return null
+        return ROOT + "$folder/icon.png".split("/").joinToString("/") { segment ->
+            URLEncoder.encode(segment, Charsets.UTF_8.name()).replace("+", "%20")
+        }
+    }
+
     fun imageUrl(entry: CocUpgradeEntry): String? {
         val item = VillageItem(
             sectionKey = entry.sectionKey,
