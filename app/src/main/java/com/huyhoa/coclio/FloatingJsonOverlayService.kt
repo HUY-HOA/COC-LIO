@@ -501,7 +501,8 @@ class FloatingJsonOverlayService : Service() {
                 Triple(saved, previousExists, VillageStore.storedSnapshotCount(this@FloatingJsonOverlayService, profile))
             }
 
-            result.onSuccess { (snapshot, previousExists, count) ->
+            if (result.isSuccess) {
+                val (snapshot, previousExists, count) = result.getOrThrow()
                 val choice = runCatching { AccountPrivacyConsent.load() }.getOrNull()
                 if (choice?.villageDataSync == true) {
                     runCatching { FirebaseVillageDataSync.saveLatest(snapshot) }
@@ -522,12 +523,13 @@ class FloatingJsonOverlayService : Service() {
                     refreshAccountDetails()
                     setStatus("Đã lưu ${snapshot.tag} • $count/50 JSON. ${if (previousExists) "Đã cập nhật làng này." else "Đã thêm làng mới."}")
                 }
-            }.onFailure { error ->
+            } else {
+                val error = result.exceptionOrNull()
                 withContext(Dispatchers.Main) {
                     saving = false
                     saveButton?.isEnabled = true
                     saveButton?.alpha = 1f
-                    setStatus(error.message?.takeIf { it.isNotBlank() } ?: "Không thể phân tích JSON này.")
+                    setStatus(error?.message?.takeIf { it.isNotBlank() } ?: "Không thể phân tích JSON này.")
                 }
             }
         }
