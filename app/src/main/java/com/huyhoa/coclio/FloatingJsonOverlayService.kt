@@ -46,8 +46,6 @@ class FloatingJsonOverlayService : Service() {
         private const val OVERLAY_PREFS = "coc_lio_floating_json"
         private const val FOREGROUND_CHANNEL_ID = "coc_lio_floating_json"
         private const val FOREGROUND_NOTIFICATION_ID = 7815
-        private const val DEFAULT_WIDTH_DP = 320
-        private const val DEFAULT_HEIGHT_DP = 500
         private const val MIN_WIDTH_DP = 270
         private const val MIN_HEIGHT_DP = 350
         private const val MIN_LANDSCAPE_WIDTH_DP = 320
@@ -112,7 +110,7 @@ class FloatingJsonOverlayService : Service() {
             val size = loadExpandedSize(currentOrientationKey, limits)
             expandedWidth = size.first
             expandedHeight = size.second
-            val position = loadPosition(currentOrientationKey, expandedWidth, expandedHeight)
+            val position = loadPosition(currentOrientationKey, expandedWidth)
             windowParams.x = position.first
             windowParams.y = position.second
         } else if (!collapsed) {
@@ -204,7 +202,7 @@ class FloatingJsonOverlayService : Service() {
         val size = loadExpandedSize(currentOrientationKey, limits)
         expandedWidth = size.first
         expandedHeight = size.second
-        val position = loadPosition(currentOrientationKey, expandedWidth, expandedHeight)
+        val position = loadPosition(currentOrientationKey, expandedWidth)
         val x = position.first.coerceIn(0, (metrics.widthPixels - expandedWidth).coerceAtLeast(0))
         val y = position.second.coerceIn(0, (metrics.heightPixels - dp(48) - expandedHeight).coerceAtLeast(0))
 
@@ -540,7 +538,7 @@ class FloatingJsonOverlayService : Service() {
     ): Pair<Int, Int> {
         val isLandscape = orientation == "landscape"
         val widthRatio = if (isLandscape) 0.88f else 0.94f
-        val heightRatio = if (isLandscape) 0.90f else 0.72f
+        val heightRatio = if (isLandscape) 0.98f else 0.72f
         val widthCap = dp(if (isLandscape) 900 else 460)
         val heightCap = dp(if (isLandscape) 420 else 680)
         val width = (limits.maxWidth * widthRatio).toInt()
@@ -579,8 +577,7 @@ class FloatingJsonOverlayService : Service() {
 
     private fun loadPosition(
         orientation: String,
-        panelWidth: Int,
-        panelHeight: Int
+        panelWidth: Int
     ): Pair<Int, Int> {
         val preferences = getSharedPreferences(OVERLAY_PREFS, Context.MODE_PRIVATE)
         val xKey = "x_$orientation"
@@ -769,5 +766,4 @@ class FloatingJsonOverlayService : Service() {
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).toInt().coerceAtLeast(1)
 
-    private fun Int.dpValue(): Int = dp(this)
 }
