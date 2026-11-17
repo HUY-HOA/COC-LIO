@@ -39,6 +39,14 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Hiển thị cửa sổ nhập JSON nổi khi người dùng chủ động mở Clash of Clans từ COC-LIO." />
         </service>
+        <service
+            android:name=".NotificationBubbleService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Duy trì bong bóng nổi thông báo nâng cấp theo lựa chọn bật chủ động của người dùng." />
+        </service>
         <receiver
             android:name=".UpgradeWidgetProvider"
             android:exported="true">
