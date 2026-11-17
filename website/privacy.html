@@ -18,7 +18,7 @@
 <body>
   <header><div class="wrap"><a class="brand" href="/">AILIO</a> · <a href="/">Trang chủ COC-LIO</a></div></header>
   <main class="wrap">
-    <p class="meta">Có hiệu lực từ ngày 15 tháng 11 năm 2026 · Cập nhật lần cuối: 15 tháng 11 năm 2026</p>
+    <p class="meta">Có hiệu lực từ ngày 17 tháng 11 năm 2026 · Cập nhật lần cuối: 17 tháng 11 năm 2026</p>
     <h1>Chính sách bảo vệ dữ liệu và quyền riêng tư</h1>
     <p>Chính sách này giải thích cách dữ liệu được xử lý và bảo vệ khi bạn sử dụng ứng dụng Android COC-LIO do thương hiệu <strong>AILIO</strong> vận hành. AILIO là đầu mối tiếp nhận các yêu cầu và câu hỏi liên quan đến dữ liệu cá nhân.</p>
     <div class="callout">
@@ -27,19 +27,17 @@
 
     <h2>1. Dữ liệu được xử lý</h2>
     <ul>
-      <li><strong>Dữ liệu tài khoản:</strong> mã tài khoản, email, tên và ảnh hồ sơ Google, trạng thái xác minh và thông tin cần thiết để đăng nhập, quản lý tài khoản.</li>
-      <li><strong>Dữ liệu làng:</strong> JSON, mã người chơi, tên làng, cấp độ và tiến trình. Khi chỉ nhập để xem trong ứng dụng, dữ liệu được lưu trên thiết bị; dữ liệu chỉ được đồng bộ lên hồ sơ Firestore riêng khi bạn bật lựa chọn đồng bộ.</li>
-      <li><strong>Dữ liệu hoạt động và thiết bị:</strong> sự kiện mở ứng dụng, thời lượng phiên, hãng/model/brand sản phẩm của thiết bị, tối đa bốn ABI CPU, phiên bản Android và ứng dụng, ngôn ngữ, múi giờ, độ phân giải màn hình, mật độ điểm ảnh và loại kết nối mạng. Dữ liệu chỉ được ghi nhận khi bạn bật riêng lựa chọn này trong Cài đặt.</li>
-      <li><strong>Dữ liệu phân tích và chẩn đoán:</strong> thông tin sử dụng tổng quát, lỗi và hiệu năng chỉ được thu thập khi bạn bật riêng các lựa chọn tương ứng.</li>
+      <li><strong>Dữ liệu tài khoản:</strong> mã tài khoản, email, tên, ảnh hồ sơ Google, trạng thái xác minh và thông tin đăng nhập cần thiết để xác thực, quản lý tài khoản.</li>
+      <li><strong>Dữ liệu làng:</strong> JSON, mã người chơi, tên làng, cấp độ và tiến trình do bạn tự nhập; dữ liệu được xử lý và lưu cục bộ trên thiết bị.</li>
     </ul>
-    <p>Khi tải ảnh tài sản trò chơi, ứng dụng gửi yêu cầu đến nguồn ảnh tương ứng. Yêu cầu tải ảnh không gửi toàn bộ JSON làng của bạn.</p>
+    <p>Phiên bản hiện tại không gửi dữ liệu thiết bị/hoạt động, trạng thái online/offline, sự kiện phân tích, báo lỗi/hiệu năng hoặc JSON làng lên máy chủ chỉ vì bạn đăng nhập Google. COC-LIO không đọc vị trí chính xác, IMEI, số sê-ri hoặc mã nhận dạng phần cứng.</p>
 
     <h2>2. Mục đích sử dụng</h2>
     <p>Dữ liệu được sử dụng để cung cấp chức năng của ứng dụng; xác thực và quản lý tài khoản; lưu hoặc đồng bộ dữ liệu làng theo lựa chọn của bạn; tải dữ liệu hình ảnh trò chơi; bảo vệ hệ thống và hỗ trợ xử lý lỗi.</p>
 
     <h2>3. Lựa chọn xử lý dữ liệu</h2>
-    <p>Đăng nhập Google dùng để xác thực và duy trì hồ sơ tài khoản. Ghi nhận dữ liệu thiết bị/hoạt động, đồng bộ JSON cá nhân, Firebase Analytics và báo lỗi/hiệu năng là các lựa chọn riêng, mặc định tắt và có thể thay đổi trong phần Cài đặt. JSON đồng bộ chỉ được lưu trong hồ sơ Firestore riêng của chính tài khoản đó, không được đăng công khai hoặc gửi cho người dùng khác.</p>
-    <p>Để vận hành các tính năng trực tuyến, một số dữ liệu cần được xử lý bởi nhà cung cấp dịch vụ kỹ thuật về xác thực, lưu trữ, hạ tầng hình ảnh hoặc chẩn đoán. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
+    <p>Hồ sơ Google cơ bản được xử lý khi bạn chủ động xác nhận điều khoản/chính sách và đăng nhập để sử dụng tính năng tài khoản. Việc xác nhận này không tự động cho phép COC-LIO thu thập dữ liệu thiết bị/hoạt động, trạng thái online/offline, phân tích, chẩn đoán hoặc đồng bộ JSON đám mây; các hoạt động này hiện đang tắt trong phiên bản ứng dụng.</p>
+    <p>Để vận hành chức năng tài khoản, thông tin hồ sơ cần thiết được xử lý bởi Google Firebase Authentication và Cloud Firestore. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
     <p>Tùy dịch vụ và vị trí máy chủ, dữ liệu trực tuyến có thể được lưu trữ hoặc xử lý ngoài Việt Nam. Việc chuyển dữ liệu xuyên biên giới, nếu phát sinh, phải được thực hiện theo quy định pháp luật áp dụng.</p>
 
     <h2>4. Lưu trữ và xóa dữ liệu</h2>
