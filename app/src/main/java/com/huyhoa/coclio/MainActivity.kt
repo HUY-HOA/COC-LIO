@@ -615,7 +615,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LegacyCommunityCleanup.disable(this)
-        AppLanguageSettings.clearLegacyLanguagePreference(this)
+        clearLegacyLanguagePreference(this)
         RemoteAppConfigManager.initialize()
         setContent {
             val remoteConfig by RemoteAppConfigManager.config.collectAsState()
@@ -1850,7 +1850,7 @@ private fun OverviewScreen(
                         CocGameIcon(
                             R.drawable.ic_coc_tag,
                             Modifier.size(10.dp),
-                            AppLanguageSettings.translate(context, "Mã người chơi")
+                            AppText.translate(context, "Mã người chơi")
                         )
                         Text(snapshot.tag.removePrefix("#"), color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp)
                     }
@@ -3833,7 +3833,7 @@ private fun HistoryScreen(
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                CocGameIcon(R.drawable.ic_coc_tag, Modifier.size(11.dp), AppLanguageSettings.translate(context, "Mã người chơi"))
+                                CocGameIcon(R.drawable.ic_coc_tag, Modifier.size(11.dp), AppText.translate(context, "Mã người chơi"))
                                 Text(
                                     "${snapshot.tag.removePrefix("#")}  •  Nhà chính ${snapshot.townHallLevel ?: "—"}  •  Nhà thợ ${snapshot.builderHallLevel ?: "—"}  •  ${history.count { it.tag == snapshot.tag }} mốc  •  ${snapshot.activeUpgradesAt(nowSeconds).size} đang nâng",
                                     color = if (snapshot.tag == activeTag) CocGreen else MaterialTheme.colorScheme.onSurface,
