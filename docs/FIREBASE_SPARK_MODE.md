@@ -6,8 +6,6 @@ COC-LIO is configured to run without Firebase Blaze billing.
 
 - Google sign-in through Firebase Authentication.
 - User profiles and consent choices in Cloud Firestore.
-- Community text messages.
-- Community JSON sharing and receiving through Cloud Firestore.
 - The owner account list, profile details, and consent-based activity/device fields written directly by the app.
 - Local village data and other on-device features.
 
@@ -16,9 +14,10 @@ Firestore activity/device fields are client-reported. They are not server-verifi
 ## Features paused on Spark
 
 - Cloud Functions are not deployed or called by the Android app.
-- The Android app subscribes only to the FCM community-message topic when the signed-in user enables community notifications. The Firebase SDK manages its registration token; the app does not read or separately store that token. The server-side sender remains unavailable on Firebase Spark because Cloud Functions are not deployed. Topic subscription alone does not send notifications. Until a trusted sender service is deployed, WorkManager remains the fallback and checks the signed-in user's readable community collection about every 15 minutes. Android battery optimization, Doze, connectivity, or manufacturer background limits can delay checks. This is periodic polling, not instant push delivery.
-- Community message notifications use Android's conversation-bubble API on Android 11 and later. When the OS and user allow bubbles, a new message can open a floating, expandable community chat with live Firestore updates and text replies. Users must allow notification bubbles for COC-LIO or promote a community notification to a bubble in Android's notification UI. On Spark, the incoming message check still uses the 15-minute WorkManager polling schedule, so bubble delivery is not instant. Devices that do not support or allow notification bubbles continue to show ordinary notifications.
-- Firebase Storage upload/download remains unavailable on Spark. The current app stores compressed community images and small attachments directly in Firestore rather than Firebase Storage: images are compressed to at most 350 KiB and can be sent by signed-in members who satisfy the account rules; non-image documents and APK attachments are restricted to the owner account and at most 350 KiB each. Larger attachments are not supported. The Android app retains this limited Tệp attachment feature because it sends and saves small files through Firestore. Binary APK release upload/download is unavailable on Spark, so the APK Updates section and app-update notification flow are removed from the current Android app. Existing Firestore app_updates records are not deleted.
+
+
+- Firebase Storage and APK distribution are not used by the current JSON-focused Android app. Existing Storage objects and legacy Firestore records are not automatically deleted by this code cleanup.
+
 - The owner cannot delete another user's Firebase Authentication account from the Android app. The app can mark that user's COC-LIO Firestore profile as disabled. This blocks access to Firestore-protected COC-LIO features, but does not delete the Authentication account or automatically erase the user's other data.
 - The owner account list is based on Firestore profile documents. Without the server-side Auth user-list sync, stale profiles can remain after an Auth account is deleted separately.
 
