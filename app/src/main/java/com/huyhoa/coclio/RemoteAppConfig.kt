@@ -133,7 +133,7 @@ object RemoteAppConfigManager {
   },
   "dashboard": {
     "blocks": []
-  },
+  }
 }
 
 """
