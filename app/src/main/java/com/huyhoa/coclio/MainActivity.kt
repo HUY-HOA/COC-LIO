@@ -4346,6 +4346,38 @@ private fun VillageItemDetailDialog(
 
                 upgradeEntry?.let { entry ->
                     val globalMax = (maxLevel ?: entry.maxLevel).coerceAtLeast(1)
+                    if (entry.category == "squad") {
+                        entry.properties.optString("composition").takeIf { it.isNotBlank() }?.let {
+                            VillageItemDetailField("THÀNH PHẦN ĐỘI HÌNH", it)
+                        }
+                        entry.properties.optInt("housingSpace", 0).takeIf { it > 0 }?.let {
+                            VillageItemDetailField("SỨC CHỨA", "$it ô nhà")
+                        }
+                        entry.properties.optInt("squadBarracksLevelRequired", 0).takeIf { it > 0 }?.let {
+                            VillageItemDetailField("DOANH TRẠI SQUAD", "Cần cấp $it")
+                        }
+                        entry.properties.optString("abilityName").takeIf { it.isNotBlank() }?.let {
+                            VillageItemDetailField("KỸ NĂNG ĐẶC BIỆT", it)
+                        }
+                        listOf(2, 3).forEach { level ->
+                            entry.properties.optString("abilityLevel$level").takeIf { it.isNotBlank() }?.let {
+                                VillageItemDetailField("KỸ NĂNG CẤP $level", it)
+                            }
+                        }
+                        entry.properties.optLong("barracksUpgradeCost", 0L).takeIf { it > 0L }?.let { cost ->
+                            val resource = entry.properties.optString("barracksUpgradeCostResource", "Elixir")
+                            VillageItemDetailField("CHI PHÍ NÂNG DOANH TRẠI", "$cost $resource")
+                        }
+                        entry.properties.optJSONObject("barracksUpgradeTime")?.let { time ->
+                            val seconds = time.optLong("days") * 86400L +
+                                time.optLong("hours") * 3600L +
+                                time.optLong("minutes") * 60L +
+                                time.optLong("seconds")
+                            if (seconds > 0L) {
+                                VillageItemDetailField("THỜI GIAN NÂNG DOANH TRẠI", formatDuration(seconds))
+                            }
+                        }
+                    }
                     if (globalMax > 1 && entry.levels.isNotEmpty()) {
                         val firstAvailableLevel = entry.firstAvailableLevel
                         val fromLevelOne = CocUpgradeCatalog.upgradeTotals(entry, firstAvailableLevel, globalMax)
