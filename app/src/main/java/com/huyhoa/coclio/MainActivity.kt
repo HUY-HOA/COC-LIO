@@ -3936,9 +3936,9 @@ private fun HeroEquipmentCatalogRow(
 ) {
     var expanded by remember(entry.dataId) { mutableStateOf(false) }
     val item = villageItem ?: catalogVillageItem(entry)
-    val owned = villageItem != null
+    val owned = villageItem != null && (villageItem.count > 0 || (villageItem.timerSeconds ?: 0L) > 0L)
     val maxLevel = entry.maxLevel.coerceAtLeast(1)
-    val currentLevel = (villageItem?.level ?: 1).coerceIn(1, maxLevel)
+    val currentLevel = (if (owned) villageItem?.level ?: 1 else 1).coerceIn(1, maxLevel)
     val blacksmithCap = CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(
         entry,
         blacksmithLevel,
