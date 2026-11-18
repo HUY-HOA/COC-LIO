@@ -3666,6 +3666,56 @@ private fun HeroEquipmentRoster(
                 )
             }
         }
+        if (heroId == "barbarian-king") {
+            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text(
+                "TRANG BỊ ĐÃ CÔNG BỐ • CHƯA PHÁT HÀNH",
+                color = CocGold,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f), RoundedCornerShape(10.dp))
+                    .border(1.dp, CocGold.copy(alpha = 0.8f), RoundedCornerShape(10.dp))
+                    .padding(9.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CategoryImage(catalogVillageItem(
+                        CocUpgradeEntry(
+                            dataId = 0,
+                            id = "blizzard-axe",
+                            name = "Blizzard Axe",
+                            localizedName = "Rìu Bão Tuyết",
+                            base = "home",
+                            category = "hero-equipment",
+                            sectionKey = "equipment",
+                            maxLevel = 33,
+                            rarity = "Legendary",
+                            hero = "barbarian-king",
+                            levels = emptyList(),
+                            superchargeLevels = emptyList()
+                        )
+                    ), 38)
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Rìu Bão Tuyết (Blizzard Axe)", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        ItemRarityBadge("legendary")
+                        Text("Sắp ra mắt qua Sự kiện Chế tác • Cấp tối đa 33", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+                    }
+                }
+                Text("Chi phí toàn bộ cấp 1 → 33 đã được công bố:", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                UpgradeResourceChip("Shiny Ore", 79760L)
+                UpgradeResourceChip("Glowy Ore", 5100L)
+                UpgradeResourceChip("Starry Ore", 705L)
+                Text("Cấp 28–30 cần Nhà chính 16; cấp 31–33 cần Nhà chính 18. Chưa có bảng chi phí từng cấp nên ứng dụng không tự chia hoặc cộng vào tổng trang bị đang sở hữu.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 14.sp)
+            }
+        }
         if (equipment.isEmpty()) {
             VillageItemDetailField("Trang bị", "Danh mục hiện chưa ghi nhận trang bị cho anh hùng này.")
         }
