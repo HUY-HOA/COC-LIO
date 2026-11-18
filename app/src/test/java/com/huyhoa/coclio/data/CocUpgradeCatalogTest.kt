@@ -277,6 +277,53 @@ class CocUpgradeCatalogTest {
     }
 
     @Test
+    fun appliesTownHallNineteenBuildingAndTrapMaximums() {
+        val airDefense = CocUpgradeEntry(
+            dataId = 1000012,
+            id = "air-defense",
+            name = "Air Defense",
+            description = "",
+            base = "home",
+            category = "defense",
+            rarity = "",
+            hero = "",
+            maxLevel = 16,
+            properties = JSONObject(),
+            levels = (1..16).map { level ->
+                CocUpgradeLevel(level, JSONObject().put("level", level).put("townHallRequired", 18))
+            }
+        )
+
+        assertEquals(17, CocUpgradeCatalog.currentMaxLevel(airDefense))
+        assertEquals(16, CocUpgradeCatalog.maxLevelAtHall(airDefense, 18, mapOf(airDefense.dataId to airDefense)))
+        assertEquals(17, CocUpgradeCatalog.maxLevelAtHall(airDefense, 19, mapOf(airDefense.dataId to airDefense)))
+        assertEquals(listOf(17), CocUpgradeCatalog.missingLevels(airDefense, 16, 17))
+    }
+
+    @Test
+    fun appliesTownHallEighteenCollectorMaximums() {
+        val collector = CocUpgradeEntry(
+            dataId = 1000002,
+            id = "elixir-collector",
+            name = "Elixir Collector",
+            description = "",
+            base = "home",
+            category = "resource",
+            rarity = "",
+            hero = "",
+            maxLevel = 17,
+            properties = JSONObject(),
+            levels = (1..17).map { level ->
+                CocUpgradeLevel(level, JSONObject().put("level", level).put("townHallRequired", 17))
+            }
+        )
+
+        assertEquals(18, CocUpgradeCatalog.currentMaxLevel(collector))
+        assertEquals(17, CocUpgradeCatalog.maxLevelAtHall(collector, 17, mapOf(collector.dataId to collector)))
+        assertEquals(18, CocUpgradeCatalog.maxLevelAtHall(collector, 18, mapOf(collector.dataId to collector)))
+    }
+
+    @Test
     fun reportsMissingUpgradeLevelsInsteadOfTreatingPartialTotalsAsComplete() {
         val entry = CocUpgradeEntry(
             dataId = 4000008,
