@@ -3687,22 +3687,7 @@ private fun HeroEquipmentRoster(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    CategoryImage(catalogVillageItem(
-                        CocUpgradeEntry(
-                            dataId = 0,
-                            id = "blizzard-axe",
-                            name = "Blizzard Axe",
-                            localizedName = "Rìu Bão Tuyết",
-                            base = "home",
-                            category = "hero-equipment",
-                            sectionKey = "equipment",
-                            maxLevel = 33,
-                            rarity = "Legendary",
-                            hero = "barbarian-king",
-                            levels = emptyList(),
-                            superchargeLevels = emptyList()
-                        )
-                    ), 38)
+                    Text("❄️", fontSize = 30.sp)
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text("Rìu Bão Tuyết (Blizzard Axe)", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         ItemRarityBadge("legendary")
