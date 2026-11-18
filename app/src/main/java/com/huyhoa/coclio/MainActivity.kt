@@ -1929,23 +1929,27 @@ private fun GoogleLoginStartScreen(
                     showLed = privacyDecisionMade && !isBusy
                 )
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .ledRgbBorder(
-                            cornerRadiusDp = 10f,
-                            strokeWidthDp = if (privacyDecisionMade) 0f else 2f
-                        )
-                        .padding(horizontal = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Checkbox(
-                        checked = allSelected,
-                        onCheckedChange = {
-                            setAllPrivacyChoices(it)
-                            declinedOptionalData = false
-                        },
-                        modifier = Modifier.size(40.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .ledRgbBorder(
+                                cornerRadiusDp = 8f,
+                                strokeWidthDp = if (privacyDecisionMade) 0f else 2f
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Checkbox(
+                            checked = allSelected,
+                            onCheckedChange = {
+                                setAllPrivacyChoices(it)
+                                declinedOptionalData = false
+                            },
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
                     Text(
                         "ĐỒNG Ý TẤT CẢ",
                         modifier = Modifier.weight(1f).clickable {
