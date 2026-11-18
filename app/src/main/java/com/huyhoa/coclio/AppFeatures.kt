@@ -429,7 +429,6 @@ private suspend fun syncFirebaseUserProfile(
     )
     if (!existing.exists()) {
         profile["createdAt"] = FieldValue.serverTimestamp()
-        profile["villageDataConsent"] = false
         profile["signInCount"] = 1L
         profile["lastSignInAt"] = FieldValue.serverTimestamp()
     } else if (countAsSignIn) {
