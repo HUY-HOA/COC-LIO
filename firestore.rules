@@ -48,12 +48,7 @@ service cloud.firestore {
           'photoUrl',
           'emailVerified',
           'providerId',
-          'dataSharingConsent',
-          'analyticsConsent',
-          'diagnosticsConsent',
           'villageDataConsent',
-          'activityDataConsentVersion',
-          'activityConsentAt',
           'signInCount',
           'lastSignInAt',
           'createdAt',
@@ -124,6 +119,49 @@ service cloud.firestore {
             'signInCount',
             'lastSignInAt',
             'updatedAt',
+            'lastActivityEvent',
+            'activityUpdatedAt',
+            'firstOpenedAt',
+            'lastOpenedAt',
+            'lastActiveAt',
+            'lastBackgroundAt',
+            'sessionStartedAt',
+            'appOpenCount',
+            'lastSessionDurationSeconds',
+            'totalForegroundSeconds',
+            'deviceManufacturer',
+            'deviceModel',
+            'deviceBrand',
+            'deviceProduct',
+            'deviceCodeName',
+            'supportedAbis',
+            'localeTag',
+            'timeZoneId',
+            'screenWidthPx',
+            'screenHeightPx',
+            'densityDpi',
+            'networkType',
+            'androidVersion',
+            'sdkInt',
+            'appVersionName',
+            'appVersionCode',
+            'lastVillageTag',
+            'lastVillageName',
+            'lastVillageTimestamp',
+            'lastVillageTownHallLevel',
+            'lastVillageBuilderHallLevel',
+            'villageImportCount',
+            'lastVillageSyncedAt',
+            'lastVillageRawJsonBytes'
+          ])
+          // Client accounts cannot write optional tracking, device metadata or cloud village data.
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            'dataSharingConsent',
+            'analyticsConsent',
+            'diagnosticsConsent',
+            'villageDataConsent',
+            'activityDataConsentVersion',
+            'activityConsentAt',
             'lastActivityEvent',
             'activityUpdatedAt',
             'firstOpenedAt',
@@ -374,40 +412,10 @@ service cloud.firestore {
     }
 
     match /users/{userId}/village_snapshots/{snapshotId} {
+      // Historical snapshots remain readable by their owner and the account owner,
+      // but the current app stores village JSON locally and must not upload new copies.
       allow get, list: if isOwner() || isSelf(userId);
-
-      allow create, update: if isSelf(userId)
-        && get(/databases/$(database)/documents/users/$(userId)).data.villageDataConsent == true
-        && get(/databases/$(database)/documents/users/$(userId)).data.activityDataConsentVersion in [6, 7, 8]
-        && request.resource.data.keys().hasOnly([
-          'uid', 'playerTag', 'villageName', 'snapshotTimestamp', 'rawJson',
-          'rawJsonBytes', 'itemCount', 'extraItemCount', 'activeUpgradeCount',
-          'townHallLevel', 'builderHallLevel', 'createdAt'
-        ])
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.playerTag is string
-        && request.resource.data.playerTag.matches('^#[A-Za-z0-9]+$')
-        && request.resource.data.playerTag.size() <= 20
-        && request.resource.data.villageName is string
-        && request.resource.data.villageName.size() <= 80
-        && request.resource.data.snapshotTimestamp is int
-        && request.resource.data.snapshotTimestamp >= 0
-        && request.resource.data.rawJson is string
-        && request.resource.data.rawJson.size() > 0
-        && request.resource.data.rawJson.size() <= 700000
-        && request.resource.data.rawJsonBytes is int
-        && request.resource.data.rawJsonBytes > 0
-        && request.resource.data.rawJsonBytes <= 700000
-        && request.resource.data.itemCount is int
-        && request.resource.data.itemCount >= 0
-        && request.resource.data.extraItemCount is int
-        && request.resource.data.extraItemCount >= 0
-        && request.resource.data.activeUpgradeCount is int
-        && request.resource.data.activeUpgradeCount >= 0
-        && (!request.resource.data.keys().hasAny(['townHallLevel']) || (request.resource.data.townHallLevel is int && request.resource.data.townHallLevel >= 0 && request.resource.data.townHallLevel <= 100))
-        && (!request.resource.data.keys().hasAny(['builderHallLevel']) || (request.resource.data.builderHallLevel is int && request.resource.data.builderHallLevel >= 0 && request.resource.data.builderHallLevel <= 100))
-        && request.resource.data.createdAt == request.time;
-
+      allow create, update: if false;
       allow delete: if isOwner() || isSelf(userId);
     }
 
