@@ -3639,7 +3639,7 @@ private fun equipmentRarity(dataId: Int): String? = when (dataId) {
 }
 
 private const val EQUIPMENT_COST_DATA_NOTICE =
-    "Chi phí trang bị Common/Epic hiện hữu trong danh mục dùng snapshot cộng đồng ngày 15/11/2026. Thông báo Supercell ngày 17/11/2026 áp dụng cấu trúc chi phí mới cho Legendary và các trang bị Epic phát hành trong tương lai; không xác nhận giảm hồi tố chi phí của các trang bị Epic cũ. Hãy đối chiếu trong trò chơi trước khi lập kế hoạch quặng."
+    "Chi phí Common/Epic hiện có dùng snapshot cộng đồng ngày 15/11/2026. Supercell ngày 17/11/2026 công bố cấu trúc chi phí mới cho Legendary và Epic phát hành trong tương lai; Epic cũ cũng sẽ được giảm chi phí dần theo thời gian nhưng chưa có lịch cụ thể. Vì vậy, số liệu trong ứng dụng là mốc tham khảo hiện tại, cần đối chiếu trong game trước khi lập kế hoạch quặng."
 
 @Composable
 private fun AnnouncedBlizzardAxeCard() {
@@ -3994,7 +3994,7 @@ private fun HeroEquipmentCatalogRow(
                     )
                 }
                 Text(
-                    "Giới hạn TH: ${townHallCap ?: "?"} • Lò rèn: ${blacksmithCap ?: "?"} • Đang xác nhận: ${confirmedUsableCap ?: "Chưa đủ dữ liệu"} / $maxLevel",
+                    "Giới hạn TH: ${townHallCap ?: "?"} • Lò rèn: ${blacksmithCap ?: "?"} • Giới hạn áp dụng: ${confirmedUsableCap ?: "Chưa đủ dữ liệu"} / $maxLevel",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp
                 )
