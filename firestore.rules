@@ -14,10 +14,7 @@ service cloud.firestore {
     function signedIn() {
       return verifiedAccount()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requiredAccountDataConsentVersion', 0) == 1
-          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requiredAccountDataConsentVersion', 0) == 2
-        )
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('requiredAccountDataConsentVersion', 0) == 2
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountDisabled', false) != true;
     }
 
@@ -65,26 +62,15 @@ service cloud.firestore {
         && request.resource.data.familyName is string
         && request.resource.data.familyName.size() <= 80
         && request.resource.data.photoUrl is string
-        && request.resource.data.photoUrl.size() <= 2048;
+        && request.resource.data.photoUrl.size() <= 2048
+        && request.resource.data.lastSignInAt == request.time
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
       allow update: if isOwner()
         || (
           isVerifiedSelf(userId)
           && resource.data.get('accountDisabled', false) != true
-          && (
-            resource.data.get('requiredAccountDataConsentVersion', 0) == 1
-            || resource.data.get('requiredAccountDataConsentVersion', 0) == 2
-            || (
-              request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                'requiredAccountDataConsentVersion',
-                'requiredAccountDataConsentAt'
-              ])
-              && (
-                request.resource.data.requiredAccountDataConsentVersion == 1
-                || request.resource.data.requiredAccountDataConsentVersion == 2
-              )
-              && request.resource.data.requiredAccountDataConsentAt == request.time
-            )
-          )
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'email',
             'displayName',
@@ -94,97 +80,28 @@ service cloud.firestore {
             'emailVerified',
             'providerId',
             'preferredName',
-            'dataSharingConsent',
-            'analyticsConsent',
-            'diagnosticsConsent',
-            'villageDataConsent',
-            'activityDataConsentVersion',
-            'activityConsentAt',
             'requiredAccountDataConsentVersion',
             'requiredAccountDataConsentAt',
             'signInCount',
             'lastSignInAt',
-            'updatedAt',
-            'lastActivityEvent',
-            'activityUpdatedAt',
-            'firstOpenedAt',
-            'lastOpenedAt',
-            'lastActiveAt',
-            'lastBackgroundAt',
-            'sessionStartedAt',
-            'appOpenCount',
-            'lastSessionDurationSeconds',
-            'totalForegroundSeconds',
-            'deviceManufacturer',
-            'deviceModel',
-            'deviceBrand',
-            'deviceProduct',
-            'deviceCodeName',
-            'supportedAbis',
-            'localeTag',
-            'timeZoneId',
-            'screenWidthPx',
-            'screenHeightPx',
-            'densityDpi',
-            'networkType',
-            'androidVersion',
-            'sdkInt',
-            'appVersionName',
-            'appVersionCode',
-            'lastVillageTag',
-            'lastVillageName',
-            'lastVillageTimestamp',
-            'lastVillageTownHallLevel',
-            'lastVillageBuilderHallLevel',
-            'villageImportCount',
-            'lastVillageSyncedAt',
-            'lastVillageRawJsonBytes'
+            'updatedAt'
           ])
-          // Client accounts cannot write optional tracking, device metadata or cloud village data.
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            'dataSharingConsent',
-            'analyticsConsent',
-            'diagnosticsConsent',
-            'villageDataConsent',
-            'activityDataConsentVersion',
-            'activityConsentAt',
-            'lastActivityEvent',
-            'activityUpdatedAt',
-            'firstOpenedAt',
-            'lastOpenedAt',
-            'lastActiveAt',
-            'lastBackgroundAt',
-            'sessionStartedAt',
-            'appOpenCount',
-            'lastSessionDurationSeconds',
-            'totalForegroundSeconds',
-            'deviceManufacturer',
-            'deviceModel',
-            'deviceBrand',
-            'deviceProduct',
-            'deviceCodeName',
-            'supportedAbis',
-            'localeTag',
-            'timeZoneId',
-            'screenWidthPx',
-            'screenHeightPx',
-            'densityDpi',
-            'networkType',
-            'androidVersion',
-            'sdkInt',
-            'appVersionName',
-            'appVersionCode',
-            'lastVillageTag',
-            'lastVillageName',
-            'lastVillageTimestamp',
-            'lastVillageTownHallLevel',
-            'lastVillageBuilderHallLevel',
-            'villageImportCount',
-            'lastVillageSyncedAt',
-            'lastVillageRawJsonBytes'
-          ])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == request.auth.token.email
+          && request.resource.data.emailVerified == request.auth.token.email_verified
+          && request.resource.data.providerId == 'google.com'
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() <= 120
+          && request.resource.data.givenName is string
+          && request.resource.data.givenName.size() <= 80
+          && request.resource.data.familyName is string
+          && request.resource.data.familyName.size() <= 80
+          && request.resource.data.photoUrl is string
+          && request.resource.data.photoUrl.size() <= 2048
           && (
-            !request.resource.data.keys().hasAny(['preferredName'])
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['preferredName'])
             || (
               request.resource.data.preferredName is string
               && request.resource.data.preferredName.size() > 0
@@ -192,209 +109,31 @@ service cloud.firestore {
             )
           )
           && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['dataSharingConsent'])
-            || request.resource.data.dataSharingConsent is bool
-          )
-          && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['analyticsConsent'])
-            || request.resource.data.analyticsConsent is bool
-          )
-          && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['diagnosticsConsent'])
-            || request.resource.data.diagnosticsConsent is bool
-          )
-          && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['villageDataConsent'])
-            || request.resource.data.villageDataConsent is bool
-          )
-          && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['activityConsentAt'])
-            || request.resource.data.activityConsentAt is timestamp
-          )
-          && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['requiredAccountDataConsentVersion'])
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['requiredAccountDataConsentVersion', 'requiredAccountDataConsentAt'])
             || (
-              request.resource.data.requiredAccountDataConsentVersion is int
-              && (
-                request.resource.data.requiredAccountDataConsentVersion == 1
-                || request.resource.data.requiredAccountDataConsentVersion == 2
-              )
+              request.resource.data.diff(resource.data).affectedKeys().hasAll([
+                'requiredAccountDataConsentVersion',
+                'requiredAccountDataConsentAt'
+              ])
+              && request.resource.data.requiredAccountDataConsentVersion == 2
+              && request.resource.data.requiredAccountDataConsentAt == request.time
             )
           )
           && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['requiredAccountDataConsentAt'])
-            || request.resource.data.requiredAccountDataConsentAt is timestamp
-          )
-          && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-              'requiredAccountDataConsentVersion',
-              'requiredAccountDataConsentAt'
-            ])
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['signInCount', 'lastSignInAt'])
             || (
-              (
-                request.resource.data.requiredAccountDataConsentVersion == 1
-                || request.resource.data.requiredAccountDataConsentVersion == 2
-              )
-              && request.resource.data.requiredAccountDataConsentAt is timestamp
+              request.resource.data.diff(resource.data).affectedKeys().hasAll(['signInCount', 'lastSignInAt'])
+              && request.resource.data.signInCount == resource.data.get('signInCount', 0) + 1
+              && request.resource.data.lastSignInAt == request.time
             )
           )
           && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-              'dataSharingConsent',
-              'analyticsConsent',
-              'diagnosticsConsent',
-              'villageDataConsent',
-              'activityDataConsentVersion',
-              'activityConsentAt'
-            ])
-            || (
-              request.resource.data.activityDataConsentVersion in [6, 7, 8]
-              && request.resource.data.activityConsentAt is timestamp
-            )
-          )
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.email == request.auth.token.email
-          && request.resource.data.emailVerified == request.auth.token.email_verified
-          && request.resource.data.providerId == 'google.com'
-          && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-              'lastActivityEvent',
-              'activityUpdatedAt',
-              'firstOpenedAt',
-              'lastOpenedAt',
-              'lastActiveAt',
-              'lastBackgroundAt',
-              'sessionStartedAt',
-              'appOpenCount',
-              'lastSessionDurationSeconds',
-              'totalForegroundSeconds',
-              'deviceManufacturer',
-              'deviceModel',
-              'deviceBrand',
-              'deviceProduct',
-              'deviceCodeName',
-              'supportedAbis',
-              'localeTag',
-              'timeZoneId',
-              'screenWidthPx',
-              'screenHeightPx',
-              'densityDpi',
-              'networkType',
-              'androidVersion',
-              'sdkInt',
-              'appVersionName',
-              'appVersionCode'
-            ])
-            || (
-              resource.data.dataSharingConsent == true
-              && resource.data.activityDataConsentVersion in [6, 7, 8]
-              && request.resource.data.activityDataConsentVersion in [6, 7, 8]
-              && request.resource.data.lastActivityEvent in ['open', 'heartbeat', 'background']
-              && request.resource.data.activityUpdatedAt == request.time
-              && request.resource.data.deviceManufacturer is string
-              && request.resource.data.deviceManufacturer.size() <= 60
-              && request.resource.data.deviceModel is string
-              && request.resource.data.deviceModel.size() <= 100
-              && request.resource.data.deviceBrand is string
-              && request.resource.data.deviceBrand.size() <= 60
-              && request.resource.data.deviceProduct is string
-              && request.resource.data.deviceProduct.size() <= 80
-              && request.resource.data.deviceCodeName is string
-              && request.resource.data.deviceCodeName.size() <= 80
-              && request.resource.data.supportedAbis is string
-              && request.resource.data.supportedAbis.size() <= 100
-              && request.resource.data.localeTag is string
-              && request.resource.data.localeTag.size() <= 35
-              && request.resource.data.timeZoneId is string
-              && request.resource.data.timeZoneId.size() <= 80
-              && request.resource.data.screenWidthPx is int
-              && request.resource.data.screenWidthPx >= 0
-              && request.resource.data.screenHeightPx is int
-              && request.resource.data.screenHeightPx >= 0
-              && request.resource.data.densityDpi is int
-              && request.resource.data.densityDpi >= 0
-              && request.resource.data.networkType in ['offline', 'wifi', 'cellular', 'ethernet', 'bluetooth', 'other']
-              && request.resource.data.androidVersion is string
-              && request.resource.data.androidVersion.size() <= 40
-              && request.resource.data.sdkInt is int
-              && request.resource.data.sdkInt >= 0
-              && request.resource.data.appVersionName is string
-              && request.resource.data.appVersionName.size() <= 40
-              && request.resource.data.appVersionCode is int
-              && request.resource.data.appVersionCode >= 0
-              && (
-                !request.resource.data.keys().hasAny(['appOpenCount'])
-                || request.resource.data.appOpenCount is int
-              )
-              && (
-                !request.resource.data.keys().hasAny(['totalForegroundSeconds'])
-                || request.resource.data.totalForegroundSeconds is int
-              )
-              && (
-                !request.resource.data.keys().hasAny(['lastSessionDurationSeconds'])
-                || request.resource.data.lastSessionDurationSeconds is int
-              )
-              && (
-                !request.resource.data.keys().hasAny(['firstOpenedAt'])
-                || request.resource.data.firstOpenedAt is timestamp
-              )
-              && (
-                !request.resource.data.keys().hasAny(['lastOpenedAt'])
-                || request.resource.data.lastOpenedAt is timestamp
-              )
-              && (
-                !request.resource.data.keys().hasAny(['lastActiveAt'])
-                || request.resource.data.lastActiveAt is timestamp
-              )
-              && (
-                !request.resource.data.keys().hasAny(['lastBackgroundAt'])
-                || request.resource.data.lastBackgroundAt is timestamp
-              )
-              && (
-                !request.resource.data.keys().hasAny(['sessionStartedAt'])
-                || request.resource.data.sessionStartedAt is timestamp
-              )
-            )
-          )
-          && request.resource.data.createdAt == resource.data.createdAt
-          && (
-            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-              'lastVillageTag',
-              'lastVillageName',
-              'lastVillageTimestamp',
-              'lastVillageTownHallLevel',
-              'lastVillageBuilderHallLevel',
-              'villageImportCount',
-              'lastVillageSyncedAt',
-              'lastVillageRawJsonBytes'
-            ])
-            || (
-              resource.data.villageDataConsent == true
-              && resource.data.activityDataConsentVersion in [6, 7, 8]
-              && request.resource.data.lastVillageTag is string
-              && request.resource.data.lastVillageTag.matches('^#[A-Za-z0-9]+$')
-              && request.resource.data.lastVillageTag.size() <= 20
-              && request.resource.data.lastVillageName is string
-              && request.resource.data.lastVillageName.size() <= 80
-              && request.resource.data.lastVillageTimestamp is int
-              && request.resource.data.lastVillageTimestamp >= 0
-              && request.resource.data.lastVillageTownHallLevel is int
-              && request.resource.data.lastVillageTownHallLevel >= 0
-              && request.resource.data.lastVillageTownHallLevel <= 100
-              && request.resource.data.lastVillageBuilderHallLevel is int
-              && request.resource.data.lastVillageBuilderHallLevel >= 0
-              && request.resource.data.lastVillageBuilderHallLevel <= 100
-              && request.resource.data.villageImportCount is int
-              && request.resource.data.villageImportCount >= 1
-              && request.resource.data.lastVillageSyncedAt == request.time
-              && request.resource.data.lastVillageRawJsonBytes is int
-              && request.resource.data.lastVillageRawJsonBytes > 0
-              && request.resource.data.lastVillageRawJsonBytes <= 700000
-            )
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['updatedAt'])
+            || request.resource.data.updatedAt == request.time
           )
         );
 
-      allow delete: if isOwner() || isSelf(userId);
+      allow delete: if isOwner() || isVerifiedSelf(userId);
     }
 
     match /users/{userId}/village_snapshots/{snapshotId} {
