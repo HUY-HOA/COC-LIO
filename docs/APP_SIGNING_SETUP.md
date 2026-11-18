@@ -76,8 +76,8 @@ Dùng **Signed Release APK** để cài và cập nhật về sau. Không làm m
 
 Lưu ý: bản APK debug được ký bằng khóa debug khác khóa release. Android không cho cài đè APK debug bằng APK release có chữ ký khác. Trước lần cài release đầu tiên, hãy bảo đảm đã giữ JSON gốc của từng làng ở nơi an toàn; nếu máy báo xung đột chữ ký, phải gỡ bản debug trước rồi mới cài release, và dữ liệu cục bộ trong app có thể bị xóa.
 
-## 6. Địa chỉ chủ ứng dụng
+## 6. Định danh chủ ứng dụng
 
-Email chủ ứng dụng được cung cấp cho COC-LIO: `phunghuyhoahaikba@gmail.com`.
+COC-LIO xác định tài khoản chủ sở hữu bằng Firebase Authentication UID trong các quy tắc Firestore và phần kiểm tra quyền tương ứng. UID là mã định danh, không phải mật khẩu hay khóa truy cập; quyền dữ liệu vẫn do Firestore Rules kiểm tra ở máy chủ.
 
-Email này sẽ được đặt làm quản trị viên trong **máy chủ cấp phép** khi backend được triển khai. Không nên đưa email này vào APK hoặc dùng một chuỗi email trong app làm cơ chế bảo mật. Hiện tại đăng nhập Google mới chỉ đổi hồ sơ cục bộ; quyền Admin cấp/thu hồi giấy phép chưa hoạt động vì backend xác minh ID token và cơ sở dữ liệu cấp phép chưa được triển khai.
+Không dùng email/Gmail viết cố định trong mã nguồn làm điều kiện cấp quyền. Cloud Functions và máy chủ cấp phép không được triển khai trong cấu hình Firebase Spark hiện tại; không xem các hàm trong thư mục `functions/` là dịch vụ đang hoạt động.
