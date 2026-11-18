@@ -658,50 +658,17 @@ object AccountPrivacyConsent {
             .awaitFirebaseResult()
     }
 
-    suspend fun save(choice: AccountPrivacyChoice) {
-        val user = FirebaseAuth.getInstance().currentUser
-            ?: throw IllegalStateException("Bạn cần đăng nhập Google để lưu lựa chọn dữ liệu.")
-        FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
-            .update(
-                mapOf(
-                    "dataSharingConsent" to choice.securityTelemetry,
-                    "analyticsConsent" to choice.analytics,
-                    "diagnosticsConsent" to choice.diagnostics,
-                    "villageDataConsent" to choice.villageDataSync,
-                    "activityDataConsentVersion" to CURRENT_VERSION,
-                    "activityConsentAt" to FieldValue.serverTimestamp()
-                )
-            )
-            .awaitFirebaseResult()
-    }
+    @Suppress("UNUSED_PARAMETER")
+    suspend fun save(choice: AccountPrivacyChoice) = Unit
 
-    suspend fun load(): AccountPrivacyChoice {
-        val user = FirebaseAuth.getInstance().currentUser ?: return AccountPrivacyChoice()
-        val profile = FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
-            .get()
-            .awaitFirebaseResult()
-        val version = profile.getLong("activityDataConsentVersion") ?: 0L
-        if (version != CURRENT_VERSION) return AccountPrivacyChoice(version = version)
-        return AccountPrivacyChoice(
-            securityTelemetry = profile.getBoolean("dataSharingConsent") == true,
-            analytics = profile.getBoolean("analyticsConsent") == true,
-            diagnostics = profile.getBoolean("diagnosticsConsent") == true,
-            villageDataSync = profile.getBoolean("villageDataConsent") == true,
-            version = version
-        )
-    }
+    suspend fun load(): AccountPrivacyChoice = AccountPrivacyChoice()
 
+    @Suppress("UNUSED_PARAMETER")
     fun applyCollectionSettings(context: Context, choice: AccountPrivacyChoice) {
-        FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(choice.analytics)
-        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(choice.diagnostics)
-        FirebasePerformance.getInstance().setPerformanceCollectionEnabled(choice.diagnostics)
-        if (!choice.diagnostics) {
-            FirebaseCrashlytics.getInstance().deleteUnsentReports()
-        }
+        FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(false)
+        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
+        FirebasePerformance.getInstance().setPerformanceCollectionEnabled(false)
+        FirebaseCrashlytics.getInstance().deleteUnsentReports()
     }
 }
 
@@ -804,20 +771,8 @@ object AccountActivityTracker {
         }
     }
 
-    private suspend fun hasConsent(uid: String): Boolean {
-        return runCatching {
-            val profile = FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(uid)
-                .get()
-                .awaitFirebaseResult()
-            profile.exists() &&
-                profile.getLong("requiredAccountDataConsentVersion") == AccountPrivacyConsent.REQUIRED_ACCOUNT_DATA_VERSION &&
-                profile.getBoolean("accountDisabled") != true &&
-                profile.getBoolean("dataSharingConsent") == true &&
-                profile.getLong("activityDataConsentVersion") == AccountPrivacyConsent.CURRENT_VERSION
-        }.getOrDefault(false)
-    }
+    @Suppress("UNUSED_PARAMETER")
+    private suspend fun hasConsent(uid: String): Boolean = false
 
     private suspend fun record(context: Context, event: String, durationSeconds: Long) {
         runCatching {
@@ -920,33 +875,14 @@ object FirebaseVillageDataSync {
 }
 
 object FirebaseTelemetry {
-    fun logGoogleSignIn(context: Context) {
-        runCatching {
-            FirebaseAnalytics.getInstance(context).logEvent(
-                FirebaseAnalytics.Event.LOGIN,
-                Bundle().apply {
-                    putString(FirebaseAnalytics.Param.METHOD, "google")
-                }
-            )
-        }
-    }
+    @Suppress("UNUSED_PARAMETER")
+    fun logGoogleSignIn(context: Context) = Unit
 
-    fun logSignOut(context: Context) {
-        runCatching {
-            FirebaseAnalytics.getInstance(context).logEvent("logout", Bundle())
-        }
-    }
+    @Suppress("UNUSED_PARAMETER")
+    fun logSignOut(context: Context) = Unit
 
-    fun logVillageImport(context: Context, hasPreviousSnapshot: Boolean) {
-        runCatching {
-            FirebaseAnalytics.getInstance(context).logEvent(
-                "village_json_import",
-                Bundle().apply {
-                    putBoolean("has_previous_snapshot", hasPreviousSnapshot)
-                }
-            )
-        }
-    }
+    @Suppress("UNUSED_PARAMETER")
+    fun logVillageImport(context: Context, hasPreviousSnapshot: Boolean) = Unit
 }
 
 @Suppress("DEPRECATION")
