@@ -133,9 +133,19 @@ object CocUpgradeCatalog {
         26000011 to 8, 26000028 to 9, 26000120 to 5,
         28000000 to 115, 28000001 to 115, 28000002 to 90,
         28000004 to 60, 28000006 to 100, 28000007 to 30,
-        73000011 to 15, 107000001 to 10
+        73000011 to 15, 107000001 to 10,
+        1000012 to 17, 1000019 to 18, 1000021 to 14,
+        1000084 to 5, 1000079 to 4, 1000085 to 5,
+        1000015 to 9, 1000071 to 13, 1000007 to 17,
+        1000014 to 15, 1000005 to 20, 1000003 to 20,
+        1000024 to 14, 1000002 to 18, 1000004 to 18,
+        1000023 to 12, 12000005 to 14, 12000008 to 6,
+        12000001 to 14, 1000010 to 20
     )
-    private val currentMaxUnlockHallOverrides = mapOf(73000011 to 18)
+    private val currentMaxUnlockHallOverrides = mapOf(
+        73000011 to 18,
+        1000002 to 18, 1000004 to 18, 1000023 to 18
+    )
 
     fun currentMaxLevel(entry: CocUpgradeEntry): Int =
         if (entry.base == "home") currentMaxLevelOverrides[entry.dataId] ?: entry.maxLevel
