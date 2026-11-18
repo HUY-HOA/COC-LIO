@@ -246,6 +246,28 @@ class VillageParserTest {
         assertEquals(16, snapshot.townHallLevel)
     }
 
+
+    @Test
+    fun parsesSquadsWithOfficialGameIdsAndKeepsZeroCountUnowned() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#SQUADS","timestamp":1794320000,
+                "squads":[
+                    {"data":4000195,"lvl":2,"cnt":1},
+                    {"data":4000196,"lvl":1,"cnt":0}
+                ]}"""
+        )
+
+        val barch = snapshot.items.first { it.dataId == 4000195 }
+        val giantWizard = snapshot.items.first { it.dataId == 4000196 }
+
+        assertEquals("squads", barch.sectionKey)
+        assertEquals("Đội hình Man di & Cung thủ", barch.name)
+        assertEquals(2, barch.level)
+        assertEquals(1, barch.count)
+        assertEquals("Đội hình Khổng lồ & Pháp sư", giantWizard.name)
+        assertEquals(0, giantWizard.count)
+    }
+
     @Test
     fun mapsSiegeBarracksAndKeepsUnknownCosmeticIdsVisible() {
         assertEquals("Doanh trại công thành", CocNames.name(4000075, "siege_machines"))
