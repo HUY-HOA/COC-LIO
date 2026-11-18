@@ -6,7 +6,7 @@ AILIO là thương hiệu phát triển dự án Android COC-LIO, ứng dụng t
 
 - Không đăng nhập Supercell ID, không yêu cầu API key.
 - Phân tích JSON, lưu lịch sử nhập và theo dõi tiến trình cơ bản được thực hiện cục bộ trên điện thoại.
-- Đăng nhập Google, hồ sơ tài khoản, tải ảnh tài sản và đồng bộ JSON riêng theo lựa chọn cần kết nối Internet; một số tính năng sử dụng Firebase hoặc dịch vụ dữ liệu bên ngoài.
+- Đăng nhập Google và hồ sơ tài khoản cần Internet; JSON làng và lịch sử nhập được xử lý, lưu cục bộ trên điện thoại. Phiên bản hiện tại không đồng bộ JSON lên đám mây.
 - Không cần kết nối mạng để phân tích JSON đã có và xem dữ liệu đã lưu cục bộ; những nội dung cần tải từ Internet có thể chưa hiển thị khi ngoại tuyến.
 - Mỗi lần nhập là một ảnh chụp dữ liệu tại thời điểm game xuất JSON.
 - Lần nhập đầu tạo mốc ban đầu; lần nhập kế tiếp cùng Player Tag được so sánh để tìm thay đổi.
@@ -69,12 +69,12 @@ COC-LIO là ứng dụng không chính thức, không liên kết hoặc đượ
 
 ## Google và giấy phép
 
-Google Sign-In được dùng để xác thực tài khoản. Analytics, Crashlytics và Performance chỉ thu thập khi người dùng bật lựa chọn tương ứng. Chủ tài khoản có màn hình quản lý hồ sơ; người dùng thường chỉ xem hồ sơ của chính mình. Đồng bộ bản JSON mới nhất theo Player Tag có thể bật riêng. FCM hiện mới có đăng ký chủ đề ở APK, chưa có máy chủ gửi tin; cấp phép trực tuyến và xuất BigQuery chưa hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
+Google Sign-In được dùng để xác thực tài khoản. Hồ sơ Google cơ bản được lưu trong Firestore để duy trì tài khoản và quản lý quyền truy cập. Analytics, Crashlytics, Performance Monitoring, ghi nhận hoạt động/thiết bị và đồng bộ JSON đám mây không được bật trong phiên bản hiện tại. JSON và lịch sử làng chỉ lưu cục bộ. Chủ tài khoản có màn hình quản lý hồ sơ; người dùng thường chỉ xem hồ sơ của chính mình. FCM gửi thông báo từ máy chủ, cấp phép trực tuyến và xuất BigQuery chưa hoàn thiện. Xem [hướng dẫn cấu hình](docs/GOOGLE_SIGN_IN_SETUP.md).
 
 ## Dữ liệu tài khoản và quyền riêng tư
 
-- Khi người dùng chủ động đồng ý điều khoản/chính sách rồi đăng nhập Google, hồ sơ tài khoản cơ bản (UID, email, tên, ảnh đại diện và trạng thái xác minh) được lưu vào Firestore để xác thực và quản lý tài khoản.
-- Bốn mục đích tùy chọn — dữ liệu thiết bị/hoạt động, Analytics, Crashlytics/Performance và đồng bộ JSON đám mây — mặc định tắt; người dùng có thể đọc chi tiết, chọn riêng từng mục hoặc chọn tất cả trên màn hình đăng nhập. Đăng nhập Google không tự động bật các mục này.
-- JSON làng được nhập và lưu cục bộ trên điện thoại.
-- COC-LIO không đọc IMEI, số sê-ri, MAC, Android ID, vị trí chính xác, SMS, danh bạ hoặc lịch sử cuộc gọi.
+- Trước khi đăng nhập, người dùng xác nhận một lần rằng đã đọc và đồng ý Điều khoản sử dụng và Chính sách quyền riêng tư.
+- Hồ sơ cần thiết gồm UID, email, tên/ảnh hồ sơ Google, trạng thái xác minh email, nhà cung cấp đăng nhập và metadata tài khoản (số lần đăng nhập, thời điểm tạo/cập nhật/đăng nhập gần nhất) được lưu trong Firestore.
+- JSON làng, Player Tag, tên làng và tiến trình được xử lý, lưu cục bộ; phiên bản hiện tại không tải JSON lên Cloud Firestore.
+- Analytics, Crashlytics, Performance Monitoring và ghi nhận hoạt động/thiết bị không được bật. Ứng dụng không đọc hoặc lưu IP, IMEI, số sê-ri, MAC, Android ID, vị trí GPS, SMS, danh bạ hoặc lịch sử cuộc gọi trong hồ sơ tài khoản.
 - Chế độ Firebase Spark không cần thẻ thanh toán, nhưng Firestore có hạn mức miễn phí. Xem [docs/FIREBASE_SPARK_MODE.md](docs/FIREBASE_SPARK_MODE.md) để biết cách thu thập, lưu trữ và giới hạn.
