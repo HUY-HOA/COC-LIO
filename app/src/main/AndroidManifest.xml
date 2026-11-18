@@ -9,6 +9,7 @@
         <package android:name="com.supercell.clashofclans" />
     </queries>
     <application
+        android:name=".CocLioApplication"
         android:allowBackup="false"
         android:label="COC-LIO"
         android:icon="@mipmap/ic_launcher"
