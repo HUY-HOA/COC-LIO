@@ -27,6 +27,31 @@
 
     <h2>1. Dữ liệu được xử lý</h2>
     <ul>
+      <li><strong>Hồ sơ tài khoản Google:</strong> UID, email, tên hiển thị, họ tên/ảnh hồ sơ theo thông tin Google, tên hiển thị bạn đặt, trạng thái xác minh email và nhà cung cấp đăng nhập.</li>
+      <li><strong>Thông tin duy trì tài khoản:</strong> số lần đăng nhập và các mốc tạo, cập nhật, đăng nhập gần nhất để xác thực, duy trì hồ sơ và hỗ trợ quản lý tài khoản.</li>
+      <li><strong>Dữ liệu làng:</strong> JSON, Player Tag, tên làng, công trình và tiến trình do bạn tự nhập; được phân tích và lưu cục bộ trên điện thoại.</li>
+    </ul>
+    <p>Đăng nhập Google chỉ đồng bộ hồ sơ tài khoản cần thiết lên Firebase Authentication và Cloud Firestore. Phiên bản hiện tại không tải JSON làng lên máy chủ và không cung cấp đồng bộ JSON đám mây.</p>
+
+    <h2>2. Mục đích sử dụng</h2>
+    <ul>
+      <li><strong>Xác thực:</strong> xác minh tài khoản Google để cung cấp chức năng đăng nhập.</li>
+      <li><strong>Quản lý tài khoản:</strong> duy trì hồ sơ cơ bản, xác minh trạng thái tài khoản và hỗ trợ chủ sở hữu quản lý quyền truy cập.</li>
+      <li><strong>Phân tích dữ liệu làng:</strong> xử lý JSON bạn tự nhập và lưu lịch sử trên thiết bị để hiển thị tiến trình.</li>
+    </ul>
+    <p>Firebase Analytics, Crashlytics và Performance Monitoring không được bật. Ứng dụng cũng không bật ghi nhận hoạt động/thiết bị hoặc tải JSON lên đám mây.</p>
+
+    <h2>3. Lựa chọn xử lý dữ liệu</h2>
+    <p>Trước khi đăng nhập Google, bạn cần tích một ô xác nhận đã đọc và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư. Trang chi tiết trong ứng dụng giải thích các trường hồ sơ tài khoản cần thiết. Không có các ô bật/tắt thu thập dữ liệu tùy chọn trong phiên bản hiện tại.</p>
+    <p>COC-LIO không đọc hoặc lưu IP, IMEI, số sê-ri, MAC, Android ID, vị trí GPS, danh bạ, SMS hoặc lịch sử cuộc gọi trong hồ sơ tài khoản. Ứng dụng không yêu cầu các quyền Android để truy cập vị trí, danh bạ, SMS hoặc nhật ký cuộc gọi.</p>
+    <p>Những bản JSON từng được đồng bộ từ phiên bản cũ (nếu có) không tự động bị xóa khi cập nhật ứng dụng. Bạn có thể liên hệ email hỗ trợ để yêu cầu kiểm tra và xử lý dữ liệu cũ thuộc tài khoản.</p>
+    <p>Thông tin hồ sơ cần thiết được xử lý bởi Google Firebase Authentication và Cloud Firestore để cung cấp đăng nhập và quản lý tài khoản. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
+    <p>Tùy dịch vụ và vị trí máy chủ, dữ liệu tài khoản trực tuyến có thể được lưu trữ hoặc xử lý ngoài Việt Nam. Việc chuyển dữ liệu xuyên biên giới, nếu phát sinh, phải được thực hiện theo quy định pháp luật áp dụng.</p>
+
+    <h2>4. Lưu trữ và xóa dữ liệu</h2>
+    <p>JSON làng và lịch sử nhập được lưu trên thiết bị cho đến khi bạn xóa dữ liệu ứng dụng hoặc gỡ ứng dụng. Hồ sơ tài khoản trực tuyến được lưu trong thời gian cần thiết để cung cấp chức năng đăng nhập và quản lý tài khoản. Bạn có thể yêu cầu xem, chỉnh sửa hoặc xóa hồ sơ trực tuyến qua email hỗ trợ; các bản JSON cũ từng được đồng bộ (nếu có) cần được xử lý riêng.</p>
+    <p>
+    <ul>
       <li><strong>Dữ liệu tài khoản:</strong> mã tài khoản, email, tên, ảnh hồ sơ Google, trạng thái xác minh và thông tin đăng nhập cần thiết để xác thực, quản lý tài khoản.</li>
       <li><strong>Dữ liệu làng:</strong> JSON, mã người chơi, tên làng, cấp độ và tiến trình do bạn tự nhập; dữ liệu được xử lý và lưu cục bộ trên thiết bị.</li>
     </ul>
