@@ -3629,7 +3629,7 @@ private fun HeroEquipmentRoster(
             fontWeight = FontWeight.Black
         )
         Text(
-            "ĐÃ CÓ \${owned.size}/\${equipment.size}",
+            "ĐÃ CÓ ${owned.size}/${equipment.size}",
             color = Color(0xFF69D69A),
             fontSize = 10.sp,
             fontWeight = FontWeight.Black
@@ -3645,7 +3645,7 @@ private fun HeroEquipmentRoster(
         if (missing.isNotEmpty()) {
             Divider(color = MaterialTheme.colorScheme.outlineVariant)
             Text(
-                "CHƯA SỞ HỮU • \${missing.size}",
+                "CHƯA SỞ HỮU • ${missing.size}",
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black
@@ -3710,7 +3710,7 @@ private fun HeroEquipmentCatalogRow(
                 ) {
                     ItemRarityBadge(entry.rarity)
                     Text(
-                        if (owned) "CẤP \${villageItem?.level ?: "?"} / $maxLevel"
+                        if (owned) "CẤP ${villageItem?.level ?: "?"} / $maxLevel"
                         else "CHƯA SỞ HỮU",
                         color = if (owned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         fontSize = 9.sp,
@@ -3718,7 +3718,7 @@ private fun HeroEquipmentCatalogRow(
                     )
                 }
                 Text(
-                    "Tối đa Lò rèn: \${blacksmithCap ?: "Chưa đủ dữ liệu"} • MAX: $maxLevel",
+                    "Tối đa Lò rèn: ${blacksmithCap ?: "Chưa đủ dữ liệu"} • MAX: $maxLevel",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp
                 )
@@ -3754,7 +3754,7 @@ private fun HeroEquipmentCatalogRow(
             if (owned) {
                 val currentTotals = CocUpgradeCatalog.upgradeTotals(entry, currentLevel, maxLevel)
                 Text(
-                    "CẤP \${villageItem?.level ?: 1} → MAX",
+                    "CẤP ${villageItem?.level ?: 1} → MAX",
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Black
