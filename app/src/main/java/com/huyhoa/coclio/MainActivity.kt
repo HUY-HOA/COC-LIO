@@ -601,13 +601,6 @@ private fun NeonButton(
     }
 }
 
-private fun clearObsoleteContentCache(context: Context) {
-    context.getSharedPreferences("coc_lio_remote_content", Context.MODE_PRIVATE).edit().clear().apply()
-    context.getSharedPreferences("coc_lio_cloudflare_content", Context.MODE_PRIVATE).edit().clear().apply()
-    context.deleteFile("coc-lio-remote-content.json")
-    context.deleteFile("coc-lio-remote-content.json.tmp")
-}
-
 class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
@@ -624,7 +617,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         LegacyCommunityCleanup.disable(this)
         clearLegacyLanguagePreference(this)
-        clearObsoleteContentCache(this)
         setContent {
             var themeMode by remember { mutableStateOf(AppPreferences.themeMode(this@MainActivity)) }
             val dark = when (themeMode) {
