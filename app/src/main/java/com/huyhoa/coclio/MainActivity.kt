@@ -2837,7 +2837,7 @@ private fun CategoryScreen(
                                     key == "squads" -> {
                                         val confirmedRows = rows.filter { it.properties["catalogOnly"] != "true" }
                                         val confirmedOwned = confirmedRows.count {
-                                            it.count > 0 || (it.level ?: 0) > 0 || (it.timerSeconds ?: 0L) > 0L
+                                            it.count > 0 || (it.timerSeconds ?: 0L) > 0L
                                         }
                                         val confirmedMissing = confirmedRows.size - confirmedOwned
                                         val unknown = rows.size - confirmedRows.size
@@ -3063,7 +3063,7 @@ private fun VillageGridItemCard(
                 if (isSquad) {
                     val unlockTownHall = upgrade?.properties?.optInt("townHallRequired", 0)?.takeIf { it > 0 }
                     val catalogOnly = item.properties["catalogOnly"] == "true"
-                    val owned = item.count > 0 || (item.level ?: 0) > 0 || (item.timerSeconds ?: 0L) > 0L
+                    val owned = item.count > 0 || (item.timerSeconds ?: 0L) > 0L
                     val status = when {
                         owned -> "ĐÃ CÓ"
                         catalogOnly -> "CHƯA XÁC NHẬN"
@@ -4199,7 +4199,7 @@ private fun VillageItemDetailDialog(
                     val squadStatus = when {
                         item.properties["catalogOnly"] == "true" ->
                             "JSON làng không có bản ghi cho đội hình này; chưa xác nhận sở hữu hoặc cấp hiện tại."
-                        item.count > 0 || (item.level ?: 0) > 0 || (item.timerSeconds ?: 0L) > 0L ->
+                        item.count > 0 || (item.timerSeconds ?: 0L) > 0L ->
                             "JSON làng có ghi nhận đội hình này${item.level?.let { " ở cấp $it" }.orEmpty()}."
                         else ->
                             "JSON làng có bản ghi nhưng số lượng bằng 0; đang xem là chưa sở hữu trong dữ liệu đã nhập."
@@ -4220,12 +4220,12 @@ private fun VillageItemDetailDialog(
                 val levelText = when {
                     upgradeEntry?.category == "squad" && item.properties["catalogOnly"] == "true" ->
                         "JSON chưa có bản ghi • chưa xác nhận sở hữu/cấp • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                    upgradeEntry?.category == "squad" && item.count <= 0 && (item.timerSeconds ?: 0L) <= 0L ->
+                        "JSON ghi số lượng 0 • chưa sở hữu • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
                     upgradeEntry?.category == "squad" && item.level != null ->
                         usableCap?.let { "${item.level} / $it" } ?: "${item.level} / ${maxLevel ?: upgradeEntry.maxLevel}"
-                    upgradeEntry?.category == "squad" && item.count > 0 ->
-                        "Đã có trong JSON • cấp chưa rõ • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
                     upgradeEntry?.category == "squad" ->
-                        "JSON ghi số lượng 0 • chưa sở hữu • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                        "Đã có trong JSON • cấp chưa rõ • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
                     item.count <= 0 -> "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp 1"
                     else -> item.level?.let { level ->
                         usableCap?.let { "$level / $it" } ?: level.toString()
