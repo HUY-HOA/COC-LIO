@@ -23,7 +23,7 @@ service cloud.firestore {
 
     function isOwner() {
       return verifiedAccount()
-        && request.auth.token.email == 'phunghuyhoahaikba@gmail.com';
+        && request.auth.uid == 'T0PXzlCfddNZsWZzva2v1NCrWOf2';
     }
 
     function isSelf(userId) {
