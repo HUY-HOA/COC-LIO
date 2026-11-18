@@ -1,11 +1,10 @@
-name: Deploy COC-LIO Security Rules
+name: Deploy COC-LIO Firestore Rules
 
 on:
   workflow_dispatch:
   push:
     paths:
       - "firestore.rules"
-      - "storage.rules"
       - "firebase.json"
       - ".github/workflows/deploy-firestore-rules.yml"
 
@@ -35,5 +34,5 @@ jobs:
       - name: Install Firebase CLI
         run: npm install --global firebase-tools
 
-      - name: Deploy Firestore and Storage Rules
-        run: firebase deploy --only firestore:rules,storage --project coc-lio-73de9 --non-interactive
+      - name: Deploy Firestore Security Rules
+        run: firebase deploy --only firestore:rules --project coc-lio-73de9 --non-interactive
