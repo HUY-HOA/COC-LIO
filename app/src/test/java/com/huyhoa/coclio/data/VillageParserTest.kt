@@ -74,6 +74,21 @@ class VillageParserTest {
     }
 
     @Test
+    fun confirmsLevelOneHeroEquipmentOnlyWhenExplicitlyOwned() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#EQUIPMENT_OWNERSHIP","timestamp":1794320000,"equipment":[
+                {"data":90000061,"lvl":1,"cnt":1},
+                {"data":90000060,"lvl":1,"cnt":0},
+                {"data":90000059,"lvl":1}
+            ]}"""
+        )
+
+        assertTrue(snapshot.items.first { it.dataId == 90000061 }.hasConfirmedEquipmentOwnership)
+        assertEquals(false, snapshot.items.first { it.dataId == 90000060 }.hasConfirmedEquipmentOwnership)
+        assertEquals(false, snapshot.items.first { it.dataId == 90000059 }.hasConfirmedEquipmentOwnership)
+    }
+
+    @Test
     fun detectsUpgradeStartAndCompletionAcrossImports() {
         val before = VillageParser.parse(
             """{"tag":"#TEST123","timestamp":1794320000,"buildings":[{"data":1000008,"lvl":5,"cnt":1}]}"""
