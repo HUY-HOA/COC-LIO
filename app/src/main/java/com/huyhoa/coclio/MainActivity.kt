@@ -2825,7 +2825,13 @@ private fun CategoryScreen(
                                 verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
                                 val sectionCount = if (tab == "army") {
-                                    "${rows.count { it.count > 0 || it.timerSeconds != null }}/${rows.size}"
+                                    val ownedCount = rows.count { it.count > 0 || it.timerSeconds != null }
+                                    val countText = "$ownedCount/${rows.size}"
+                                    if (key == "equipment" && showAnnouncedBlizzardAxe) {
+                                        "$countText • +1 SẮP RA MẮT"
+                                    } else {
+                                        countText
+                                    }
                                 } else {
                                     rows.sumOf { it.count }.toString()
                                 }
@@ -3540,7 +3546,7 @@ private fun AnnouncedBlizzardAxeCard() {
                     )
                 }
                 Text(
-                    "Vua Barbarian • MAX 33 • Mở khóa miễn phí từ Nhà chính cấp 8",
+                    "Vua man di • MAX 33 • Mở khóa miễn phí từ Nhà chính cấp 8",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp
                 )
