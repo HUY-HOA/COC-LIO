@@ -2723,6 +2723,10 @@ private fun CategoryScreen(
     }
     val showAnnouncedBlizzardAxe = hasAnnouncedBlizzardAxe &&
         (selectedRarity == "all" || selectedRarity == "legendary")
+    val showHeroicSpell = tab == "army" && selectedBase == "home" &&
+        (selectedFilter == "all" || selectedFilter == "spells") && selectedRarity == "all"
+    val showSuperTroops = tab == "army" && selectedBase == "home" &&
+        (selectedFilter == "all" || selectedFilter == "troops") && selectedRarity == "all"
 
     fun groupKey(item: VillageItem): String {
         val category = if (tab == "buildings") buildingCategory(item) else armyCategory(item)
@@ -2799,13 +2803,14 @@ private fun CategoryScreen(
                 }
             }
 
-            if (baseItems.isEmpty() || (filtered.isEmpty() && !showAnnouncedBlizzardAxe)) {
+            if (baseItems.isEmpty() || (filtered.isEmpty() && !showAnnouncedBlizzardAxe && !showHeroicSpell)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
                 }
             } else {
                 val grouped = filtered.groupBy(::groupKey).toMutableMap().apply {
                     if (showAnnouncedBlizzardAxe) putIfAbsent("equipment", emptyList())
+                    if (showHeroicSpell) putIfAbsent("spells", emptyList())
                 }
                 grouped.forEach { (key, rows) ->
                     item(key = "led_group_$key", span = { GridItemSpan(maxLineSpan) }) {
@@ -2830,6 +2835,7 @@ private fun CategoryScreen(
                                 val sectionCount = when {
                                     tab != "army" -> rows.sumOf { it.count }.toString()
                                     key == "squads" -> "${rows.size} ĐỘI HÌNH"
+                                    key == "spells" && showHeroicSpell -> rows.size.toString() + " + 1"
                                     else -> {
                                         val ownedCount = rows.count { it.count > 0 || it.timerSeconds != null }
                                         val countText = "$ownedCount/${rows.size}"
@@ -2863,6 +2869,12 @@ private fun CategoryScreen(
                                         if (rowItems.size == 1) Spacer(Modifier.weight(1f))
                                     }
                                 }
+                                if (key == "spells" && showHeroicSpell) {
+                                    HeroicSpellCatalogCard()
+                                }
+                                if (key == "troops" && showSuperTroops) {
+                                    SuperTroopsRoster(baseItems, upgradeCatalog)
+                                }
                                 if (key == "equipment") {
                                     if (showAnnouncedBlizzardAxe) {
                                         AnnouncedBlizzardAxeCard()
@@ -2886,6 +2898,122 @@ private fun CategoryScreen(
             ) {
                 selectedItem = null
             }
+        }
+    }
+}
+
+private data class SuperTroopVariant(val name: String, val baseDataId: Int)
+
+private val superTroopVariants = listOf(
+    SuperTroopVariant("Super Barbarian", 4000000),
+    SuperTroopVariant("Super Archer", 4000001),
+    SuperTroopVariant("Super Giant", 4000003),
+    SuperTroopVariant("Sneaky Goblin", 4000002),
+    SuperTroopVariant("Super Wall Breaker", 4000004),
+    SuperTroopVariant("Rocket Balloon", 4000005),
+    SuperTroopVariant("Super Wizard", 4000006),
+    SuperTroopVariant("Super Dragon", 4000008),
+    SuperTroopVariant("Inferno Dragon", 4000023),
+    SuperTroopVariant("Super Miner", 4000024),
+    SuperTroopVariant("Super Yeti", 4000053),
+    SuperTroopVariant("Super Minion", 4000010),
+    SuperTroopVariant("Super Hog Rider", 4000011),
+    SuperTroopVariant("Super Valkyrie", 4000012),
+    SuperTroopVariant("Super Witch", 4000015),
+    SuperTroopVariant("Ice Hound", 4000017),
+    SuperTroopVariant("Super Bowler", 4000022)
+)
+
+@Composable
+private fun SuperTroopsRoster(
+    baseItems: List<VillageItem>,
+    upgradeCatalog: Map<Int, CocUpgradeEntry>
+) {
+    val itemsById = baseItems.associateBy { it.dataId }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f), RoundedCornerShape(12.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+            .padding(9.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        Text("SIÊU QUÂN • 17 BIẾN THỂ", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+        superTroopVariants.chunked(2).forEach { pair ->
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                pair.forEach { variant ->
+                    val baseItem = itemsById[variant.baseDataId]
+                    val baseEntry = upgradeCatalog[variant.baseDataId]
+                    val cap = baseEntry?.let { CocUpgradeCatalog.currentMaxLevel(it) }
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f), RoundedCornerShape(9.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(9.dp))
+                            .padding(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        if (baseItem != null) CategoryImage(baseItem, 32)
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(variant.name, color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            val levelText = when {
+                                baseItem?.level != null && cap != null -> "Cấp quân gốc " + baseItem.level + " / " + cap
+                                baseItem?.level != null -> "Cấp quân gốc " + baseItem.level
+                                cap != null -> "Cấp quân gốc chưa nhập • MAX " + cap
+                                else -> "Chưa có dữ liệu cấp quân gốc"
+                            }
+                            Text(levelText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
+                        }
+                    }
+                }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+        VillageItemDetailField(
+            "Cách tính cấp và sở hữu",
+            "Siêu quân dùng cấp nghiên cứu của quân gốc, không có cấp nâng riêng. JSON làng không xác nhận siêu quân nào đang được kích hoạt; trạng thái kích hoạt phải kiểm tra trong game."
+        )
+    }
+}
+
+@Composable
+private fun HeroicSpellCatalogCard() {
+    var expanded by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f), RoundedCornerShape(10.dp))
+            .border(1.dp, Color(0xFF63A8FF), RoundedCornerShape(10.dp))
+            .padding(9.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("🧪", fontSize = 25.sp)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Thần chú Anh hùng (Heroic Spell)", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("CẤP 1 / 4 • MỞ KHÓA TỪ NHÀ CHÍNH 17", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Black)
+            }
+            Text(if (expanded) "ẨN" else "CHI PHÍ", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Black)
+        }
+        if (expanded) {
+            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+            VillageItemDetailField("Điều kiện mở khóa", "Nhà chính 17 • Nhà máy Thần chú cấp 10 • Phòng thí nghiệm cấp 15–17 • Sức chứa 2 ô")
+            VillageItemDetailField("Giới hạn theo Nhà chính", "TH17: cấp 2 • TH18: cấp 3 • TH19: cấp 4")
+            Text("TỔNG CẤP 1 → MAX 4", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            UpgradeResourceChip("Elixir", 78500000L)
+            VillageIconDetailField(R.drawable.ic_coc_time, "Tổng thời gian cơ bản", formatDuration(42L * 86400L + 12L * 3600L))
+            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text("CHI PHÍ TỪNG BẬC", color = MaterialTheme.colorScheme.onSurface, fontSize = 9.sp, fontWeight = FontWeight.Black)
+            VillageItemDetailField("Cấp 1 → 2 • TH17", "21.000.000 Tiên dược • 13 ngày")
+            VillageItemDetailField("Cấp 2 → 3 • TH18", "25.500.000 Tiên dược • 14 ngày")
+            VillageItemDetailField("Cấp 3 → 4 • TH19", "32.000.000 Tiên dược • 15 ngày 12 giờ")
+            VillageItemDetailField("Trạng thái", "Chưa có bản ghi Heroic Spell trong JSON làng cũ; ứng dụng không tự đoán cấp hiện tại hoặc trạng thái sở hữu.")
+            VillageItemDetailField("Nguồn dữ liệu", "Supercell xác nhận điều kiện mở khóa và số cấp; chi phí và thời gian theo dữ liệu game 16/11/2026 qua ClashKing/GiBiArena.")
         }
     }
 }
