@@ -562,7 +562,19 @@ object CocNames {
         102000037 to "Sát thương Thợ săn anh hùng",
         102000038 to "Tầm bắn Thợ săn anh hùng",
         102000039 to "Máu Máy bắn bánh", 102000040 to "Sát thương Máy bắn bánh",
-        102000041 to "Hiệu ứng Máy bắn bánh"
+        102000041 to "Hiệu ứng Máy bắn bánh",
+        95000000 to "Đội hình Man di & Cung thủ",
+        95000001 to "Đội hình Khổng lồ & Pháp sư",
+        95000002 to "Đội hình Phá tường",
+        95000003 to "Đội hình Tiểu quỷ",
+        95000004 to "Đội hình Bóng bay",
+        95000005 to "Đội hình Người đá & Phù thủy",
+        95000006 to "Đội hình Kỵ sĩ heo",
+        95000007 to "Đội hình Thợ mỏ",
+        95000008 to "Đội hình Hồi máu",
+        95000009 to "Đội hình P.E.K.K.A & Titan điện",
+        95000010 to "Đội hình Rồng",
+        95000011 to "Đội hình Rồng con"
     )
 
     fun name(id: Int, section: String): String {

@@ -93,6 +93,7 @@ data class CocUpgradeEntry(
     val sectionKey: String
         get() = when (category) {
             "hero-equipment" -> "equipment"
+            "squad" -> "squads"
             "siege-machine" -> "siege_machines"
             "troop" -> if (base == "builder") "units2" else "units"
             "hero" -> if (base == "builder") "heroes2" else "heroes"
@@ -367,6 +368,12 @@ object CocUpgradeCatalog {
         val previous = entry.levels.filter { it.level < level.level }.maxByOrNull { it.level }
         return previous?.let { hallRequirement(entry, it, entries) }
             ?: if (level.level == entry.levels.firstOrNull()?.level && entry.levels.size == 1) 1 else null
+    }
+
+    fun missingLevels(entry: CocUpgradeEntry, currentLevel: Int, targetLevel: Int): List<Int> {
+        if (targetLevel <= currentLevel) return emptyList()
+        val available = entry.levels.mapTo(hashSetOf()) { it.level }
+        return ((currentLevel + 1)..targetLevel).filterNot { it in available }
     }
 
     fun upgradeTotals(

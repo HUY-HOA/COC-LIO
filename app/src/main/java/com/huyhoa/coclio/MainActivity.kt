@@ -2618,7 +2618,7 @@ private fun CategoryScreen(
     val catalogArmyItems = if (tab == "army") {
         upgradeCatalog.values.asSequence()
             .filter { it.base == selectedBase }
-            .filter { it.category in setOf("troop", "siege-machine", "hero", "spell", "pet", "guardian", "hero-equipment") }
+            .filter { it.category in setOf("troop", "siege-machine", "hero", "spell", "pet", "guardian", "hero-equipment", "squad") }
             .filterNot { entry -> snapshotBaseItems.any { it.dataId == entry.dataId && it.base == entry.base } }
             .map(::catalogVillageItem)
             .toList()
@@ -2655,6 +2655,7 @@ private fun CategoryScreen(
             "pet" -> "pets"
             "guardian" -> "guardians"
             "hero-equipment" -> "equipment"
+            "squad" -> "squads"
             else -> remoteCatalog[item.dataId]?.category
                 ?.takeIf { it in setOf("troops", "heroes", "spells", "pets", "guardians", "equipment", "other") }
                 ?: when (item.sectionKey) {
@@ -2687,6 +2688,7 @@ private fun CategoryScreen(
             "spells" to "Thần chú",
             "pets" to "Linh thú",
             "equipment" to "Trang bị anh hùng",
+            "squads" to "Đội hình Squad",
             "other" to "Khác"
         ).filter { (key, _) -> key == "all" || baseItems.any { armyCategory(it) == key } }
     }
@@ -2741,6 +2743,8 @@ private fun CategoryScreen(
         "spells" -> "THẦN CHÚ"
         "pets" -> "LINH THÚ"
         "equipment" -> "TRANG BỊ ANH HÙNG • TẤT CẢ TƯỚNG"
+        "squads" -> "ĐỘI HÌNH SQUAD • TỔ HỢP QUÂN"
+        "squads" -> "ĐỘI HÌNH SQUAD • TỔ HỢP QUÂN"
         else -> rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
     }
 
@@ -2824,16 +2828,18 @@ private fun CategoryScreen(
                                 modifier = Modifier.fillMaxWidth().padding(10.dp),
                                 verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
-                                val sectionCount = if (tab == "army") {
-                                    val ownedCount = rows.count { it.count > 0 || it.timerSeconds != null }
-                                    val countText = "$ownedCount/${rows.size}"
-                                    if (key == "equipment" && showAnnouncedBlizzardAxe) {
-                                        "$countText • +1 SẮP RA MẮT"
-                                    } else {
-                                        countText
+                                val sectionCount = when {
+                                    tab != "army" -> rows.sumOf { it.count }.toString()
+                                    key == "squads" -> "${rows.size} ĐỘI HÌNH"
+                                    else -> {
+                                        val ownedCount = rows.count { it.count > 0 || it.timerSeconds != null }
+                                        val countText = "$ownedCount/${rows.size}"
+                                        if (key == "equipment" && showAnnouncedBlizzardAxe) {
+                                            "$countText • +1 SẮP RA MẮT"
+                                        } else {
+                                            countText
+                                        }
                                     }
-                                } else {
-                                    rows.sumOf { it.count }.toString()
                                 }
                                 GameCategorySectionTitle(key, groupTitle(key, rows), sectionCount)
                                 ordered.filter { it.timerSeconds != null }.forEach { item ->
@@ -2896,6 +2902,7 @@ private fun VillageGridItemCard(
     val itemName = item.name
     val cardMaxLevel = upgrade?.maxLevel?.takeIf { it > 0 } ?: remote?.maxLevel
     val isEquipment = upgrade?.category == "hero-equipment" || item.sectionKey == "equipment"
+    val isSquad = upgrade?.category == "squad"
     val rarity = upgrade?.rarity?.takeIf { it.isNotBlank() }
         ?: remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (isEquipment) equipmentRarity(item.dataId) else null
@@ -2962,14 +2969,18 @@ private fun VillageGridItemCard(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                if (item.count <= 0) {
+                if (isSquad) {
+                    val unlockTownHall = upgrade?.properties?.optInt("townHallRequired", 0)?.takeIf { it > 0 }
+                    if (unlockTownHall != null) "MỞ KHÓA TH$unlockTownHall • CẤP 1–${cardMaxLevel ?: "?"}"
+                    else "SQUAD • CẤP 1–${cardMaxLevel ?: "?"}"
+                } else if (item.count <= 0) {
                     "CHƯA SỞ HỮU • MAX ${cardMaxLevel ?: "?"}"
                 } else {
                     item.level?.let { level ->
                         cardMaxLevel?.let { "Cấp $level / $it" } ?: "Cấp $level"
                     } ?: "Chưa rõ cấp"
                 },
-                color = if (item.count <= 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                color = if (item.count <= 0 && !isSquad) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
@@ -3678,6 +3689,7 @@ private fun catalogVillageItem(entry: CocUpgradeEntry): VillageItem {
         "pet" -> "Linh thú"
         "guardian" -> "Hộ vệ"
         "hero-equipment" -> "Trang bị anh hùng"
+        "squad" -> "Đội hình Squad"
         else -> entry.category
     }
     return VillageItem(
@@ -3947,7 +3959,7 @@ private fun VillageItemDetailDialog(
     } else {
         hallMax
     } ?: maxLevel
-    val currentLevel = item.level ?: 0
+    val currentLevel = if (upgradeEntry?.category == "squad") (item.level ?: 1) else (item.level ?: 0)
     val itemName = item.name
     val description = EquipmentDescriptionsVi[item.dataId]
         ?: CatalogDescriptionsVi[item.dataId]
@@ -4052,6 +4064,35 @@ private fun VillageItemDetailDialog(
                     "Tổng thời gian dùng thời lượng cơ bản của từng cấp; chưa trừ thời gian từ Sách, Búa, trợ thủ, vật phẩm tăng tốc hoặc ưu đãi sự kiện."
                 )
                 VillageItemDetailField("Căn cứ", if (item.base == "builder") "Làng đêm" else "Làng chính")
+                if (upgradeEntry?.category == "squad") {
+                    val squadInfo = upgradeEntry.properties
+                    val unlockHall = squadInfo.optInt("townHallRequired", 0)
+                    val barracksLevel = squadInfo.optInt("squadBarracksLevelRequired", 0)
+                    val composition = squadInfo.optString("composition")
+                    val housing = squadInfo.optInt("housingSpace", 0)
+                    VillageItemDetailField("Mở khóa", "Nhà chính cấp $unlockHall • Squad Barracks cấp $barracksLevel")
+                    if (composition.isNotBlank()) VillageItemDetailField("Thành phần", composition)
+                    if (housing > 0) VillageItemDetailField("Sức chứa", "$housing ô nhà")
+                    val barracksCost = squadInfo.optLong("barracksUpgradeCost", 0L)
+                    val barracksResource = squadInfo.optString("barracksUpgradeCostResource", "Elixir")
+                    if (barracksCost > 0L) UpgradeResourceChip(barracksResource, barracksCost)
+                    val barracksTime = squadInfo.optJSONObject("barracksUpgradeTime")
+                    val barracksSeconds = barracksTime?.let {
+                        it.optLong("days") * 86400L + it.optLong("hours") * 3600L +
+                            it.optLong("minutes") * 60L + it.optLong("seconds")
+                    } ?: 0L
+                    if (barracksSeconds > 0L) {
+                        VillageIconDetailField(R.drawable.ic_coc_time, "Thời gian nâng Squad Barracks", formatDuration(barracksSeconds))
+                    }
+                    val level2Ability = squadInfo.optString("abilityLevel2")
+                    val level3Ability = squadInfo.optString("abilityLevel3")
+                    if (level2Ability.isNotBlank()) VillageItemDetailField("Kỹ năng cấp 2", level2Ability)
+                    if (level3Ability.isNotBlank()) VillageItemDetailField("Kỹ năng cấp 3", level3Ability)
+                    VillageItemDetailField(
+                        "Trạng thái dữ liệu",
+                        "JSON làng hiện chưa cung cấp trạng thái Squad. Ứng dụng hiển thị danh mục và chi phí, không tự kết luận bạn đã sở hữu hay chưa."
+                    )
+                }
                 if (ownerHeroId != null && ownerHero != null) {
                     VillageEquipmentHeroField(ownerHeroId, ownerHero)
                 }
@@ -4063,7 +4104,9 @@ private fun VillageItemDetailDialog(
                         upgradeCatalog = upgradeCatalog
                     )
                 }
-                val levelText = if (item.count <= 0) {
+                val levelText = if (upgradeEntry?.category == "squad") {
+                    "Chưa có trạng thái cấp trong JSON • mốc mặc định Cấp 1"
+                } else if (item.count <= 0) {
                     "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp 1"
                 } else {
                     item.level?.let { level ->
@@ -4243,6 +4286,13 @@ private fun VillageItemDetailDialog(
                                 formatDuration(fromLevelOne.durationSeconds)
                             )
                         }
+                        val missingFullLevels = CocUpgradeCatalog.missingLevels(entry, 1, globalMax)
+                        if (missingFullLevels.isNotEmpty()) {
+                            VillageItemDetailField(
+                                "Thiếu dữ liệu chi phí cấp",
+                                missingFullLevels.joinToString(", ") + ". Tổng ở trên chỉ cộng những cấp có dữ liệu, chưa phải tổng đầy đủ."
+                            )
+                        }
                         val currentStart = (item.level ?: 1).coerceIn(1, globalMax)
                         val fromCurrent = CocUpgradeCatalog.upgradeTotals(
                             entry,
@@ -4279,6 +4329,13 @@ private fun VillageItemDetailDialog(
                                 R.drawable.ic_coc_time,
                                 "Thời gian ước tính còn lại",
                                 formatDuration(currentDuration)
+                            )
+                        }
+                        val missingRemainingLevels = CocUpgradeCatalog.missingLevels(entry, currentStart, globalMax)
+                        if (missingRemainingLevels.isNotEmpty()) {
+                            VillageItemDetailField(
+                                "Thiếu dữ liệu chi phí còn lại",
+                                missingRemainingLevels.joinToString(", ") + ". Cần cập nhật dữ liệu trò chơi để tính chính xác."
                             )
                         }
                     }

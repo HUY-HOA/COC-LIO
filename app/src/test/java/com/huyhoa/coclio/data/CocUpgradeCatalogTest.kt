@@ -228,4 +228,31 @@ class CocUpgradeCatalogTest {
         assertEquals(2, CocUpgradeCatalog.superchargeMaxAtHall(entry, 19))
     }
 
+
+    @Test
+    fun reportsMissingUpgradeLevelsInsteadOfTreatingPartialTotalsAsComplete() {
+        val entry = CocUpgradeEntry(
+            dataId = 4000008,
+            id = "dragon",
+            name = "Dragon",
+            description = "",
+            base = "home",
+            category = "troop",
+            rarity = "",
+            hero = "",
+            maxLevel = 6,
+            properties = JSONObject(),
+            levels = listOf(
+                CocUpgradeLevel(1, JSONObject("""{"level":1}""")),
+                CocUpgradeLevel(2, JSONObject("""{"level":2,"researchCost":100,"researchCostResource":"Elixir"}""")),
+                CocUpgradeLevel(4, JSONObject("""{"level":4,"researchCost":300,"researchCostResource":"Elixir"}""")),
+                CocUpgradeLevel(6, JSONObject("""{"level":6,"researchCost":500,"researchCostResource":"Elixir"}"""))
+            )
+        )
+
+        assertEquals(listOf(3, 5), CocUpgradeCatalog.missingLevels(entry, 1, 6))
+        assertEquals(listOf(5), CocUpgradeCatalog.missingLevels(entry, 4, 6))
+        assertTrue(CocUpgradeCatalog.missingLevels(entry, 6, 6).isEmpty())
+        assertEquals(900L, CocUpgradeCatalog.upgradeTotals(entry, 1, 6).resources["Elixir"])
+    }
 }

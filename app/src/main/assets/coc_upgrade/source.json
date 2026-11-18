@@ -9,13 +9,26 @@
     "https://supercell.com/en/games/clashofclans/blog/release-notes/",
     "https://supercell.com/en/games/clashofclans/blog/news/weve-revamped-the-clash-of-clans-user-interface/"
   ],
-  "note": "Upgrade costs, durations, level stats and requirements are sourced from a third-party MIT-licensed community dataset assembled from Clash of Clans Wiki data. They are not a Supercell official API feed. Supercell release notes are used to cross-check major game updates. Catalog entries marked supercharge=true are parsed as a separate upgrade track; Supercharge tiers are not mixed with ordinary levels or normal upgrade totals. Displayed limits should be treated as a dated reference and checked against the in-game upgrade screen after balance updates.",
+  "note": "Danh mục nền được lấy từ bộ dữ liệu cộng đồng có giấy phép MIT, snapshot 2026-11-15. Dữ liệu Squad được bổ sung riêng ngày 2026-11-18 từ nguồn Supercell Support cho danh sách/thành phần và nguồn cộng đồng cho chi phí/timer. Bản cập nhật Nhà chính 19 phát hành ngày 2026-11-16; không phải mọi cấp mới của quân lính, anh hùng, thần chú và thú cưng trong danh mục nền đã được đồng bộ đầy đủ. COC-LIO kiểm tra khoảng cấp thiếu và phải báo tổng chi phí là chưa đầy đủ khi chưa có dữ liệu, không được tự suy đoán.",
   "catalogIntegrity": {
-    "localIdCount": 226,
+    "localIdCount": 238,
     "remoteLookupIdCount": 134,
     "superchargeItemCount": 18,
     "canonicalKey": "dataId",
     "superchargeField": "levels[].supercharge",
     "validationScript": ".github/scripts/validate_coc_catalog.py"
-  }
+  },
+  "supplementalSnapshotDate": "2026-11-18",
+  "supplementalSources": [
+    {
+      "name": "Supercell Support — Squads",
+      "url": "https://sc-clashofclans.zendesk.com/hc/en-us/articles/58611583748379-Squads",
+      "scope": "Danh sách 12 Squad, Nhà chính mở khóa, thành phần quân và cơ chế cấp Squad"
+    },
+    {
+      "name": "ClashVault — Town Hall 19 Squads",
+      "url": "https://www.clashvault.app/town-hall/19",
+      "scope": "Chi phí/timer nâng Squad Barracks, nghiên cứu Squad cấp 2–3 và mô tả kỹ năng; nguồn cộng đồng, cần đối chiếu trong game"
+    }
+  ]
 }

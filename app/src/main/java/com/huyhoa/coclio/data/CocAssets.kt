@@ -260,6 +260,21 @@ object CocAssets {
         90000061 to "portal-pendant"
     )
 
+    private val squads = mapOf(
+        95000000 to "home/troops/barbarian",
+        95000001 to "home/troops/giant",
+        95000002 to "home/troops/wall-breaker",
+        95000003 to "home/troops/minion",
+        95000004 to "home/troops/balloon",
+        95000005 to "home/troops/golem",
+        95000006 to "home/troops/hog-rider",
+        95000007 to "home/troops/miner",
+        95000008 to "home/troops/balloon",
+        95000009 to "home/troops/pekka",
+        95000010 to "home/troops/dragon",
+        95000011 to "home/troops/baby-dragon"
+    )
+
     private val helpers = mapOf(
         93000000 to "builders-apprentice",
         93000001 to "lab-assistant",
@@ -321,6 +336,7 @@ object CocAssets {
             "pets" -> pets[item.dataId]
             "guardians" -> guardians[item.dataId]?.let { "home/guardians/$it" }
             "equipment" -> equipment[item.dataId]?.let { "home/hero-equipment/$it" }
+            "squads" -> squads[item.dataId]
             "helpers" -> helpers[item.dataId]?.let { "home/other/helpers/$it" }
             else -> null
         } ?: return null
