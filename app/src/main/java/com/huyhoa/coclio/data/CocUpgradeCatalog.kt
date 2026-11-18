@@ -120,6 +120,27 @@ data class CocUpgradeRequirement(
 )
 
 object CocUpgradeCatalog {
+    private val currentMaxLevelOverrides = mapOf(
+        4000000 to 14, 4000001 to 15, 4000002 to 11, 4000003 to 15,
+        4000004 to 15, 4000005 to 14, 4000006 to 15, 4000007 to 12,
+        4000008 to 14, 4000009 to 14, 4000010 to 15, 4000011 to 16,
+        4000012 to 13, 4000013 to 16, 4000015 to 9, 4000017 to 9,
+        4000022 to 11, 4000023 to 13, 4000024 to 13, 4000053 to 9,
+        4000059 to 10, 4000065 to 7, 4000082 to 5, 4000091 to 6,
+        4000095 to 6, 4000109 to 5, 4000110 to 5, 4000123 to 7,
+        4000132 to 5, 4000177 to 4,
+        26000000 to 14, 26000001 to 13, 26000009 to 13,
+        26000011 to 8, 26000028 to 9, 26000120 to 5,
+        28000000 to 115, 28000001 to 115, 28000002 to 90,
+        28000004 to 60, 28000006 to 100, 28000007 to 30,
+        73000011 to 15, 107000001 to 10
+    )
+    private val currentMaxUnlockHallOverrides = mapOf(73000011 to 18)
+
+    fun currentMaxLevel(entry: CocUpgradeEntry): Int =
+        if (entry.base == "home") currentMaxLevelOverrides[entry.dataId] ?: entry.maxLevel
+        else entry.maxLevel
+
     private val facilityIds = mapOf(
         "heroHallLevelRequired" to "hero-hall",
         "laboratoryRequired" to "laboratory",
@@ -294,7 +315,10 @@ object CocUpgradeCatalog {
         val highest = entry.levels.filter { level ->
             hallRequirement(entry, level, entries)?.let { required -> required <= hallLevel } == true
         }.maxOfOrNull { it.level }
-        return highest?.coerceAtMost(entry.maxLevel)
+        val updatedMaximum = currentMaxLevelOverrides[entry.dataId]?.takeIf {
+            hallLevel >= (currentMaxUnlockHallOverrides[entry.dataId] ?: 19)
+        }
+        return listOfNotNull(highest, updatedMaximum).maxOrNull()?.coerceAtMost(currentMaxLevel(entry))
     }
 
     fun maxEquipmentAtBlacksmithLevel(
