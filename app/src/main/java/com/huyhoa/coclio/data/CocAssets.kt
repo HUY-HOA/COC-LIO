@@ -196,7 +196,8 @@ object CocAssets {
         26000098 to "home/spells/revive-spell",
         26000109 to "home/spells/ice-block-spell",
         26000120 to "home/spells/totem-spell",
-        26000123 to "home/spells/angry-spell"
+        26000123 to "home/spells/angry-spell",
+        26000153 to "home/spells/heroic-spell"
     )
 
     private val pets = mapOf(
