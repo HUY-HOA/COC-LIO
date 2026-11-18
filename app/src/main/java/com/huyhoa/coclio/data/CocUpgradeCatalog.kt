@@ -105,6 +105,7 @@ data class CocUpgradeEntry(
         }
 
     val localizedName: String get() = CocNames.name(dataId, sectionKey)
+    val firstAvailableLevel: Int get() = levels.minOfOrNull { it.level } ?: 1
 
     fun level(level: Int): CocUpgradeLevel? = levels.firstOrNull { it.level == level }
 }
