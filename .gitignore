@@ -1,0 +1,36 @@
+# Gradle and Android build output
+.gradle/
+**/build/
+local.properties
+.idea/
+*.iml
+captures/
+*.apk
+*.aab
+
+# Android signing material and private credentials
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+*.base64
+service-account*.json
+*-service-account*.json
+firebase-adminsdk*.json
+.env
+.env.*
+!.env.example
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+
+# Local tooling
+.DS_Store
+Thumbs.db
+
+# Node dependencies
+node_modules/
+functions/node_modules/
