@@ -2535,10 +2535,15 @@ private fun CategoryScreen(
     var upgradeCatalog by remember(context) {
         mutableStateOf<Map<Int, CocUpgradeEntry>>(emptyMap())
     }
+    var supplementalCatalog by remember(context) {
+        mutableStateOf<Map<Int, SupplementalCatalogEntry>>(emptyMap())
+    }
     LaunchedEffect(context) {
-        upgradeCatalog = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            CocUpgradeCatalog.all(context)
+        val catalogs = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            CocUpgradeCatalog.all(context) to LocalSupplementalCatalog.load(context)
         }
+        upgradeCatalog = catalogs.first
+        supplementalCatalog = catalogs.second
     }
     var selectedFilter by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf("all")
@@ -2589,6 +2594,8 @@ private fun CategoryScreen(
                 else -> null
             }
         }?.takeIf { it in setOf("defense", "resources", "traps", "army", "walls", "other") }
+            ?: supplementalCatalog[item.dataId]?.category
+                ?.takeIf { it in setOf("defense", "resources", "traps", "army", "walls", "other") }
             ?: when {
                 item.sectionKey == "traps" || item.sectionKey == "traps2" -> "traps"
                 item.dataId in resourceIds -> "resources"
@@ -2605,7 +2612,9 @@ private fun CategoryScreen(
             "guardian" -> "guardians"
             "hero-equipment" -> "equipment"
             "squad" -> "squads"
-            else -> when (item.sectionKey) {
+            else -> supplementalCatalog[item.dataId]?.category
+                ?.takeIf { it in setOf("troops", "heroes", "spells", "pets", "guardians", "equipment", "other") }
+                ?: when (item.sectionKey) {
                     "units", "units2", "siege_machines" -> "troops"
                     "heroes", "heroes2" -> "heroes"
                     "spells" -> "spells"
@@ -2642,6 +2651,7 @@ private fun CategoryScreen(
 
     fun rarityFor(item: VillageItem): String? =
         upgradeCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
+            ?: supplementalCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
             ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
 
     val categoryFiltered = when {
@@ -2830,6 +2840,7 @@ private fun CategoryScreen(
                                         rowItems.forEach { item ->
                                             VillageGridItemCard(
                                                 item = item,
+                                                supplemental = supplementalCatalog[item.dataId],
                                                 upgrade = upgradeCatalog[item.dataId],
                                                 modifier = Modifier.weight(1f)
                                             ) {
@@ -2857,6 +2868,7 @@ private fun CategoryScreen(
         selectedItem?.let { item ->
             VillageItemDetailDialog(
                 item = item,
+                supplemental = supplementalCatalog[item.dataId],
                 blacksmithLevel = blacksmithLevel,
                 hallLevel = hallLevel,
                 upgradeCatalog = upgradeCatalog,
@@ -2946,15 +2958,18 @@ private fun SuperTroopsRoster(
 @Composable
 private fun VillageGridItemCard(
     item: VillageItem,
+    supplemental: SupplementalCatalogEntry?,
     upgrade: CocUpgradeEntry?,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val itemName = item.name
     val cardMaxLevel = upgrade?.let { CocUpgradeCatalog.currentMaxLevel(it) }
+        ?: supplemental?.maxLevel
     val isEquipment = upgrade?.category == "hero-equipment" || item.sectionKey == "equipment"
     val isSquad = upgrade?.category == "squad"
     val rarity = upgrade?.rarity?.takeIf { it.isNotBlank() }
+        ?: supplemental?.rarity?.takeIf { it.isNotBlank() }
         ?: if (isEquipment) equipmentRarity(item.dataId) else null
     val heroId = if (isEquipment) {
         upgrade?.hero?.takeIf { it.isNotBlank() } ?: equipmentHeroId(item.dataId)
@@ -2992,7 +3007,16 @@ private fun VillageGridItemCard(
                 .padding(2.dp),
             contentAlignment = Alignment.Center
         ) {
-            CategoryImage(item, 46)
+            if (supplemental?.imageUrl?.isNotBlank() == true) {
+                AsyncImage(
+                    model = supplemental.imageUrl,
+                    contentDescription = itemName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                CategoryImage(item, 46)
+            }
         }
         Text(
             itemName,
@@ -4041,6 +4065,7 @@ private fun ItemRarityBadge(rarity: String) {
 @Composable
 private fun VillageItemDetailDialog(
     item: VillageItem,
+    supplemental: SupplementalCatalogEntry?,
     blacksmithLevel: Int?,
     hallLevel: Int?,
     upgradeCatalog: Map<Int, CocUpgradeEntry>,
@@ -4049,8 +4074,10 @@ private fun VillageItemDetailDialog(
 ) {
     val upgradeEntry = upgradeCatalog[item.dataId]
     val rarity = upgradeEntry?.rarity?.takeIf { it.isNotBlank() }
+        ?: supplemental?.rarity?.takeIf { it.isNotBlank() }
         ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
     val maxLevel = upgradeEntry?.let { CocUpgradeCatalog.currentMaxLevel(it) }
+        ?: supplemental?.maxLevel
     val hallMax = upgradeEntry?.let { CocUpgradeCatalog.maxLevelAtHall(it, hallLevel, upgradeCatalog) }
     val blacksmithMax = upgradeEntry?.let {
         CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(it, blacksmithLevel, upgradeCatalog)
@@ -4074,7 +4101,11 @@ private fun VillageItemDetailDialog(
     val itemName = item.name
     val description = EquipmentDescriptionsVi[item.dataId]
         ?: CatalogDescriptionsVi[item.dataId]
-    val availableStatsLevels = upgradeEntry?.levels?.map { it.level }?.distinct()?.sorted().orEmpty()
+        ?: supplemental?.description?.takeIf { it.isNotBlank() }
+    val levelDetails = supplemental?.levelDetails.orEmpty()
+    val availableStatsLevels = (levelDetails.keys + upgradeEntry?.levels.orEmpty().map { it.level })
+        .distinct()
+        .sorted()
     val initialStatsTarget = item.level ?: availableStatsLevels.firstOrNull() ?: 1
     val initialStatsLevel = availableStatsLevels.minByOrNull {
         kotlin.math.abs(it - initialStatsTarget)
@@ -4104,7 +4135,16 @@ private fun VillageItemDetailDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    CategoryImage(item, 70)
+                    if (supplemental?.imageUrl?.isNotBlank() == true) {
+                        AsyncImage(
+                            model = supplemental.imageUrl,
+                            contentDescription = itemName,
+                            modifier = Modifier.size(70.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        CategoryImage(item, 70)
+                    }
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -4513,6 +4553,21 @@ private fun VillageItemDetailDialog(
                     }
                 }
 
+                supplemental?.aliases?.takeIf { it.isNotEmpty() }?.let {
+                    VillageItemDetailField("Tên gọi khác", it.joinToString(", "))
+                }
+                supplemental?.requirements?.takeIf { it.isNotEmpty() }?.let { requirements ->
+                    VillageItemDetailField(
+                        "Yêu cầu mở khóa",
+                        requirements.joinToString("\n") { localizedCatalogText(it) }
+                    )
+                }
+                supplemental?.abilityType?.takeIf { it.isNotBlank() }?.let {
+                    VillageItemDetailField(
+                        "Loại kỹ năng",
+                        if (it == "active") "Chủ động" else "Bị động"
+                    )
+                }
                 if (availableStatsLevels.isNotEmpty()) {
                     Text(
                         "THÔNG SỐ THEO CẤP",
@@ -4536,20 +4591,36 @@ private fun VillageItemDetailDialog(
                             steps = (availableStatsLevels.size - 2).coerceAtLeast(0)
                         )
                     }
+                    val stats = levelDetails[selectedStatsLevel].orEmpty()
                     val catalogStats = upgradeEntry?.level(selectedStatsLevel)?.displayStats().orEmpty()
-                    if (catalogStats.isEmpty()) {
+                    if (stats.isEmpty() && catalogStats.isEmpty()) {
                         Text(
                             "Chưa có chỉ số cho cấp này.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp
                         )
+                    } else if (stats.isNotEmpty()) {
+                        stats.forEachIndexed { index, rawValue ->
+                            val separator = rawValue.indexOf(':')
+                            val rawLabel = if (separator > 0) rawValue.substring(0, separator).trim()
+                                else "Chỉ số ${index + 1}"
+                            val value = if (separator > 0) rawValue.substring(separator + 1).trim() else rawValue
+                            val (label, displayValue) = localizedCatalogField(rawLabel, value)
+                            VillageItemStatField(label, displayValue)
+                        }
                     } else {
-                        catalogStats.forEach { (rawLabel, rawValue) ->
+                        catalogStats.forEach { (rawLabel, rawValue) =>
                             val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
                             val (label, value) = localizedCatalogField(normalizedLabel, rawValue)
                             VillageItemStatField(label, value)
                         }
                     }
+                }
+                supplemental?.upgradeCost?.takeIf { it.isNotBlank() }?.let {
+                    VillageItemDetailField("Chi phí nâng cấp", it)
+                }
+                supplemental?.upgradeDurationSeconds?.let {
+                    VillageItemDetailField("Thời gian nâng cấp", formatDuration(it))
                 }
                 if (item.details.isNotEmpty()) {
                     Text("THÔNG TIN TỪ DỮ LIỆU LÀNG", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
@@ -4566,7 +4637,7 @@ private fun VillageItemDetailDialog(
                         )
                     }
                 }
-                if (description == null && item.details.isEmpty() && item.properties.isEmpty() &&
+                if (supplemental == null && description == null && item.details.isEmpty() && item.properties.isEmpty() &&
                     item.timerSeconds == null && item.helperCooldownSeconds == null
                 ) {
                     Text(
@@ -4574,6 +4645,16 @@ private fun VillageItemDetailDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp
                     )
+                }
+                if (supplemental?.details?.isNotEmpty() == true) {
+                    Text("THÔNG TIN BỔ SUNG", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    supplemental.details.forEachIndexed { index, value ->
+                        val separator = value.indexOf(':')
+                        val rawLabel = if (separator > 0) value.substring(0, separator).trim() else "Chi tiết ${index + 1}"
+                        val rawValue = if (separator > 0) value.substring(separator + 1).trim() else value
+                        val (label, displayValue) = localizedCatalogField(rawLabel, rawValue)
+                        VillageItemDetailField(label, displayValue)
+                    }
                 }
                 TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
                     Text("ĐÓNG")

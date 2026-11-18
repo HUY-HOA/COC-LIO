@@ -8,6 +8,7 @@ ASSETS = ROOT / "app/src/main/assets/coc_upgrade"
 NAMES_FILE = ROOT / "app/src/main/java/com/huyhoa/coclio/data/VillageParser.kt"
 IMAGES_FILE = ROOT / "app/src/main/java/com/huyhoa/coclio/data/CocAssets.kt"
 SOURCE_FILE = ASSETS / "source.json"
+SUPPLEMENTAL_FILE = ASSETS / "supplemental_catalog.json"
 
 errors = []
 warnings = []
@@ -211,6 +212,36 @@ for data_id in missing_names:
 for data_id in missing_images:
     fail(f"ID {data_id} chưa có ánh xạ ảnh trong CocAssets")
 
+supplemental_document = read_json(SUPPLEMENTAL_FILE)
+supplemental_items = supplemental_document.get("catalog")
+if not isinstance(supplemental_items, list):
+    fail("supplemental_catalog.json thiếu mảng catalog")
+    supplemental_items = []
+supplemental_ids = set()
+for index, item in enumerate(supplemental_items):
+    label = f"supplemental_catalog.json[{index}]"
+    if not isinstance(item, dict):
+        fail(f"{label}: bản ghi không phải object")
+        continue
+    data_id = item.get("dataId")
+    if not isinstance(data_id, int) or data_id <= 0:
+        fail(f"{label}: dataId không hợp lệ")
+        continue
+    if data_id in supplemental_ids:
+        fail(f"{label}: dataId {data_id} bị trùng")
+        continue
+    supplemental_ids.add(data_id)
+    if not isinstance(item.get("name"), str) or not item["name"].strip():
+        fail(f"{label}: thiếu name")
+    if not isinstance(item.get("category"), str):
+        fail(f"{label}: thiếu category")
+    details = item.get("levelDetails", {})
+    if not isinstance(details, dict):
+        fail(f"{label}: levelDetails không phải object")
+    elif any(not isinstance(values, list) or not all(isinstance(value, str) for value in values)
+             for values in details.values()):
+        fail(f"{label}: levelDetails chứa dữ liệu không hợp lệ")
+
 source = read_json(SOURCE_FILE)
 if source.get("sourceLicense") != "MIT":
     fail("source.json không khai báo giấy phép MIT")
@@ -221,11 +252,14 @@ if not source.get("snapshotDate"):
 integrity = source.get("catalogIntegrity", {})
 if integrity.get("localIdCount") != len(catalog):
     fail(f"source.json localIdCount không khớp: {integrity.get('localIdCount')} != {len(catalog)}")
+if integrity.get("localSupplementalIdCount") != len(supplemental_ids):
+    fail(f"source.json localSupplementalIdCount không khớp: {integrity.get('localSupplementalIdCount')} != {len(supplemental_ids)}")
 if integrity.get("superchargeItemCount") != supercharge_item_count:
     fail(f"source.json superchargeItemCount không khớp: {integrity.get('superchargeItemCount')} != {supercharge_item_count}")
 
 print(f"Danh mục nội bộ: {len(catalog)} ID; {normal_level_count} cấp thường; {supercharge_count} bậc Siêu cường hóa ở {supercharge_item_count} công trình.")
 print(f"Ánh xạ tên: {len(set(catalog) & name_ids)}/{len(catalog)}; ánh xạ ảnh: {len(set(catalog) & image_ids)}/{len(catalog)}.")
+print(f"Dữ liệu bổ sung đóng gói trong APK: {len(supplemental_ids)} ID.")
 for warning in warnings:
     print(f"WARNING: {warning}")
 for error in errors:

@@ -15,7 +15,8 @@
     "superchargeItemCount": 18,
     "canonicalKey": "dataId",
     "superchargeField": "levels[].supercharge",
-    "validationScript": ".github/scripts/validate_coc_catalog.py"
+    "validationScript": ".github/scripts/validate_coc_catalog.py",
+    "localSupplementalIdCount": 134
   },
   "supplementalSnapshotDate": "2026-11-18",
   "supplementalSources": [
