@@ -1818,7 +1818,7 @@ private fun GoogleLoginStartScreen(
     onGoogleSignIn: () -> Unit
 ) {
     var selectedPrivacyDetail by rememberSaveable { mutableStateOf<String?>(null) }
-    var privacyDecisionMade by rememberSaveable { mutableStateOf(false) }
+    var declinedOptionalData by rememberSaveable { mutableStateOf(false) }
     val allSelected = privacyChoice.securityTelemetry &&
         privacyChoice.analytics &&
         privacyChoice.diagnostics &&
@@ -1827,7 +1827,7 @@ private fun GoogleLoginStartScreen(
         privacyChoice.analytics ||
         privacyChoice.diagnostics ||
         privacyChoice.villageDataSync
-    val declinedOptionalData = privacyDecisionMade && !anySelected
+    val privacyDecisionMade = anySelected || declinedOptionalData
     fun setAllPrivacyChoices(checked: Boolean) {
         onPrivacyChoiceChanged(
             privacyChoice.copy(
@@ -1863,9 +1863,9 @@ private fun GoogleLoginStartScreen(
         contentAlignment = Alignment.Center
     ) {
         NeonPanel(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
             glow = CocCyan,
-            innerPadding = 20.dp
+            innerPadding = 14.dp
         ) {
             Column(
                 modifier = Modifier
@@ -1909,156 +1909,146 @@ private fun GoogleLoginStartScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "DỮ LIỆU TÙY CHỌN",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "ĐỒNG Ý TẤT CẢ",
+                        modifier = Modifier.clickable {
+                            setAllPrivacyChoices(true)
+                            declinedOptionalData = false
+                        }.padding(6.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Text(
-                    "CÁC LỰA CHỌN DỮ LIỆU TÙY CHỌN",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Text(
-                    "Chạm vào tên từng mục để đọc chi tiết. Bạn có thể chọn riêng từng mục hoặc chọn tất cả.",
+                    "Chọn từng mục bạn đồng ý, hoặc chọn từ chối tất cả.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
-                    lineHeight = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Checkbox(
-                        checked = allSelected,
-                        onCheckedChange = {
-                            privacyDecisionMade = true
-                            setAllPrivacyChoices(it)
-                        },
-                        modifier = Modifier.ledRgbBorder(
-                            cornerRadiusDp = 5f,
-                            strokeWidthDp = if (allSelected) 0f else 1.8f
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = privacyChoice.securityTelemetry,
+                            onCheckedChange = {
+                                onPrivacyChoiceChanged(privacyChoice.copy(securityTelemetry = it))
+                                if (it) declinedOptionalData = false
+                            },
+                            modifier = Modifier.size(40.dp)
                         )
-                    )
-                    Text(
-                        "ĐỒNG Ý TẤT CẢ",
-                        modifier = Modifier.weight(1f).clickable {
-                            privacyDecisionMade = true
-                            setAllPrivacyChoices(!allSelected)
-                        },
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = privacyChoice.securityTelemetry,
-                        onCheckedChange = {
-                            privacyDecisionMade = true
-                            onPrivacyChoiceChanged(privacyChoice.copy(securityTelemetry = it))
-                        }
-                    )
-                    Text(
-                        "Dữ liệu thiết bị và hoạt động tài khoản  ›",
-                        modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "securityTelemetry" },
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 10.sp
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = privacyChoice.analytics,
-                        onCheckedChange = {
-                            privacyDecisionMade = true
-                            onPrivacyChoiceChanged(privacyChoice.copy(analytics = it))
-                        }
-                    )
-                    Text(
-                        "Phân tích sử dụng ứng dụng  ›",
-                        modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "analytics" },
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 10.sp
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = privacyChoice.diagnostics,
-                        onCheckedChange = {
-                            privacyDecisionMade = true
-                            onPrivacyChoiceChanged(privacyChoice.copy(diagnostics = it))
-                        }
-                    )
-                    Text(
-                        "Báo lỗi và hiệu năng  ›",
-                        modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "diagnostics" },
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 10.sp
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = privacyChoice.villageDataSync,
-                        onCheckedChange = {
-                            privacyDecisionMade = true
-                            onPrivacyChoiceChanged(privacyChoice.copy(villageDataSync = it))
-                        }
-                    )
-                    Text(
-                        "Sao lưu và đồng bộ dữ liệu JSON  ›",
-                        modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "villageDataSync" },
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 10.sp
-                    )
-                }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Checkbox(
-                        checked = declinedOptionalData,
-                        onCheckedChange = {
-                            privacyDecisionMade = it
-                            if (it) setAllPrivacyChoices(false)
-                        }
-                    )
-                    Text(
-                        "KHÔNG ĐỒNG Ý CÁC MỤC DỮ LIỆU TÙY CHỌN",
-                        modifier = Modifier.weight(1f).clickable {
-                            privacyDecisionMade = !declinedOptionalData
-                            if (!declinedOptionalData) setAllPrivacyChoices(false)
-                        },
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                        Text(
+                            "Dữ liệu thiết bị và hoạt động tài khoản  ›",
+                            modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "securityTelemetry" },
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = privacyChoice.analytics,
+                            onCheckedChange = {
+                                onPrivacyChoiceChanged(privacyChoice.copy(analytics = it))
+                                if (it) declinedOptionalData = false
+                            },
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Text(
+                            "Phân tích sử dụng ứng dụng  ›",
+                            modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "analytics" },
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = privacyChoice.diagnostics,
+                            onCheckedChange = {
+                                onPrivacyChoiceChanged(privacyChoice.copy(diagnostics = it))
+                                if (it) declinedOptionalData = false
+                            },
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Text(
+                            "Báo lỗi và hiệu năng  ›",
+                            modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "diagnostics" },
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = privacyChoice.villageDataSync,
+                            onCheckedChange = {
+                                onPrivacyChoiceChanged(privacyChoice.copy(villageDataSync = it))
+                                if (it) declinedOptionalData = false
+                            },
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Text(
+                            "Sao lưu và đồng bộ dữ liệu JSON  ›",
+                            modifier = Modifier.weight(1f).clickable { selectedPrivacyDetail = "villageDataSync" },
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = declinedOptionalData,
+                            onCheckedChange = {
+                                declinedOptionalData = it
+                                if (it) setAllPrivacyChoices(false)
+                            },
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Text(
+                            "TỪ CHỐI TẤT CẢ MỤC TÙY CHỌN",
+                            modifier = Modifier.weight(1f).clickable {
+                                declinedOptionalData = !declinedOptionalData
+                                if (declinedOptionalData) setAllPrivacyChoices(false)
+                            },
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
                 Text(
-                    if (declinedOptionalData) {
-                        "Bạn vẫn có thể đăng nhập và sử dụng COC-LIO. Các mục dữ liệu tùy chọn sẽ được tắt."
-                    } else {
-                        "Bạn có thể chọn riêng từng mục hoặc chọn tất cả. Mục không được chọn sẽ không được bật chỉ vì bạn đăng nhập."
+                    when {
+                        declinedOptionalData -> "Bạn đã từ chối các mục dữ liệu tùy chọn."
+                        anySelected -> "Các mục không chọn sẽ được tắt."
+                        else -> "Vui lòng chọn ít nhất một lựa chọn để tiếp tục."
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
-                    lineHeight = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 if (privacyDecisionMade) {
