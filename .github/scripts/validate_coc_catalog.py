@@ -123,7 +123,8 @@ for path in local_files:
                 "upgradeCostResource",
                 level.get("researchCostResource", level.get("buildCostResource", ""))
             )
-            if category not in {"resource", "other"}:
+            event_only = item.get("properties", {}).get("eventOnly") is True
+            if category not in {"resource", "other"} and not event_only:
                 if upgrade_cost <= 0 and ore_cost <= 0:
                     fail(f"{label}: cấp {level.get('level')} thiếu chi phí nâng cấp")
                 if upgrade_cost > 0 and not str(resource).strip():
@@ -190,6 +191,28 @@ for item in squad_entries:
         if not str(properties.get(required, "")).strip():
             fail(f"{label}: thiếu {required}")
 
+event_spells = {
+    26000006: 13,
+    26000073: 13,
+}
+for data_id, expected_max in event_spells.items():
+    record = catalog.get(data_id)
+    if record is None:
+        fail(f"Thiếu thần chú sự kiện dataId {data_id}")
+        continue
+    item = record["item"]
+    if item.get("category") != "spell" or item.get("maxLevel") != expected_max:
+        fail(f"Thần chú sự kiện {data_id}: sai category hoặc maxLevel")
+    if item.get("properties", {}).get("eventOnly") is not True:
+        fail(f"Thần chú sự kiện {data_id}: phải được đánh dấu eventOnly")
+    levels = {
+        level.get("level")
+        for level in item.get("levels", [])
+        if isinstance(level, dict)
+    }
+    if levels != set(range(1, expected_max + 1)):
+        fail(f"Thần chú sự kiện {data_id}: thiếu cấp")
+
 required_th19_buildings = {
     1000105: ("guardian-shrine", 1),
     1000106: ("squad-barracks", 12),
@@ -211,6 +234,10 @@ for data_id, (expected_id, expected_max) in required_th19_buildings.items():
     }
     if levels != set(range(1, expected_max + 1)):
         fail(f"Công trình TH19 {data_id}: thiếu cấp nâng cấp")
+
+boto_shack = catalog.get(1000047)
+if boto_shack is None or boto_shack["item"].get("base") != "builder":
+    fail("Danh mục thiếu Lều B.O.B ở Căn cứ thợ xây")
 
 town_hall = catalog.get(1000001)
 if town_hall is None or town_hall["item"].get("maxLevel") != 19 or not any(

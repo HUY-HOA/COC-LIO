@@ -8,10 +8,16 @@ object CocAssets {
     private const val CURRENT_ASSET_ROOT = "https://assets.clashk.ing/"
 
     private val currentBuildingAssets = mapOf(
-        1000105 to ("guardian_shrine" to 1),
-        1000106 to ("squad_barracks" to 12),
-        1000107 to ("spiky_tower" to 2),
-        1000108 to ("firecracker_tower" to 2)
+        1000047 to ("buildings/builder-base/botos_shack" to 1),
+        1000105 to ("buildings/home-village/guardian_shrine" to 1),
+        1000106 to ("buildings/home-village/squad_barracks" to 12),
+        1000107 to ("buildings/home-village/spiky_tower" to 2),
+        1000108 to ("buildings/home-village/firecracker_tower" to 2)
+    )
+
+    private val currentSpellAssets = mapOf(
+        26000006 to "spells/santa's_surprise",
+        26000073 to "spells/bag_of_frostmites"
     )
 
     private val homeBuildings = mapOf(
@@ -79,7 +85,7 @@ object CocAssets {
         1000044 to "builder/defenses/cannon",
         1000045 to "builder/defenses/multi-mortar",
         1000046 to "builder/army-buildings/star-laboratory",
-        1000047 to "builder/resource-buildings/bob-control",
+        1000047 to "builder/other/botos-shack",
         1000048 to "builder/defenses/archer-tower",
         1000049 to "builder/army-buildings/reinforcement-camp",
         1000050 to "builder/defenses/firecrackers",
@@ -209,7 +215,9 @@ object CocAssets {
         26000109 to "home/spells/ice-block-spell",
         26000120 to "home/spells/totem-spell",
         26000123 to "home/spells/angry-spell",
-        26000153 to "home/spells/heroic-spell"
+        26000153 to "home/spells/heroic-spell",
+        26000006 to "home/spells/santas-surprise",
+        26000073 to "home/spells/bag-of-frostmites"
     )
 
     private val pets = mapOf(
@@ -337,10 +345,12 @@ object CocAssets {
     fun imageUrl(item: VillageItem): String? {
         val level = item.level?.takeIf { it > 0 } ?: 1
         val currentBuilding = currentBuildingAssets[item.dataId]
-        if (item.sectionKey == "buildings" && currentBuilding != null) {
+        if (item.sectionKey in setOf("buildings", "buildings2") && currentBuilding != null) {
             val imageLevel = level.coerceIn(1, currentBuilding.second)
-            return CURRENT_ASSET_ROOT +
-                "buildings/home-village/${currentBuilding.first}/level_${imageLevel}.webp"
+            return CURRENT_ASSET_ROOT + "${currentBuilding.first}/level_${imageLevel}.webp"
+        }
+        currentSpellAssets[item.dataId]?.let { currentPath ->
+            if (item.sectionKey == "spells") return CURRENT_ASSET_ROOT + "$currentPath.webp"
         }
         val folder = when (item.sectionKey) {
             "buildings" -> homeBuildings[item.dataId]
