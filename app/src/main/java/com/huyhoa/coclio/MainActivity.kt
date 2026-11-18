@@ -1920,15 +1920,13 @@ private fun GoogleLoginStartScreen(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        if (allSelected) "BỎ CHỌN TẤT CẢ" else "ĐỒNG Ý TẤT CẢ",
-                        modifier = Modifier.clickable {
+                    NeonButton(
+                        text = if (allSelected) "BỎ CHỌN TẤT CẢ" else "ĐỒNG Ý TẤT CẢ",
+                        onClick = {
                             setAllPrivacyChoices(!allSelected)
                             declinedOptionalData = false
-                        }.padding(6.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
+                        },
+                        showLed = true
                     )
                 }
                 Text(
@@ -2051,15 +2049,13 @@ private fun GoogleLoginStartScreen(
                     fontSize = 9.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                if (privacyDecisionMade) {
-                    NeonButton(
-                        text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
-                        onClick = onGoogleSignIn,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isBusy,
-                        showLed = !isBusy
-                    )
-                }
+                NeonButton(
+                    text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
+                    onClick = onGoogleSignIn,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isBusy && privacyDecisionMade,
+                    showLed = false
+                )
             }
         }
         if (detail != null) {
