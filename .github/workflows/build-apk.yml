@@ -2,9 +2,6 @@ name: Build COC-LIO APK
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/build-apk-trigger.txt"
 
 permissions:
   contents: read
@@ -15,6 +12,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
     runs-on: ubuntu-22.04
@@ -43,7 +41,7 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: "platforms;android-35 build-tools;35.0.0"
 
