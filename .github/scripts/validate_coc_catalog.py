@@ -106,6 +106,36 @@ for path in local_files:
         if normal_levels and sorted(normal_levels) != list(range(min(normal_levels), max(normal_levels) + 1)):
             warnings.append(f"{label}: dãy cấp thường có khoảng trống; cần đối chiếu nguồn")
 
+        first_normal_level = min(normal_levels) if normal_levels else None
+        for level in levels:
+            if not isinstance(level, dict) or level.get("supercharge") is True:
+                continue
+            if level.get("level") == first_normal_level:
+                continue
+            category = item.get("category")
+            upgrade_cost = level.get("upgradeCost", level.get("researchCost", level.get("buildCost", 0)))
+            upgrade_cost = upgrade_cost if isinstance(upgrade_cost, (int, float)) else 0
+            ore_cost = sum(
+                level.get(field, 0) if isinstance(level.get(field, 0), (int, float)) else 0
+                for field in ("upgradeShinyOre", "upgradeGlowingOre", "upgradeStarryOre")
+            )
+            resource = level.get(
+                "upgradeCostResource",
+                level.get("researchCostResource", level.get("buildCostResource", ""))
+            )
+            if category not in {"resource", "other"}:
+                if upgrade_cost <= 0 and ore_cost <= 0:
+                    fail(f"{label}: cấp {level.get('level')} thiếu chi phí nâng cấp")
+                if upgrade_cost > 0 and not str(resource).strip():
+                    fail(f"{label}: cấp {level.get('level')} có chi phí nhưng thiếu loại tài nguyên")
+            if category not in {"hero-equipment", "other"}:
+                has_time = any(
+                    isinstance(level.get(field), dict)
+                    for field in ("upgradeTime", "researchTime", "buildTime")
+                )
+                if not has_time:
+                    fail(f"{label}: cấp {level.get('level')} thiếu thời gian nâng cấp")
+
 catalog_items = [record["item"] for record in catalog.values()]
 equipment_entries = [item for item in catalog_items if item.get("category") == "hero-equipment"]
 expected_equipment_heroes = {
