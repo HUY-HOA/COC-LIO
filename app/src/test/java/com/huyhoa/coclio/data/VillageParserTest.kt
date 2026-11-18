@@ -41,6 +41,23 @@ class VillageParserTest {
     }
 
     @Test
+    fun distinguishesExplicitIdleCountFromTimerOnlyRunningInstance() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#COUNT_SEMANTICS","timestamp":1794320000,"buildings":[
+                {"data":1000008,"lvl":5,"cnt":2,"timer":3600},
+                {"data":1000009,"lvl":5,"timer":3600}
+            ]}"""
+        )
+        val withIdleCopies = snapshot.items.first { it.dataId == 1000008 }
+        val timerOnly = snapshot.items.first { it.dataId == 1000009 }
+
+        assertEquals(true, withIdleCopies.hasExplicitCount)
+        assertEquals(2, withIdleCopies.count)
+        assertEquals(false, timerOnly.hasExplicitCount)
+        assertEquals(1, timerOnly.count)
+    }
+
+    @Test
     fun preservesZeroCountEquipmentAsNotOwned() {
         val snapshot = VillageParser.parse(
             """{"tag":"#ZERO_COUNT","timestamp":1794320000,
