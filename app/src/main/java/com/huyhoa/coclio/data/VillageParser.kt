@@ -42,7 +42,9 @@ data class VillageItem(
     val gearUp: Boolean,
     val weaponLevel: Int?,
     val details: List<String>,
-    val properties: Map<String, String> = emptyMap()
+    val properties: Map<String, String> = emptyMap(),
+    /** True when the JSON row explicitly contains cnt (idle copies). */
+    val hasExplicitCount: Boolean = true
 ) {
     val name: String get() = CocNames.name(dataId, sectionKey)
     val isRunning: Boolean get() = timerSeconds != null && timerSeconds > 0L
@@ -193,7 +195,8 @@ object VillageParser {
                 val level = if (obj.has("lvl") && !obj.isNull("lvl")) obj.optInt("lvl") else null
                 val timer = if (obj.has("timer") && !obj.isNull("timer")) obj.optLong("timer") else null
                 val helperCooldown = if (obj.has("helper_cooldown") && !obj.isNull("helper_cooldown")) obj.optLong("helper_cooldown") else null
-                val count = if (obj.has("cnt") && !obj.isNull("cnt")) {
+                val hasExplicitCount = obj.has("cnt") && !obj.isNull("cnt")
+                val count = if (hasExplicitCount) {
                     obj.optInt("cnt", 1).coerceAtLeast(0)
                 } else {
                     1
@@ -244,7 +247,8 @@ object VillageParser {
                     gearUp = gearUp,
                     weaponLevel = weapon,
                     details = details,
-                    properties = properties
+                    properties = properties,
+                    hasExplicitCount = hasExplicitCount
                 )
             }
         }
