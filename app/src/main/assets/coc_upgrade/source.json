@@ -9,7 +9,7 @@
     "https://supercell.com/en/games/clashofclans/blog/release-notes/",
     "https://supercell.com/en/games/clashofclans/blog/news/weve-revamped-the-clash-of-clans-user-interface/"
   ],
-  "note": "Danh mục nền được lấy từ bộ dữ liệu cộng đồng có giấy phép MIT, snapshot 2026-11-15. Dữ liệu Squad được bổ sung riêng ngày 2026-11-18 từ nguồn Supercell Support cho danh sách/thành phần và nguồn cộng đồng cho chi phí/timer. Bản cập nhật Nhà chính 19 phát hành ngày 2026-11-16; không phải mọi cấp mới của quân lính, anh hùng, thần chú và thú cưng trong danh mục nền đã được đồng bộ đầy đủ. COC-LIO kiểm tra khoảng cấp thiếu và phải báo tổng chi phí là chưa đầy đủ khi chưa có dữ liệu, không được tự suy đoán.",
+  "note": "Danh mục nền: dữ liệu cộng đồng MIT, snapshot 2026-11-15. Dữ liệu Squad bổ sung 2026-11-18. Giới hạn cấp hiện hành của TH19 được cập nhật riêng theo dữ liệu game 2026-11-16 và thông tin Supercell; các cấp mới chưa có đủ chi phí/thời gian trong bảng nền sẽ được cảnh báo là thiếu, không cộng một phần rồi ghi là tổng đầy đủ. Heroic Spell được hiển thị từ dữ liệu tham khảo game 2026-11-16. Dữ liệu cộng đồng không phải API chính thức Supercell và cần đối chiếu trong game sau mỗi cân bằng.",
   "catalogIntegrity": {
     "localIdCount": 238,
     "remoteLookupIdCount": 134,
@@ -29,6 +29,18 @@
       "name": "ClashVault — Town Hall 19 Squads",
       "url": "https://www.clashvault.app/town-hall/19",
       "scope": "Chi phí/timer nâng Squad Barracks, nghiên cứu Squad cấp 2–3 và mô tả kỹ năng; nguồn cộng đồng, cần đối chiếu trong game"
+    },
+    {
+      "name": "GiBiArena — ClashKing game data snapshot 2026-11-16",
+      "url": "https://gibiarena.com/en/clash-of-clans/tools/upgrade-cost",
+      "scope": "Chi phí, thời gian, cấp tối đa TH19; dữ liệu game qua ClashKing, nguồn độc lập"
+    },
+    {
+      "name": "GiBiArena — Heroic Spell",
+      "url": "https://gibiarena.com/en/clash-of-clans/upgrades/heroic-spell",
+      "scope": "Cấp 1–4, chi phí Elixir và thời gian Heroic Spell"
     }
-  ]
+  ],
+  "currentMaxLevelSnapshotDate": "2026-11-16",
+  "currentMaxLevelSource": "Clash of Clans game data via ClashKing, processed by GiBiArena; community reference, not a Supercell API"
 }
