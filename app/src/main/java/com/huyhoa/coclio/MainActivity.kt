@@ -3928,7 +3928,6 @@ private fun HeroEquipmentRoster(
 }
 
 @Composable
-private fun HeroEquipmentCatalogRow(@Composable
 private fun HeroEquipmentCatalogRow(
     entry: CocUpgradeEntry,
     villageItem: VillageItem?,
