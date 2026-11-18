@@ -2834,7 +2834,7 @@ private fun CategoryScreen(
                             ) {
                                 val sectionCount = when {
                                     tab != "army" -> rows.sumOf { it.count }.toString()
-                                    key == "squads" -> "${rows.size} ĐỘI HÌNH"
+                                    key == "squads" -> "${rows.count { it.count > 0 || (it.level ?: 0) > 0 || (it.timerSeconds ?: 0L) > 0L }}/${rows.size} ĐỘI HÌNH"
                                     key == "spells" && showHeroicSpell -> rows.size.toString() + " + 1"
                                     else -> {
                                         val ownedCount = rows.count { it.count > 0 || it.timerSeconds != null }
@@ -3099,8 +3099,11 @@ private fun VillageGridItemCard(
             Text(
                 if (isSquad) {
                     val unlockTownHall = upgrade?.properties?.optInt("townHallRequired", 0)?.takeIf { it > 0 }
-                    if (unlockTownHall != null) "MỞ KHÓA TH$unlockTownHall • CẤP 1–${cardMaxLevel ?: "?"}"
-                    else "SQUAD • CẤP 1–${cardMaxLevel ?: "?"}"
+                    val owned = item.count > 0 || (item.level ?: 0) > 0 || (item.timerSeconds ?: 0L) > 0L
+                    val status = if (owned) "ĐÃ CÓ" else "CHƯA CÓ"
+                    val level = item.level?.let { "CẤP $it/${cardMaxLevel ?: "?"}" } ?: "CẤP 1–${cardMaxLevel ?: "?"}"
+                    if (unlockTownHall != null) "$status • TH$unlockTownHall • $level"
+                    else "$status • SQUAD • $level"
                 } else if (item.count <= 0) {
                     "CHƯA SỞ HỮU • MAX ${cardMaxLevel ?: "?"}"
                 } else {
