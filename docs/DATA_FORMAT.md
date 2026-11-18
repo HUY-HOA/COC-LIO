@@ -71,7 +71,7 @@ These are independent community references, not official Supercell API documenta
 - `dataId` is the canonical game object key. The text `id` slug is descriptive and can be repeated across villages or bases; use `dataId` (and base when needed) for exact identity.
 - The in-app ID lookup searches numeric IDs, English source names, Vietnamese localized names without requiring diacritics, aliases, category and base.
 - Localized names and image paths are validated against the complete local upgrade catalogue. Unknown cosmetic or future IDs remain visible with their numeric ID; the app does not fabricate a name or an image.
-- The CI validation script checks duplicate IDs, normal-level and Supercharge-level collisions, max-level consistency, remote-catalog references, and missing Vietnamese-name or image mappings.
+- The CI validation script checks duplicate IDs, normal-level and Supercharge-level collisions, max-level consistency, local supplemental-catalog data, and missing Vietnamese-name or image mappings.
 - Supercharge is a separate progression track. Its costs and times are reported separately from ordinary upgrades and must not be added to ordinary level totals.
 
 
