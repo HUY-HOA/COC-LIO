@@ -8,7 +8,7 @@ admin.initializeApp();
 const auth = admin.auth();
 const db = admin.firestore();
 const REGION = "asia-southeast1";
-const OWNER_EMAIL = "phunghuyhoahaikba@gmail.com";
+const OWNER_UID = "T0PXzlCfddNZsWZzva2v1NCrWOf2";
 
 async function deleteDocumentsByUid(collectionName, uid) {
   let deleted = 0;
@@ -66,10 +66,9 @@ async function deleteUserOwnedData(uid) {
 }
 
 function requireOwner(request) {
-  const email = String(request.auth?.token?.email || "").trim().toLowerCase();
   const verified = request.auth?.token?.email_verified === true;
 
-  if (!request.auth || !verified || email !== OWNER_EMAIL) {
+  if (!request.auth || !verified || request.auth.uid !== OWNER_UID) {
     throw new HttpsError("permission-denied", "Chỉ tài khoản quản lý COC-LIO mới được thực hiện thao tác này.");
   }
 }
@@ -121,7 +120,7 @@ exports.adminDeleteUser = onCall({ region: REGION }, async (request) => {
   }
 
   const user = await auth.getUser(uid);
-  if (String(user.email || "").trim().toLowerCase() === OWNER_EMAIL) {
+  if (uid === OWNER_UID) {
     throw new HttpsError("failed-precondition", "Không thể xóa tài khoản chủ sở hữu COC-LIO.");
   }
 
