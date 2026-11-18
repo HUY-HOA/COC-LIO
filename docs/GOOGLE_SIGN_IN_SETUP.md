@@ -78,11 +78,9 @@ Không gửi Client Secret hoặc mật khẩu Google vào cuộc trò chuyện.
 
 ## Tài khoản chủ sở hữu và quyền quản trị
 
-Email chủ sở hữu COC-LIO đã được xác định là:
+Chủ sở hữu được nhận diện bằng Firebase UID trong Firestore Rules, Storage Rules, Cloud Functions và ứng dụng Android. UID chỉ là mã định danh; mọi quyền quản trị vẫn yêu cầu phiên đăng nhập Firebase Authentication hợp lệ.
 
-`phunghuyhoahaikba@gmail.com`
-
-Mô hình quyền dự kiến:
+Mô hình quyền:
 
 - Tất cả tài khoản Google đã xác thực được phép đăng nhập.
 - Tài khoản chủ sở hữu có quyền xem và quản lý người dùng, trạng thái cấp phép và dữ liệu quản trị.
