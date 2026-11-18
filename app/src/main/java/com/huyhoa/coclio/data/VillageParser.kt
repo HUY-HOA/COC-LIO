@@ -44,7 +44,7 @@ data class VillageItem(
     val details: List<String>,
     val properties: Map<String, String> = emptyMap(),
     /** True when the JSON row explicitly contains cnt (idle copies). */
-    val hasExplicitCount: Boolean = true
+    val hasExplicitCount: Boolean = false
 ) {
     val name: String get() = CocNames.name(dataId, sectionKey)
     val isRunning: Boolean get() = timerSeconds != null && timerSeconds > 0L
