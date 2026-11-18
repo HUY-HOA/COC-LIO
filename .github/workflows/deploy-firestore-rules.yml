@@ -7,7 +7,6 @@ on:
       - main
     paths:
       - "firestore.rules"
-      - "firebase.json"
       - ".github/workflows/deploy-firestore-rules.yml"
 
 permissions:
