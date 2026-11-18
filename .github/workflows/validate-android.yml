@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Validate game data JSON and ID mappings
         run: python3 .github/scripts/validate_coc_catalog.py
