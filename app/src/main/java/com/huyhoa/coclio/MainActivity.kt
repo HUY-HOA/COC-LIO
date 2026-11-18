@@ -3846,7 +3846,11 @@ private fun HeroEquipmentRoster(
     val equipment = upgradeCatalog.values
         .filter { it.base == "home" && it.category == "hero-equipment" && it.hero == heroId }
     val ownedById = allVillageItems
-        .filter { it.sectionKey == "equipment" }
+        .filter {
+            it.base == "home" &&
+                it.sectionKey == "equipment" &&
+                (it.count > 0 || (it.timerSeconds ?: 0L) > 0L)
+        }
         .groupBy { it.dataId }
         .mapValues { (_, rows) -> rows.maxByOrNull { it.level ?: 0 } }
     val owned = equipment.filter { ownedById[it.dataId] != null }
