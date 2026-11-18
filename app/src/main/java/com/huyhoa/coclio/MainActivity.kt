@@ -1921,9 +1921,9 @@ private fun GoogleLoginStartScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "ĐỒNG Ý TẤT CẢ",
+                        if (allSelected) "BỎ CHỌN TẤT CẢ" else "ĐỒNG Ý TẤT CẢ",
                         modifier = Modifier.clickable {
-                            setAllPrivacyChoices(true)
+                            setAllPrivacyChoices(!allSelected)
                             declinedOptionalData = false
                         }.padding(6.dp),
                         color = MaterialTheme.colorScheme.primary,
