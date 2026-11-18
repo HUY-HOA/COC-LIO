@@ -3832,11 +3832,11 @@ private fun HeroEquipmentRoster(
     val villageEquipmentById = allVillageItems
         .filter { it.base == "home" && it.sectionKey == "equipment" }
         .groupBy { it.dataId }
-    val ownedById = villageEquipmentById
-        .mapValues { (_, rows) -> rows.maxByOrNull { it.level ?: 0 } }
-        .filterValues { item ->
-            item != null && (item.count > 0 || (item.timerSeconds ?: 0L) > 0L)
-        }
+    val ownedById = villageEquipmentById.mapNotNull { (dataId, rows) ->
+        rows.filter { it.count > 0 || (it.timerSeconds ?: 0L) > 0L }
+            .maxByOrNull { it.level ?: 0 }
+            ?.let { dataId to it }
+    }.toMap()
     val confirmedUnownedById = villageEquipmentById
         .filterKeys { it !in ownedById }
         .mapValues { (_, rows) -> rows.maxByOrNull { it.level ?: 0 } }
