@@ -65,10 +65,12 @@ Không tạo Secret tên `ANDROID_KEYSTORE_FILE`; workflow tự tạo đường 
 
 ## 5. Build và cài đặt
 
-Sau khi đủ bốn Secret ký APK, mỗi workflow sẽ:
-- Chạy kiểm thử và tạo APK debug để thử.
-- Tạo thêm APK release đã ký bằng keystore ổn định.
-- Đưa hai gói vào GitHub Actions Artifacts; bản release được giữ 30 ngày.
+Sau khi đủ bốn Secret ký APK, workflow **Build COC-LIO APK** sẽ:
+- Chạy `lintDebug`, `testDebugUnitTest` và tạo APK release.
+- Ký APK release bằng keystore ổn định.
+- Chỉ tải lên một Artifact chứa **Signed Release APK**; thời hạn lưu hiện được đặt ở mức tối thiểu là **1 ngày**. GitHub tự xóa Artifact khi hết hạn.
+
+Workflow hiện tại không tải APK debug lên Artifact. Các log và lịch sử chạy workflow là dữ liệu riêng, không bị xóa ngay khi Artifact APK hết hạn.
 
 Dùng **Signed Release APK** để cài và cập nhật về sau. Không làm mất file keystore: nếu mất khóa, bạn có thể không cập nhật đè được các bản release đã ký bằng khóa đó.
 
