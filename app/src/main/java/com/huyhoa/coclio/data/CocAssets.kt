@@ -261,18 +261,18 @@ object CocAssets {
     )
 
     private val squads = mapOf(
-        95000000 to "home/troops/barbarian",
-        95000001 to "home/troops/giant",
-        95000002 to "home/troops/wall-breaker",
-        95000003 to "home/troops/minion",
-        95000004 to "home/troops/balloon",
-        95000005 to "home/troops/golem",
-        95000006 to "home/troops/hog-rider",
-        95000007 to "home/troops/miner",
-        95000008 to "home/troops/balloon",
-        95000009 to "home/troops/pekka",
-        95000010 to "home/troops/dragon",
-        95000011 to "home/troops/baby-dragon"
+        4000195 to "home/troops/barbarian",
+        4000196 to "home/troops/giant",
+        4000197 to "home/troops/wall-breaker",
+        4000198 to "home/troops/minion",
+        4000199 to "home/troops/balloon",
+        4000200 to "home/troops/golem",
+        4000201 to "home/troops/hog-rider",
+        4000202 to "home/troops/miner",
+        4000203 to "home/troops/balloon",
+        4000204 to "home/troops/pekka",
+        4000205 to "home/troops/dragon",
+        4000206 to "home/troops/baby-dragon"
     )
 
     private val helpers = mapOf(
