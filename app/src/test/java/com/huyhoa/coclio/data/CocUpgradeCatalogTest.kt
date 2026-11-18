@@ -243,7 +243,7 @@ class CocUpgradeCatalogTest {
             maxLevel = 110,
             properties = JSONObject(),
             levels = (1..110).map { level ->
-                CocUpgradeLevel(level, JSONObject().put("level", level))
+                CocUpgradeLevel(level, JSONObject().put("level", level).put("townHallRequired", 18))
             }
         )
 
@@ -267,7 +267,7 @@ class CocUpgradeCatalogTest {
             maxLevel = 10,
             properties = JSONObject(),
             levels = (1..10).map { level ->
-                CocUpgradeLevel(level, JSONObject().put("level", level))
+                CocUpgradeLevel(level, JSONObject().put("level", level).put("townHallRequired", 17))
             }
         )
 
