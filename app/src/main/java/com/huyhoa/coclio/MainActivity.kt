@@ -3027,7 +3027,7 @@ private fun VillageGridItemCard(
     onClick: () -> Unit
 ) {
     val itemName = item.name
-    val cardMaxLevel = upgrade?.let { maxOf(CocUpgradeCatalog.currentMaxLevel(it), remote?.maxLevel ?: 1) }
+    val cardMaxLevel = upgrade?.let { CocUpgradeCatalog.currentMaxLevel(it) }
         ?: remote?.maxLevel
     val isEquipment = upgrade?.category == "hero-equipment" || item.sectionKey == "equipment"
     val isSquad = upgrade?.category == "squad"
@@ -4079,7 +4079,7 @@ private fun VillageItemDetailDialog(
     val rarity = upgradeEntry?.rarity?.takeIf { it.isNotBlank() }
         ?: remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
-    val maxLevel = upgradeEntry?.let { maxOf(CocUpgradeCatalog.currentMaxLevel(it), remote?.maxLevel ?: 1) }
+    val maxLevel = upgradeEntry?.let { CocUpgradeCatalog.currentMaxLevel(it) }
         ?: remote?.maxLevel
     val hallMax = upgradeEntry?.let { CocUpgradeCatalog.maxLevelAtHall(it, hallLevel, upgradeCatalog) }
     val blacksmithMax = upgradeEntry?.let {
@@ -4395,7 +4395,8 @@ private fun VillageItemDetailDialog(
                 upgradeEntry?.let { entry ->
                     val globalMax = (maxLevel ?: entry.maxLevel).coerceAtLeast(1)
                     if (globalMax > 1 && entry.levels.isNotEmpty()) {
-                        val fromLevelOne = CocUpgradeCatalog.upgradeTotals(entry, 1, globalMax)
+                        val firstAvailableLevel = entry.firstAvailableLevel
+                        val fromLevelOne = CocUpgradeCatalog.upgradeTotals(entry, firstAvailableLevel, globalMax)
                         Text(
                             "SO SÁNH CHI PHÍ NÂNG CẤP",
                             color = CocGold,
@@ -4403,7 +4404,7 @@ private fun VillageItemDetailDialog(
                             fontWeight = FontWeight.Black
                         )
                         Text(
-                            "TỪ CẤP 1 ĐẾN MAX ($globalMax)",
+                            "TỪ CẤP $firstAvailableLevel ĐẾN MAX ($globalMax)",
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black
@@ -4422,14 +4423,14 @@ private fun VillageItemDetailDialog(
                                 formatDuration(fromLevelOne.durationSeconds)
                             )
                         }
-                        val missingFullLevels = CocUpgradeCatalog.missingLevels(entry, 1, globalMax)
+                        val missingFullLevels = CocUpgradeCatalog.missingLevels(entry, firstAvailableLevel, globalMax)
                         if (missingFullLevels.isNotEmpty()) {
                             VillageItemDetailField(
                                 "Thiếu dữ liệu chi phí cấp",
                                 missingFullLevels.joinToString(", ") + ". Tổng ở trên chỉ cộng những cấp có dữ liệu, chưa phải tổng đầy đủ."
                             )
                         }
-                        val currentStart = (item.level ?: 1).coerceIn(1, globalMax)
+                        val currentStart = (item.level ?: firstAvailableLevel).coerceIn(firstAvailableLevel, globalMax)
                         val fromCurrent = CocUpgradeCatalog.upgradeTotals(
                             entry,
                             currentStart,
@@ -4437,7 +4438,7 @@ private fun VillageItemDetailDialog(
                             skipFirstInProgress = item.timerSeconds != null && item.timerSeconds > 0L
                         )
                         Text(
-                            "TỪ CẤP ${item.level ?: 1} ĐẾN MAX ($globalMax)",
+                            "TỪ CẤP $currentStart ĐẾN MAX ($globalMax)",
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black
@@ -4445,7 +4446,7 @@ private fun VillageItemDetailDialog(
                         if (item.count <= 0) {
                             VillageItemDetailField(
                                 "Giả định",
-                                "Mục này chưa có trong JSON làng; chi phí còn lại đang tạm tính từ cấp 1."
+                                "Mục này chưa có trong JSON làng; chi phí còn lại đang tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
                             )
                         }
                         if (fromCurrent.resources.isEmpty()) {
