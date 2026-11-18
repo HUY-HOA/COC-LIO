@@ -141,7 +141,9 @@ object CocUpgradeCatalog {
         1000014 to 15, 1000005 to 20, 1000003 to 20,
         1000024 to 14, 1000002 to 18, 1000004 to 18,
         1000023 to 12, 12000005 to 14, 12000008 to 6,
-        12000001 to 14, 1000010 to 20
+        12000001 to 14, 1000010 to 20,
+        1000001 to 19, 1000105 to 1, 1000106 to 12,
+        1000107 to 2, 1000108 to 2
     )
     private val currentMaxUnlockHallOverrides = mapOf(
         73000011 to 18,

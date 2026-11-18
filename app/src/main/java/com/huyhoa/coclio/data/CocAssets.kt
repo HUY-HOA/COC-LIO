@@ -5,6 +5,14 @@ import java.net.URLEncoder
 object CocAssets {
     private const val ROOT =
         "https://raw.githubusercontent.com/chiefpansancolt/clash-of-clans-data/main/images/"
+    private const val CURRENT_ASSET_ROOT = "https://assets.clashk.ing/"
+
+    private val currentBuildingAssets = mapOf(
+        1000105 to ("guardian_shrine" to 1),
+        1000106 to ("squad_barracks" to 12),
+        1000107 to ("spiky_tower" to 2),
+        1000108 to ("firecracker_tower" to 2)
+    )
 
     private val homeBuildings = mapOf(
         1000000 to "home/army-buildings/army-camp",
@@ -49,7 +57,11 @@ object CocAssets {
         1000089 to "home/defenses/firespitter",
         1000093 to "home/other/helper-hut",
         1000102 to "home/defenses/super-wizard-tower",
-        1000097 to "home/defenses/crafting-station"
+        1000097 to "home/defenses/crafting-station",
+        1000105 to "home/army-buildings/guardian-shrine",
+        1000106 to "home/army-buildings/squad-barracks",
+        1000107 to "home/defenses/spiky-tower",
+        1000108 to "home/defenses/firecracker-tower"
     )
 
     private val builderBuildings = mapOf(
@@ -324,6 +336,12 @@ object CocAssets {
 
     fun imageUrl(item: VillageItem): String? {
         val level = item.level?.takeIf { it > 0 } ?: 1
+        val currentBuilding = currentBuildingAssets[item.dataId]
+        if (item.sectionKey == "buildings" && currentBuilding != null) {
+            val imageLevel = level.coerceIn(1, currentBuilding.second)
+            return CURRENT_ASSET_ROOT +
+                "buildings/home-village/${currentBuilding.first}/level_${imageLevel}.webp"
+        }
         val folder = when (item.sectionKey) {
             "buildings" -> homeBuildings[item.dataId]
             "buildings2" -> builderBuildings[item.dataId]

@@ -9,9 +9,9 @@
     "https://supercell.com/en/games/clashofclans/blog/release-notes/",
     "https://supercell.com/en/games/clashofclans/blog/news/weve-revamped-the-clash-of-clans-user-interface/"
   ],
-  "note": "Danh mục nền lấy từ chiefpansancolt/clash-of-clans-data theo giấy phép MIT, snapshot 2026-11-15. Các cấp TH19/TH18 mới được bổ sung từ dữ liệu game ngày 2026-11-16, gồm cấp tối đa và chi phí/thời gian cho các cấp mới của quân lính, thần chú, anh hùng, linh thú, hộ vệ và máy công thành. Các cấp nâng cấp cũ TH16–TH18 đã bị điều chỉnh chi phí/thời gian trong bản cập nhật TH19; snapshot nền 15/11 chưa đồng bộ đầy đủ toàn bộ các cấp cũ nên tổng chi phí cũ chỉ là tham khảo, cần đối chiếu trong game. Những cấp nào thiếu bản ghi sẽ được hiển thị rõ và không được coi là tổng đầy đủ. Heroic Spell đã được đưa vào danh mục nâng cấp chính với dataId 26000153, cấp 1–4, chi phí và thời gian từng cấp; nếu JSON làng nhập không chứa mục này thì ứng dụng không tự đoán cấp hoặc trạng thái sở hữu. Danh mục Squad gồm 12 đội hình cố định, cấp nâng cấp riêng theo dữ liệu game. Siêu quân dùng cấp nghiên cứu của quân gốc, không có đường nâng cấp cấp riêng; JSON làng không xác nhận trạng thái kích hoạt Super Potion. Dữ liệu cộng đồng và dữ liệu game đã xử lý không phải API chính thức của Supercell; các thay đổi cân bằng sau đó cần được đối chiếu lại.",
+  "note": "Danh mục nền lấy từ chiefpansancolt/clash-of-clans-data theo giấy phép MIT, snapshot 2026-11-15. Các dữ liệu TH19 và cấp mới được đối chiếu với dữ liệu tĩnh Clash of Clans trong ClashKingAssets (snapshot 2026-11-17) và ghi chú cập nhật chính thức của Supercell. Bổ sung Nhà chính cấp 19, Trại lính Tiểu đội đủ 12 cấp, Đền Hộ vệ, Tháp gai nhọn và Tháp pháo hoa, gồm chi phí, thời gian, yêu cầu mở khóa, chỉ số và ảnh nội bộ qua CDN hình ảnh. Các cấp nâng cấp cũ TH16–TH18 đã bị điều chỉnh chi phí/thời gian trong bản cập nhật TH19; snapshot nền 15/11 chưa đồng bộ đầy đủ toàn bộ các cấp cũ nên tổng chi phí cũ chỉ là tham khảo, cần đối chiếu trong game. Những cấp nào thiếu bản ghi sẽ được hiển thị rõ và không được coi là tổng đầy đủ. Heroic Spell có cấp 1–4; nếu JSON làng nhập không chứa mục này thì ứng dụng không tự đoán cấp hoặc trạng thái sở hữu. Danh mục Squad gồm 12 đội hình cố định; cấp nâng cấp riêng theo dữ liệu game. Siêu quân dùng cấp nghiên cứu của quân gốc, không có đường nâng cấp cấp riêng; JSON làng không xác nhận trạng thái kích hoạt Super Potion. Dữ liệu game cộng đồng được dùng để đối chiếu, không phải API chính thức của Supercell.",
   "catalogIntegrity": {
-    "localIdCount": 239,
+    "localIdCount": 243,
     "superchargeItemCount": 18,
     "canonicalKey": "dataId",
     "superchargeField": "levels[].supercharge",
@@ -68,7 +68,7 @@
     {
       "name": "ClashKingAssets — current game data",
       "url": "https://github.com/ClashKingInc/ClashKingAssets",
-      "scope": "Dữ liệu game tĩnh 16–17/11/2026 để đối chiếu cấp tối đa, chỉ số, yêu cầu mở khóa, chi phí và thời gian của quân, phép, anh hùng, thú cưng và hộ vệ; nguồn cộng đồng độc lập"
+      "scope": "Dữ liệu tĩnh Clash of Clans cập nhật đến 2026-11-17; đối chiếu ID, cấp tối đa, yêu cầu mở khóa, chi phí/thời gian, chỉ số và công trình TH19. Nguồn cộng đồng độc lập, không phải API chính thức của Supercell."
     },
     {
       "name": "ClashRecord — Town Hall 19 new levels and upgrade costs",
@@ -76,7 +76,23 @@
       "scope": "Đối chiếu chi phí và thời gian của các cấp TH19 mới theo dữ liệu game; nguồn cộng đồng độc lập"
     }
   ],
-  "currentMaxLevelSnapshotDate": "2026-11-16",
-  "currentMaxLevelSource": "Clash of Clans game data via ClashKing, processed by GiBiArena; community reference, not a Supercell API",
-  "currentLevelDataSnapshotDate": "2026-11-16"
+  "currentMaxLevelSnapshotDate": "2026-11-17",
+  "currentMaxLevelSource": "Clash of Clans game static data in ClashKingAssets, cross-checked against Supercell release notes; community-maintained data, not a Supercell API",
+  "currentLevelDataSnapshotDate": "2026-11-17",
+  "th19SnapshotDate": "2026-11-17",
+  "additionalSources": [
+    {
+      "name": "ClashKingAssets — static game data",
+      "url": "https://github.com/ClashKingInc/ClashKingAssets",
+      "commit": "6da8ce864afe2b4510d3342e1c7374e48d7f5a49",
+      "snapshotDate": "2026-11-17",
+      "scope": "assets/static_data/buildings.json và assets/buildings/home-village; đối chiếu và bổ sung công trình Nhà chính 19, Squad Barracks, Guardian Shrine, Spiky Tower, Firecracker Tower cùng hình ảnh cấp độ.",
+      "repositoryLicense": "GPL-3.0"
+    },
+    {
+      "name": "Supercell — The Clash of Titans Update Is Rolling Out",
+      "url": "https://supercell.com/en/games/clashofclans/blog/release-notes/the-clash-of-titans-update-is-rolling-out/",
+      "scope": "Xác nhận nội dung Nhà chính 19, Squad, các công trình phòng thủ mới, yêu cầu và biến thể phòng thủ."
+    }
+  ]
 }

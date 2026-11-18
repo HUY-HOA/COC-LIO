@@ -470,6 +470,8 @@ object CocNames {
         1000084 to "Tháp cung đa mục tiêu", 1000085 to "Đại bác dội", 1000086 to "Tháp phản công",
         1000089 to "Tháp phun lửa", 1000093 to "Nhà trợ thủ", 1000097 to "Trạm chế tạo",
         1000102 to "Tháp pháp sư siêu cấp",
+        1000105 to "Đền Hộ vệ", 1000106 to "Trại lính Tiểu đội",
+        1000107 to "Tháp gai nhọn", 1000108 to "Tháp pháo hoa",
         1000033 to "Tường căn cứ thợ xây", 1000034 to "Nhà chính căn cứ thợ xây",
         1000035 to "Mỏ tinh chất căn cứ thợ xây", 1000036 to "Kho tinh chất căn cứ thợ xây",
         1000037 to "Mỏ vàng căn cứ thợ xây", 1000038 to "Kho vàng căn cứ thợ xây",

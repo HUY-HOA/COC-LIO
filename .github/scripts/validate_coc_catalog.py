@@ -190,6 +190,35 @@ for item in squad_entries:
         if not str(properties.get(required, "")).strip():
             fail(f"{label}: thiếu {required}")
 
+required_th19_buildings = {
+    1000105: ("guardian-shrine", 1),
+    1000106: ("squad-barracks", 12),
+    1000107: ("spiky-tower", 2),
+    1000108: ("firecracker-tower", 2),
+}
+for data_id, (expected_id, expected_max) in required_th19_buildings.items():
+    record = catalog.get(data_id)
+    if record is None:
+        fail(f"Thiếu công trình TH19 dataId {data_id}")
+        continue
+    item = record["item"]
+    if item.get("id") != expected_id or item.get("maxLevel") != expected_max:
+        fail(f"Công trình TH19 {data_id}: sai ID hoặc maxLevel")
+    levels = {
+        level.get("level")
+        for level in item.get("levels", [])
+        if isinstance(level, dict)
+    }
+    if levels != set(range(1, expected_max + 1)):
+        fail(f"Công trình TH19 {data_id}: thiếu cấp nâng cấp")
+
+town_hall = catalog.get(1000001)
+if town_hall is None or town_hall["item"].get("maxLevel") != 19 or not any(
+    isinstance(level, dict) and level.get("level") == 19
+    for level in town_hall["item"].get("levels", [])
+):
+    fail("Nhà chính phải có đầy đủ cấp 19")
+
 heroic_spells = [
     item for item in catalog_items
     if item.get("dataId") == 26000153 and item.get("category") == "spell"
