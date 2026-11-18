@@ -2744,7 +2744,6 @@ private fun CategoryScreen(
         "pets" -> "LINH THÚ"
         "equipment" -> "TRANG BỊ ANH HÙNG • TẤT CẢ TƯỚNG"
         "squads" -> "ĐỘI HÌNH SQUAD • TỔ HỢP QUÂN"
-        "squads" -> "ĐỘI HÌNH SQUAD • TỔ HỢP QUÂN"
         else -> rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
     }
 
@@ -2900,7 +2899,8 @@ private fun VillageGridItemCard(
     onClick: () -> Unit
 ) {
     val itemName = item.name
-    val cardMaxLevel = upgrade?.maxLevel?.takeIf { it > 0 } ?: remote?.maxLevel
+    val cardMaxLevel = upgrade?.let { maxOf(CocUpgradeCatalog.currentMaxLevel(it), remote?.maxLevel ?: 1) }
+        ?: remote?.maxLevel
     val isEquipment = upgrade?.category == "hero-equipment" || item.sectionKey == "equipment"
     val isSquad = upgrade?.category == "squad"
     val rarity = upgrade?.rarity?.takeIf { it.isNotBlank() }
@@ -3944,7 +3944,8 @@ private fun VillageItemDetailDialog(
     val rarity = upgradeEntry?.rarity?.takeIf { it.isNotBlank() }
         ?: remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
-    val maxLevel = upgradeEntry?.maxLevel?.takeIf { it > 0 } ?: remote?.maxLevel
+    val maxLevel = upgradeEntry?.let { maxOf(CocUpgradeCatalog.currentMaxLevel(it), remote?.maxLevel ?: 1) }
+        ?: remote?.maxLevel
     val hallMax = upgradeEntry?.let { CocUpgradeCatalog.maxLevelAtHall(it, hallLevel, upgradeCatalog) }
     val blacksmithMax = upgradeEntry?.let {
         CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(it, blacksmithLevel, upgradeCatalog)
