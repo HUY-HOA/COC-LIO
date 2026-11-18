@@ -1,4 +1,4 @@
-// Deploy updated community retention and permanent-delete rules.
+// Minimum account profile fields only; legacy activity/device and cloud village writes are denied.
 rules_version = '2';
 
 service cloud.firestore {
