@@ -2831,7 +2831,15 @@ private fun CategoryScreen(
                             ) {
                                 val sectionCount = when {
                                     tab != "army" -> rows.sumOf { it.count }.toString()
-                                    key == "squads" -> "${rows.count { it.count > 0 || (it.level ?: 0) > 0 || (it.timerSeconds ?: 0L) > 0L }}/${rows.size} ĐỘI HÌNH"
+                                    key == "squads" -> {
+                                        val confirmedRows = rows.filter { it.properties["catalogOnly"] != "true" }
+                                        val confirmedOwned = confirmedRows.count {
+                                            it.count > 0 || (it.level ?: 0) > 0 || (it.timerSeconds ?: 0L) > 0L
+                                        }
+                                        val confirmedMissing = confirmedRows.size - confirmedOwned
+                                        val unknown = rows.size - confirmedRows.size
+                                        "${rows.size} ĐỘI HÌNH • ĐÃ CÓ $confirmedOwned • CHƯA CÓ $confirmedMissing • CHƯA XÁC NHẬN $unknown"
+                                    }
                                     else -> {
                                         val ownedCount = rows.count { it.count > 0 || it.timerSeconds != null }
                                         val countText = "$ownedCount/${rows.size}"
@@ -3051,10 +3059,17 @@ private fun VillageGridItemCard(
             Text(
                 if (isSquad) {
                     val unlockTownHall = upgrade?.properties?.optInt("townHallRequired", 0)?.takeIf { it > 0 }
+                    val catalogOnly = item.properties["catalogOnly"] == "true"
                     val owned = item.count > 0 || (item.level ?: 0) > 0 || (item.timerSeconds ?: 0L) > 0L
-                    val status = if (owned) "ĐÃ CÓ" else "CHƯA CÓ"
-                    val level = item.level?.let { "CẤP $it/${cardMaxLevel ?: "?"}" } ?: "CẤP 1–${cardMaxLevel ?: "?"}"
-                    if (unlockTownHall != null) "$status • TH$unlockTownHall • $level"
+                    val status = when {
+                        owned -> "ĐÃ CÓ"
+                        catalogOnly -> "CHƯA XÁC NHẬN"
+                        else -> "CHƯA CÓ"
+                    }
+                    val level = item.level?.let { "CẤP $it/${cardMaxLevel ?: "?"}" }
+                        ?: if (owned) "CẤP CHƯA RÕ • MAX ${cardMaxLevel ?: "?"}"
+                        else "MAX ${cardMaxLevel ?: "?"}"
+                    if (unlockTownHall != null) "$status • MỞ TỪ TH$unlockTownHall • $level"
                     else "$status • SQUAD • $level"
                 } else if (item.count <= 0) {
                     "CHƯA SỞ HỮU • MAX ${cardMaxLevel ?: "?"}"
@@ -3607,7 +3622,7 @@ private fun equipmentRarity(dataId: Int): String? = when (dataId) {
 }
 
 private const val EQUIPMENT_COST_DATA_NOTICE =
-    "Chi phí trang bị Epic trong danh mục được chụp ngày 15/11/2026. Ngày 17/11/2026, Supercell thông báo sẽ giảm dần chi phí nâng cấp trang bị Epic cũ, nhưng chưa công bố lịch áp dụng. Hãy đối chiếu chi phí trong trò chơi trước khi dùng số liệu để lập kế hoạch."
+    "Chi phí trang bị Common/Epic hiện hữu trong danh mục dùng snapshot cộng đồng ngày 15/11/2026. Thông báo Supercell ngày 17/11/2026 áp dụng cấu trúc chi phí mới cho Legendary và các trang bị Epic phát hành trong tương lai; không xác nhận giảm hồi tố chi phí của các trang bị Epic cũ. Hãy đối chiếu trong trò chơi trước khi lập kế hoạch quặng."
 
 @Composable
 private fun AnnouncedBlizzardAxeCard() {
@@ -3787,7 +3802,8 @@ private fun catalogVillageItem(entry: CocUpgradeEntry): VillageItem {
         helperCooldownSeconds = null,
         gearUp = false,
         weaponLevel = null,
-        details = emptyList()
+        details = emptyList(),
+        properties = mapOf("catalogOnly" to "true")
     )
 }
 
