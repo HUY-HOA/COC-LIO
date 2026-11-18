@@ -1818,10 +1818,16 @@ private fun GoogleLoginStartScreen(
     onGoogleSignIn: () -> Unit
 ) {
     var selectedPrivacyDetail by rememberSaveable { mutableStateOf<String?>(null) }
+    var privacyDecisionMade by rememberSaveable { mutableStateOf(false) }
     val allSelected = privacyChoice.securityTelemetry &&
         privacyChoice.analytics &&
         privacyChoice.diagnostics &&
         privacyChoice.villageDataSync
+    val anySelected = privacyChoice.securityTelemetry ||
+        privacyChoice.analytics ||
+        privacyChoice.diagnostics ||
+        privacyChoice.villageDataSync
+    val declinedOptionalData = privacyDecisionMade && !anySelected
     fun setAllPrivacyChoices(checked: Boolean) {
         onPrivacyChoiceChanged(
             privacyChoice.copy(
@@ -1902,13 +1908,6 @@ private fun GoogleLoginStartScreen(
                     lineHeight = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                NeonButton(
-                    text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
-                    onClick = onGoogleSignIn,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isBusy,
-                    showLed = !isBusy
-                )
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
                 Text(
                     "CÁC LỰA CHỌN DỮ LIỆU TÙY CHỌN",
@@ -1935,7 +1934,10 @@ private fun GoogleLoginStartScreen(
                 ) {
                     Checkbox(
                         checked = allSelected,
-                        onCheckedChange = { setAllPrivacyChoices(it) },
+                        onCheckedChange = {
+                            privacyDecisionMade = true
+                            setAllPrivacyChoices(it)
+                        },
                         modifier = Modifier.ledRgbBorder(
                             cornerRadiusDp = 5f,
                             strokeWidthDp = if (allSelected) 0f else 1.8f
@@ -1944,6 +1946,7 @@ private fun GoogleLoginStartScreen(
                     Text(
                         "ĐỒNG Ý TẤT CẢ",
                         modifier = Modifier.weight(1f).clickable {
+                            privacyDecisionMade = true
                             setAllPrivacyChoices(!allSelected)
                         },
                         color = MaterialTheme.colorScheme.onSurface,
@@ -1957,7 +1960,10 @@ private fun GoogleLoginStartScreen(
                 ) {
                     Checkbox(
                         checked = privacyChoice.securityTelemetry,
-                        onCheckedChange = { onPrivacyChoiceChanged(privacyChoice.copy(securityTelemetry = it)) }
+                        onCheckedChange = {
+                            privacyDecisionMade = true
+                            onPrivacyChoiceChanged(privacyChoice.copy(securityTelemetry = it))
+                        }
                     )
                     Text(
                         "Dữ liệu thiết bị và hoạt động tài khoản  ›",
@@ -1972,7 +1978,10 @@ private fun GoogleLoginStartScreen(
                 ) {
                     Checkbox(
                         checked = privacyChoice.analytics,
-                        onCheckedChange = { onPrivacyChoiceChanged(privacyChoice.copy(analytics = it)) }
+                        onCheckedChange = {
+                            privacyDecisionMade = true
+                            onPrivacyChoiceChanged(privacyChoice.copy(analytics = it))
+                        }
                     )
                     Text(
                         "Phân tích sử dụng ứng dụng  ›",
@@ -1987,7 +1996,10 @@ private fun GoogleLoginStartScreen(
                 ) {
                     Checkbox(
                         checked = privacyChoice.diagnostics,
-                        onCheckedChange = { onPrivacyChoiceChanged(privacyChoice.copy(diagnostics = it)) }
+                        onCheckedChange = {
+                            privacyDecisionMade = true
+                            onPrivacyChoiceChanged(privacyChoice.copy(diagnostics = it))
+                        }
                     )
                     Text(
                         "Báo lỗi và hiệu năng  ›",
@@ -2002,7 +2014,10 @@ private fun GoogleLoginStartScreen(
                 ) {
                     Checkbox(
                         checked = privacyChoice.villageDataSync,
-                        onCheckedChange = { onPrivacyChoiceChanged(privacyChoice.copy(villageDataSync = it)) }
+                        onCheckedChange = {
+                            privacyDecisionMade = true
+                            onPrivacyChoiceChanged(privacyChoice.copy(villageDataSync = it))
+                        }
                     )
                     Text(
                         "Sao lưu và đồng bộ dữ liệu JSON  ›",
@@ -2012,13 +2027,49 @@ private fun GoogleLoginStartScreen(
                     )
                 }
                 }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = declinedOptionalData,
+                        onCheckedChange = {
+                            privacyDecisionMade = it
+                            if (it) setAllPrivacyChoices(false)
+                        }
+                    )
+                    Text(
+                        "KHÔNG ĐỒNG Ý CÁC MỤC DỮ LIỆU TÙY CHỌN",
+                        modifier = Modifier.weight(1f).clickable {
+                            privacyDecisionMade = !declinedOptionalData
+                            if (!declinedOptionalData) setAllPrivacyChoices(false)
+                        },
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Text(
-                    "Các mục tùy chọn không được bật chỉ vì bạn đăng nhập. Từ chối mục nào thì COC-LIO không thực hiện xử lý dữ liệu cho mục đó.",
+                    if (declinedOptionalData) {
+                        "Bạn vẫn có thể đăng nhập và sử dụng COC-LIO. Các mục dữ liệu tùy chọn sẽ được tắt."
+                    } else {
+                        "Bạn có thể chọn riêng từng mục hoặc chọn tất cả. Mục không được chọn sẽ không được bật chỉ vì bạn đăng nhập."
+                    },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
                     lineHeight = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+                if (privacyDecisionMade) {
+                    NeonButton(
+                        text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
+                        onClick = onGoogleSignIn,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isBusy,
+                        showLed = !isBusy
+                    )
+                }
             }
         }
         if (detail != null) {
