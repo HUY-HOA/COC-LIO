@@ -68,6 +68,7 @@ import com.huyhoa.coclio.data.CocAssetCache
 import com.huyhoa.coclio.data.CocAssetPrefetchWorker
 import com.huyhoa.coclio.data.CocUpgradeCatalog
 import com.huyhoa.coclio.data.CocUpgradeEntry
+import com.huyhoa.coclio.data.CocVillageMaxPlanCalculator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
@@ -2387,6 +2388,9 @@ private fun CategoryScreen(
     var selectedItem by remember(snapshot.tag, snapshot.timestamp, tab, selectedBase) {
         mutableStateOf<VillageItem?>(null)
     }
+    var showMaxPlan by remember(snapshot.tag, snapshot.timestamp, selectedBase) {
+        mutableStateOf(false)
+    }
     val resourceIds = setOf(
         1000002, 1000003, 1000004, 1000005, 1000023, 1000024,
         1000035, 1000036, 1000037, 1000038, 1000058
@@ -2564,6 +2568,16 @@ private fun CategoryScreen(
                                 )
                             }
                         }
+                        TextButton(
+                            onClick = { showMaxPlan = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "TÍNH TỔNG TÀI NGUYÊN ĐỂ MAX LÀNG",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
                         if (tab == "army" && rarityChoices.size > 1) {
                             Text(
                                 "LỌC ĐỘ HIẾM TRANG BỊ",
@@ -2708,6 +2722,201 @@ private fun CategoryScreen(
                 allVillageItems = snapshot.items
             ) {
                 selectedItem = null
+            }
+        }
+        if (showMaxPlan) {
+            VillageMaxPlanDialog(
+                snapshot = snapshot,
+                base = selectedBase,
+                upgradeCatalog = upgradeCatalog
+            ) {
+                showMaxPlan = false
+            }
+        }
+    }
+}
+
+@Composable
+private fun VillageMaxPlanDialog(
+    snapshot: VillageSnapshot,
+    base: String,
+    upgradeCatalog: Map<Int, CocUpgradeEntry>,
+    onDismiss: () -> Unit
+) {
+    val nowSeconds = remember(snapshot.timestamp, base) {
+        System.currentTimeMillis() / 1000L
+    }
+    val plan = remember(snapshot, base, upgradeCatalog, nowSeconds) {
+        CocVillageMaxPlanCalculator.calculate(
+            snapshot = snapshot,
+            base = base,
+            catalog = upgradeCatalog,
+            nowSeconds = nowSeconds
+        )
+    }
+    val remainingCopies = plan.lines.sumOf { it.quantity }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 660.dp)
+                .ledRgbBorder(cornerRadiusDp = 18f, strokeWidthDp = 2.6f, brightnessIndependent = true),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "KẾ HOẠCH TÀI NGUYÊN LÊN MAX",
+                    color = CocGold,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black
+                )
+                VillageItemDetailField(
+                    "Phạm vi",
+                    if (base == "builder") "Toàn bộ Căn cứ thợ xây" else "Toàn bộ Làng chính"
+                )
+                VillageItemDetailField(
+                    "Tiến độ",
+                    "${plan.maxedCopies} đã MAX • ${remainingCopies} còn cần nâng • ${plan.ownedCopies} bản sao đã xác nhận"
+                )
+                Text(
+                    "TỔNG TÀI NGUYÊN CÒN CẦN",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black
+                )
+                if (plan.resources.isEmpty()) {
+                    VillageItemDetailField(
+                        "Tài nguyên",
+                        if (remainingCopies == 0) "Không còn nâng cấp thường cần thực hiện." else "Chưa có chi phí còn lại được xác nhận."
+                    )
+                } else {
+                    plan.resources.forEach { (resource, amount) ->
+                        UpgradeResourceChip(resource, amount)
+                    }
+                }
+                if (plan.durationSeconds > 0L) {
+                    VillageIconDetailField(
+                        R.drawable.ic_coc_time,
+                        "Thời gian cộng dồn",
+                        formatDuration(plan.durationSeconds)
+                    )
+                }
+                Text(
+                    "CÁC MỤC CÒN CẦN NÂNG",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black
+                )
+                if (plan.lines.isEmpty()) {
+                    VillageItemDetailField(
+                        "Trạng thái",
+                        "Không có mục đã xác nhận sở hữu cần nâng cấp theo JSON làng hiện tại."
+                    )
+                } else {
+                    plan.lines.groupBy { it.groupLabel }.forEach { (group, rows) ->
+                        Text(
+                            group.uppercase(),
+                            color = CocGold,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        rows.forEach { line ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                        RoundedCornerShape(10.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outlineVariant,
+                                        RoundedCornerShape(10.dp)
+                                    )
+                                    .padding(9.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    "${line.name} • cấp ${line.currentLevel} → MAX ${line.targetLevel}" +
+                                        if (line.quantity > 1) " • x${line.quantity}" else "",
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                line.resources.forEach { (resource, amount) ->
+                                    UpgradeResourceChip(resource, amount)
+                                }
+                                if (line.durationSeconds > 0L) {
+                                    VillageIconDetailField(
+                                        R.drawable.ic_coc_time,
+                                        "Thời gian còn lại",
+                                        formatDuration(line.durationSeconds)
+                                    )
+                                }
+                                if (line.assumedCurrentLevel) {
+                                    VillageItemDetailField(
+                                        "Cấp hiện tại",
+                                        "JSON không có cấp; tạm tính từ cấp mở khóa đầu tiên."
+                                    )
+                                }
+                                if (line.upgradeInProgress) {
+                                    VillageItemDetailField(
+                                        "Trạng thái",
+                                        "Đã trừ chi phí nâng cấp đang chạy; thời gian còn lại được cộng vào kế hoạch."
+                                    )
+                                }
+                                if (line.missingLevels.isNotEmpty()) {
+                                    VillageItemDetailField(
+                                        "Thiếu dữ liệu cấp",
+                                        line.missingLevels.joinToString(", ") +
+                                            ". Tổng tài nguyên hiện chỉ cộng các cấp có dữ liệu."
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                if (plan.incompleteItems > 0) {
+                    VillageItemDetailField(
+                        "Cảnh báo dữ liệu",
+                        "${plan.incompleteItems} mục còn thiếu dữ liệu cấp nâng cấp; tổng chi phí tương ứng chưa thể xem là đầy đủ."
+                    )
+                }
+                if (plan.unconfirmedItems > 0) {
+                    VillageItemDetailField(
+                        "Chưa xác nhận sở hữu",
+                        "${plan.unconfirmedItems} mục chưa được cộng vì JSON không xác nhận đã sở hữu hoặc đang nâng cấp."
+                    )
+                }
+                if (plan.itemsWithoutCatalogData > 0) {
+                    VillageItemDetailField(
+                        "Thiếu danh mục",
+                        "${plan.itemsWithoutCatalogData} mục đã có trong JSON nhưng chưa có dữ liệu nâng cấp để tính."
+                    )
+                }
+                VillageItemDetailField(
+                    "Cách tính",
+                    "Công trình, bẫy và Tường được nhân theo số lượng. Lính, Thần chú, Anh hùng và nghiên cứu chỉ tính một lần, không nhân theo số quân trong kho."
+                )
+                VillageItemDetailField(
+                    "Lưu ý thời gian",
+                    "Đây là tổng thời gian công việc cộng dồn, chưa trừ thời gian chạy song song của nhiều thợ xây/phòng thí nghiệm, Sách, Búa, trợ thủ hoặc tăng tốc."
+                )
+                VillageItemDetailField(
+                    "Siêu cường hóa",
+                    "Chi phí Siêu cường hóa được xem riêng trong chi tiết từng công trình và chưa cộng vào tổng MAX thường; JSON làng hiện không xác nhận bậc đã hoàn thành."
+                )
+                TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                    Text("ĐÓNG")
+                }
             }
         }
     }
@@ -4025,7 +4234,7 @@ private fun VillageItemDetailDialog(
                 }
                 VillageItemDetailField(
                     "Nguồn dữ liệu",
-                    "Dữ liệu nền là snapshot cộng đồng ngày 15/11/2026, không phải API chính thức của Supercell. Bản TH19 ngày 16/11/2026 đã điều chỉnh chi phí/thời gian của nhiều cấp cũ TH16–18; vì vậy tổng tài nguyên ở các cấp này có thể chưa phản ánh đầy đủ giá mới. Các cấp thiếu dữ liệu được liệt kê riêng; hãy đối chiếu bảng nâng cấp trong game trước khi dùng làm kế hoạch chính xác."
+                    "Dữ liệu cấp nâng cấp là snapshot tĩnh cộng đồng ngày 17/11/2026; danh mục bổ sung được cập nhật ngày 18/11/2026. Đây không phải API chính thức của Supercell. Giá và thời gian có thể thay đổi theo bản cập nhật; các cấp thiếu dữ liệu được liệt kê riêng. Hãy đối chiếu trong game trước khi dùng làm kế hoạch chính xác."
                 )
                 if (isEquipment) {
                     VillageItemDetailField("LƯU Ý VỀ CHI PHÍ EPIC", EQUIPMENT_COST_DATA_NOTICE)
