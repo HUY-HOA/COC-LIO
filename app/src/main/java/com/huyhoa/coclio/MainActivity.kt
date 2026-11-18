@@ -2030,7 +2030,7 @@ private fun GoogleLoginStartScreen(
                             modifier = Modifier.size(40.dp)
                         )
                         Text(
-                            "TỪ CHỐI TẤT CẢ MỤC TÙY CHỌN",
+                            "TỪ CHỐI",
                             modifier = Modifier.weight(1f).clickable {
                                 declinedOptionalData = !declinedOptionalData
                                 if (declinedOptionalData) setAllPrivacyChoices(false)
