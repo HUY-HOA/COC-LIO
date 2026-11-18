@@ -9,7 +9,7 @@
     "https://supercell.com/en/games/clashofclans/blog/release-notes/",
     "https://supercell.com/en/games/clashofclans/blog/news/weve-revamped-the-clash-of-clans-user-interface/"
   ],
-  "note": "Danh mục nền: dữ liệu cộng đồng MIT, snapshot 2026-11-15. Dữ liệu Squad bổ sung 2026-11-18. Giới hạn cấp hiện hành của TH19 được cập nhật riêng theo dữ liệu game 2026-11-16 và thông tin Supercell; các cấp mới chưa có đủ chi phí/thời gian trong bảng nền sẽ được cảnh báo là thiếu, không cộng một phần rồi ghi là tổng đầy đủ. Heroic Spell được hiển thị từ dữ liệu tham khảo game 2026-11-16. Dữ liệu cộng đồng không phải API chính thức Supercell và cần đối chiếu trong game sau mỗi cân bằng.",
+  "note": "Danh mục nền: dữ liệu cộng đồng MIT, snapshot 2026-11-15. Dữ liệu Squad bổ sung 2026-11-18. Giới hạn cấp hiện hành của TH19 được cập nhật riêng theo dữ liệu game 2026-11-16 và thông tin Supercell; các cấp mới chưa có đủ chi phí/thời gian trong bảng nền sẽ được cảnh báo là thiếu, không cộng một phần rồi ghi là tổng đầy đủ. Heroic Spell được hiển thị từ dữ liệu tham khảo game 2026-11-16. Dữ liệu cộng đồng không phải API chính thức Supercell và cần đối chiếu trong game sau mỗi cân bằng. Danh sách 17 Siêu quân lấy từ dữ liệu cộng đồng đối chiếu danh sách quân hiện hành; Siêu quân dùng cấp nghiên cứu của quân gốc, không có đường nâng cấp riêng. Heroic Spell được thêm vào giao diện tra cứu riêng do JSON làng bản cũ chưa có dataId/cấp của thần chú này; ứng dụng không tự suy ra trạng thái sở hữu hoặc cấp hiện tại.",
   "catalogIntegrity": {
     "localIdCount": 238,
     "remoteLookupIdCount": 134,
@@ -39,6 +39,21 @@
       "name": "GiBiArena — Heroic Spell",
       "url": "https://gibiarena.com/en/clash-of-clans/upgrades/heroic-spell",
       "scope": "Cấp 1–4, chi phí Elixir và thời gian Heroic Spell"
+    },
+    {
+      "name": "Supercell Support — What's New / Heroic Spell",
+      "url": "https://sc-clashofclans.zendesk.com/hc/en-us/articles/58611139541915-What-s-New",
+      "scope": "Đặc tính Heroic Spell, mở khóa TH17 và giới hạn 4 cấp; nguồn chính thức"
+    },
+    {
+      "name": "ClashPerk — Super Troops",
+      "url": "https://wiki.clashperk.com/troops?group=Super",
+      "scope": "Danh sách 17 Siêu quân và liên kết cấp độ với quân gốc; nguồn dữ liệu cộng đồng"
+    },
+    {
+      "name": "GiBiArena — Heroic Spell",
+      "url": "https://gibiarena.com/en/clash-of-clans/upgrades/heroic-spell",
+      "scope": "Chi phí và thời gian từng cấp Heroic Spell theo dữ liệu game 16/11/2026 qua ClashKing"
     }
   ],
   "currentMaxLevelSnapshotDate": "2026-11-16",
