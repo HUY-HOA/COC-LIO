@@ -3877,6 +3877,7 @@ private fun HeroEquipmentRoster(
                 entry = entry,
                 villageItem = ownedById[entry.dataId],
                 ownershipUnknown = false,
+                townHallLevel = townHallLevel,
                 blacksmithLevel = blacksmithLevel,
                 upgradeCatalog = upgradeCatalog
             )
@@ -3894,6 +3895,7 @@ private fun HeroEquipmentRoster(
                     entry = entry,
                     villageItem = confirmedUnownedById[entry.dataId],
                     ownershipUnknown = false,
+                    townHallLevel = townHallLevel,
                     blacksmithLevel = blacksmithLevel,
                     upgradeCatalog = upgradeCatalog
                 )
@@ -3912,6 +3914,7 @@ private fun HeroEquipmentRoster(
                     entry = entry,
                     villageItem = null,
                     ownershipUnknown = true,
+                    townHallLevel = townHallLevel,
                     blacksmithLevel = blacksmithLevel,
                     upgradeCatalog = upgradeCatalog
                 )
@@ -3932,6 +3935,7 @@ private fun HeroEquipmentCatalogRow(
     entry: CocUpgradeEntry,
     villageItem: VillageItem?,
     ownershipUnknown: Boolean,
+    townHallLevel: Int?,
     blacksmithLevel: Int?,
     upgradeCatalog: Map<Int, CocUpgradeEntry>
 ) {
@@ -4023,6 +4027,13 @@ private fun HeroEquipmentCatalogRow(
                     formatDuration(fullTotals.durationSeconds)
                 )
             }
+            val missingFullLevels = CocUpgradeCatalog.missingLevels(entry, 1, maxLevel)
+            if (missingFullLevels.isNotEmpty()) {
+                VillageItemDetailField(
+                    "Thiếu dữ liệu chi phí cấp",
+                    missingFullLevels.joinToString(", ") + ". Tổng trên chỉ cộng các cấp có dữ liệu, chưa phải tổng đầy đủ."
+                )
+            }
             if (owned) {
                 val currentTotals = CocUpgradeCatalog.upgradeTotals(
                     entry,
@@ -4052,6 +4063,13 @@ private fun HeroEquipmentCatalogRow(
                         R.drawable.ic_coc_time,
                         if (villageItem?.level != null) "Thời gian còn lại" else "Thời gian còn lại (tạm tính từ cấp 1)",
                         formatDuration(currentDuration)
+                    )
+                }
+                val missingCurrentLevels = CocUpgradeCatalog.missingLevels(entry, currentLevel, maxLevel)
+                if (missingCurrentLevels.isNotEmpty()) {
+                    VillageItemDetailField(
+                        "Thiếu dữ liệu chi phí còn lại",
+                        missingCurrentLevels.joinToString(", ") + ". Không thể tính đủ chi phí tới MAX nếu chưa có dữ liệu các cấp này."
                     )
                 }
             } else {
@@ -4526,7 +4544,11 @@ private fun VillageItemDetailDialog(
                         if (!hasConfirmedOwnership || item.level == null) {
                             VillageItemDetailField(
                                 "Giả định",
-                                "Mục này chưa có trong JSON làng; chi phí còn lại đang tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
+                                if (!hasConfirmedOwnership) {
+                                    "JSON làng không có bản ghi cho mục này; chi phí tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
+                                } else {
+                                    "JSON làng có ghi nhận mục này nhưng chưa có cấp hiện tại; chi phí tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
+                                }
                             )
                         }
                         if (fromCurrent.resources.isEmpty()) {
