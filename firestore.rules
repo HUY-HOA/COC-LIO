@@ -48,7 +48,6 @@ service cloud.firestore {
           'photoUrl',
           'emailVerified',
           'providerId',
-          'villageDataConsent',
           'signInCount',
           'lastSignInAt',
           'createdAt',
@@ -59,27 +58,14 @@ service cloud.firestore {
         && request.resource.data.emailVerified == request.auth.token.email_verified
         && request.resource.data.providerId == 'google.com'
         && request.resource.data.signInCount == 1
-        && (
-          !request.resource.data.keys().hasAny(['dataSharingConsent'])
-          || request.resource.data.dataSharingConsent is bool
-        )
-        && (
-          !request.resource.data.keys().hasAny(['analyticsConsent'])
-          || request.resource.data.analyticsConsent is bool
-        )
-        && (
-          !request.resource.data.keys().hasAny(['diagnosticsConsent'])
-          || request.resource.data.diagnosticsConsent is bool
-        )
-        && (
-          !request.resource.data.keys().hasAny(['villageDataConsent'])
-          || request.resource.data.villageDataConsent is bool
-        )
-        && (
-          !request.resource.data.keys().hasAny(['activityDataConsentVersion'])
-          || request.resource.data.activityDataConsentVersion is int
-        );
-
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 120
+        && request.resource.data.givenName is string
+        && request.resource.data.givenName.size() <= 80
+        && request.resource.data.familyName is string
+        && request.resource.data.familyName.size() <= 80
+        && request.resource.data.photoUrl is string
+        && request.resource.data.photoUrl.size() <= 2048;
       allow update: if isOwner()
         || (
           isVerifiedSelf(userId)
