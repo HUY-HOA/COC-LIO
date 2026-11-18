@@ -96,79 +96,11 @@ exports.adminSyncSharedAccounts = onCall({ region: REGION }, async (request) => 
   return { removed };
 });
 
-exports.recordAccountActivity = onCall({ region: REGION }, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Bạn cần đăng nhập COC-LIO.");
-  }
-
-  const uid = request.auth.uid;
-  const profileRef = db.collection("users").doc(uid);
-  const profile = await profileRef.get();
-
-  if (
-    !profile.exists ||
-    Number(profile.get("requiredAccountDataConsentVersion") || 0) !== 1 ||
-    profile.get("accountDisabled") === true ||
-    profile.get("dataSharingConsent") !== true ||
-    Number(profile.get("activityDataConsentVersion") || 0) !== 6
-  ) {
-    return { recorded: false, reason: "consent-required" };
-  }
-
-  const data = request.data || {};
-  const event = String(data.event || "");
-  if (!["open", "heartbeat", "background"].includes(event)) {
-    throw new HttpsError("invalid-argument", "Loại hoạt động không hợp lệ.");
-  }
-
-  const safeString = (value, maxLength) =>
-    typeof value === "string" ? value.trim().slice(0, maxLength) : "";
-
-  const safeInteger = (value, maxValue) => {
-    const number = Number(value);
-    return Number.isFinite(number)
-      ? Math.max(0, Math.min(maxValue, Math.floor(number)))
-      : 0;
-  };
-
-  const update = {
-    lastActivityEvent: event,
-    activityUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
-  };
-
-  const deviceManufacturer = safeString(data.deviceManufacturer, 60);
-  const deviceModel = safeString(data.deviceModel, 100);
-  const androidVersion = safeString(data.androidVersion, 40);
-  const appVersionName = safeString(data.appVersionName, 40);
-
-  if (deviceManufacturer) update.deviceManufacturer = deviceManufacturer;
-  if (deviceModel) update.deviceModel = deviceModel;
-  if (androidVersion) update.androidVersion = androidVersion;
-  if (appVersionName) update.appVersionName = appVersionName;
-  update.sdkInt = safeInteger(data.sdkInt, 1000);
-  update.appVersionCode = safeInteger(data.appVersionCode, 2147483647);
-
-  if (event === "open") {
-    if (!profile.get("firstOpenedAt")) {
-      update.firstOpenedAt = admin.firestore.FieldValue.serverTimestamp();
-    }
-    update.lastOpenedAt = admin.firestore.FieldValue.serverTimestamp();
-    update.lastActiveAt = admin.firestore.FieldValue.serverTimestamp();
-    update.sessionStartedAt = admin.firestore.FieldValue.serverTimestamp();
-    update.appOpenCount = admin.firestore.FieldValue.increment(1);
-  } else if (event === "heartbeat") {
-    update.lastActiveAt = admin.firestore.FieldValue.serverTimestamp();
-  } else {
-    const duration = safeInteger(data.sessionDurationSeconds, 86400);
-    update.lastBackgroundAt = admin.firestore.FieldValue.serverTimestamp();
-    update.lastSessionDurationSeconds = duration;
-    update.totalForegroundSeconds = admin.firestore.FieldValue.increment(duration);
-  }
-
-  await profileRef.set(update, { merge: true });
-  return { recorded: true };
-});
-
+// Account activity and device metadata collection are disabled.
+exports.recordAccountActivity = onCall({ region: REGION }, async () => ({
+  recorded: false,
+  reason: "disabled"
+}));
 exports.adminDeleteUser = onCall({ region: REGION }, async (request) => {
   requireOwner(request);
 
