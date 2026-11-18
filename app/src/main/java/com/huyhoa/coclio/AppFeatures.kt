@@ -1410,42 +1410,9 @@ class UpgradeReminderWorker(
             )
         ).joinToString("\n")
 
-        val remoteTemplates = applicationContext.getSharedPreferences(
-            "coc_lio_remote_content",
-            Context.MODE_PRIVATE
-        )
-        fun remoteNotificationText(key: String, fallback: String): String {
-            val template = remoteTemplates.getString("notification_$key", null)
-                ?.takeIf { it.isNotBlank() && it.length <= 1800 }
-                ?: fallback
-            return template
-                .replace(Regex("(?i)\\b(?:ID|Mã)\\s*[:#]?\\s*\\{id\\}"), "")
-                .replace("{item}", localizedItem)
-                .replace("{village}", villageName)
-                .replace("{tag}", tag)
-                .replace("{id}", "")
-                .replace("{level}", levelText)
-                .replace("{base}", baseText)
-                .replace("{section}", localizedSection)
-                .take(1800)
-        }
-        val gameIntent = applicationContext.packageManager
-            .getLaunchIntentForPackage("com.supercell.clashofclans")
-            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val iconBitmap = iconUrl?.let { url ->
-            runCatching {
-                downloadWidgetIcon(applicationContext, url)
-                widgetIconFile(applicationContext, url)
-                    .takeIf { it.exists() && it.length() > 0L }
-                    ?.let { BitmapFactory.decodeFile(it.absolutePath) }
-            }.getOrNull()
-        }
-        val notificationTitle = remoteNotificationText(
-            "title",
-            AppText.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
-        )
-        val notificationText = remoteNotificationText("text", "$villageName • $baseText • $levelText")
-        val notificationExpandedText = remoteNotificationText("body", notificationBody)
+        val notificationTitle = AppText.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
+        val notificationText = "$villageName • $baseText • $levelText"
+        val notificationExpandedText = notificationBody
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)

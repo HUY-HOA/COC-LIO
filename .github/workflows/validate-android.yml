@@ -10,7 +10,6 @@ on:
       - "app/src/test/**/*.kt"
       - ".github/workflows/validate-android.yml"
       - ".github/scripts/validate_coc_catalog.py"
-      - "remote-content/catalog/*.json"
 
 permissions:
   contents: read

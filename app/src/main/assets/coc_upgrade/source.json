@@ -12,7 +12,6 @@
   "note": "Danh mục nền lấy từ chiefpansancolt/clash-of-clans-data theo giấy phép MIT, snapshot 2026-11-15. Các cấp TH19/TH18 mới được bổ sung từ dữ liệu game ngày 2026-11-16, gồm cấp tối đa và chi phí/thời gian cho các cấp mới của quân lính, thần chú, anh hùng, linh thú, hộ vệ và máy công thành. Các cấp nâng cấp cũ TH16–TH18 đã bị điều chỉnh chi phí/thời gian trong bản cập nhật TH19; snapshot nền 15/11 chưa đồng bộ đầy đủ toàn bộ các cấp cũ nên tổng chi phí cũ chỉ là tham khảo, cần đối chiếu trong game. Những cấp nào thiếu bản ghi sẽ được hiển thị rõ và không được coi là tổng đầy đủ. Heroic Spell đã được đưa vào danh mục nâng cấp chính với dataId 26000153, cấp 1–4, chi phí và thời gian từng cấp; nếu JSON làng nhập không chứa mục này thì ứng dụng không tự đoán cấp hoặc trạng thái sở hữu. Danh mục Squad gồm 12 đội hình cố định, cấp nâng cấp riêng theo dữ liệu game. Siêu quân dùng cấp nghiên cứu của quân gốc, không có đường nâng cấp cấp riêng; JSON làng không xác nhận trạng thái kích hoạt Super Potion. Dữ liệu cộng đồng và dữ liệu game đã xử lý không phải API chính thức của Supercell; các thay đổi cân bằng sau đó cần được đối chiếu lại.",
   "catalogIntegrity": {
     "localIdCount": 239,
-    "remoteLookupIdCount": 134,
     "superchargeItemCount": 18,
     "canonicalKey": "dataId",
     "superchargeField": "levels[].supercharge",

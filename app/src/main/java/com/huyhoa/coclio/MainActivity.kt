@@ -140,7 +140,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -191,6 +190,12 @@ data class LedThemeState(
 private data class ImportSummary(
     val title: String,
     val messages: List<String>
+)
+
+private data class AppNavigationItem(
+    val id: String,
+    val title: String,
+    val page: Int
 )
 
 val LocalLedTheme = staticCompositionLocalOf {
@@ -596,19 +601,14 @@ private fun NeonButton(
     }
 }
 
+private fun clearObsoleteContentCache(context: Context) {
+    context.getSharedPreferences("coc_lio_remote_content", Context.MODE_PRIVATE).edit().clear().apply()
+    context.getSharedPreferences("coc_lio_cloudflare_content", Context.MODE_PRIVATE).edit().clear().apply()
+    context.deleteFile("coc-lio-remote-content.json")
+    context.deleteFile("coc-lio-remote-content.json.tmp")
+}
+
 class MainActivity : ComponentActivity() {
-    override fun onStart() {
-        super.onStart()
-        RemoteAppConfigManager.startRealtimeUpdates()
-        RemoteContentManager.onHostStart(this)
-    }
-
-    override fun onStop() {
-        RemoteAppConfigManager.stopRealtimeUpdates()
-        RemoteContentManager.stopRealtimeUpdates()
-        super.onStop()
-    }
-
     override fun onResume() {
         super.onResume()
         AccountActivityTracker.start(this)
@@ -624,9 +624,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         LegacyCommunityCleanup.disable(this)
         clearLegacyLanguagePreference(this)
-        RemoteAppConfigManager.initialize()
+        clearObsoleteContentCache(this)
         setContent {
-            val remoteConfig by RemoteAppConfigManager.config.collectAsState()
             var themeMode by remember { mutableStateOf(AppPreferences.themeMode(this@MainActivity)) }
             val dark = when (themeMode) {
                 "light" -> false
@@ -635,29 +634,29 @@ class MainActivity : ComponentActivity() {
             }
             val colors = if (dark) {
                 darkColorScheme(
-                    primary = Color(remoteConfig.darkPrimary),
+                    primary = Color(0xFF36F4FF),
                     onPrimary = Color(0xFF04101D),
-                    secondary = Color(remoteConfig.darkSecondary),
-                    tertiary = Color(remoteConfig.darkTertiary),
-                    background = Color(remoteConfig.darkBackground),
-                    surface = Color(remoteConfig.darkSurface),
-                    surfaceVariant = Color(remoteConfig.darkSurfaceVariant),
+                    secondary = Color(0xFFFF4DDA),
+                    tertiary = Color(0xFFFFD166),
+                    background = Color(0xFF000000),
+                    surface = Color(0xFF0D152B),
+                    surfaceVariant = Color(0xFF14203B),
                     onBackground = Color.White,
                     onSurface = Color.White,
-                    onSurfaceVariant = Color(remoteConfig.darkOnSurfaceVariant)
+                    onSurfaceVariant = Color(0xFF9EAFCE)
                 )
             } else {
                 lightColorScheme(
-                    primary = Color(remoteConfig.lightPrimary),
+                    primary = Color(0xFF006A78),
                     onPrimary = Color.White,
-                    secondary = Color(remoteConfig.lightSecondary),
-                    tertiary = Color(remoteConfig.lightTertiary),
-                    background = Color(remoteConfig.lightBackground),
-                    surface = Color(remoteConfig.lightSurface),
-                    surfaceVariant = Color(remoteConfig.lightSurfaceVariant),
-                    onBackground = Color(remoteConfig.lightOnBackground),
-                    onSurface = Color(remoteConfig.lightOnSurface),
-                    onSurfaceVariant = Color(remoteConfig.lightOnSurfaceVariant)
+                    secondary = Color(0xFF8B3B85),
+                    tertiary = Color(0xFF8A5A00),
+                    background = Color(0xFFFFFFFF),
+                    surface = Color(0xFFF1F5FB),
+                    surfaceVariant = Color(0xFFE4ECF6),
+                    onBackground = Color(0xFF172235),
+                    onSurface = Color(0xFF172235),
+                    onSurfaceVariant = Color(0xFF526176)
                 )
             }
             MaterialTheme(colorScheme = colors) {
@@ -680,8 +679,6 @@ private fun CocLioApp(
     onThemeModeChanged: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val remoteAppConfig by RemoteAppConfigManager.config.collectAsState()
-    val remoteContent by RemoteContentManager.content.collectAsState()
     val baseDensity = LocalDensity.current
     var appFontScale by remember { mutableStateOf(AppPreferences.textScale(context)) }
     var displaySizeLevel by remember { mutableStateOf(AppPreferences.displaySizeLevel(context)) }
@@ -762,9 +759,6 @@ private fun CocLioApp(
     val isPreparingGoogleAccount = firebaseGoogleEmail != null &&
         accountProfileReadyForEmail == null &&
         !googleSignInSubmitting
-    LaunchedEffect(isGoogleSignedIn) {
-        RemoteContentManager.setAccessAllowed(context, isGoogleSignedIn)
-    }
     val initialHistory = remember(activeProfile) { VillageStore.loadAll(context, activeProfile) }
 
     var history by remember { mutableStateOf(initialHistory) }
@@ -778,17 +772,13 @@ private fun CocLioApp(
     var current by remember { mutableStateOf(initialHistory.firstOrNull()) }
     var selectedTab by remember { mutableStateOf(2) }
     var jsonSection by rememberSaveable { mutableStateOf(0) }
-    val remoteNavigationItems = remoteAppConfig.navigationItems
-        .filter {
-            it.id != "community" && it.id != "lookup" &&
-                it.page != 3 && it.page != 5 &&
-                it.enabled && remoteAppConfig.featureEnabled(it.id)
-        }
-        .take(2)
-        .ifEmpty { listOf(RemoteNavigationItem("history", "JSON", 2)) }
-    LaunchedEffect(remoteNavigationItems, selectedTab) {
-        if (remoteNavigationItems.none { it.page == selectedTab }) {
-            selectedTab = remoteNavigationItems.firstOrNull()?.page ?: 0
+    val navigationItems = listOf(
+        AppNavigationItem("history", "JSON", 2),
+        AppNavigationItem("settings", "Cài đặt", 4)
+    )
+    LaunchedEffect(navigationItems, selectedTab) {
+        if (navigationItems.none { it.page == selectedTab }) {
+            selectedTab = navigationItems.first().page
         }
     }
     var showImportDialog by remember { mutableStateOf(false) }
@@ -874,7 +864,7 @@ private fun CocLioApp(
     }
     var ledBrightness by remember { mutableStateOf(ledPrefs.getFloat("brightness", 1f).coerceIn(0f, 1f)) }
     var ledGlowEnabled by remember { mutableStateOf(ledPrefs.getBoolean("glow_enabled", true)) }
-    val ledSpeedMultiplier = remoteAppConfig.ledSpeedMultiplier.coerceIn(0.5f, 3f)
+    val ledSpeedMultiplier = 1f
     val ledSpeedMillis = if (ledEnabled) {
         ledCycleDurationMillis(ledSpeed, ledSpeedMultiplier)
     } else {
@@ -902,12 +892,7 @@ private fun CocLioApp(
         }
     }
     val ledTheme = LedThemeState(
-        palette = if (ledPreset == "rainbow") {
-            remoteAppConfig.ledPalette.takeIf { it.size >= 2 }?.map { Color(it) }
-                ?: paletteForLed(ledPreset)
-        } else {
-            paletteForLed(ledPreset)
-        },
+        palette = paletteForLed(ledPreset),
         enabled = ledEnabled,
         speedMillis = ledSpeedMillis,
         brightness = ledBrightness.coerceIn(0f, 1f),
@@ -1369,24 +1354,22 @@ private fun CocLioApp(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     LedBrandTitle(
-                        text = remoteAppConfig.appTitle,
+                        text = "COC-LIO",
                         fontSize = 23.sp,
                         letterSpacing = 2.sp
                     )
                     Text(
-                        remoteAppConfig.appSubtitle,
+                        "THEO DÕI TIẾN TRÌNH NÂNG CẤP VÀ THÔNG BÁO",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 8.sp,
                         letterSpacing = 0.3.sp,
                         maxLines = 1
                     )
                 }
-                if (remoteAppConfig.featureEnabled("importButton", remoteAppConfig.showImportButton)) {
-                    NeonButton(
-                        text = if (isGoogleSignedIn) "＋ NHẬP JSON" else "ĐĂNG NHẬP",
-                        onClick = { requestImportJson() }
-                    )
-                }
+                NeonButton(
+                    text = if (isGoogleSignedIn) "＋ NHẬP JSON" else "ĐĂNG NHẬP",
+                    onClick = { requestImportJson() }
+                )
             }
             }
         },
@@ -1397,7 +1380,7 @@ private fun CocLioApp(
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
-                val navItems = remoteNavigationItems
+                val navItems = navigationItems
                 navItems.forEach { item ->
                     val navigationIcon = when (item.id) {
                         "home" -> Icons.Outlined.Home
@@ -1477,39 +1460,11 @@ private fun CocLioApp(
                 )
             }
         } else {
-        val visibleRemoteBlocks = remoteAppConfig.dashboardBlocks.filter {
-            (it.page == selectedTab || it.page == -1) &&
-                remoteAppConfig.featureEnabled("dashboardBlocks")
-        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (visibleRemoteBlocks.isNotEmpty()) {
-                RemoteDashboardBlocks(
-                    blocks = visibleRemoteBlocks,
-                    onAction = { action ->
-                        when (action) {
-                            "import_json" -> requestImportJson()
-                            "open_game" -> openClashOfClans(context)
-                            "open_settings" -> selectedTab = 4
-                            "open_history" -> selectedTab = 2
-                        }
-                    }
-                )
-            }
-            RemoteServiceNotices(
-                content = remoteContent,
-                onAction = { action ->
-                    when (action) {
-                        "import_json" -> requestImportJson()
-                        "open_game" -> openClashOfClans(context)
-                        "open_settings" -> selectedTab = 4
-                        "open_history" -> selectedTab = 2
-                    }
-                }
-            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1533,8 +1488,7 @@ private fun CocLioApp(
                                 )
                                 1 -> current?.let {
                                     BuildingsAndArmyScreen(
-                                        snapshot = it,
-                                        remoteCatalog = remoteContent.catalog
+                                        snapshot = it
                                     )
                                 } ?: EmptyWelcome(
                                     onImport = { requestImportJson() },
@@ -2505,8 +2459,7 @@ private fun UpgradeCard(item: VillageItem, snapshotTimestamp: Long, showBase: Bo
 
 @Composable
 private fun BuildingsAndArmyScreen(
-    snapshot: VillageSnapshot,
-    remoteCatalog: Map<Int, RemoteCatalogEntry>
+    snapshot: VillageSnapshot
 ) {
     var selectedGroup by remember(snapshot.tag, snapshot.timestamp) {
         mutableStateOf("buildings")
@@ -2566,7 +2519,6 @@ private fun BuildingsAndArmyScreen(
             snapshot = snapshot,
             tab = selectedGroup,
             selectedBase = selectedBase,
-            remoteCatalog = remoteCatalog,
             modifier = Modifier.weight(1f)
         )
     }
@@ -2577,7 +2529,6 @@ private fun CategoryScreen(
     snapshot: VillageSnapshot,
     tab: String,
     selectedBase: String,
-    remoteCatalog: Map<Int, RemoteCatalogEntry>,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -2638,8 +2589,6 @@ private fun CategoryScreen(
                 else -> null
             }
         }?.takeIf { it in setOf("defense", "resources", "traps", "army", "walls", "other") }
-            ?: remoteCatalog[item.dataId]?.category
-                ?.takeIf { it in setOf("defense", "resources", "traps", "army", "walls", "other") }
             ?: when {
                 item.sectionKey == "traps" || item.sectionKey == "traps2" -> "traps"
                 item.dataId in resourceIds -> "resources"
@@ -2656,9 +2605,7 @@ private fun CategoryScreen(
             "guardian" -> "guardians"
             "hero-equipment" -> "equipment"
             "squad" -> "squads"
-            else -> remoteCatalog[item.dataId]?.category
-                ?.takeIf { it in setOf("troops", "heroes", "spells", "pets", "guardians", "equipment", "other") }
-                ?: when (item.sectionKey) {
+            else -> when (item.sectionKey) {
                     "units", "units2", "siege_machines" -> "troops"
                     "heroes", "heroes2" -> "heroes"
                     "spells" -> "spells"
@@ -2695,7 +2642,6 @@ private fun CategoryScreen(
 
     fun rarityFor(item: VillageItem): String? =
         upgradeCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
-            ?: remoteCatalog[item.dataId]?.rarity?.takeIf { it.isNotBlank() }
             ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
 
     val categoryFiltered = when {
@@ -2884,7 +2830,6 @@ private fun CategoryScreen(
                                         rowItems.forEach { item ->
                                             VillageGridItemCard(
                                                 item = item,
-                                                remote = remoteCatalog[item.dataId],
                                                 upgrade = upgradeCatalog[item.dataId],
                                                 modifier = Modifier.weight(1f)
                                             ) {
@@ -2912,7 +2857,6 @@ private fun CategoryScreen(
         selectedItem?.let { item ->
             VillageItemDetailDialog(
                 item = item,
-                remote = remoteCatalog[item.dataId],
                 blacksmithLevel = blacksmithLevel,
                 hallLevel = hallLevel,
                 upgradeCatalog = upgradeCatalog,
@@ -3002,18 +2946,15 @@ private fun SuperTroopsRoster(
 @Composable
 private fun VillageGridItemCard(
     item: VillageItem,
-    remote: RemoteCatalogEntry?,
     upgrade: CocUpgradeEntry?,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val itemName = item.name
     val cardMaxLevel = upgrade?.let { CocUpgradeCatalog.currentMaxLevel(it) }
-        ?: remote?.maxLevel
     val isEquipment = upgrade?.category == "hero-equipment" || item.sectionKey == "equipment"
     val isSquad = upgrade?.category == "squad"
     val rarity = upgrade?.rarity?.takeIf { it.isNotBlank() }
-        ?: remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (isEquipment) equipmentRarity(item.dataId) else null
     val heroId = if (isEquipment) {
         upgrade?.hero?.takeIf { it.isNotBlank() } ?: equipmentHeroId(item.dataId)
@@ -3051,16 +2992,7 @@ private fun VillageGridItemCard(
                 .padding(2.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (remote?.imageUrl?.isNotBlank() == true) {
-                AsyncImage(
-                    model = remote.imageUrl,
-                    contentDescription = itemName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            } else {
-                CategoryImage(item, 46)
-            }
+            CategoryImage(item, 46)
         }
         Text(
             itemName,
@@ -4109,7 +4041,6 @@ private fun ItemRarityBadge(rarity: String) {
 @Composable
 private fun VillageItemDetailDialog(
     item: VillageItem,
-    remote: RemoteCatalogEntry?,
     blacksmithLevel: Int?,
     hallLevel: Int?,
     upgradeCatalog: Map<Int, CocUpgradeEntry>,
@@ -4118,10 +4049,8 @@ private fun VillageItemDetailDialog(
 ) {
     val upgradeEntry = upgradeCatalog[item.dataId]
     val rarity = upgradeEntry?.rarity?.takeIf { it.isNotBlank() }
-        ?: remote?.rarity?.takeIf { it.isNotBlank() }
         ?: if (item.sectionKey == "equipment") equipmentRarity(item.dataId) else null
     val maxLevel = upgradeEntry?.let { CocUpgradeCatalog.currentMaxLevel(it) }
-        ?: remote?.maxLevel
     val hallMax = upgradeEntry?.let { CocUpgradeCatalog.maxLevelAtHall(it, hallLevel, upgradeCatalog) }
     val blacksmithMax = upgradeEntry?.let {
         CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(it, blacksmithLevel, upgradeCatalog)
@@ -4145,11 +4074,7 @@ private fun VillageItemDetailDialog(
     val itemName = item.name
     val description = EquipmentDescriptionsVi[item.dataId]
         ?: CatalogDescriptionsVi[item.dataId]
-        ?: remote?.description?.takeIf { it.isNotBlank() }
-    val levelDetails = remote?.levelDetails.orEmpty()
-    val availableStatsLevels = (levelDetails.keys + upgradeEntry?.levels.orEmpty().map { it.level })
-        .distinct()
-        .sorted()
+    val availableStatsLevels = upgradeEntry?.levels?.map { it.level }?.distinct()?.sorted().orEmpty()
     val initialStatsTarget = item.level ?: availableStatsLevels.firstOrNull() ?: 1
     val initialStatsLevel = availableStatsLevels.minByOrNull {
         kotlin.math.abs(it - initialStatsTarget)
@@ -4179,16 +4104,7 @@ private fun VillageItemDetailDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (remote?.imageUrl?.isNotBlank() == true) {
-                        AsyncImage(
-                            model = remote.imageUrl,
-                            contentDescription = itemName,
-                            modifier = Modifier.size(70.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                    } else {
-                        CategoryImage(item, 70)
-                    }
+                    CategoryImage(item, 70)
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -4597,21 +4513,6 @@ private fun VillageItemDetailDialog(
                     }
                 }
 
-                remote?.aliases?.takeIf { it.isNotEmpty() }?.let {
-                    VillageItemDetailField("Tên gọi khác", it.joinToString(", "))
-                }
-                remote?.requirements?.takeIf { it.isNotEmpty() }?.let { requirements ->
-                    VillageItemDetailField(
-                        "Yêu cầu mở khóa",
-                        requirements.joinToString("\n") { localizedCatalogText(it) }
-                    )
-                }
-                remote?.abilityType?.takeIf { it.isNotBlank() }?.let {
-                    VillageItemDetailField(
-                        "Loại kỹ năng",
-                        if (it == "active") "Chủ động" else "Bị động"
-                    )
-                }
                 if (availableStatsLevels.isNotEmpty()) {
                     Text(
                         "THÔNG SỐ THEO CẤP",
@@ -4635,30 +4536,13 @@ private fun VillageItemDetailDialog(
                             steps = (availableStatsLevels.size - 2).coerceAtLeast(0)
                         )
                     }
-                    val stats = levelDetails[selectedStatsLevel].orEmpty()
                     val catalogStats = upgradeEntry?.level(selectedStatsLevel)?.displayStats().orEmpty()
-                    if (stats.isEmpty() && catalogStats.isEmpty()) {
+                    if (catalogStats.isEmpty()) {
                         Text(
                             "Chưa có chỉ số cho cấp này.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp
                         )
-                    } else if (stats.isNotEmpty()) {
-                        stats.forEachIndexed { index, rawValue ->
-                            val separator = rawValue.indexOf(':')
-                            val rawLabel = if (separator > 0) {
-                                rawValue.substring(0, separator).trim()
-                            } else {
-                                "Chỉ số ${index + 1}"
-                            }
-                            val value = if (separator > 0) {
-                                rawValue.substring(separator + 1).trim()
-                            } else {
-                                rawValue
-                            }
-                            val (label, displayValue) = localizedCatalogField(rawLabel, value)
-                            VillageItemStatField(label, displayValue)
-                        }
                     } else {
                         catalogStats.forEach { (rawLabel, rawValue) ->
                             val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
@@ -4667,13 +4551,6 @@ private fun VillageItemDetailDialog(
                         }
                     }
                 }
-                remote?.upgradeCost?.takeIf { it.isNotBlank() }?.let {
-                    VillageItemDetailField("Chi phí nâng cấp", it)
-                }
-                remote?.upgradeDurationSeconds?.let {
-                    VillageItemDetailField("Thời gian nâng cấp", formatDuration(it))
-                }
-
                 if (item.details.isNotEmpty()) {
                     Text("THÔNG TIN TỪ DỮ LIỆU LÀNG", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
                     item.details.forEachIndexed { index, value ->
@@ -4689,21 +4566,11 @@ private fun VillageItemDetailDialog(
                         )
                     }
                 }
-                if (remote?.details?.isNotEmpty() == true) {
-                    Text("THÔNG TIN BỔ SUNG", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    remote.details.forEachIndexed { index, value ->
-                        val separator = value.indexOf(':')
-                        val rawLabel = if (separator > 0) value.substring(0, separator).trim() else "Chi tiết ${index + 1}"
-                        val rawValue = if (separator > 0) value.substring(separator + 1).trim() else value
-                        val (label, displayValue) = localizedCatalogField(rawLabel, rawValue)
-                        VillageItemDetailField(label, displayValue)
-                    }
-                }
-                if (remote == null && description == null && item.details.isEmpty() && item.properties.isEmpty() &&
+                if (description == null && item.details.isEmpty() && item.properties.isEmpty() &&
                     item.timerSeconds == null && item.helperCooldownSeconds == null
                 ) {
                     Text(
-                        "JSON hiện không cung cấp thêm chỉ số cho mục này. Có thể bổ sung mô tả, chỉ số, yêu cầu và ảnh trong danh mục dữ liệu cập nhật từ xa.",
+                        "JSON hiện không cung cấp thêm chỉ số cho mục này.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp
                     )
