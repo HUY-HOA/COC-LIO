@@ -2787,8 +2787,11 @@ private fun CategoryScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 rarityChoices.forEach { (key, label) ->
-                                    val count = if (key == "all") rarityItems.size
-                                    else rarityItems.count { rarityFor(it) == key }
+                                    val count = when {
+                                        key == "all" -> rarityItems.size + if (hasAnnouncedBlizzardAxe) 1 else 0
+                                        else -> rarityItems.count { rarityFor(it) == key } +
+                                            if (key == "legendary" && hasAnnouncedBlizzardAxe) 1 else 0
+                                    }
                                     FilterChip(
                                         selected = selectedRarity == key,
                                         onClick = { selectedRarity = key },
@@ -3978,14 +3981,15 @@ private fun HeroEquipmentCatalogRow(
                     skipFirstInProgress = villageItem?.timerSeconds != null && (villageItem.timerSeconds ?: 0L) > 0L
                 )
                 Text(
-                    "CẤP ${villageItem?.level ?: 1} → MAX",
+                    if (villageItem?.level != null) "CẤP ${villageItem.level} → MAX"
+                    else "CẤP CHƯA RÕ → MAX • TẠM TÍNH TỪ CẤP 1",
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Black
                 )
                 if (currentTotals.resources.isEmpty()) {
                     VillageItemDetailField(
-                        "Tài nguyên còn lại",
+                        if (villageItem?.level != null) "Tài nguyên còn lại" else "Tài nguyên còn lại (tạm tính)",
                         if (currentLevel >= maxLevel) "Đã đạt cấp tối đa." else "Chưa có dữ liệu chi phí."
                     )
                 } else {
@@ -3996,7 +4000,7 @@ private fun HeroEquipmentCatalogRow(
                 if (currentDuration > 0L) {
                     VillageIconDetailField(
                         R.drawable.ic_coc_time,
-                        "Thời gian còn lại",
+                        if (villageItem?.level != null) "Thời gian còn lại" else "Thời gian còn lại (tạm tính từ cấp 1)",
                         formatDuration(currentDuration)
                     )
                 }
