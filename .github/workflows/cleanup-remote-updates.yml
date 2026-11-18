@@ -1,0 +1,84 @@
+name: Remove legacy COC-LIO remote update data
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/cleanup-remote-updates.trigger"
+
+permissions:
+  contents: read
+
+jobs:
+  remove-legacy-remote-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Authenticate to Firebase
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Install existing Firebase Admin SDK
+        run: npm install --prefix functions --omit=dev --no-package-lock --ignore-scripts
+
+      - name: Delete only the legacy remote update data
+        env:
+          FIREBASE_PROJECT_ID: coc-lio-73de9
+          NODE_PATH: ${{ github.workspace }}/functions/node_modules
+        run: |
+          node <<'NODE'
+          const { initializeApp, applicationDefault } = require("firebase-admin/app");
+          const { getFirestore } = require("firebase-admin/firestore");
+          const { getRemoteConfig } = require("firebase-admin/remote-config");
+
+          async function main() {
+            const app = initializeApp({
+              credential: applicationDefault(),
+              projectId: process.env.FIREBASE_PROJECT_ID
+            });
+
+            const remoteConfig = getRemoteConfig(app);
+            const template = await remoteConfig.getTemplate();
+            const key = "coclio_app_config_json";
+            const hadParameter = Object.prototype.hasOwnProperty.call(
+              template.parameters || {},
+              key
+            );
+
+            if (hadParameter) {
+              delete template.parameters[key];
+              await remoteConfig.validateTemplate(template);
+              const published = await remoteConfig.publishTemplate(template);
+              if (Object.prototype.hasOwnProperty.call(published.parameters || {}, key)) {
+                throw new Error("The old COC-LIO Remote Config parameter still exists.");
+              }
+              console.log("Deleted the legacy Remote Config parameter:", key);
+            } else {
+              console.log("The legacy Remote Config parameter was already absent.");
+            }
+
+            const document = getFirestore(app)
+              .collection("app_remote_content")
+              .doc("current");
+            await document.delete();
+            const check = await document.get();
+            if (check.exists) {
+              throw new Error("The old app_remote_content/current document still exists.");
+            }
+            console.log("Deleted and verified Firestore document: app_remote_content/current");
+          }
+
+          main().catch(error => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
