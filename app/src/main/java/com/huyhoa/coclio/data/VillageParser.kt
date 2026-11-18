@@ -134,6 +134,7 @@ object VillageParser {
         SectionSpec("pets", "Linh thú", "army", "home"),
         SectionSpec("guardians", "Hộ vệ", "army", "home"),
         SectionSpec("equipment", "Trang bị anh hùng", "army", "home"),
+        SectionSpec("squads", "Đội hình Squad", "army", "home"),
         SectionSpec("helpers", "Trợ thủ", "other", "home"),
         SectionSpec("buildings2", "Công trình căn cứ thợ xây", "buildings", "builder"),
         SectionSpec("traps2", "Bẫy căn cứ thợ xây", "buildings", "builder"),
@@ -563,18 +564,18 @@ object CocNames {
         102000038 to "Tầm bắn Thợ săn anh hùng",
         102000039 to "Máu Máy bắn bánh", 102000040 to "Sát thương Máy bắn bánh",
         102000041 to "Hiệu ứng Máy bắn bánh",
-        95000000 to "Đội hình Man di & Cung thủ",
-        95000001 to "Đội hình Khổng lồ & Pháp sư",
-        95000002 to "Đội hình Phá tường",
-        95000003 to "Đội hình Tiểu quỷ",
-        95000004 to "Đội hình Bóng bay",
-        95000005 to "Đội hình Người đá & Phù thủy",
-        95000006 to "Đội hình Kỵ sĩ heo",
-        95000007 to "Đội hình Thợ mỏ",
-        95000008 to "Đội hình Hồi máu",
-        95000009 to "Đội hình P.E.K.K.A & Titan điện",
-        95000010 to "Đội hình Rồng",
-        95000011 to "Đội hình Rồng con"
+        4000195 to "Đội hình Man di & Cung thủ",
+        4000196 to "Đội hình Khổng lồ & Pháp sư",
+        4000197 to "Đội hình Phá tường",
+        4000198 to "Đội hình Tiểu quỷ",
+        4000199 to "Đội hình Bóng bay",
+        4000200 to "Đội hình Người đá & Phù thủy",
+        4000201 to "Đội hình Kỵ sĩ heo",
+        4000202 to "Đội hình Thợ mỏ",
+        4000203 to "Đội hình Hồi máu",
+        4000204 to "Đội hình P.E.K.K.A & Titan điện",
+        4000205 to "Đội hình Rồng",
+        4000206 to "Đội hình Rồng con"
     )
 
     fun name(id: Int, section: String): String {
