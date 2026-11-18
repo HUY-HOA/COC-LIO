@@ -230,6 +230,53 @@ class CocUpgradeCatalogTest {
 
 
     @Test
+    fun appliesCurrentTownHallNineteenMaxLevelsWithoutInventingMissingCosts() {
+        val king = CocUpgradeEntry(
+            dataId = 28000000,
+            id = "barbarian-king",
+            name = "Barbarian King",
+            description = "",
+            base = "home",
+            category = "hero",
+            rarity = "",
+            hero = "",
+            maxLevel = 110,
+            properties = JSONObject(),
+            levels = (1..110).map { level ->
+                CocUpgradeLevel(level, JSONObject().put("level", level))
+            }
+        )
+
+        assertEquals(115, CocUpgradeCatalog.currentMaxLevel(king))
+        assertEquals((111..115).toList(), CocUpgradeCatalog.missingLevels(king, 110, 115))
+        assertEquals(110, CocUpgradeCatalog.maxLevelAtHall(king, 18, mapOf(king.dataId to king)))
+        assertEquals(115, CocUpgradeCatalog.maxLevelAtHall(king, 19, mapOf(king.dataId to king)))
+    }
+
+    @Test
+    fun updatesAngryJellyMaximumAtTownHallEighteen() {
+        val pet = CocUpgradeEntry(
+            dataId = 73000011,
+            id = "angry-jelly",
+            name = "Angry Jelly",
+            description = "",
+            base = "home",
+            category = "pet",
+            rarity = "",
+            hero = "",
+            maxLevel = 10,
+            properties = JSONObject(),
+            levels = (1..10).map { level ->
+                CocUpgradeLevel(level, JSONObject().put("level", level))
+            }
+        )
+
+        assertEquals(15, CocUpgradeCatalog.currentMaxLevel(pet))
+        assertEquals(10, CocUpgradeCatalog.maxLevelAtHall(pet, 17, mapOf(pet.dataId to pet)))
+        assertEquals(15, CocUpgradeCatalog.maxLevelAtHall(pet, 18, mapOf(pet.dataId to pet)))
+    }
+
+    @Test
     fun reportsMissingUpgradeLevelsInsteadOfTreatingPartialTotalsAsComplete() {
         val entry = CocUpgradeEntry(
             dataId = 4000008,
