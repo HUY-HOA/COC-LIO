@@ -1,0 +1,12 @@
+# Require owner review for security-sensitive configuration and privileged workflows.
+# This file only requests code-owner review; enable branch protection to enforce it.
+
+/.github/workflows/ @HUY-HOA
+/.github/dependabot.yml @HUY-HOA
+/.firebaserc @HUY-HOA
+/firebase.json @HUY-HOA
+/firestore.rules @HUY-HOA
+/storage.rules @HUY-HOA
+/app/google-services.json @HUY-HOA
+/app/build.gradle.kts @HUY-HOA
+/functions/ @HUY-HOA
