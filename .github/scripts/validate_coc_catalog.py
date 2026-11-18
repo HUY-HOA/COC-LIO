@@ -239,6 +239,119 @@ boto_shack = catalog.get(1000047)
 if boto_shack is None or boto_shack["item"].get("base") != "builder":
     fail("Danh mục thiếu Lều B.O.B ở Căn cứ thợ xây")
 
+def require_item_max_levels(base, category, expected):
+    for item_id, expected_max in expected.items():
+        matches = [
+            item for item in catalog_items
+            if item.get("id") == item_id
+            and item.get("base") == base
+            and item.get("category") == category
+        ]
+        if len(matches) != 1:
+            fail(f"Thiếu hoặc trùng mục {base}/{category}/{item_id}")
+            continue
+        item = matches[0]
+        if item.get("maxLevel") != expected_max:
+            fail(f"{item_id}: MAX phải là {expected_max}, hiện là {item.get('maxLevel')}")
+        actual_levels = {
+            level.get("level")
+            for level in item.get("levels", [])
+            if isinstance(level, dict) and level.get("supercharge") is not True
+        }
+        if actual_levels != set(range(1, expected_max + 1)):
+            fail(f"{item_id}: thiếu dữ liệu cấp thường 1–{expected_max}")
+
+require_item_max_levels("home", "hero", {
+    "barbarian-king": 115,
+    "archer-queen": 115,
+    "minion-prince": 100,
+    "grand-warden": 90,
+    "royal-champion": 60,
+    "dragon-duke": 30,
+})
+
+require_item_max_levels("home", "troop", {
+    "barbarian": 14,
+    "archer": 15,
+    "giant": 15,
+    "goblin": 11,
+    "wall-breaker": 15,
+    "balloon": 14,
+    "wizard": 15,
+    "healer": 12,
+    "dragon": 14,
+    "pekka": 14,
+    "baby-dragon": 13,
+    "miner": 13,
+    "electro-dragon": 10,
+    "yeti": 9,
+    "dragon-rider": 7,
+    "electro-titan": 6,
+    "root-rider": 5,
+    "thrower": 5,
+    "meteor-golem": 4,
+    "minion": 15,
+    "hog-rider": 16,
+    "valkyrie": 13,
+    "golem": 16,
+    "witch": 9,
+    "lava-hound": 9,
+    "bowler": 11,
+    "headhunter": 5,
+    "druid": 7,
+    "ruin-witch": 5,
+})
+
+require_item_max_levels("home", "spell", {
+    "healing-spell": 13,
+    "lightning-spell": 14,
+    "totem-spell": 5,
+    "poison-spell": 13,
+    "haste-spell": 8,
+    "bat-spell": 9,
+})
+
+require_item_max_levels("home", "pet", {"angry-jelly": 15})
+require_item_max_levels("home", "guardian", {"smasher": 10})
+
+power_pekka = next(
+    (item for item in catalog_items if item.get("id") == "power-pekka" and item.get("base") == "builder"),
+    None,
+)
+power_pekka_expected = {
+    13: (0, 0),
+    14: (3600000, 388800),
+    15: (3800000, 475200),
+    16: (4000000, 475200),
+    17: (4600000, 518400),
+    18: (4800000, 518400),
+    19: (5600000, 561600),
+    20: (5800000, 561600),
+}
+if power_pekka is None or power_pekka.get("maxLevel") != 20:
+    fail("Power P.E.K.K.A phải có cấp trong game 13–20 và MAX 20")
+else:
+    power_levels = {
+        level.get("level"): level
+        for level in power_pekka.get("levels", [])
+        if isinstance(level, dict) and level.get("supercharge") is not True
+    }
+    if set(power_levels) != set(power_pekka_expected):
+        fail("Power P.E.K.K.A phải có đủ cấp trong game 13–20")
+    for number, (cost, duration) in power_pekka_expected.items():
+        level = power_levels.get(number)
+        if level is None:
+            continue
+        time = level.get("researchTime", {})
+        seconds = (
+            time.get("days", 0) * 86400
+            + time.get("hours", 0) * 3600
+            + time.get("minutes", 0) * 60
+            + time.get("seconds", 0)
+        ) if isinstance(time, dict) else -1
+        if level.get("researchCost") != cost or seconds != duration:
+            fail(f"Power P.E.K.K.A cấp {number}: sai chi phí/thời gian sau khi ánh xạ cấp nguồn 1–8")
+
 town_hall = catalog.get(1000001)
 if town_hall is None or town_hall["item"].get("maxLevel") != 19 or not any(
     isinstance(level, dict) and level.get("level") == 19
