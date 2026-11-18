@@ -5,19 +5,26 @@ COC-LIO is configured to run without Firebase Blaze billing.
 ## What remains available
 
 - Google sign-in through Firebase Authentication.
-- User profiles and consent choices in Cloud Firestore.
-- The owner account list, profile details, and consent-based activity/device fields written directly by the app.
-- Local village data and other on-device features.
+- Minimal account profiles in Cloud Firestore, used for authentication, account maintenance and owner-managed access.
+- The owner account list and account status management.
+- Local village JSON parsing, history and upgrade tracking on the device.
 
-Firestore activity/device fields are client-reported. They are not server-verified audit records. The app does not collect IP addresses. When the owner opens the account list, any legacy `lastIp` and `lastIpCapturedAt` fields still present in user profiles are deleted. Activity reporting runs only after the user has opted in. The current Android manifest requests Internet, network-state, and notification permissions only; it does not request location, contacts, call logs, SMS, or phone-state access.
+## Data collection in the current app
+
+The login screen contains one required confirmation for the Terms of Use and Privacy Policy. It does not offer optional data-collection switches.
+
+The Firestore account profile contains the Google UID, email, display name and profile photo, email-verification status, provider ID, preferred display name, sign-in count and account timestamps such as created, updated and last sign-in.
+
+Firebase Analytics, Crashlytics and Performance Monitoring are disabled. The app does not start its device/activity tracker and does not write IP addresses or device identifiers to account profiles. The manifest does not request location, contacts, call logs, SMS or phone-state permissions.
+
+Village JSON, Player Tag, village names and progression history are processed and stored locally. The current app does not upload JSON to Cloud Firestore or sync village data to the cloud. Any legacy JSON snapshots or activity fields from older app versions are not automatically removed by this update; handle deletion separately when needed.
+
+Firestore profile fields reported by the client are not server-verified audit records. The app's owner account list removes legacy `lastIp` and `lastIpCapturedAt` fields when those fields are encountered.
 
 ## Features paused on Spark
 
 - Cloud Functions are not deployed or called by the Android app.
-
-
 - Firebase Storage and APK distribution are not used by the current JSON-focused Android app. Existing Storage objects and legacy Firestore records are not automatically deleted by this code cleanup.
-
 - The owner cannot delete another user's Firebase Authentication account from the Android app. The app can mark that user's COC-LIO Firestore profile as disabled. This blocks access to Firestore-protected COC-LIO features, but does not delete the Authentication account or automatically erase the user's other data.
 - The owner account list is based on Firestore profile documents. Without the server-side Auth user-list sync, stale profiles can remain after an Auth account is deleted separately.
 
@@ -37,13 +44,4 @@ The old Cloud Functions deploy workflow has been removed. The `functions/` sourc
 
 ## Free-plan limits
 
-Spark has service-specific free quotas. When a quota is exhausted, the affected service may stop accepting requests until its quota resets or the project is upgraded. Spark does not automatically switch the project to paid billing. Monitor Firestore reads, writes, stored data, and network usage to stay within the free limits.
-
-
-## Expanded opt-in collection (consent version 6)
-
-The Android app only sends optional device/activity telemetry when the user accepts the corresponding choice. The fields are device manufacturer/model/brand/product/codename, up to four supported CPU ABIs, Android version/API level, app version, locale, time zone, screen pixel dimensions/density, broad network transport type, app-open count, timestamps, and foreground duration. Network data is limited to the transport category; no IP or hardware identifier is added.
-
-A separate "Đồng bộ dữ liệu Clash of Clans lên tài khoản" choice controls cloud sync of JSON that the user explicitly imports. When enabled, COC-LIO writes the latest raw JSON snapshot per Player Tag to the user's Firestore subcollection and updates a small summary in the user profile. It does not connect to the game process or read the game account in the background.
-
-The synchronization is subject to Spark Firestore limits: 1 GiB total stored data, 20,000 document writes/day, 50,000 document reads/day, and 10 GiB/month network egress. The app keeps only one cloud snapshot per Player Tag, but each different tag creates another document. Users should disable sync or request deletion when they no longer need the cloud copy.
+Spark has service-specific free quotas. When a quota is exhausted, the affected service may stop accepting requests until its quota resets or the project is upgraded. Spark does not automatically switch the project to paid billing. Monitor Firestore reads, writes, stored data and network usage to stay within the free limits.
