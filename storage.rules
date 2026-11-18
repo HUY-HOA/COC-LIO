@@ -9,7 +9,7 @@ service firebase.storage {
 
     function isOwner() {
       return signedIn()
-        && request.auth.token.email == 'phunghuyhoahaikba@gmail.com';
+        && request.auth.uid == 'T0PXzlCfddNZsWZzva2v1NCrWOf2';
     }
 
     // Legacy community attachments are no longer accessible.
