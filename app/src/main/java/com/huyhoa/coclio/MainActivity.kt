@@ -2873,6 +2873,7 @@ private fun VillageGridItemCard(
     onClick: () -> Unit
 ) {
     val itemName = item.name
+    val cardMaxLevel = upgrade?.maxLevel?.takeIf { it > 0 } ?: remote?.maxLevel
     val isEquipment = upgrade?.category == "hero-equipment" || item.sectionKey == "equipment"
     val rarity = upgrade?.rarity?.takeIf { it.isNotBlank() }
         ?: remote?.rarity?.takeIf { it.isNotBlank() }
@@ -2940,7 +2941,13 @@ private fun VillageGridItemCard(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                if (item.count <= 0) "CHƯA SỞ HỮU" else item.level?.let { "Cấp $it" } ?: "Chưa rõ cấp",
+                if (item.count <= 0) {
+                    "CHƯA SỞ HỮU • MAX ${cardMaxLevel ?: "?"}"
+                } else {
+                    item.level?.let { level ->
+                        cardMaxLevel?.let { "Cấp $level / $it" } ?: "Cấp $level"
+                    } ?: "Chưa rõ cấp"
+                },
                 color = if (item.count <= 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
@@ -3752,7 +3759,12 @@ private fun HeroEquipmentCatalogRow(
                 )
             }
             if (owned) {
-                val currentTotals = CocUpgradeCatalog.upgradeTotals(entry, currentLevel, maxLevel)
+                val currentTotals = CocUpgradeCatalog.upgradeTotals(
+                    entry,
+                    currentLevel,
+                    maxLevel,
+                    skipFirstInProgress = villageItem?.timerSeconds != null && (villageItem.timerSeconds ?: 0L) > 0L
+                )
                 Text(
                     "CẤP ${villageItem?.level ?: 1} → MAX",
                     color = MaterialTheme.colorScheme.primary,
@@ -3767,11 +3779,13 @@ private fun HeroEquipmentCatalogRow(
                 } else {
                     currentTotals.resources.forEach { (resource, amount) -> UpgradeResourceChip(resource, amount) }
                 }
-                if (currentTotals.durationSeconds > 0L) {
+                val currentDuration = currentTotals.durationSeconds +
+                    (villageItem?.timerSeconds?.takeIf { it > 0L } ?: 0L)
+                if (currentDuration > 0L) {
                     VillageIconDetailField(
                         R.drawable.ic_coc_time,
                         "Thời gian còn lại",
-                        formatDuration(currentTotals.durationSeconds)
+                        formatDuration(currentDuration)
                     )
                 }
             } else {
