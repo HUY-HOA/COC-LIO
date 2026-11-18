@@ -1493,7 +1493,7 @@ private fun CocLioApp(
                     }
                     4 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
-                        isAdmin = FirebaseAccountAdministration.isOwner(activeProfile),
+                        isAdmin = FirebaseAccountAdministration.isOwner(FirebaseAuth.getInstance().currentUser?.uid),
                         accountData = AccountProfileStore.googleData(context, activeProfile),
                         preferredName = AccountProfileStore.preferredName(context, activeProfile),
                         lastUsedLabel = lastUsedAt.takeIf { it > 0L }?.let { formatTimestamp(it / 1000L) },
