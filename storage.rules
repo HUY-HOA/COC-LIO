@@ -2,30 +2,8 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() {
-      return request.auth != null
-        && request.auth.token.email_verified == true;
-    }
-
-    function isOwner() {
-      return signedIn()
-        && request.auth.uid == 'T0PXzlCfddNZsWZzva2v1NCrWOf2';
-    }
-
-    // Legacy community attachments are no longer accessible.
-
-    match /updates/{fileName} {
-      allow read: if signedIn();
-
-      allow create, update: if isOwner()
-        && fileName.matches('.*\\.apk')
-        && request.resource.size > 0
-        && request.resource.size <= 150 * 1024 * 1024
-        && request.resource.contentType == 'application/vnd.android.package-archive';
-
-      allow delete: if isOwner();
-    }
-
+    // COC-LIO does not use Firebase Storage in the current Spark configuration.
+    // Deny all access so an accidental future deployment cannot expose files.
     match /{allPaths=**} {
       allow read, write: if false;
     }
