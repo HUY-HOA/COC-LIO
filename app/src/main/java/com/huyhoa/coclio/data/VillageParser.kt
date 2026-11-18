@@ -191,7 +191,7 @@ object VillageParser {
                 val timer = if (obj.has("timer") && !obj.isNull("timer")) obj.optLong("timer") else null
                 val helperCooldown = if (obj.has("helper_cooldown") && !obj.isNull("helper_cooldown")) obj.optLong("helper_cooldown") else null
                 val count = if (obj.has("cnt") && !obj.isNull("cnt")) {
-                    obj.optInt("cnt", 1).coerceAtLeast(1)
+                    obj.optInt("cnt", 1).coerceAtLeast(0)
                 } else {
                     1
                 }
