@@ -525,6 +525,7 @@ object CocNames {
         26000053 to "Thần chú Thu quân", 26000070 to "Thần chú Siêu tăng trưởng",
         26000098 to "Thần chú Hồi sinh", 26000109 to "Thần chú Khiên chắn băng",
         26000120 to "Thần chú Vật tổ", 26000123 to "Thần chú Giận dữ",
+        26000153 to "Thần chú Anh hùng",
         73000000 to "L.A.S.S.I", 73000001 to "Yak dũng mãnh", 73000002 to "Cú điện",
         73000003 to "Kỳ lân", 73000004 to "Phượng hoàng",
         73000007 to "Thằn lằn độc", 73000008 to "Diggy",
