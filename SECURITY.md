@@ -19,7 +19,7 @@ Security fixes are applied to the main branch. Releases should use the latest re
 
 - `app/google-services.json` is Firebase client configuration. Its project identifiers and Firebase client API key are public identifiers, not server credentials. Do not replace it with a service-account JSON file. Authorization remains the responsibility of Firebase Authentication, Firestore Rules and App Check.
 - Play Integrity App Check initialization is present in the Android app. Do not enable Firebase App Check enforcement until the actual stable Release signing certificate is registered and legitimate sideloaded devices appear in App Check metrics.
-- The current project is kept on Firebase Spark. Firestore Rules are deployed by the repository workflow. Cloud Storage and Cloud Functions are not used by the current app and are not deployed on Spark; `storage.rules` is retained only as a restrictive future reference and is not active.
+- The current project is kept on Firebase Spark. Firestore Rules are deployed by the repository workflow. Current client rules reject writes to legacy activity/device metadata and cloud village snapshots; village JSON remains local in the current app. Existing historical snapshots remain readable/deletable only by their owner or the COC-LIO owner account. Cloud Storage and Cloud Functions are not used by the current app and are not deployed on Spark; `storage.rules` is retained only as a restrictive future reference and is not active.
 - The Firebase API key's API allowlist and any application restrictions must be checked in Google Cloud Console. Do not delete or replace the key without verifying the Android app configuration and required Firebase API allowlist.
 
 ## Scope and limits
