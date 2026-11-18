@@ -54,6 +54,16 @@
       "name": "GiBiArena — Heroic Spell",
       "url": "https://gibiarena.com/en/clash-of-clans/upgrades/heroic-spell",
       "scope": "Chi phí và thời gian từng cấp Heroic Spell theo dữ liệu game 16/11/2026 qua ClashKing"
+    },
+    {
+      "name": "Supercell — The Clash of Titans Update Is Rolling Out",
+      "url": "https://supercell.com/en/games/clashofclans/blog/release-notes/the-clash-of-titans-update-is-rolling-out/",
+      "scope": "Nguồn chính thức cho các giới hạn cấp TH19, cấp Anh hùng, quân lính, thần chú, phòng thủ, bẫy và công trình mới"
+    },
+    {
+      "name": "THCheck — Town Hall 19 max levels",
+      "url": "https://clashthcheck.com/en/th19/",
+      "scope": "Đối chiếu danh sách ID/tên và cấp tối đa TH19; nguồn cộng đồng, giá và thời gian cấp mới chỉ dùng khi có dữ liệu game xác thực"
     }
   ],
   "currentMaxLevelSnapshotDate": "2026-11-16",
