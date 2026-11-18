@@ -530,15 +530,6 @@ object FirebaseAccountAdministration {
             .awaitFirebaseResult()
         val accounts = result.documents.map { document ->
             val email = document.getString("email").orEmpty()
-            val hasActivityConsent =
-                document.getLong("activityDataConsentVersion") == AccountPrivacyConsent.CURRENT_VERSION &&
-                    document.getBoolean("dataSharingConsent") == true
-            val lastActiveAt = if (hasActivityConsent) {
-                document.getTimestamp("lastActiveAt")?.toDate()?.time ?: 0L
-            } else 0L
-            val lastBackgroundAt = if (hasActivityConsent) {
-                document.getTimestamp("lastBackgroundAt")?.toDate()?.time ?: 0L
-            } else 0L
             AdminGoogleAccount(
                 uid = document.getString("uid") ?: document.id,
                 email = email,
@@ -554,49 +545,6 @@ object FirebaseAccountAdministration {
                 lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
                 updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L,
                 isAdmin = isOwner(email),
-                isOnline = hasActivityConsent && lastActiveAt > lastBackgroundAt &&
-                    lastActiveAt > 0L &&
-                    System.currentTimeMillis() - lastActiveAt <= 660_000L,
-                lastActiveAt = lastActiveAt,
-                firstOpenedAt = if (hasActivityConsent) document.getTimestamp("firstOpenedAt")?.toDate()?.time ?: 0L else 0L,
-                lastOpenedAt = if (hasActivityConsent) document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L else 0L,
-                lastBackgroundAt = lastBackgroundAt,
-                sessionStartedAt = if (hasActivityConsent) document.getTimestamp("sessionStartedAt")?.toDate()?.time ?: 0L else 0L,
-                activityUpdatedAt = if (hasActivityConsent) document.getTimestamp("activityUpdatedAt")?.toDate()?.time ?: 0L else 0L,
-                lastActivityEvent = if (hasActivityConsent) document.getString("lastActivityEvent").orEmpty() else "",
-                appOpenCount = if (hasActivityConsent) document.getLong("appOpenCount") ?: 0L else 0L,
-                lastSessionDurationSeconds = if (hasActivityConsent) document.getLong("lastSessionDurationSeconds") ?: 0L else 0L,
-                totalForegroundSeconds = if (hasActivityConsent) document.getLong("totalForegroundSeconds") ?: 0L else 0L,
-                deviceManufacturer = if (hasActivityConsent) document.getString("deviceManufacturer").orEmpty() else "",
-                deviceModel = if (hasActivityConsent) document.getString("deviceModel").orEmpty() else "",
-                deviceBrand = if (hasActivityConsent) document.getString("deviceBrand").orEmpty() else "",
-                deviceProduct = if (hasActivityConsent) document.getString("deviceProduct").orEmpty() else "",
-                deviceCodeName = if (hasActivityConsent) document.getString("deviceCodeName").orEmpty() else "",
-                supportedAbis = if (hasActivityConsent) document.getString("supportedAbis").orEmpty() else "",
-                localeTag = if (hasActivityConsent) document.getString("localeTag").orEmpty() else "",
-                timeZoneId = if (hasActivityConsent) document.getString("timeZoneId").orEmpty() else "",
-                screenWidthPx = if (hasActivityConsent) document.getLong("screenWidthPx") ?: 0L else 0L,
-                screenHeightPx = if (hasActivityConsent) document.getLong("screenHeightPx") ?: 0L else 0L,
-                densityDpi = if (hasActivityConsent) document.getLong("densityDpi") ?: 0L else 0L,
-                networkType = if (hasActivityConsent) document.getString("networkType").orEmpty() else "",
-                androidVersion = if (hasActivityConsent) document.getString("androidVersion").orEmpty() else "",
-                sdkInt = if (hasActivityConsent) document.getLong("sdkInt") ?: 0L else 0L,
-                appVersionName = if (hasActivityConsent) document.getString("appVersionName").orEmpty() else "",
-                appVersionCode = if (hasActivityConsent) document.getLong("appVersionCode") ?: 0L else 0L,
-                activityDataConsentVersion = document.getLong("activityDataConsentVersion") ?: 0L,
-                dataSharingConsent = document.getBoolean("dataSharingConsent") ?: false,
-                analyticsConsent = document.getBoolean("analyticsConsent") ?: false,
-                diagnosticsConsent = document.getBoolean("diagnosticsConsent") ?: false,
-                villageDataConsent = document.getBoolean("villageDataConsent") ?: false,
-                lastVillageTag = document.getString("lastVillageTag").orEmpty(),
-                lastVillageName = document.getString("lastVillageName").orEmpty(),
-                lastVillageTimestamp = document.getLong("lastVillageTimestamp") ?: 0L,
-                lastVillageTownHallLevel = document.getLong("lastVillageTownHallLevel") ?: 0L,
-                lastVillageBuilderHallLevel = document.getLong("lastVillageBuilderHallLevel") ?: 0L,
-                villageImportCount = document.getLong("villageImportCount") ?: 0L,
-                lastVillageSyncedAt = document.getTimestamp("lastVillageSyncedAt")?.toDate()?.time ?: 0L,
-                lastVillageRawJsonBytes = document.getLong("lastVillageRawJsonBytes") ?: 0L,
-                activityConsentAt = document.getTimestamp("activityConsentAt")?.toDate()?.time ?: 0L,
                 accountDisabled = document.getBoolean("accountDisabled") ?: false
             )
         }.toMutableList()
@@ -2168,23 +2116,22 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             )
                             Text(account.email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
                             Text(
-                                when { account.accountDisabled -> "● ĐÃ VÔ HIỆU HÓA"; account.isOnline -> "● ĐANG ONLINE"; else -> "● OFFLINE" },
-                                color = if (account.isOnline) Color(0xFF35D6A3) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                when {
+                                    account.accountDisabled -> "● ĐÃ VÔ HIỆU HÓA"
+                                    account.signInCount > 0L -> "● ĐÃ ĐĂNG NHẬP GOOGLE"
+                                    else -> "● CHƯA GHI NHẬN ĐĂNG NHẬP"
+                                },
+                                color = when {
+                                    account.accountDisabled -> Color(0xFFFF5D91)
+                                    account.signInCount > 0L -> Color(0xFF35D6A3)
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                                 fontSize = 8.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
                                 if (account.signInCount > 0L) "Đăng nhập ${account.signInCount} lần · ${formatAdminAccountTime(account.lastSignInAt)}"
                                 else "Lần đăng nhập gần nhất · ${formatAdminAccountTime(account.lastSignInAt)}",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 8.sp
-                            )
-                            Text(
-                                when {
-                                    account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent -> "Đã cho phép ghi nhận hoạt động/thiết bị (không ghi IP trên Spark)"
-                                    account.isAdmin -> "Tài khoản quản lý · thiết bị hiện tại"
-                                    else -> "Hồ sơ Google được đồng bộ"
-                                },
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 8.sp
                             )
@@ -2238,27 +2185,6 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Tên Google", account.displayName)
                             ProfileDataRow("Tên", account.givenName)
                             ProfileDataRow("Họ", account.familyName)
-                            ProfileDataRow(
-                                "Đồng bộ hồ sơ",
-                                if (account.isAdmin && account.activityDataConsentVersion < AccountPrivacyConsent.CURRENT_VERSION) "Tài khoản quản lý đang dùng"
-                                else "Được đồng bộ khi đăng nhập Google"
-                            )
-                            ProfileDataRow(
-                                "Quyền theo dõi hoạt động",
-                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Đã cho phép thiết bị và hoạt động" else "Chưa cho phép thiết bị và hoạt động"
-                            )
-                            ProfileDataRow(
-                                "Đồng ý phân tích mức sử dụng",
-                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.analyticsConsent) "Đã cho phép" else "Chưa cho phép"
-                            )
-                            ProfileDataRow(
-                                "Đồng ý báo lỗi và hiệu năng",
-                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.diagnosticsConsent) "Đã cho phép" else "Chưa cho phép"
-                            )
-                            ProfileDataRow(
-                                "Thời điểm lưu lựa chọn dữ liệu",
-                                if (account.activityConsentAt > 0L) formatAdminAccountTime(account.activityConsentAt) else "Chưa lưu lựa chọn"
-                            )
                             ProfileDataRow("Ảnh đại diện", account.photoUrl)
                             ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
                             ProfileDataRow("Nhà cung cấp", account.providerId)
@@ -2267,88 +2193,6 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 if (account.signInCount > 0L) account.signInCount.toString() else "Chưa có số liệu thống kê"
                             )
                             ProfileDataRow("Đăng nhập gần nhất", formatAdminAccountTime(account.lastSignInAt))
-                            ProfileDataRow(
-                                "Mở COC-LIO lần đầu",
-                                if (account.firstOpenedAt > 0L) formatAdminAccountTime(account.firstOpenedAt)
-                                else if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Chưa ghi nhận lần mở"
-                                else "Chưa có dữ liệu lịch sử theo dõi"
-                            )
-                            ProfileDataRow(
-                                "Lần mở COC-LIO gần nhất",
-                                if (account.lastOpenedAt > 0L) formatAdminAccountTime(account.lastOpenedAt)
-                                else if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) "Chưa ghi nhận lần mở"
-                                else "Chưa có dữ liệu lịch sử theo dõi"
-                            )
-                            ProfileDataRow(
-                                "Hoạt động gần nhất",
-                                if (account.lastActiveAt > 0L) formatAdminAccountTime(account.lastActiveAt)
-                                else "Chưa có dữ liệu lịch sử theo dõi"
-                            )
-                            ProfileDataRow(
-                                "Lần chuyển ứng dụng xuống nền",
-                                if (account.lastBackgroundAt > 0L) formatAdminAccountTime(account.lastBackgroundAt)
-                                else "Chưa ghi nhận"
-                            )
-                            ProfileDataRow(
-                                "Sự kiện hoạt động gần nhất",
-                                when (account.lastActivityEvent) {
-                                    "open" -> "Mở ứng dụng"
-                                    "heartbeat" -> "Đang sử dụng ứng dụng"
-                                    "background" -> "Chuyển ứng dụng xuống nền"
-                                    else -> "Chưa ghi nhận"
-                                }
-                            )
-                            ProfileDataRow(
-                                "Thời điểm cập nhật sự kiện",
-                                formatAdminAccountTime(account.activityUpdatedAt)
-                            )
-                            ProfileDataRow(
-                                "Bắt đầu phiên mở gần nhất",
-                                formatAdminAccountTime(account.sessionStartedAt)
-                            )
-                            ProfileDataRow(
-                                "Số phiên mở COC-LIO",
-                                if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.dataSharingConsent) account.appOpenCount.toString()
-                                else "Chưa có dữ liệu do chưa bật theo dõi"
-                            )
-                            ProfileDataRow(
-                                "Thời lượng phiên gần nhất",
-                                if (account.lastSessionDurationSeconds > 0L) formatDuration(account.lastSessionDurationSeconds) else "Chưa ghi nhận"
-                            )
-                            ProfileDataRow(
-                                "Tổng thời gian hoạt động",
-                                if (account.totalForegroundSeconds > 0L) formatDuration(account.totalForegroundSeconds) else "Chưa ghi nhận"
-                            )
-                            ProfileDataRow(
-                                "Thiết bị",
-                                listOf(account.deviceManufacturer, account.deviceModel).filter { it.isNotBlank() }.joinToString(" ").ifBlank { "Chưa ghi nhận" }
-                            )
-                            ProfileDataRow("Thương hiệu / dòng / mã thiết bị", listOf(account.deviceBrand, account.deviceProduct, account.deviceCodeName).filter { it.isNotBlank() }.joinToString(" / ").ifBlank { "Chưa ghi nhận" })
-                            ProfileDataRow("Kiến trúc CPU", account.supportedAbis.ifBlank { "Chưa ghi nhận" })
-                            ProfileDataRow("Màn hình", if (account.screenWidthPx > 0L && account.screenHeightPx > 0L) "${account.screenWidthPx} × ${account.screenHeightPx} px · ${account.densityDpi} dpi" else "Chưa ghi nhận")
-                            ProfileDataRow("Ngôn ngữ / múi giờ", listOf(account.localeTag, account.timeZoneId).filter { it.isNotBlank() }.joinToString(" / ").ifBlank { "Chưa ghi nhận" })
-                            ProfileDataRow("Loại kết nối", when (account.networkType) {
-                                "wifi" -> "Wi-Fi"
-                                "cellular" -> "Di động"
-                                "ethernet" -> "Ethernet"
-                                "bluetooth" -> "Bluetooth"
-                                "offline" -> "Ngoại tuyến"
-                                "other" -> "Khác"
-                                else -> "Chưa ghi nhận"
-                            })
-                            ProfileDataRow("Đồng bộ JSON Clash of Clans", if (account.activityDataConsentVersion >= AccountPrivacyConsent.CURRENT_VERSION && account.villageDataConsent) "Đã cho phép" else "Chưa cho phép")
-                            ProfileDataRow("Mã người chơi gần nhất", account.lastVillageTag.ifBlank { "Chưa ghi nhận" })
-                            ProfileDataRow("Tên làng gần nhất", account.lastVillageName.ifBlank { "Chưa ghi nhận" })
-                            ProfileDataRow("Nhà chính", if (account.lastVillageTownHallLevel > 0L) account.lastVillageTownHallLevel.toString() else "Chưa ghi nhận")
-                            ProfileDataRow("Nhà thợ", if (account.lastVillageBuilderHallLevel > 0L) account.lastVillageBuilderHallLevel.toString() else "Chưa ghi nhận")
-                            ProfileDataRow("Số lần đồng bộ JSON", if (account.villageImportCount > 0L) account.villageImportCount.toString() else "Chưa ghi nhận")
-                            ProfileDataRow("Thời điểm JSON mới nhất", if (account.lastVillageTimestamp > 0L) formatAdminAccountTime(account.lastVillageTimestamp * 1000L) else "Chưa ghi nhận")
-                            ProfileDataRow("Lần đồng bộ JSON gần nhất", if (account.lastVillageSyncedAt > 0L) formatAdminAccountTime(account.lastVillageSyncedAt) else "Chưa ghi nhận")
-                            ProfileDataRow("Dung lượng JSON gần nhất", if (account.lastVillageRawJsonBytes > 0L) "${account.lastVillageRawJsonBytes} byte" else "Chưa ghi nhận")
-                            ProfileDataRow("Android", account.androidVersion.ifBlank { "Chưa ghi nhận" })
-                            ProfileDataRow("API Android", if (account.sdkInt > 0L) account.sdkInt.toString() else "Chưa ghi nhận")
-                            ProfileDataRow("Phiên bản COC-LIO", account.appVersionName.ifBlank { "Chưa ghi nhận" })
-                            ProfileDataRow("Mã phiên bản ứng dụng", if (account.appVersionCode > 0L) account.appVersionCode.toString() else "Chưa ghi nhận")
                             ProfileDataRow("Tạo hồ sơ", formatAdminAccountTime(account.createdAt))
                             ProfileDataRow("Cập nhật hồ sơ", formatAdminAccountTime(account.updatedAt))
                             ProfileDataRow("Mã tài khoản", account.uid)
