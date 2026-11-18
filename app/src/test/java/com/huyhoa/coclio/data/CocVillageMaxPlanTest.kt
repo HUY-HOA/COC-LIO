@@ -74,9 +74,70 @@ class CocVillageMaxPlanTest {
             nowSeconds = 130L
         )
 
-        assertEquals(500L, summary.resources["Gold"])
-        assertEquals(518_370L, summary.durationSeconds)
+        // cnt=2 means two idle copies; timer adds a third upgrading copy.
+        assertEquals(800L, summary.resources["Gold"])
+        assertEquals(777_570L, summary.durationSeconds)
+        assertEquals(3, summary.ownedCopies)
+        assertEquals(3, summary.lines.single().quantity)
         assertTrue(summary.lines.single().upgradeInProgress)
+    }
+
+    @Test
+    fun timerOnlyBuildingRowRepresentsOneCopyWithoutDoubleCountingDefaultCount() {
+        val entry = testEntry(
+            id = 1006,
+            category = "defense",
+            levels = listOf(
+                testLevel(1),
+                testLevel(2, 100L, "Gold", 86_400L),
+                testLevel(3, 200L, "Gold", 172_800L)
+            )
+        )
+        val summary = calculate(
+            item = testItem(
+                dataId = 1006,
+                tab = "buildings",
+                level = 1,
+                count = 1,
+                timerSeconds = 86_400L,
+                hasExplicitCount = false
+            ),
+            entry = entry,
+            snapshotTimestamp = 100L,
+            nowSeconds = 130L
+        )
+
+        assertEquals(200L, summary.resources["Gold"])
+        assertEquals(259_170L, summary.durationSeconds)
+        assertEquals(1, summary.ownedCopies)
+        assertEquals(1, summary.lines.single().quantity)
+    }
+
+    @Test
+    fun reportsHighestTownHallAndLaboratoryRequirementsAcrossRemainingLevels() {
+        val entry = testEntry(
+            id = 1007,
+            category = "troop",
+            levels = listOf(
+                testLevel(1),
+                testLevel(
+                    2, 100L, "Elixir", 86_400L,
+                    requirements = mapOf("townHallRequired" to 17, "laboratoryRequired" to 10)
+                ),
+                testLevel(
+                    3, 200L, "Elixir", 172_800L,
+                    requirements = mapOf("townHallRequired" to 18, "laboratoryRequired" to 11)
+                )
+            )
+        )
+        val summary = calculate(
+            item = testItem(dataId = 1007, tab = "army", level = 1, count = 1),
+            entry = entry
+        )
+
+        val requirements = summary.lines.single().requirements.associate { it.label to it.level }
+        assertEquals(18, requirements["Nhà chính"])
+        assertEquals(11, requirements["Phòng thí nghiệm"])
     }
 
     @Test
@@ -133,7 +194,8 @@ class CocVillageMaxPlanTest {
         tab: String,
         level: Int,
         count: Int,
-        timerSeconds: Long? = null
+        timerSeconds: Long? = null,
+        hasExplicitCount: Boolean = true
     ) = VillageItem(
         sectionKey = if (tab == "buildings") "buildings" else "units",
         sectionLabel = if (tab == "buildings") "Công trình" else "Quân đội",
@@ -146,7 +208,8 @@ class CocVillageMaxPlanTest {
         helperCooldownSeconds = null,
         gearUp = false,
         weaponLevel = null,
-        details = emptyList()
+        details = emptyList(),
+        hasExplicitCount = hasExplicitCount
     )
 
     private fun testEntry(
@@ -172,7 +235,8 @@ class CocVillageMaxPlanTest {
         level: Int,
         cost: Long = 0L,
         resource: String = "",
-        durationSeconds: Long = 0L
+        durationSeconds: Long = 0L,
+        requirements: Map<String, Int> = emptyMap()
     ): CocUpgradeLevel {
         val raw = JSONObject().put("level", level)
         if (cost > 0L) {
@@ -188,6 +252,7 @@ class CocVillageMaxPlanTest {
                     .put("seconds", durationSeconds % 60L)
             )
         }
+        requirements.forEach { (key, value) -> raw.put(key, value) }
         return CocUpgradeLevel(level, raw)
     }
 }
