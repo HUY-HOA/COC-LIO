@@ -24,7 +24,7 @@ Firestore profile fields reported by the client are not server-verified audit re
 ## Features paused on Spark
 
 - Cloud Functions are not deployed or called by the Android app.
-- Firebase Storage and APK distribution are not used by the current JSON-focused Android app. Existing Storage objects and legacy Firestore records are not automatically deleted by this code cleanup.
+- Firebase Storage and APK distribution are not used by the current JSON-focused Android app. Storage is not deployed on Spark and `storage.rules` now denies all access if accidentally deployed later. Existing Storage objects and legacy Firestore records are not automatically deleted by this code cleanup.
 - The owner cannot delete another user's Firebase Authentication account from the Android app. The app can mark that user's COC-LIO Firestore profile as disabled. This blocks access to Firestore-protected COC-LIO features, but does not delete the Authentication account or automatically erase the user's other data.
 - The owner account list is based on Firestore profile documents. Without the server-side Auth user-list sync, stale profiles can remain after an Auth account is deleted separately.
 
