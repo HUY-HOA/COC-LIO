@@ -4111,6 +4111,7 @@ private fun VillageItemDetailDialog(
         hallMax
     } ?: maxLevel
     val currentLevel = if (upgradeEntry?.category == "squad") (item.level ?: 1) else (item.level ?: 0)
+    val hasConfirmedOwnership = item.count > 0 || (item.timerSeconds ?: 0L) > 0L
     val itemName = item.name
     val description = EquipmentDescriptionsVi[item.dataId]
         ?: CatalogDescriptionsVi[item.dataId]
@@ -4271,7 +4272,7 @@ private fun VillageItemDetailDialog(
                         "Đã có trong JSON • cấp chưa rõ • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
                     item.properties["catalogOnly"] == "true" ->
                         "Không có bản ghi trong JSON • chưa xác nhận sở hữu/cấp • MAX ${maxLevel ?: upgradeEntry?.maxLevel ?: "?"}"
-                    item.count <= 0 -> "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp 1"
+                    !hasConfirmedOwnership -> "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp đầu tiên"
                     else -> item.level?.let { level ->
                         usableCap?.let { "$level / $it" } ?: level.toString()
                     } ?: "Chưa rõ cấp"
@@ -4291,8 +4292,8 @@ private fun VillageItemDetailDialog(
                         "Trạng thái dữ liệu",
                         "Danh mục có mục này nhưng JSON làng đã nhập không có bản ghi; chưa thể xác nhận đã sở hữu hay chưa."
                     )
-                } else if (item.count <= 0) {
-                    VillageItemDetailField("Trạng thái sở hữu", "JSON làng ghi số lượng 0; mục này chưa được ghi nhận là sở hữu.")
+                } else if (!hasConfirmedOwnership) {
+                    VillageItemDetailField("Trạng thái sở hữu", "JSON làng không ghi nhận số lượng sở hữu hoặc nâng cấp đang chạy cho mục này.")
                 }
                 if (item.gearUp) VillageItemDetailField("Trạng thái", "Đã ghép công trình")
                 item.weaponLevel?.let { VillageItemDetailField("Cấp vũ khí", it.toString()) }
@@ -4496,7 +4497,8 @@ private fun VillageItemDetailDialog(
                                 missingFullLevels.joinToString(", ") + ". Tổng ở trên chỉ cộng những cấp có dữ liệu, chưa phải tổng đầy đủ."
                             )
                         }
-                        val currentStart = (item.level ?: firstAvailableLevel).coerceIn(firstAvailableLevel, globalMax)
+                        val currentStart = (if (hasConfirmedOwnership) item.level ?: firstAvailableLevel else firstAvailableLevel)
+                            .coerceIn(firstAvailableLevel, globalMax)
                         val fromCurrent = CocUpgradeCatalog.upgradeTotals(
                             entry,
                             currentStart,
@@ -4504,12 +4506,16 @@ private fun VillageItemDetailDialog(
                             skipFirstInProgress = item.timerSeconds != null && item.timerSeconds > 0L
                         )
                         Text(
-                            "TỪ CẤP $currentStart ĐẾN MAX ($globalMax)",
+                            if (hasConfirmedOwnership && item.level != null) {
+                                "TỪ CẤP $currentStart ĐẾN MAX ($globalMax)"
+                            } else {
+                                "TẠM TÍNH TỪ CẤP $currentStart ĐẾN MAX ($globalMax)"
+                            },
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black
                         )
-                        if (item.count <= 0) {
+                        if (!hasConfirmedOwnership || item.level == null) {
                             VillageItemDetailField(
                                 "Giả định",
                                 "Mục này chưa có trong JSON làng; chi phí còn lại đang tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
