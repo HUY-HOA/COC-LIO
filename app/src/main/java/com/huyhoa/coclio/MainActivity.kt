@@ -2755,6 +2755,11 @@ private fun VillageMaxPlanDialog(
         )
     }
     val remainingCopies = plan.lines.sumOf { it.quantity }
+    val currentHallLabel = if (base == "builder") {
+        snapshot.builderHallLevel?.let { "Nhà thợ xây cấp $it" } ?: "Cấp Nhà thợ xây chưa rõ"
+    } else {
+        snapshot.townHallLevel?.let { "Nhà chính cấp $it" } ?: "Cấp Nhà chính chưa rõ"
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -2780,7 +2785,7 @@ private fun VillageMaxPlanDialog(
                 )
                 VillageItemDetailField(
                     "Phạm vi",
-                    if (base == "builder") "Toàn bộ Căn cứ thợ xây" else "Toàn bộ Làng chính"
+                    (if (base == "builder") "Toàn bộ Căn cứ thợ xây" else "Toàn bộ Làng chính") + " • " + currentHallLabel
                 )
                 VillageItemDetailField(
                     "Tiến độ",
