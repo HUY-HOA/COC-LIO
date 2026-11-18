@@ -2844,12 +2844,22 @@ private fun CategoryScreen(
                                         "${rows.size} ĐỘI HÌNH • ĐÃ CÓ $confirmedOwned • CHƯA CÓ $confirmedMissing • CHƯA XÁC NHẬN $unknown"
                                     }
                                     else -> {
-                                        val ownedCount = rows.count {
-                                            it.properties["catalogOnly"] != "true" &&
-                                                (it.count > 0 || (it.timerSeconds ?: 0L) > 0L)
+                                        val ownedCount = if (key == "equipment") {
+                                            rows.count { it.hasConfirmedEquipmentOwnership }
+                                        } else {
+                                            rows.count {
+                                                it.properties["catalogOnly"] != "true" &&
+                                                    (it.count > 0 || (it.timerSeconds ?: 0L) > 0L)
+                                            }
                                         }
-                                        val unknownCount = rows.count { it.properties["catalogOnly"] == "true" }
-                                        val countText = if (unknownCount > 0) {
+                                        val unknownCount = if (key == "equipment") {
+                                            rows.size - ownedCount
+                                        } else {
+                                            rows.count { it.properties["catalogOnly"] == "true" }
+                                        }
+                                        val countText = if (key == "equipment") {
+                                            "$ownedCount/${rows.size} ĐÃ XÁC NHẬN • $unknownCount CHƯA XÁC NHẬN"
+                                        } else if (unknownCount > 0) {
                                             "$ownedCount/${rows.size} • $unknownCount CHƯA XÁC NHẬN"
                                         } else {
                                             "$ownedCount/${rows.size}"
@@ -3082,6 +3092,12 @@ private fun VillageGridItemCard(
                         else "MAX ${cardMaxLevel ?: "?"}"
                     if (unlockTownHall != null) "$status • MỞ TỪ TH$unlockTownHall • $level"
                     else "$status • SQUAD • $level"
+                } else if (isEquipment && !item.hasConfirmedEquipmentOwnership) {
+                    if (item.properties["catalogOnly"] == "true") {
+                        "CHƯA XÁC NHẬN • MAX ${cardMaxLevel ?: "?"}"
+                    } else {
+                        "CHƯA XÁC NHẬN • CẤP ${item.level ?: "?"} • MAX ${cardMaxLevel ?: "?"}"
+                    }
                 } else if (item.properties["catalogOnly"] == "true") {
                     "CHƯA XÁC NHẬN • MAX ${cardMaxLevel ?: "?"}"
                 } else if (item.count <= 0 && (item.timerSeconds ?: 0L) <= 0L) {
@@ -3092,15 +3108,16 @@ private fun VillageGridItemCard(
                     } ?: "Chưa rõ cấp"
                 },
                 color = when {
+                    isEquipment && !item.hasConfirmedEquipmentOwnership -> CocGold
                     item.properties["catalogOnly"] == "true" -> CocGold
-                    item.count <= 0 && !isSquad -> MaterialTheme.colorScheme.error
+                    item.count <= 0 && !isSquad && !isEquipment -> MaterialTheme.colorScheme.error
                     else -> MaterialTheme.colorScheme.primary
                 },
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
             )
-            if (item.count > 1) {
+            if (item.count > 1 && !isEquipment) {
                 Text(
                     "  ×${item.count}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -3838,18 +3855,13 @@ private fun HeroEquipmentRoster(
         .filter { it.base == "home" && it.sectionKey == "equipment" }
         .groupBy { it.dataId }
     val ownedById = villageEquipmentById.mapNotNull { (dataId, rows) ->
-        rows.filter { it.count > 0 || (it.timerSeconds ?: 0L) > 0L }
+        rows.filter { it.hasConfirmedEquipmentOwnership }
             .maxByOrNull { it.level ?: 0 }
             ?.let { dataId to it }
     }.toMap()
-    val confirmedUnownedById = villageEquipmentById
-        .filterKeys { it !in ownedById }
-        .mapValues { (_, rows) -> rows.maxByOrNull { it.level ?: 0 } }
     val owned = equipment.filter { ownedById[it.dataId] != null }
         .sortedBy { it.localizedName.lowercase() }
-    val confirmedUnowned = equipment.filter { confirmedUnownedById[it.dataId] != null }
-        .sortedBy { it.localizedName.lowercase() }
-    val unconfirmed = equipment.filter { it.dataId !in villageEquipmentById }
+    val unconfirmed = equipment.filter { it.dataId !in ownedById }
         .sortedBy { it.localizedName.lowercase() }
 
     Column(
@@ -3867,7 +3879,7 @@ private fun HeroEquipmentRoster(
             fontWeight = FontWeight.Black
         )
         Text(
-            "ĐÃ CÓ ${owned.size}/${equipment.size}",
+            "ĐÃ XÁC NHẬN SỞ HỮU ${owned.size}/${equipment.size}",
             color = Color(0xFF69D69A),
             fontSize = 10.sp,
             fontWeight = FontWeight.Black
@@ -3882,25 +3894,6 @@ private fun HeroEquipmentRoster(
                 upgradeCatalog = upgradeCatalog
             )
         }
-        if (confirmedUnowned.isNotEmpty()) {
-            Divider(color = MaterialTheme.colorScheme.outlineVariant)
-            Text(
-                "CHƯA SỞ HỮU • ${confirmedUnowned.size}",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Black
-            )
-            confirmedUnowned.forEach { entry ->
-                HeroEquipmentCatalogRow(
-                    entry = entry,
-                    villageItem = confirmedUnownedById[entry.dataId],
-                    ownershipUnknown = false,
-                    townHallLevel = townHallLevel,
-                    blacksmithLevel = blacksmithLevel,
-                    upgradeCatalog = upgradeCatalog
-                )
-            }
-        }
         if (unconfirmed.isNotEmpty()) {
             Divider(color = MaterialTheme.colorScheme.outlineVariant)
             Text(
@@ -3912,7 +3905,7 @@ private fun HeroEquipmentRoster(
             unconfirmed.forEach { entry ->
                 HeroEquipmentCatalogRow(
                     entry = entry,
-                    villageItem = null,
+                    villageItem = villageEquipmentById[entry.dataId]?.maxByOrNull { it.level ?: 0 },
                     ownershipUnknown = true,
                     townHallLevel = townHallLevel,
                     blacksmithLevel = blacksmithLevel,
@@ -3920,6 +3913,10 @@ private fun HeroEquipmentRoster(
                 )
             }
         }
+        VillageItemDetailField(
+            "CÁCH XÁC ĐỊNH SỞ HỮU",
+            "JSON Export của game có thể hiển thị cả trang bị chưa mở khóa ở cấp 1 giống trang bị đã sở hữu cấp 1. Ứng dụng chỉ xác nhận sở hữu khi cấp lớn hơn 1 hoặc có nâng cấp đang chạy; trường hợp còn lại được giữ là Chưa xác nhận."
+        )
         if (heroId == "barbarian-king") {
             AnnouncedBlizzardAxeCard()
         }
@@ -3931,6 +3928,7 @@ private fun HeroEquipmentRoster(
 }
 
 @Composable
+private fun HeroEquipmentCatalogRow(@Composable
 private fun HeroEquipmentCatalogRow(
     entry: CocUpgradeEntry,
     villageItem: VillageItem?,
@@ -3941,7 +3939,7 @@ private fun HeroEquipmentCatalogRow(
 ) {
     var expanded by remember(entry.dataId) { mutableStateOf(false) }
     val item = villageItem ?: catalogVillageItem(entry)
-    val owned = villageItem != null && (villageItem.count > 0 || (villageItem.timerSeconds ?: 0L) > 0L)
+    val owned = villageItem?.hasConfirmedEquipmentOwnership == true
     val maxLevel = CocUpgradeCatalog.currentMaxLevel(entry).coerceAtLeast(1)
     val currentLevel = (if (owned) villageItem?.level ?: 1 else 1).coerceIn(1, maxLevel)
     val townHallCap = CocUpgradeCatalog.maxLevelAtHall(entry, townHallLevel, upgradeCatalog)
@@ -4079,11 +4077,7 @@ private fun HeroEquipmentCatalogRow(
             } else {
                 VillageItemDetailField(
                     "Trạng thái",
-                    if (ownershipUnknown) {
-                        "JSON làng không có bản ghi cho trang bị này; chưa xác nhận sở hữu. Chi phí đầy đủ đang tính từ cấp 1."
-                    } else {
-                        "JSON làng có bản ghi với số lượng 0; xác nhận chưa sở hữu. Chi phí đầy đủ đang tính từ cấp 1."
-                    }
+                    "Export chưa xác nhận trang bị ở cấp 1 là đã sở hữu hay chưa mở khóa; chi phí còn lại đang tạm tính từ cấp 1."
                 )
             }
         }
@@ -4144,7 +4138,11 @@ private fun VillageItemDetailDialog(
         hallMax
     } ?: maxLevel
     val currentLevel = if (upgradeEntry?.category == "squad") (item.level ?: 1) else (item.level ?: 0)
-    val hasConfirmedOwnership = item.count > 0 || (item.timerSeconds ?: 0L) > 0L
+    val hasConfirmedOwnership = if (isEquipment) {
+        item.hasConfirmedEquipmentOwnership
+    } else {
+        item.count > 0 || (item.timerSeconds ?: 0L) > 0L
+    }
     val itemName = item.name
     val description = EquipmentDescriptionsVi[item.dataId]
         ?: CatalogDescriptionsVi[item.dataId]
@@ -4306,6 +4304,8 @@ private fun VillageItemDetailDialog(
                         "Đã có trong JSON • cấp chưa rõ • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
                     item.properties["catalogOnly"] == "true" ->
                         "Không có bản ghi trong JSON • chưa xác nhận sở hữu/cấp • MAX ${maxLevel ?: upgradeEntry?.maxLevel ?: "?"}"
+                    !hasConfirmedOwnership && isEquipment ->
+                        "JSON ghi cấp ${item.level ?: "?"} • chưa xác nhận sở hữu • MAX ${maxLevel ?: upgradeEntry?.maxLevel ?: "?"}"
                     !hasConfirmedOwnership -> "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp đầu tiên"
                     else -> item.level?.let { level ->
                         usableCap?.let { "$level / $it" } ?: level.toString()
@@ -4327,7 +4327,14 @@ private fun VillageItemDetailDialog(
                         "Danh mục có mục này nhưng JSON làng đã nhập không có bản ghi; chưa thể xác nhận đã sở hữu hay chưa."
                     )
                 } else if (!hasConfirmedOwnership) {
-                    VillageItemDetailField("Trạng thái sở hữu", "JSON làng không ghi nhận số lượng sở hữu hoặc nâng cấp đang chạy cho mục này.")
+                    VillageItemDetailField(
+                        "Trạng thái sở hữu",
+                        if (isEquipment) {
+                            "Export không thể phân biệt trang bị đã sở hữu ở cấp 1 với trang bị chưa mở khóa. Cấp 1 chỉ là dữ liệu chưa xác nhận."
+                        } else {
+                            "JSON làng không ghi nhận số lượng sở hữu hoặc nâng cấp đang chạy cho mục này."
+                        }
+                    )
                 }
                 if (item.gearUp) VillageItemDetailField("Trạng thái", "Đã ghép công trình")
                 item.weaponLevel?.let { VillageItemDetailField("Cấp vũ khí", it.toString()) }
@@ -4550,14 +4557,17 @@ private fun VillageItemDetailDialog(
                             fontWeight = FontWeight.Black
                         )
                         if (!hasConfirmedOwnership || item.level == null) {
-                            VillageItemDetailField(
-                                "Giả định",
-                                if (!hasConfirmedOwnership) {
+                            val assumption = when {
+                                item.properties["catalogOnly"] == "true" ->
                                     "JSON làng không có bản ghi cho mục này; chi phí tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
-                                } else {
+                                isEquipment && !hasConfirmedOwnership ->
+                                    "Export có thể ghi trang bị chưa mở khóa ở cấp 1 giống trang bị đã sở hữu cấp 1; chi phí còn lại tạm tính từ cấp 1."
+                                !hasConfirmedOwnership ->
+                                    "JSON làng không ghi nhận sở hữu; chi phí tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
+                                else ->
                                     "JSON làng có ghi nhận mục này nhưng chưa có cấp hiện tại; chi phí tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
-                                }
-                            )
+                            }
+                            VillageItemDetailField("Giả định", assumption)
                         }
                         if (fromCurrent.resources.isEmpty()) {
                             VillageItemDetailField(

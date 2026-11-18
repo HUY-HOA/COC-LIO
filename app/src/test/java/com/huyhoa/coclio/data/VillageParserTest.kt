@@ -269,6 +269,29 @@ class VillageParserTest {
     }
 
     @Test
+    fun equipmentOwnershipIsNotInferredFromLevelOneOrCount() {
+        val levelOne = VillageItem(
+            sectionKey = "equipment",
+            sectionLabel = "Trang bị anh hùng",
+            tab = "army",
+            base = "home",
+            dataId = 90000000,
+            level = 1,
+            count = 1,
+            timerSeconds = null,
+            helperCooldownSeconds = null,
+            gearUp = false,
+            weaponLevel = null,
+            details = emptyList()
+        )
+
+        assertEquals(false, levelOne.hasConfirmedEquipmentOwnership)
+        assertEquals(false, levelOne.copy(count = 0).hasConfirmedEquipmentOwnership)
+        assertEquals(true, levelOne.copy(level = 2, count = 0).hasConfirmedEquipmentOwnership)
+        assertEquals(true, levelOne.copy(timerSeconds = 60L).hasConfirmedEquipmentOwnership)
+    }
+
+    @Test
     fun mapsSiegeBarracksAndKeepsUnknownCosmeticIdsVisible() {
         assertEquals("Doanh trại công thành", CocNames.name(4000075, "siege_machines"))
         assertEquals("Trang phục #99999999", CocNames.name(99999999, "skins"))
