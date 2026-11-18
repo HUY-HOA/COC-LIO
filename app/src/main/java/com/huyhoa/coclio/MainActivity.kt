@@ -3871,6 +3871,7 @@ private fun HeroEquipmentRoster(
             HeroEquipmentCatalogRow(
                 entry = entry,
                 villageItem = ownedById[entry.dataId],
+                ownershipUnknown = false,
                 blacksmithLevel = blacksmithLevel,
                 upgradeCatalog = upgradeCatalog
             )
