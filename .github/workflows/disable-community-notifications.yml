@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - "functions/index.js"
-      - ".github/workflows/disable-community-notifications.yml"
   workflow_dispatch:
 
 permissions:
@@ -36,4 +35,4 @@ jobs:
       - name: Delete deployed community notification trigger
         env:
           FIREBASE_PROJECT_ID: coc-lio-73de9
-        run: firebase --debug functions:delete notifyCommunityMessage --region asia-southeast1 --project "$FIREBASE_PROJECT_ID" --force
+        run: firebase functions:delete notifyCommunityMessage --region asia-southeast1 --project "$FIREBASE_PROJECT_ID" --force
