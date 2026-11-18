@@ -967,61 +967,8 @@ object AccountActivityTracker {
     }
 }
 object FirebaseVillageDataSync {
-    suspend fun saveLatest(snapshot: VillageSnapshot): Boolean {
-        val user = FirebaseAuth.getInstance().currentUser ?: return false
-        val firestore = FirebaseFirestore.getInstance()
-        val userRef = firestore.collection("users").document(user.uid)
-        val profile = userRef.get().awaitFirebaseResult()
-        if (
-            !profile.exists() ||
-            profile.getBoolean("villageDataConsent") != true ||
-            profile.getLong("activityDataConsentVersion") != AccountPrivacyConsent.CURRENT_VERSION
-        ) {
-            return false
-        }
-
-        val playerTag = snapshot.tag.trim()
-        require(playerTag.matches(Regex("^#[A-Za-z0-9]+$"))) {
-            "Mã người chơi trong JSON không hợp lệ."
-        }
-        val rawBytes = snapshot.rawJson.toByteArray(Charsets.UTF_8).size
-        require(rawBytes in 1..700_000) {
-            "JSON lớn hơn giới hạn đồng bộ miễn phí 700 KB. Bản JSON vẫn được lưu trên điện thoại."
-        }
-
-        val snapshotData = hashMapOf<String, Any>(
-            "uid" to user.uid,
-            "playerTag" to playerTag,
-            "villageName" to (snapshot.villageName.orEmpty().take(80)),
-            "snapshotTimestamp" to snapshot.timestamp,
-            "rawJson" to snapshot.rawJson,
-            "rawJsonBytes" to rawBytes.toLong(),
-            "itemCount" to snapshot.items.size.toLong(),
-            "extraItemCount" to snapshot.extraItems.size.toLong(),
-            "activeUpgradeCount" to (snapshot.upgrades.size + snapshot.gearUps.size).toLong(),
-            "createdAt" to FieldValue.serverTimestamp()
-        )
-        snapshot.townHallLevel?.let { snapshotData["townHallLevel"] = it.toLong() }
-        snapshot.builderHallLevel?.let { snapshotData["builderHallLevel"] = it.toLong() }
-
-        val snapshotId = playerTag.removePrefix("#")
-        userRef.collection("village_snapshots").document(snapshotId)
-            .set(snapshotData).awaitFirebaseResult()
-
-        val summary = hashMapOf<String, Any>(
-            "lastVillageTag" to playerTag,
-            "lastVillageName" to snapshot.villageName.orEmpty().take(80),
-            "lastVillageTimestamp" to snapshot.timestamp,
-            "lastVillageTownHallLevel" to (snapshot.townHallLevel ?: 0).toLong(),
-            "lastVillageBuilderHallLevel" to (snapshot.builderHallLevel ?: 0).toLong(),
-            "villageImportCount" to FieldValue.increment(1),
-            "lastVillageRawJsonBytes" to rawBytes.toLong(),
-            "lastVillageSyncedAt" to FieldValue.serverTimestamp(),
-            "updatedAt" to FieldValue.serverTimestamp()
-        )
-        userRef.set(summary, SetOptions.merge()).awaitFirebaseResult()
-        return true
-    }
+    @Suppress("UNUSED_PARAMETER")
+    suspend fun saveLatest(snapshot: VillageSnapshot): Boolean = false
 }
 
 object FirebaseTelemetry {
