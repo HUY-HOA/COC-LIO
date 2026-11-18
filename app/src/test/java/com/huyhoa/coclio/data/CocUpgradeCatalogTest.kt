@@ -324,6 +324,29 @@ class CocUpgradeCatalogTest {
     }
 
     @Test
+    fun handlesUnitsThatUnlockAtLevelsAboveOne() {
+        val battleCopter = CocUpgradeEntry(
+            dataId = 28000005,
+            id = "battle-copter",
+            name = "Battle Copter",
+            description = "",
+            base = "builder",
+            category = "hero",
+            rarity = "",
+            hero = "",
+            maxLevel = 35,
+            properties = JSONObject(),
+            levels = (15..35).map { level ->
+                CocUpgradeLevel(level, JSONObject().put("level", level).put("researchCost", 100L).put("researchCostResource", "Elixir"))
+            }
+        )
+
+        assertEquals(15, battleCopter.firstAvailableLevel)
+        assertTrue(CocUpgradeCatalog.missingLevels(battleCopter, battleCopter.firstAvailableLevel, 35).isEmpty())
+        assertEquals(2000L, CocUpgradeCatalog.upgradeTotals(battleCopter, 15, 35).resources["Elixir"])
+    }
+
+    @Test
     fun reportsMissingUpgradeLevelsInsteadOfTreatingPartialTotalsAsComplete() {
         val entry = CocUpgradeEntry(
             dataId = 4000008,
