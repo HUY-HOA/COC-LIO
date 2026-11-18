@@ -1921,6 +1921,13 @@ private fun GoogleLoginStartScreen(
                     fontSize = 9.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+                NeonButton(
+                    text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
+                    onClick = onGoogleSignIn,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isBusy && privacyDecisionMade,
+                    showLed = privacyDecisionMade && !isBusy
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1950,13 +1957,6 @@ private fun GoogleLoginStartScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
-                NeonButton(
-                    text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
-                    onClick = onGoogleSignIn,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isBusy && privacyDecisionMade,
-                    showLed = privacyDecisionMade && !isBusy
-                )
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
