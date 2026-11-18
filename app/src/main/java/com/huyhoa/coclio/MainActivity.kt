@@ -1866,7 +1866,7 @@ private fun GoogleLoginStartScreen(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 LedBrandTitle(
                     text = appTitle,
@@ -1924,6 +1924,10 @@ private fun GoogleLoginStartScreen(
                     lineHeight = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -2006,6 +2010,7 @@ private fun GoogleLoginStartScreen(
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 10.sp
                     )
+                }
                 }
                 Text(
                     "Các mục tùy chọn không được bật chỉ vì bạn đăng nhập. Từ chối mục nào thì COC-LIO không thực hiện xử lý dữ liệu cho mục đó.",
