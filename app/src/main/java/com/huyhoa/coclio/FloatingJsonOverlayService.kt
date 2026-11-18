@@ -705,23 +705,11 @@ class FloatingJsonOverlayService : Service() {
                     AppPreferences.notificationsEnabled(this@FloatingJsonOverlayService, profile)
                 )
                 AppWidgetUpdater.updateAll(this@FloatingJsonOverlayService)
-                FirebaseTelemetry.logVillageImport(this@FloatingJsonOverlayService, previousExists)
                 Triple(saved, previousExists, VillageStore.storedSnapshotCount(this@FloatingJsonOverlayService, profile))
             }
 
             if (result.isSuccess) {
                 val (snapshot, previousExists, count) = result.getOrThrow()
-                val choice = try {
-                    AccountPrivacyConsent.load()
-                } catch (_: Exception) {
-                    null
-                }
-                if (choice?.villageDataSync == true) {
-                    try {
-                        FirebaseVillageDataSync.saveLatest(snapshot)
-                    } catch (_: Exception) {
-                    }
-                }
                 sendBroadcast(
                     Intent(ACTION_JSON_IMPORTED)
                         .setPackage(packageName)
