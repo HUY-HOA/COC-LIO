@@ -499,10 +499,9 @@ data class AdminGoogleAccount(
 )
 
 object FirebaseAccountAdministration {
-    private const val OWNER_EMAIL = "phunghuyhoahaikba@gmail.com"
+    private const val OWNER_UID = "T0PXzlCfddNZsWZzva2v1NCrWOf2"
 
-    fun isOwner(email: String?): Boolean =
-        email?.trim()?.equals(OWNER_EMAIL, ignoreCase = true) == true
+    fun isOwner(uid: String?): Boolean = uid?.trim() == OWNER_UID
 
     suspend fun savePreferredName(name: String) {
         val user = FirebaseAuth.getInstance().currentUser
@@ -544,13 +543,13 @@ object FirebaseAccountAdministration {
                 createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
                 lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
                 updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L,
-                isAdmin = isOwner(email),
+                isAdmin = isOwner(document.getString("uid") ?: document.id),
                 accountDisabled = document.getBoolean("accountDisabled") ?: false
             )
         }.toMutableList()
 
         val owner = FirebaseAuth.getInstance().currentUser
-            ?.takeIf { isOwner(it.email) }
+            ?.takeIf { isOwner(it.uid) }
         if (owner != null) {
             val legacyIpDocuments = result.documents.filter { document ->
                 document.contains("lastIp") || document.contains("lastIpCapturedAt")
@@ -576,7 +575,7 @@ object FirebaseAccountAdministration {
         require(uid.isNotBlank()) { "Thiếu mã tài khoản cần cập nhật." }
         val owner = FirebaseAuth.getInstance().currentUser
             ?: throw IllegalStateException("Bạn cần đăng nhập tài khoản quản lý.")
-        require(isOwner(owner.email)) { "Chỉ chủ sở hữu COC-LIO mới được quản lý tài khoản." }
+        require(isOwner(owner.uid)) { "Chỉ chủ sở hữu COC-LIO mới được quản lý tài khoản." }
         require(uid != owner.uid) { "Không thể tự vô hiệu hóa tài khoản quản lý đang sử dụng." }
         FirebaseFirestore.getInstance()
             .collection("users")
@@ -595,7 +594,7 @@ object FirebaseAccountAdministration {
         require(uid.isNotBlank()) { "Thiếu mã tài khoản cần xóa." }
         val owner = FirebaseAuth.getInstance().currentUser
             ?: throw IllegalStateException("Bạn cần đăng nhập tài khoản quản lý.")
-        require(isOwner(owner.email)) { "Chỉ chủ sở hữu COC-LIO mới được xóa hồ sơ tài khoản." }
+        require(isOwner(owner.uid)) { "Chỉ chủ sở hữu COC-LIO mới được xóa hồ sơ tài khoản." }
         require(uid != owner.uid) { "Không thể xóa hồ sơ tài khoản quản lý đang sử dụng." }
 
         val firestore = FirebaseFirestore.getInstance()
