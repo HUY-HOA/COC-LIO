@@ -41,6 +41,22 @@ class VillageParserTest {
     }
 
     @Test
+    fun preservesZeroCountEquipmentAsNotOwned() {
+        val snapshot = VillageParser.parse(
+            """{"tag":"#ZERO_COUNT","timestamp":1794320000,
+                "equipment":[
+                    {"data":90000061,"lvl":1,"cnt":0},
+                    {"data":90000060,"lvl":2,"cnt":1},
+                    {"data":90000059,"lvl":3}
+                ]}"""
+        )
+
+        assertEquals(0, snapshot.items.first { it.dataId == 90000061 }.count)
+        assertEquals(1, snapshot.items.first { it.dataId == 90000060 }.count)
+        assertEquals(1, snapshot.items.first { it.dataId == 90000059 }.count)
+    }
+
+    @Test
     fun detectsUpgradeStartAndCompletionAcrossImports() {
         val before = VillageParser.parse(
             """{"tag":"#TEST123","timestamp":1794320000,"buildings":[{"data":1000008,"lvl":5,"cnt":1}]}"""
