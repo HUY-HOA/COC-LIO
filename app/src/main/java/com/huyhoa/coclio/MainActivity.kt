@@ -2929,6 +2929,14 @@ private fun VillageMaxPlanDialog(
                     "Công trình, bẫy và Tường tính theo số bản sao rảnh (cnt) cộng thêm một bản sao nếu đang nâng cấp (timer). Gear-up không cộng vào thời gian MAX cấp thường. Lính, Thần chú, Anh hùng và nghiên cứu chỉ tính một lần, không nhân theo số quân trong kho."
                 )
                 VillageItemDetailField(
+                    "Số dư tài nguyên hiện tại",
+                    "JSON xuất từ game không cung cấp số dư Gold, Elixir, Dark Elixir hoặc Quặng. Các số phía trên là tổng chi phí nâng cấp còn phải trả, chưa trừ tài nguyên đang có trong kho."
+                )
+                VillageItemDetailField(
+                    "Độ chính xác danh mục",
+                    "Dữ liệu nâng cấp dựa trên catalog cộng đồng và có thể chậm cập nhật một số chi phí cũ sau cân bằng game. Hãy đối chiếu trong game trước khi lập kế hoạch cuối cùng."
+                )
+                VillageItemDetailField(
                     "Lưu ý thời gian",
                     "Đây là tổng thời gian công việc cộng dồn, chưa trừ thời gian chạy song song của nhiều thợ xây/phòng thí nghiệm, Sách, Búa, trợ thủ hoặc tăng tốc."
                 )
