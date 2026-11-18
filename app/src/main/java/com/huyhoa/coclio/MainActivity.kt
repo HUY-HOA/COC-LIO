@@ -2844,8 +2844,16 @@ private fun CategoryScreen(
                                         "${rows.size} ĐỘI HÌNH • ĐÃ CÓ $confirmedOwned • CHƯA CÓ $confirmedMissing • CHƯA XÁC NHẬN $unknown"
                                     }
                                     else -> {
-                                        val ownedCount = rows.count { it.count > 0 || it.timerSeconds != null }
-                                        val countText = "$ownedCount/${rows.size}"
+                                        val ownedCount = rows.count {
+                                            it.properties["catalogOnly"] != "true" &&
+                                                (it.count > 0 || (it.timerSeconds ?: 0L) > 0L)
+                                        }
+                                        val unknownCount = rows.count { it.properties["catalogOnly"] == "true" }
+                                        val countText = if (unknownCount > 0) {
+                                            "$ownedCount/${rows.size} • $unknownCount CHƯA XÁC NHẬN"
+                                        } else {
+                                            "$ownedCount/${rows.size}"
+                                        }
                                         if (key == "equipment" && showAnnouncedBlizzardAxe) {
                                             "$countText • +1 SẮP RA MẮT"
                                         } else {
@@ -3074,7 +3082,9 @@ private fun VillageGridItemCard(
                         else "MAX ${cardMaxLevel ?: "?"}"
                     if (unlockTownHall != null) "$status • MỞ TỪ TH$unlockTownHall • $level"
                     else "$status • SQUAD • $level"
-                } else if (item.count <= 0) {
+                } else if (item.properties["catalogOnly"] == "true") {
+                    "CHƯA XÁC NHẬN • MAX ${cardMaxLevel ?: "?"}"
+                } else if (item.count <= 0 && (item.timerSeconds ?: 0L) <= 0L) {
                     "CHƯA SỞ HỮU • MAX ${cardMaxLevel ?: "?"}"
                 } else {
                     item.level?.let { level ->
@@ -3819,17 +3829,22 @@ private fun HeroEquipmentRoster(
 ) {
     val equipment = upgradeCatalog.values
         .filter { it.base == "home" && it.category == "hero-equipment" && it.hero == heroId }
-    val ownedById = allVillageItems
-        .filter {
-            it.base == "home" &&
-                it.sectionKey == "equipment" &&
-                (it.count > 0 || (it.timerSeconds ?: 0L) > 0L)
-        }
+    val villageEquipmentById = allVillageItems
+        .filter { it.base == "home" && it.sectionKey == "equipment" }
         .groupBy { it.dataId }
+    val ownedById = villageEquipmentById
+        .mapValues { (_, rows) -> rows.maxByOrNull { it.level ?: 0 } }
+        .filterValues { item ->
+            item != null && (item.count > 0 || (item.timerSeconds ?: 0L) > 0L)
+        }
+    val confirmedUnownedById = villageEquipmentById
+        .filterKeys { it !in ownedById }
         .mapValues { (_, rows) -> rows.maxByOrNull { it.level ?: 0 } }
     val owned = equipment.filter { ownedById[it.dataId] != null }
         .sortedBy { it.localizedName.lowercase() }
-    val missing = equipment.filter { ownedById[it.dataId] == null }
+    val confirmedUnowned = equipment.filter { confirmedUnownedById[it.dataId] != null }
+        .sortedBy { it.localizedName.lowercase() }
+    val unconfirmed = equipment.filter { it.dataId !in villageEquipmentById }
         .sortedBy { it.localizedName.lowercase() }
 
     Column(
@@ -3860,18 +3875,37 @@ private fun HeroEquipmentRoster(
                 upgradeCatalog = upgradeCatalog
             )
         }
-        if (missing.isNotEmpty()) {
+        if (confirmedUnowned.isNotEmpty()) {
             Divider(color = MaterialTheme.colorScheme.outlineVariant)
             Text(
-                "CHƯA SỞ HỮU • ${missing.size}",
+                "CHƯA SỞ HỮU • ${confirmedUnowned.size}",
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black
             )
-            missing.forEach { entry ->
+            confirmedUnowned.forEach { entry ->
+                HeroEquipmentCatalogRow(
+                    entry = entry,
+                    villageItem = confirmedUnownedById[entry.dataId],
+                    ownershipUnknown = false,
+                    blacksmithLevel = blacksmithLevel,
+                    upgradeCatalog = upgradeCatalog
+                )
+            }
+        }
+        if (unconfirmed.isNotEmpty()) {
+            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text(
+                "CHƯA XÁC NHẬN • ${unconfirmed.size}",
+                color = CocGold,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black
+            )
+            unconfirmed.forEach { entry ->
                 HeroEquipmentCatalogRow(
                     entry = entry,
                     villageItem = null,
+                    ownershipUnknown = true,
                     blacksmithLevel = blacksmithLevel,
                     upgradeCatalog = upgradeCatalog
                 )
@@ -3891,6 +3925,7 @@ private fun HeroEquipmentRoster(
 private fun HeroEquipmentCatalogRow(
     entry: CocUpgradeEntry,
     villageItem: VillageItem?,
+    ownershipUnknown: Boolean,
     blacksmithLevel: Int?,
     upgradeCatalog: Map<Int, CocUpgradeEntry>
 ) {
@@ -3932,8 +3967,11 @@ private fun HeroEquipmentCatalogRow(
                 ) {
                     ItemRarityBadge(entry.rarity)
                     Text(
-                        if (owned) "CẤP ${villageItem?.level ?: "?"} / $maxLevel"
-                        else "CHƯA SỞ HỮU",
+                        when {
+                            owned -> "CẤP ${villageItem?.level ?: "?"} / $maxLevel"
+                            ownershipUnknown -> "CHƯA XÁC NHẬN"
+                            else -> "CHƯA SỞ HỮU"
+                        },
                         color = if (owned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black
