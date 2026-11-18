@@ -1,6 +1,15 @@
 name: Validate Android sources
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "app/src/main/**/*.kt"
+      - "app/src/main/assets/coc_upgrade/*.json"
+      - "app/src/test/**/*.kt"
+      - ".github/workflows/validate-android.yml"
+      - ".github/scripts/validate_coc_catalog.py"
   push:
     branches:
       - main
