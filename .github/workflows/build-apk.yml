@@ -40,7 +40,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -92,10 +91,6 @@ jobs:
           print("Lưu ý: cần xác nhận thủ công OAuth Client ID này có loại Web application trong Google Cloud Console.")
           PY
 
-      - name: Pre-build source validation
-        run: |
-          gradle --no-daemon --build-cache --parallel --console=plain lintDebug testDebugUnitTest compileReleaseKotlin processReleaseResources
-
       - name: Prepare Android signing key
         id: signing
         shell: bash
@@ -131,10 +126,9 @@ jobs:
           echo "SHA-1 release khớp OAuth đã đăng ký."
           echo "$FINGERPRINTS"
 
-      - name: Build signed release APK
+      - name: Validate and build signed release APK
         run: |
-          gradle --no-daemon --build-cache --parallel --console=plain assembleRelease
-
+          gradle --no-daemon --build-cache --parallel --console=plain lintDebug testDebugUnitTest assembleRelease
       - name: Prepare APK artifact
         shell: bash
         run: |
