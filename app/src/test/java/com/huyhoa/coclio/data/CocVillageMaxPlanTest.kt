@@ -87,11 +87,17 @@ class CocVillageMaxPlanTest {
             levels = listOf(testLevel(1), testLevel(2, 100L, "Elixir", 86_400L)),
             maxLevel = 3
         )
+        val unconfirmedEntry = testEntry(
+            id = 1005,
+            category = "troop",
+            levels = listOf(testLevel(1), testLevel(2, 50L, "Elixir", 43_200L))
+        )
         val owned = testItem(dataId = 1004, tab = "army", level = 1, count = 1)
         val unconfirmed = testItem(dataId = 1005, tab = "army", level = 1, count = 0)
         val summary = calculate(
             items = listOf(owned, unconfirmed),
-            entry = entry
+            entry = entry,
+            additionalEntries = listOf(unconfirmedEntry)
         )
 
         assertEquals(listOf(3), summary.lines.single().missingLevels)
@@ -103,6 +109,7 @@ class CocVillageMaxPlanTest {
         item: VillageItem? = null,
         items: List<VillageItem> = listOfNotNull(item),
         entry: CocUpgradeEntry,
+        additionalEntries: List<CocUpgradeEntry> = emptyList(),
         snapshotTimestamp: Long = 100L,
         nowSeconds: Long = 100L
     ): CocVillageMaxPlanSummary {
@@ -116,7 +123,7 @@ class CocVillageMaxPlanTest {
         return CocVillageMaxPlanCalculator.calculate(
             snapshot = snapshot,
             base = "home",
-            catalog = mapOf(entry.dataId to entry),
+            catalog = (listOf(entry) + additionalEntries).associateBy { it.dataId },
             nowSeconds = nowSeconds
         )
     }
