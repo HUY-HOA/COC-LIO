@@ -1323,7 +1323,8 @@ private fun CocLioApp(
 
 
     fun signInWithGoogle() {
-        if (!loginTermsAccepted || googleSignInSubmitting || interactiveGoogleSignIn) return
+        if (googleSignInSubmitting || interactiveGoogleSignIn) return
+        loginTermsAccepted = true
         scope.launch {
             interactiveGoogleSignIn = true
             googleSignInSubmitting = true
@@ -1472,8 +1473,6 @@ private fun CocLioApp(
                     appSubtitle = remoteAppConfig.appSubtitle,
                     isBusy = googleSignInSubmitting || interactiveGoogleSignIn,
                     readError = accountProfileError,
-                    consentAccepted = loginTermsAccepted,
-                    onConsentAcceptedChanged = { loginTermsAccepted = it },
                     privacyChoice = loginPrivacyChoice,
                     onPrivacyChoiceChanged = { updateLoginPrivacyChoice(it) },
                     onGoogleSignIn = { signInWithGoogle() }
@@ -1814,8 +1813,6 @@ private fun GoogleLoginStartScreen(
     appSubtitle: String,
     isBusy: Boolean,
     readError: String?,
-    consentAccepted: Boolean,
-    onConsentAcceptedChanged: (Boolean) -> Unit,
     privacyChoice: AccountPrivacyChoice,
     onPrivacyChoiceChanged: (AccountPrivacyChoice) -> Unit,
     onGoogleSignIn: () -> Unit
@@ -1825,6 +1822,16 @@ private fun GoogleLoginStartScreen(
         privacyChoice.analytics &&
         privacyChoice.diagnostics &&
         privacyChoice.villageDataSync
+    fun setAllPrivacyChoices(checked: Boolean) {
+        onPrivacyChoiceChanged(
+            privacyChoice.copy(
+                securityTelemetry = checked,
+                analytics = checked,
+                diagnostics = checked,
+                villageDataSync = checked
+            )
+        )
+    }
     val detail = when (selectedPrivacyDetail) {
         "securityTelemetry" -> Pair(
             "DỮ LIỆU THIẾT BỊ VÀ HOẠT ĐỘNG TÀI KHOẢN",
@@ -1859,7 +1866,7 @@ private fun GoogleLoginStartScreen(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 LedBrandTitle(
                     text = appTitle,
@@ -1888,6 +1895,20 @@ private fun GoogleLoginStartScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
+                Text(
+                    "Khi nhấn ĐĂNG NHẬP GOOGLE, bạn xác nhận đồng ý Điều khoản sử dụng và việc xử lý hồ sơ Google cơ bản cần thiết để xác thực, tạo và quản lý tài khoản COC-LIO.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp,
+                    lineHeight = 14.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                NeonButton(
+                    text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
+                    onClick = onGoogleSignIn,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isBusy,
+                    showLed = !isBusy
+                )
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
                 Text(
                     "CÁC LỰA CHỌN DỮ LIỆU TÙY CHỌN",
@@ -1903,27 +1924,29 @@ private fun GoogleLoginStartScreen(
                     lineHeight = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                Text(
-                    if (allSelected) "BỎ CHỌN CẢ 4 MỤC" else "CHỌN TẤT CẢ 4 MỤC",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            val checked = !allSelected
-                            onPrivacyChoiceChanged(
-                                privacyChoice.copy(
-                                    securityTelemetry = checked,
-                                    analytics = checked,
-                                    diagnostics = checked,
-                                    villageDataSync = checked
-                                )
-                            )
-                        }
-                        .padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = allSelected,
+                        onCheckedChange = { setAllPrivacyChoices(it) },
+                        modifier = Modifier.ledRgbBorder(
+                            cornerRadiusDp = 5f,
+                            strokeWidthDp = if (allSelected) 0f else 1.8f
+                        )
+                    )
+                    Text(
+                        "ĐỒNG Ý TẤT CẢ",
+                        modifier = Modifier.weight(1f).clickable {
+                            setAllPrivacyChoices(!allSelected)
+                        },
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -1990,41 +2013,6 @@ private fun GoogleLoginStartScreen(
                     fontSize = 9.sp,
                     lineHeight = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                Text(
-                    "XÁC NHẬN ĐĂNG NHẬP",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Checkbox(
-                        checked = consentAccepted,
-                        onCheckedChange = onConsentAcceptedChanged,
-                        modifier = Modifier.ledRgbBorder(
-                            cornerRadiusDp = 5f,
-                            strokeWidthDp = if (consentAccepted) 0f else 1.8f
-                        )
-                    )
-                    Text(
-                        "Tôi đồng ý Điều khoản sử dụng và việc xử lý hồ sơ Google cơ bản cần thiết để xác thực, tạo và quản lý tài khoản COC-LIO.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 10.sp,
-                        lineHeight = 15.sp
-                    )
-                }
-                NeonButton(
-                    text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
-                    onClick = onGoogleSignIn,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = consentAccepted && !isBusy,
-                    showLed = consentAccepted
                 )
             }
         }
