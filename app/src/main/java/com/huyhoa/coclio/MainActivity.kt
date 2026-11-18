@@ -3828,6 +3828,7 @@ private fun catalogVillageItem(entry: CocUpgradeEntry): VillageItem {
 private fun HeroEquipmentRoster(
     heroId: String,
     allVillageItems: List<VillageItem>,
+    townHallLevel: Int?,
     blacksmithLevel: Int?,
     upgradeCatalog: Map<Int, CocUpgradeEntry>
 ) {
@@ -3937,13 +3938,19 @@ private fun HeroEquipmentCatalogRow(
     var expanded by remember(entry.dataId) { mutableStateOf(false) }
     val item = villageItem ?: catalogVillageItem(entry)
     val owned = villageItem != null && (villageItem.count > 0 || (villageItem.timerSeconds ?: 0L) > 0L)
-    val maxLevel = entry.maxLevel.coerceAtLeast(1)
+    val maxLevel = CocUpgradeCatalog.currentMaxLevel(entry).coerceAtLeast(1)
     val currentLevel = (if (owned) villageItem?.level ?: 1 else 1).coerceIn(1, maxLevel)
+    val townHallCap = CocUpgradeCatalog.maxLevelAtHall(entry, townHallLevel, upgradeCatalog)
     val blacksmithCap = CocUpgradeCatalog.maxEquipmentAtBlacksmithLevel(
         entry,
         blacksmithLevel,
         upgradeCatalog
     )
+    val confirmedUsableCap = if (townHallCap != null && blacksmithCap != null) {
+        minOf(townHallCap, blacksmithCap)
+    } else {
+        null
+    }
 
     Column(
         modifier = Modifier
@@ -3983,7 +3990,7 @@ private fun HeroEquipmentCatalogRow(
                     )
                 }
                 Text(
-                    "Tối đa Lò rèn: ${blacksmithCap ?: "Chưa đủ dữ liệu"} • MAX: $maxLevel",
+                    "Giới hạn TH: ${townHallCap ?: "?"} • Lò rèn: ${blacksmithCap ?: "?"} • Đang xác nhận: ${confirmedUsableCap ?: "Chưa đủ dữ liệu"} / $maxLevel",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp
                 )
@@ -4257,6 +4264,7 @@ private fun VillageItemDetailDialog(
                     HeroEquipmentRoster(
                         heroId = upgradeEntry.id,
                         allVillageItems = allVillageItems,
+                        townHallLevel = hallLevel,
                         blacksmithLevel = blacksmithLevel,
                         upgradeCatalog = upgradeCatalog
                     )
