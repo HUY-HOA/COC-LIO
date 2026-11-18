@@ -1274,7 +1274,7 @@ private fun CocLioApp(
                 } else {
                     googleAuthError = error.message
                         ?.takeIf { it.isNotBlank() }
-                        ?: "Không thể hoàn tất đăng nhập. Hãy kiểm tra quyền truy cập tài khoản và cấu hình Firebase."
+                        ?: "Không thể hoàn tất đăng nhập. Hãy kiểm tra quyền truy cập tài khoản và kết nối mạng."
                 }
             }
         }
@@ -1626,8 +1626,9 @@ private fun CocLioApp(
                             "• " + message,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp,
-                            lineHeight = 17.sp
-                        )
+                        modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                        lineHeight = 17.sp
+                    )
                     }
                 }
             },
@@ -1826,10 +1827,10 @@ private fun GoogleLoginStartScreen(
                 },
                 text = {
                     Text(
-                        "Khi bạn đăng nhập Google, COC-LIO dùng Firebase Authentication để xác thực. Hồ sơ tài khoản trên Firestore gồm UID, email, tên và ảnh hồ sơ Google, trạng thái xác minh email, nhà cung cấp đăng nhập, tên hiển thị bạn đặt, số lần đăng nhập và các mốc tạo/cập nhật/đăng nhập gần nhất.\n\n" +
-                            "JSON Clash of Clans, Player Tag, tên làng, công trình và tiến trình được xử lý và lưu trên điện thoại. Phiên bản hiện tại không tải JSON lên Cloud Firestore và không đồng bộ dữ liệu làng lên máy chủ.\n\n" +
-                            "COC-LIO không bật Firebase Analytics, Crashlytics hoặc Performance Monitoring; không ghi nhận IP, IMEI, số sê-ri, MAC, Android ID, vị trí GPS, danh bạ, SMS hoặc lịch sử cuộc gọi trong hồ sơ tài khoản.\n\n" +
-                            "Thông tin hồ sơ cần thiết được xử lý bởi Google/Firebase để cung cấp đăng nhập và quản lý tài khoản. Những bản JSON từng được đồng bộ từ phiên bản cũ (nếu có) không tự động bị xóa khi cập nhật ứng dụng.",
+                        "Khi bạn đăng nhập Google, COC-LIO dùng dịch vụ xác thực của Google. Hồ sơ tài khoản trực tuyến gồm UID, email, tên và ảnh hồ sơ Google, trạng thái xác minh email, nhà cung cấp đăng nhập, tên hiển thị bạn đặt, số lần đăng nhập và các mốc tạo/cập nhật/đăng nhập gần nhất.\n\n" +
+                            "JSON Clash of Clans, Player Tag, tên làng, công trình và tiến trình được xử lý và lưu trên điện thoại. Phiên bản hiện tại không tải JSON lên máy chủ và không đồng bộ dữ liệu làng lên đám mây.\n\n" +
+                            "COC-LIO không bật phân tích sử dụng, báo lỗi tự động hoặc theo dõi hiệu năng; không ghi nhận IP, IMEI, số sê-ri, MAC, Android ID, vị trí GPS, danh bạ, SMS hoặc lịch sử cuộc gọi trong hồ sơ tài khoản.\n\n" +
+                            "Thông tin hồ sơ cơ bản chỉ được xử lý để cung cấp đăng nhập, duy trì tài khoản và quản lý quyền truy cập. Những bản JSON từng được đồng bộ từ phiên bản cũ (nếu có) không tự động bị xóa khi cập nhật ứng dụng.",
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 11.sp,
                         lineHeight = 17.sp
