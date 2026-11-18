@@ -4183,7 +4183,7 @@ private fun VillageItemDetailDialog(
                 }
                 VillageItemDetailField(
                     "Nguồn dữ liệu",
-                    "Dữ liệu tham khảo từ danh mục do cộng đồng duy trì, không phải API chính thức của Supercell. Hãy đối chiếu trong trò chơi sau mỗi bản cập nhật."
+                    "Dữ liệu nền là snapshot cộng đồng ngày 15/11/2026, không phải API chính thức của Supercell. Bản TH19 ngày 16/11/2026 đã điều chỉnh chi phí/thời gian của nhiều cấp cũ TH16–18; vì vậy tổng tài nguyên ở các cấp này có thể chưa phản ánh đầy đủ giá mới. Các cấp thiếu dữ liệu được liệt kê riêng; hãy đối chiếu bảng nâng cấp trong game trước khi dùng làm kế hoạch chính xác."
                 )
                 if (isEquipment) {
                     VillageItemDetailField("LƯU Ý VỀ CHI PHÍ EPIC", EQUIPMENT_COST_DATA_NOTICE)
