@@ -1909,32 +1909,47 @@ private fun GoogleLoginStartScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        "DỮ LIỆU TÙY CHỌN",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    NeonButton(
-                        text = if (allSelected) "BỎ CHỌN TẤT CẢ" else "ĐỒNG Ý TẤT CẢ",
-                        onClick = {
-                            setAllPrivacyChoices(!allSelected)
-                            declinedOptionalData = false
-                        },
-                        showLed = true
-                    )
-                }
+                Text(
+                    "6 LỰA CHỌN QUYỀN RIÊNG TƯ",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 Text(
                     "Chọn từng mục bạn đồng ý, hoặc chọn từ chối tất cả.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .ledRgbBorder(
+                            cornerRadiusDp = 10f,
+                            strokeWidthDp = if (privacyDecisionMade) 0f else 2f
+                        )
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = allSelected,
+                        onCheckedChange = {
+                            setAllPrivacyChoices(it)
+                            declinedOptionalData = false
+                        },
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Text(
+                        "ĐỒNG Ý TẤT CẢ",
+                        modifier = Modifier.weight(1f).clickable {
+                            setAllPrivacyChoices(!allSelected)
+                            declinedOptionalData = false
+                        },
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
@@ -2054,7 +2069,7 @@ private fun GoogleLoginStartScreen(
                     onClick = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isBusy && privacyDecisionMade,
-                    showLed = false
+                    showLed = privacyDecisionMade && !isBusy
                 )
             }
         }
