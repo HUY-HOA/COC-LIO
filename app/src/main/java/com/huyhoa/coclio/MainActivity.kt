@@ -605,12 +605,10 @@ private fun NeonButton(
 class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
-        AccountActivityTracker.start(this)
         FloatingJsonOverlayController.onHostResume(this)
     }
 
     override fun onPause() {
-        AccountActivityTracker.stop(this)
         super.onPause()
     }
 
