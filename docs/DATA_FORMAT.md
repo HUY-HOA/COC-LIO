@@ -6,7 +6,7 @@ This document records the rules used by COC-LIO. The in-game JSON is treated as 
 
 - `tag`: Player Tag, expected to start with `#`.
 - `timestamp`: Unix timestamp for the export. COC-LIO accepts both seconds and millisecond timestamps and normalizes milliseconds to seconds.
-- `buildings`, `traps`, `units`, `siege_machines`, `heroes`, `spells`, `pets`, `equipment`, `helpers`: Home Village groups.
+- `buildings`, `traps`, `units`, `siege_machines`, `heroes`, `spells`, `pets`, `equipment`, `squads`, `helpers`: Home Village groups.
 - Groups with a `2` suffix, such as `buildings2`, `traps2`, `units2`, and `heroes2`: Builder Base groups.
 
 ## Entry fields
@@ -73,3 +73,17 @@ These are independent community references, not official Supercell API documenta
 - Localized names and image paths are validated against the complete local upgrade catalogue. Unknown cosmetic or future IDs remain visible with their numeric ID; the app does not fabricate a name or an image.
 - The CI validation script checks duplicate IDs, normal-level and Supercharge-level collisions, max-level consistency, remote-catalog references, and missing Vietnamese-name or image mappings.
 - Supercharge is a separate progression track. Its costs and times are reported separately from ordinary upgrades and must not be added to ordinary level totals.
+
+
+## Squad collection
+
+- `squads` is an optional Home Village group. COC-LIO maps the 12 known Squad entries to their game IDs `4000195`–`4000206`.
+- Squad ownership and current level are shown only when the export contains the corresponding `squads` entries. A missing `squads` array in an older export is not treated as proof that every Squad is owned; the catalogue remains available and labels absent entries as not present in that export.
+- Each Squad detail shows its troop composition, housing space, Squad Barracks requirement, Barracks upgrade cost/time and the Squad level's own research costs/time. The two progression costs are displayed separately.
+- Super Troop variants are listed as variants of their base troops. The village export does not reliably identify which Super Troop is currently activated, so COC-LIO does not invent an active/owned flag for those variants.
+- Heroic Spell is included in the standard spell catalogue; when a legacy export does not contain its entry, it appears as not owned/level unknown until a newer export confirms it.
+
+
+## Current game catalogue source notes
+
+The local base snapshot is from 2026-11-15. Missing TH19 level rows and current maximum levels for Home/Builder troops, siege machines, heroes, spells, pets and guardians were compared against the community-maintained ClashKing game-data snapshot dated 2026-11-16/17. Squad additions and some special items use separate supplemental references listed in `app/src/main/assets/coc_upgrade/source.json`. Older cost/time values were not wholesale re-priced after every TH19 balance adjustment; totals for older levels can therefore need in-game confirmation. Epic equipment ore values also retain the 2026-11-15 snapshot pending Supercell's announced staged cost changes. These sources are not an official Supercell API.
