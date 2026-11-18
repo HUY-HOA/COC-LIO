@@ -1885,12 +1885,6 @@ private fun GoogleLoginStartScreen(
                     )
                 }
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                Text(
-                    "6 LỰA CHỌN QUYỀN RIÊNG TƯ",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
                 NeonButton(
                     text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
                     onClick = onGoogleSignIn,
