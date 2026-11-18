@@ -49,7 +49,11 @@ data class VillageItem(
     val name: String get() = CocNames.name(dataId, sectionKey)
     val isRunning: Boolean get() = timerSeconds != null && timerSeconds > 0L
     val hasConfirmedEquipmentOwnership: Boolean
-        get() = sectionKey == "equipment" && ((level ?: 0) > 1 || isRunning)
+        get() = sectionKey == "equipment" && (
+            (level ?: 0) > 1 ||
+                isRunning ||
+                (hasExplicitCount && count > 0)
+            )
     val isUpgradeRunning: Boolean get() = isRunning && !gearUp
     val isGearUpRunning: Boolean get() = isRunning && gearUp
     val isExpired: Boolean get() = timerSeconds != null && timerSeconds <= 0L
