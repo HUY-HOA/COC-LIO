@@ -2996,7 +2996,7 @@ private fun HeroicSpellCatalogCard() {
             Text("🧪", fontSize = 25.sp)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("Thần chú Anh hùng (Heroic Spell)", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text("CẤP 1 / 4 • MỞ KHÓA TỪ NHÀ CHÍNH 17", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                Text("MAX 4 • MỞ KHÓA TỪ NHÀ CHÍNH 17", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Black)
             }
             Text(if (expanded) "ẨN" else "CHI PHÍ", color = MaterialTheme.colorScheme.primary, fontSize = 9.sp, fontWeight = FontWeight.Black)
         }
