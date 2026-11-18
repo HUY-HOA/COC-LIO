@@ -4196,10 +4196,15 @@ private fun VillageItemDetailDialog(
                     val level3Ability = squadInfo.optString("abilityLevel3")
                     if (level2Ability.isNotBlank()) VillageItemDetailField("Kỹ năng cấp 2", level2Ability)
                     if (level3Ability.isNotBlank()) VillageItemDetailField("Kỹ năng cấp 3", level3Ability)
-                    VillageItemDetailField(
-                        "Trạng thái dữ liệu",
-                        "JSON làng hiện chưa cung cấp trạng thái Squad. Ứng dụng hiển thị danh mục và chi phí, không tự kết luận bạn đã sở hữu hay chưa."
-                    )
+                    val squadStatus = when {
+                        item.properties["catalogOnly"] == "true" ->
+                            "JSON làng không có bản ghi cho đội hình này; chưa xác nhận sở hữu hoặc cấp hiện tại."
+                        item.count > 0 || (item.level ?: 0) > 0 || (item.timerSeconds ?: 0L) > 0L ->
+                            "JSON làng có ghi nhận đội hình này${item.level?.let { " ở cấp $it" }.orEmpty()}."
+                        else ->
+                            "JSON làng có bản ghi nhưng số lượng bằng 0; đang xem là chưa sở hữu trong dữ liệu đã nhập."
+                    }
+                    VillageItemDetailField("Trạng thái trong JSON", squadStatus)
                 }
                 if (ownerHeroId != null && ownerHero != null) {
                     VillageEquipmentHeroField(ownerHeroId, ownerHero)
@@ -4212,12 +4217,17 @@ private fun VillageItemDetailDialog(
                         upgradeCatalog = upgradeCatalog
                     )
                 }
-                val levelText = if (upgradeEntry?.category == "squad") {
-                    "Chưa có trạng thái cấp trong JSON • mốc mặc định Cấp 1"
-                } else if (item.count <= 0) {
-                    "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp 1"
-                } else {
-                    item.level?.let { level ->
+                val levelText = when {
+                    upgradeEntry?.category == "squad" && item.properties["catalogOnly"] == "true" ->
+                        "JSON chưa có bản ghi • chưa xác nhận sở hữu/cấp • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                    upgradeEntry?.category == "squad" && item.level != null ->
+                        usableCap?.let { "${item.level} / $it" } ?: "${item.level} / ${maxLevel ?: upgradeEntry.maxLevel}"
+                    upgradeEntry?.category == "squad" && item.count > 0 ->
+                        "Đã có trong JSON • cấp chưa rõ • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                    upgradeEntry?.category == "squad" ->
+                        "JSON ghi số lượng 0 • chưa sở hữu • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                    item.count <= 0 -> "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp 1"
+                    else -> item.level?.let { level ->
                         usableCap?.let { "$level / $it" } ?: level.toString()
                     } ?: "Chưa rõ cấp"
                 }
