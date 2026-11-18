@@ -2917,23 +2917,23 @@ private fun CategoryScreen(
 private data class SuperTroopVariant(val name: String, val baseDataId: Int)
 
 private val superTroopVariants = listOf(
-    SuperTroopVariant("Super Barbarian", 4000000),
-    SuperTroopVariant("Super Archer", 4000001),
-    SuperTroopVariant("Super Giant", 4000003),
-    SuperTroopVariant("Sneaky Goblin", 4000002),
-    SuperTroopVariant("Super Wall Breaker", 4000004),
-    SuperTroopVariant("Rocket Balloon", 4000005),
-    SuperTroopVariant("Super Wizard", 4000006),
-    SuperTroopVariant("Super Dragon", 4000008),
-    SuperTroopVariant("Inferno Dragon", 4000023),
-    SuperTroopVariant("Super Miner", 4000024),
-    SuperTroopVariant("Super Yeti", 4000053),
-    SuperTroopVariant("Super Minion", 4000010),
-    SuperTroopVariant("Super Hog Rider", 4000011),
-    SuperTroopVariant("Super Valkyrie", 4000012),
-    SuperTroopVariant("Super Witch", 4000015),
-    SuperTroopVariant("Ice Hound", 4000017),
-    SuperTroopVariant("Super Bowler", 4000022)
+    SuperTroopVariant("Siêu Man di", 4000000),
+    SuperTroopVariant("Siêu Cung thủ", 4000001),
+    SuperTroopVariant("Siêu Khổng nhân", 4000003),
+    SuperTroopVariant("Yêu tinh Tàng hình", 4000002),
+    SuperTroopVariant("Siêu Công thành Binh", 4000004),
+    SuperTroopVariant("Khí cầu Hỏa tiễn", 4000005),
+    SuperTroopVariant("Siêu Pháp sư", 4000006),
+    SuperTroopVariant("Rồng siêu cấp", 4000008),
+    SuperTroopVariant("Hỏa Ngục Long", 4000023),
+    SuperTroopVariant("Siêu Thợ mỏ", 4000024),
+    SuperTroopVariant("Người tuyết Yeti siêu cấp", 4000053),
+    SuperTroopVariant("Siêu Minion", 4000010),
+    SuperTroopVariant("Siêu Trư Kỵ sĩ", 4000011),
+    SuperTroopVariant("Siêu Valkyrie", 4000012),
+    SuperTroopVariant("Siêu Phù thủy", 4000015),
+    SuperTroopVariant("Băng khuyển", 4000017),
+    SuperTroopVariant("Siêu Thạch thủ", 4000022)
 )
 
 @Composable
@@ -3988,7 +3988,11 @@ private fun HeroEquipmentCatalogRow(
                             ownershipUnknown -> "CHƯA XÁC NHẬN"
                             else -> "CHƯA SỞ HỮU"
                         },
-                        color = if (owned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        color = when {
+                            owned -> MaterialTheme.colorScheme.primary
+                            ownershipUnknown -> CocGold
+                            else -> MaterialTheme.colorScheme.error
+                        },
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -4075,7 +4079,11 @@ private fun HeroEquipmentCatalogRow(
             } else {
                 VillageItemDetailField(
                     "Trạng thái",
-                    "Chưa có cấp hiện tại trong JSON làng; chi phí còn lại được tính từ cấp 1."
+                    if (ownershipUnknown) {
+                        "JSON làng không có bản ghi cho trang bị này; chưa xác nhận sở hữu. Chi phí đầy đủ đang tính từ cấp 1."
+                    } else {
+                        "JSON làng có bản ghi với số lượng 0; xác nhận chưa sở hữu. Chi phí đầy đủ đang tính từ cấp 1."
+                    }
                 )
             }
         }
