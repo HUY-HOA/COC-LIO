@@ -1413,6 +1413,17 @@ class UpgradeReminderWorker(
         val notificationTitle = AppText.translate(applicationContext, "Đến giờ hoàn thành") + " • $localizedItem"
         val notificationText = "$villageName • $baseText • $levelText"
         val notificationExpandedText = notificationBody
+        val gameIntent = applicationContext.packageManager
+            .getLaunchIntentForPackage("com.supercell.clashofclans")
+            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val iconBitmap = iconUrl?.let { url ->
+            runCatching {
+                downloadWidgetIcon(applicationContext, url)
+                widgetIconFile(applicationContext, url)
+                    .takeIf { it.exists() && it.length() > 0L }
+                    ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+            }.getOrNull()
+        }
         val notificationBuilder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setCategory(if (alarmStyle) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_MESSAGE)
