@@ -2702,18 +2702,25 @@ private fun CategoryScreen(
         else -> baseItems.filter { armyCategory(it) == selectedFilter }
     }
     val rarityItems = categoryFiltered.filter { rarityFor(it) != null }
+    val hasAnnouncedBlizzardAxe = tab == "army" && selectedBase == "home" &&
+        (selectedFilter == "all" || selectedFilter == "equipment")
     val rarityChoices = listOf(
         "all" to "TẤT CẢ",
         "common" to "THƯỜNG",
         "rare" to "HIẾM",
         "epic" to "SỬ THI",
         "legendary" to "HUYỀN THOẠI"
-    ).filter { (key, _) -> key == "all" || rarityItems.any { rarityFor(it) == key } }
+    ).filter { (key, _) ->
+        key == "all" || rarityItems.any { rarityFor(it) == key } ||
+            (key == "legendary" && hasAnnouncedBlizzardAxe)
+    }
     val filtered = if (tab == "army" && selectedRarity != "all") {
         categoryFiltered.filter { rarityFor(it) == selectedRarity }
     } else {
         categoryFiltered
     }
+    val showAnnouncedBlizzardAxe = hasAnnouncedBlizzardAxe &&
+        (selectedRarity == "all" || selectedRarity == "legendary")
 
     fun groupKey(item: VillageItem): String {
         val category = if (tab == "buildings") buildingCategory(item) else armyCategory(item)
@@ -2789,12 +2796,14 @@ private fun CategoryScreen(
                 }
             }
 
-            if (baseItems.isEmpty() || filtered.isEmpty()) {
+            if (baseItems.isEmpty() || (filtered.isEmpty() && !showAnnouncedBlizzardAxe)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     InfoCard("Chưa có dữ liệu", "JSON không có mục thuộc nhóm này.")
                 }
             } else {
-                val grouped = filtered.groupBy(::groupKey)
+                val grouped = filtered.groupBy(::groupKey).toMutableMap().apply {
+                    if (showAnnouncedBlizzardAxe) putIfAbsent("equipment", emptyList())
+                }
                 grouped.forEach { (key, rows) ->
                     item(key = "led_group_$key", span = { GridItemSpan(maxLineSpan) }) {
                         val ordered = rows.filter { it.timerSeconds == null }.sortedWith(
@@ -2842,6 +2851,9 @@ private fun CategoryScreen(
                                         }
                                         if (rowItems.size == 1) Spacer(Modifier.weight(1f))
                                     }
+                                }
+                                if (key == "equipment" && showAnnouncedBlizzardAxe) {
+                                    AnnouncedBlizzardAxeCard()
                                 }
                             }
                         }
@@ -3491,6 +3503,78 @@ private fun equipmentRarity(dataId: Int): String? = when (dataId) {
     else -> null
 }
 
+private const val EQUIPMENT_COST_DATA_NOTICE =
+    "Chi phí trang bị Epic trong danh mục được chụp ngày 15/11/2026. Ngày 17/11/2026, Supercell thông báo sẽ giảm dần chi phí nâng cấp trang bị Epic cũ, nhưng chưa công bố lịch áp dụng. Hãy đối chiếu chi phí trong trò chơi trước khi dùng số liệu để lập kế hoạch."
+
+@Composable
+private fun AnnouncedBlizzardAxeCard() {
+    var expanded by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f), RoundedCornerShape(10.dp))
+            .border(1.4.dp, CocGold.copy(alpha = 0.9f), RoundedCornerShape(10.dp))
+            .padding(9.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("❄️", fontSize = 30.sp)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    "Rìu Bão Tuyết (Blizzard Axe)",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    ItemRarityBadge("legendary")
+                    Text(
+                        "ĐÃ CÔNG BỐ • CHƯA PHÁT HÀNH",
+                        color = CocGold,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                Text(
+                    "Vua Barbarian • MAX 33 • Mở khóa miễn phí từ Nhà chính cấp 8",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 9.sp
+                )
+            }
+            Text(
+                if (expanded) "ẨN" else "CHI PHÍ",
+                color = CocGold,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+        if (expanded) {
+            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text(
+                "TỔNG CHI PHÍ CẤP 1 → MAX 33",
+                color = CocGold,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black
+            )
+            UpgradeResourceChip("Shiny Ore", 79760L)
+            UpgradeResourceChip("Glowy Ore", 5100L)
+            UpgradeResourceChip("Starry Ore", 705L)
+            VillageItemDetailField(
+                "Điều kiện cấp",
+                "Cấp 28–30 cần Nhà chính cấp 16; cấp 31–33 cần Nhà chính cấp 18. Giới hạn còn phụ thuộc cấp Lò rèn."
+            )
+            VillageItemDetailField(
+                "Trạng thái dữ liệu",
+                "Supercell đã công bố trang bị và tổng quặng tối đa; kỹ năng và chi tiết từng cấp chưa được công bố. Mục này không tính vào số trang bị đã phát hành hoặc đã sở hữu."
+            )
+        }
+    }
+}
+
 private fun equipmentMaxLevel(rarity: String?, blacksmithLevel: Int?): Int? {
     val normalized = rarity?.lowercase() ?: return null
     val maximum = when (normalized) {
@@ -3667,40 +3751,9 @@ private fun HeroEquipmentRoster(
             }
         }
         if (heroId == "barbarian-king") {
-            Divider(color = MaterialTheme.colorScheme.outlineVariant)
-            Text(
-                "TRANG BỊ ĐÃ CÔNG BỐ • CHƯA PHÁT HÀNH",
-                color = CocGold,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Black
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f), RoundedCornerShape(10.dp))
-                    .border(1.dp, CocGold.copy(alpha = 0.8f), RoundedCornerShape(10.dp))
-                    .padding(9.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("❄️", fontSize = 30.sp)
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text("Rìu Bão Tuyết (Blizzard Axe)", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        ItemRarityBadge("legendary")
-                        Text("Sắp ra mắt qua Sự kiện Chế tác • Cấp tối đa 33", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
-                    }
-                }
-                Text("Chi phí toàn bộ cấp 1 → 33 đã được công bố:", color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                UpgradeResourceChip("Shiny Ore", 79760L)
-                UpgradeResourceChip("Glowy Ore", 5100L)
-                UpgradeResourceChip("Starry Ore", 705L)
-                Text("Cấp 28–30 cần Nhà chính 16; cấp 31–33 cần Nhà chính 18. Chưa có bảng chi phí từng cấp nên ứng dụng không tự chia hoặc cộng vào tổng trang bị đang sở hữu.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, lineHeight = 14.sp)
-            }
+            AnnouncedBlizzardAxeCard()
         }
+        VillageItemDetailField("LƯU Ý VỀ CHI PHÍ EPIC", EQUIPMENT_COST_DATA_NOTICE)
         if (equipment.isEmpty()) {
             VillageItemDetailField("Trang bị", "Danh mục hiện chưa ghi nhận trang bị cho anh hùng này.")
         }
@@ -3982,6 +4035,9 @@ private fun VillageItemDetailDialog(
                     "Nguồn dữ liệu",
                     "Dữ liệu tham khảo từ danh mục do cộng đồng duy trì, không phải API chính thức của Supercell. Hãy đối chiếu trong trò chơi sau mỗi bản cập nhật."
                 )
+                if (isEquipment) {
+                    VillageItemDetailField("LƯU Ý VỀ CHI PHÍ EPIC", EQUIPMENT_COST_DATA_NOTICE)
+                }
                 VillageItemDetailField(
                     "Cách tính thời gian",
                     "Tổng thời gian dùng thời lượng cơ bản của từng cấp; chưa trừ thời gian từ Sách, Búa, trợ thủ, vật phẩm tăng tốc hoặc ưu đãi sự kiện."
