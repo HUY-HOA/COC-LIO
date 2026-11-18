@@ -1469,8 +1469,6 @@ private fun CocLioApp(
             } else {
                 GoogleLoginStartScreen(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
-                    appTitle = remoteAppConfig.appTitle,
-                    appSubtitle = remoteAppConfig.appSubtitle,
                     isBusy = googleSignInSubmitting || interactiveGoogleSignIn,
                     readError = accountProfileError,
                     privacyChoice = loginPrivacyChoice,
@@ -1809,8 +1807,6 @@ private fun CocLioApp(
 @Composable
 private fun GoogleLoginStartScreen(
     modifier: Modifier = Modifier,
-    appTitle: String,
-    appSubtitle: String,
     isBusy: Boolean,
     readError: String?,
     privacyChoice: AccountPrivacyChoice,
@@ -1875,22 +1871,9 @@ private fun GoogleLoginStartScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 LedBrandTitle(
-                    text = appTitle,
+                    text = "COC-LIO",
                     fontSize = 26.sp,
                     letterSpacing = 2.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Text(
-                    appSubtitle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 9.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Text(
-                    "CHÀO MỪNG ĐẾN VỚI COC-LIO",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 if (!readError.isNullOrBlank()) {
@@ -1901,25 +1884,12 @@ private fun GoogleLoginStartScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
-                Text(
-                    "Khi nhấn ĐĂNG NHẬP GOOGLE, bạn xác nhận đồng ý Điều khoản sử dụng và việc xử lý hồ sơ Google cơ bản cần thiết để xác thực, tạo và quản lý tài khoản COC-LIO.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 9.sp,
-                    lineHeight = 14.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
                 Text(
                     "6 LỰA CHỌN QUYỀN RIÊNG TƯ",
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "Chọn từng mục bạn đồng ý, hoặc chọn từ chối tất cả.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 9.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 NeonButton(
                     text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
@@ -2065,16 +2035,6 @@ private fun GoogleLoginStartScreen(
                         )
                     }
                 }
-                Text(
-                    when {
-                        declinedOptionalData -> "Bạn đã từ chối các mục dữ liệu tùy chọn."
-                        anySelected -> "Các mục không chọn sẽ được tắt."
-                        else -> "Vui lòng chọn ít nhất một lựa chọn để tiếp tục."
-                    },
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 9.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
             }
         }
         if (detail != null) {
