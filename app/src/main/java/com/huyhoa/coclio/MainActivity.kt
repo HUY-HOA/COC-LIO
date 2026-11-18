@@ -2867,10 +2867,22 @@ private fun VillageMaxPlanDialog(
                                         "JSON không có cấp; tạm tính từ cấp mở khóa đầu tiên."
                                     )
                                 }
+                                if (line.requirements.isNotEmpty()) {
+                                    VillageItemDetailField(
+                                        "Điều kiện nâng cấp",
+                                        line.requirements.joinToString(" • ") {
+                                            "${it.label} cấp ${it.level}"
+                                        }
+                                    )
+                                }
                                 if (line.upgradeInProgress) {
                                     VillageItemDetailField(
                                         "Trạng thái",
-                                        "Đã trừ chi phí nâng cấp đang chạy; thời gian còn lại được cộng vào kế hoạch."
+                                        if (line.upgradeTimerExpired) {
+                                            "Timer trong JSON đã hết; chi phí đã được trừ. Hãy nhập JSON mới để xác nhận cấp hiện tại."
+                                        } else {
+                                            "Đã trừ chi phí của một bản sao đang nâng; chỉ cộng thời gian còn lại của bản sao đó."
+                                        }
                                     )
                                 }
                                 if (line.missingLevels.isNotEmpty()) {
@@ -2902,9 +2914,19 @@ private fun VillageMaxPlanDialog(
                         "${plan.itemsWithoutCatalogData} mục đã có trong JSON nhưng chưa có dữ liệu nâng cấp để tính."
                     )
                 }
+                if (plan.gearUpItems > 0) {
+                    VillageItemDetailField(
+                        "Gear-up ngoài MAX thường",
+                        "${plan.gearUpItems} công trình có timer gear-up; thời gian gear-up không được cộng vào kế hoạch nâng cấp cấp thường."
+                    )
+                }
+                VillageItemDetailField(
+                    "Phạm vi xác nhận",
+                    "Chỉ tính các mục xuất hiện trong JSON và được xác nhận sở hữu; mục vắng mặt trong bản xuất không được tự suy đoán là đã sở hữu."
+                )
                 VillageItemDetailField(
                     "Cách tính",
-                    "Công trình, bẫy và Tường được nhân theo số lượng. Lính, Thần chú, Anh hùng và nghiên cứu chỉ tính một lần, không nhân theo số quân trong kho."
+                    "Công trình, bẫy và Tường tính theo số bản sao rảnh (cnt) cộng thêm một bản sao nếu đang nâng cấp (timer). Gear-up không cộng vào thời gian MAX cấp thường. Lính, Thần chú, Anh hùng và nghiên cứu chỉ tính một lần, không nhân theo số quân trong kho."
                 )
                 VillageItemDetailField(
                     "Lưu ý thời gian",
