@@ -14,8 +14,10 @@ data class CocVillageMaxPlanLine(
     val resources: Map<String, Long>,
     val durationSeconds: Long,
     val missingLevels: List<Int>,
+    val requirements: List<CocUpgradeRequirement>,
     val assumedCurrentLevel: Boolean,
-    val upgradeInProgress: Boolean
+    val upgradeInProgress: Boolean,
+    val upgradeTimerExpired: Boolean
 )
 
 data class CocVillageMaxPlanSummary(
@@ -27,7 +29,8 @@ data class CocVillageMaxPlanSummary(
     val maxedCopies: Int,
     val unconfirmedItems: Int,
     val itemsWithoutCatalogData: Int,
-    val incompleteItems: Int
+    val incompleteItems: Int,
+    val gearUpItems: Int
 )
 
 /**
@@ -52,11 +55,23 @@ object CocVillageMaxPlanCalculator {
         var unconfirmedItems = 0
         var itemsWithoutCatalogData = 0
         var incompleteItems = 0
+        var gearUpItems = 0
 
         snapshot.items.asSequence()
             .filter { it.base == base }
             .forEach { item ->
-                val quantity = if (item.tab == "buildings") item.count.coerceAtLeast(1) else 1
+                val recordedTimer = item.timerSeconds?.takeIf { it > 0L }
+                // cnt is idle copies; timer adds one further copy being upgraded.
+                // Without cnt, a timer row already represents its single running copy.
+                val quantity = if (item.tab == "buildings") {
+                    if (item.hasExplicitCount) {
+                        item.count.coerceAtLeast(0) + if (recordedTimer != null) 1 else 0
+                    } else {
+                        1
+                    }
+                } else {
+                    1
+                }
                 val entry = catalog[item.dataId]
                 if (entry == null) {
                     if (item.count > 0 || (item.timerSeconds ?: 0L) > 0L) {
@@ -68,7 +83,7 @@ object CocVillageMaxPlanCalculator {
                 val ownershipConfirmed = if (entry.category == "hero-equipment") {
                     item.hasConfirmedEquipmentOwnership
                 } else {
-                    item.count > 0 || (item.timerSeconds ?: 0L) > 0L
+                    item.count > 0 || recordedTimer != null
                 }
                 if (!ownershipConfirmed || item.properties["catalogOnly"] == "true") {
                     unconfirmedItems += 1
@@ -86,7 +101,13 @@ object CocVillageMaxPlanCalculator {
                 ownedCopies += quantity
 
                 val missing = CocUpgradeCatalog.missingLevels(entry, currentLevel, targetLevel)
-                if (missing.isNotEmpty()) incompleteItems += 1
+                var itemIncomplete = missing.isNotEmpty()
+                val requirements = entry.levels
+                    .filter { it.level > currentLevel && it.level <= targetLevel }
+                    .flatMap { level -> CocUpgradeCatalog.nextRequirements(entry, level.level, catalog) }
+                    .groupBy { it.label }
+                    .map { (_, values) -> values.maxBy { it.level } }
+                    .sortedBy { it.label }
 
                 val regularTotals = CocUpgradeCatalog.upgradeTotals(entry, currentLevel, targetLevel)
                 val lineResources = regularTotals.resources.mapValuesTo(linkedMapOf()) {
@@ -94,31 +115,31 @@ object CocVillageMaxPlanCalculator {
                 }
                 var lineDuration = safeMultiply(regularTotals.durationSeconds, quantity.toLong())
 
-                val recordedTimer = item.timerSeconds?.takeIf { it > 0L }
                 val upgradeInProgress = item.isUpgradeRunning
-                if (recordedTimer != null) {
-                    if (upgradeInProgress) {
-                        // The next level's cost has already been paid for one structure.
-                        val nextLevel = entry.level(currentLevel + 1)
-                        if (nextLevel != null) {
-                            val cost = nextLevel.cost()
-                            val resource = nextLevel.resource()
-                            if (cost > 0L && resource.isNotBlank()) {
-                                addAmount(lineResources, resource, -cost)
-                            }
-                            nextLevel.oreCosts().forEach { (resourceName, amount) ->
-                                addAmount(lineResources, resourceName, -amount)
-                            }
-                            lineDuration = (lineDuration - nextLevel.durationSeconds()).coerceAtLeast(0L)
+                val remainingTimerSeconds = recordedTimer?.let {
+                    item.remainingSecondsAt(snapshot.timestamp, nowSeconds)
+                } ?: 0L
+                if (recordedTimer != null && upgradeInProgress) {
+                    // Only one currently upgrading copy has paid the next-level cost.
+                    val nextLevel = entry.level(currentLevel + 1)
+                    if (!hasLevel) {
+                        // Without lvl, the paid upgrade level cannot be identified safely.
+                        itemIncomplete = true
+                    } else if (nextLevel != null) {
+                        val cost = nextLevel.cost()
+                        val resource = nextLevel.resource()
+                        if (cost > 0L && resource.isNotBlank()) addAmount(lineResources, resource, -cost)
+                        nextLevel.oreCosts().forEach { (resourceName, amount) ->
+                            addAmount(lineResources, resourceName, -amount)
                         }
+                        lineDuration = (lineDuration - nextLevel.durationSeconds()).coerceAtLeast(0L)
                     }
-                    // A gear-up timer is added as work in progress, but does not
-                    // consume the next normal upgrade level.
-                    lineDuration = safeAdd(
-                        lineDuration,
-                        item.remainingSecondsAt(snapshot.timestamp, nowSeconds)
-                    )
+                    lineDuration = safeAdd(lineDuration, remainingTimerSeconds)
+                } else if (recordedTimer != null && item.isGearUpRunning) {
+                    // Gear-up is not part of the ordinary level-to-MAX progression.
+                    gearUpItems += 1
                 }
+                if (itemIncomplete) incompleteItems += 1
 
                 if (currentLevel >= targetLevel && lineDuration == 0L && lineResources.isEmpty()) {
                     maxedCopies += quantity
@@ -140,8 +161,10 @@ object CocVillageMaxPlanCalculator {
                     resources = lineResources.filterValues { it > 0L },
                     durationSeconds = lineDuration,
                     missingLevels = missing,
+                    requirements = requirements,
                     assumedCurrentLevel = !hasLevel,
-                    upgradeInProgress = upgradeInProgress
+                    upgradeInProgress = upgradeInProgress,
+                    upgradeTimerExpired = upgradeInProgress && remainingTimerSeconds == 0L
                 )
                 lines += line
                 line.resources.forEach { (resource, amount) ->
@@ -157,7 +180,8 @@ object CocVillageMaxPlanCalculator {
             maxedCopies = maxedCopies,
             unconfirmedItems = unconfirmedItems,
             itemsWithoutCatalogData = itemsWithoutCatalogData,
-            incompleteItems = incompleteItems
+            incompleteItems = incompleteItems,
+            gearUpItems = gearUpItems
         )
     }
 
