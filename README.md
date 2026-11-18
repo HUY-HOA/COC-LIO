@@ -44,7 +44,7 @@ GitHub Actions tạo APK Release có chữ ký khi quy trình build được kí
 - Cấp độ, tên và dữ liệu có thể thay đổi khi Supercell cập nhật game; bảng đối chiếu cần được rà soát sau các bản cập nhật.
 - Ảnh công trình theo từng cấp, bẫy, quân đội, anh hùng, thần chú, thú cưng, máy công thành và trang bị được tải từ kho dữ liệu công khai `clash-of-clans-data`. Ứng dụng kiểm tra URL ảnh và dùng bộ nhớ đệm Coil để tải mượt hơn; lần đầu cần Internet. Dữ liệu JSON và lịch sử vẫn được lưu trên điện thoại.
 - Viền neon, ánh sáng nền và hiệu ứng chuyển ảnh chỉ áp dụng lên giao diện xung quanh; ảnh game gốc không bị chỉnh màu hay biến đổi.
-- Việc sử dụng hình ảnh Supercell phải tuân thủ Fan Content Policy, bao gồm giới hạn phi thương mại và thông báo rõ đây là nội dung không chính thức.
+- Việc sử dụng hình ảnh Supercell phải tuân thủ Fan Content Policy: không thu phí cho nội dung hoặc tính năng nếu chưa được chấp thuận; chính sách có các ngoại lệ chung cho quảng cáo, quyên góp và huấn luyện theo điều kiện riêng. Không được quảng bá cheat, hack, exploit, automation, bot, mod hoặc công cụ trái phép; phải hiển thị tuyên bố rõ ràng rằng đây là nội dung không chính thức.
 
 COC-LIO là ứng dụng không chính thức, không liên kết hoặc được Supercell chứng thực. Clash of Clans và tài sản trong game thuộc về chủ sở hữu tương ứng.
 
