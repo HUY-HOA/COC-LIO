@@ -3091,7 +3091,11 @@ private fun VillageGridItemCard(
                         cardMaxLevel?.let { "Cấp $level / $it" } ?: "Cấp $level"
                     } ?: "Chưa rõ cấp"
                 },
-                color = if (item.count <= 0 && !isSquad) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                color = when {
+                    item.properties["catalogOnly"] == "true" -> CocGold
+                    item.count <= 0 && !isSquad -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.primary
+                },
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
@@ -4265,6 +4269,8 @@ private fun VillageItemDetailDialog(
                         usableCap?.let { "${item.level} / $it" } ?: "${item.level} / ${maxLevel ?: upgradeEntry.maxLevel}"
                     upgradeEntry?.category == "squad" ->
                         "Đã có trong JSON • cấp chưa rõ • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                    item.properties["catalogOnly"] == "true" ->
+                        "Không có bản ghi trong JSON • chưa xác nhận sở hữu/cấp • MAX ${maxLevel ?: upgradeEntry?.maxLevel ?: "?"}"
                     item.count <= 0 -> "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp 1"
                     else -> item.level?.let { level ->
                         usableCap?.let { "$level / $it" } ?: level.toString()
@@ -4280,7 +4286,14 @@ private fun VillageItemDetailDialog(
                 maxLevel?.let { VillageItemDetailField("Cấp tối đa toàn trò chơi", it.toString()) }
                 VillageItemDetailField(if (item.base == "builder") "Cấp Nhà thợ xây hiện tại" else "Cấp Nhà chính hiện tại", hallLevel?.toString() ?: "Chưa có dữ liệu")
                 if (item.count > 0) VillageItemDetailField("Số lượng", item.count.toString())
-                if (item.count <= 0) VillageItemDetailField("Trạng thái sở hữu", "Chưa có trong JSON làng đã nhập.")
+                if (item.properties["catalogOnly"] == "true") {
+                    VillageItemDetailField(
+                        "Trạng thái dữ liệu",
+                        "Danh mục có mục này nhưng JSON làng đã nhập không có bản ghi; chưa thể xác nhận đã sở hữu hay chưa."
+                    )
+                } else if (item.count <= 0) {
+                    VillageItemDetailField("Trạng thái sở hữu", "JSON làng ghi số lượng 0; mục này chưa được ghi nhận là sở hữu.")
+                }
                 if (item.gearUp) VillageItemDetailField("Trạng thái", "Đã ghép công trình")
                 item.weaponLevel?.let { VillageItemDetailField("Cấp vũ khí", it.toString()) }
                 item.timerSeconds?.let {
