@@ -4609,7 +4609,7 @@ private fun VillageItemDetailDialog(
                             VillageItemStatField(label, displayValue)
                         }
                     } else {
-                        catalogStats.forEach { (rawLabel, rawValue) =>
+                        catalogStats.forEach { (rawLabel, rawValue) ->
                             val normalizedLabel = rawLabel.removePrefix("stats_").removePrefix("normal_")
                             val (label, value) = localizedCatalogField(normalizedLabel, rawValue)
                             VillageItemStatField(label, value)
