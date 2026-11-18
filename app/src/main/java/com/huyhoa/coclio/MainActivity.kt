@@ -2858,8 +2858,11 @@ private fun CategoryScreen(
                                         if (rowItems.size == 1) Spacer(Modifier.weight(1f))
                                     }
                                 }
-                                if (key == "equipment" && showAnnouncedBlizzardAxe) {
-                                    AnnouncedBlizzardAxeCard()
+                                if (key == "equipment") {
+                                    if (showAnnouncedBlizzardAxe) {
+                                        AnnouncedBlizzardAxeCard()
+                                    }
+                                    VillageItemDetailField("LƯU Ý VỀ CHI PHÍ EPIC", EQUIPMENT_COST_DATA_NOTICE)
                                 }
                             }
                         }
@@ -4052,7 +4055,7 @@ private fun VillageItemDetailDialog(
                 if (ownerHeroId != null && ownerHero != null) {
                     VillageEquipmentHeroField(ownerHeroId, ownerHero)
                 }
-                if (upgradeEntry?.category == "hero") {
+                if (upgradeEntry?.let { it.category == "hero" && it.base == "home" } == true) {
                     HeroEquipmentRoster(
                         heroId = upgradeEntry.id,
                         allVillageItems = allVillageItems,
