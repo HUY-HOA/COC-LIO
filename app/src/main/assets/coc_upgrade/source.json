@@ -9,7 +9,7 @@
     "https://supercell.com/en/games/clashofclans/blog/release-notes/",
     "https://supercell.com/en/games/clashofclans/blog/news/weve-revamped-the-clash-of-clans-user-interface/"
   ],
-  "note": "Danh mục nền: dữ liệu cộng đồng MIT, snapshot 2026-11-15. Các bậc nâng cấp còn thiếu và giới hạn tối đa TH19 của quân Làng chính, quân Căn cứ thợ xây, máy công thành, thần chú, anh hùng, thú cưng và hộ vệ đã được đối chiếu/bổ sung theo dữ liệu game qua ClashKing (snapshot 16–17/11/2026). Squad dùng 12 dataId chính thức 4000195–4000206; Heroic Spell được đưa vào danh mục tra cứu chuẩn với chi phí và thời gian cấp 2–4, nhưng dữ liệu làng cũ có thể không xuất cấp hiện tại nên không tự suy ra sở hữu. Snapshot chi phí cấp cũ 15/11 chưa được tái định giá toàn bộ sau các điều chỉnh TH19; số tổng của các cấp cũ vẫn là tham khảo và cần đối chiếu trong game. Trang bị Epic giữ snapshot 15/11/2026 do Supercell thông báo sẽ điều chỉnh giảm chi phí theo từng đợt nhưng chưa có lịch đầy đủ. Dữ liệu cộng đồng không phải API chính thức Supercell.",
+  "note": "Danh mục nền lấy từ chiefpansancolt/clash-of-clans-data theo giấy phép MIT, snapshot 2026-11-15. Các cấp TH19/TH18 mới được bổ sung từ dữ liệu game ngày 2026-11-16, gồm cấp tối đa và chi phí/thời gian cho các cấp mới của quân lính, thần chú, anh hùng, linh thú, hộ vệ và máy công thành. Các cấp nâng cấp cũ TH16–TH18 đã bị điều chỉnh chi phí/thời gian trong bản cập nhật TH19; snapshot nền 15/11 chưa đồng bộ đầy đủ toàn bộ các cấp cũ nên tổng chi phí cũ chỉ là tham khảo, cần đối chiếu trong game. Những cấp nào thiếu bản ghi sẽ được hiển thị rõ và không được coi là tổng đầy đủ. Heroic Spell đã được đưa vào danh mục nâng cấp chính với dataId 26000153, cấp 1–4, chi phí và thời gian từng cấp; nếu JSON làng nhập không chứa mục này thì ứng dụng không tự đoán cấp hoặc trạng thái sở hữu. Danh mục Squad gồm 12 đội hình cố định, cấp nâng cấp riêng theo dữ liệu game. Siêu quân dùng cấp nghiên cứu của quân gốc, không có đường nâng cấp cấp riêng; JSON làng không xác nhận trạng thái kích hoạt Super Potion. Dữ liệu cộng đồng và dữ liệu game đã xử lý không phải API chính thức của Supercell; các thay đổi cân bằng sau đó cần được đối chiếu lại.",
   "catalogIntegrity": {
     "localIdCount": 239,
     "remoteLookupIdCount": 134,
@@ -69,8 +69,14 @@
       "name": "ClashKingAssets — current game data",
       "url": "https://github.com/ClashKingInc/ClashKingAssets",
       "scope": "Dữ liệu game tĩnh 16–17/11/2026 để đối chiếu cấp tối đa, chỉ số, yêu cầu mở khóa, chi phí và thời gian của quân, phép, anh hùng, thú cưng và hộ vệ; nguồn cộng đồng độc lập"
+    },
+    {
+      "name": "ClashRecord — Town Hall 19 new levels and upgrade costs",
+      "url": "https://www.clashrecord.com/blog/town-hall-19-max-levels",
+      "scope": "Đối chiếu chi phí và thời gian của các cấp TH19 mới theo dữ liệu game; nguồn cộng đồng độc lập"
     }
   ],
   "currentMaxLevelSnapshotDate": "2026-11-16",
-  "currentMaxLevelSource": "Clash of Clans game data via ClashKing, processed by GiBiArena; community reference, not a Supercell API"
+  "currentMaxLevelSource": "Clash of Clans game data via ClashKing, processed by GiBiArena; community reference, not a Supercell API",
+  "currentLevelDataSnapshotDate": "2026-11-16"
 }
