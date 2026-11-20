@@ -1784,7 +1784,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
             try {
                 accounts = FirebaseAccountAdministration.loadAccounts(context)
             } catch (error: Exception) {
-                errorMessage = error.message ?: "Không thể tải danh sách tài khoản."
+                errorMessage = appErrorMessage(error.message, "Không thể tải danh sách tài khoản.")
             } finally {
                 loading = false
             }
@@ -1801,7 +1801,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                 try {
                     accounts = FirebaseAccountAdministration.loadAccounts(context)
                 } catch (error: Exception) {
-                    errorMessage = error.message ?: "Không thể cập nhật trạng thái tài khoản."
+                    errorMessage = appErrorMessage(error.message, "Không thể cập nhật trạng thái tài khoản.")
                 }
             }
         }
@@ -1831,7 +1831,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 expandedAccounts = expandedAccounts - account.uid
                                 accounts = FirebaseAccountAdministration.loadAccounts(context)
                             } catch (error: Exception) {
-                                errorMessage = error.message ?: "Không thể vô hiệu hóa tài khoản COC-LIO."
+                                errorMessage = appErrorMessage(error.message, "Không thể vô hiệu hóa tài khoản COC-LIO.")
                             } finally {
                                 deleting = false
                             }
@@ -1871,7 +1871,7 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                                 expandedAccounts = expandedAccounts - account.uid
                                 accounts = FirebaseAccountAdministration.loadAccounts(context)
                             } catch (error: Exception) {
-                                errorMessage = error.message ?: "Không thể xóa hồ sơ Firebase cũ."
+                                errorMessage = appErrorMessage(error.message, "Không thể xóa hồ sơ Firebase cũ.")
                             } finally {
                                 deleting = false
                             }
