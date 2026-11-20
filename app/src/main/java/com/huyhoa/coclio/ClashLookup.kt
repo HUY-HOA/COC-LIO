@@ -764,13 +764,13 @@ fun ClashLookupScreen() {
                     Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                         Text("ENDPOINT CÔNG KHAI CẦN THAM SỐ", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
                         if (!entry.isClan) {
-                            LookupFilterField("Season ID Ranked (để tải nhóm và battlelog)", extendedSeasonId, { extendedSeasonId = it }, "Season ID / YYYY-MM")
+                            LookupFilterField("Mã mùa giải Ranked (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it }, "Mã mùa giải")
                             LookupFilterField("Ngày Legend (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it }, "2026-11-20")
                             LookupFilterField("TAG người chơi khác (để so lịch sử bang)", extendedOtherPlayerTag, { extendedOtherPlayerTag = it }, "#ABC123")
                             Text("Nhập một hoặc nhiều trường. Season ID tải nhóm Ranked và battlelog; ngày tải battlelog Legend; TAG khác tải thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         } else {
-                            LookupFilterField("Thời điểm kết thúc hội chiến (ISO 8601)", extendedWarEndTime, { extendedWarEndTime = it }, "2026-11-20T00:00:00.000Z")
-                            Text("Dùng thời điểm endTime của một cuộc hội chiến đã lưu để tải hồ sơ đầy đủ của cuộc chiến đó.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
+                            LookupFilterField("Thời điểm kết thúc hội chiến (YYYYMMDDTHHmmss.SSSZ)", extendedWarEndTime, { extendedWarEndTime = it }, "20261120T000000.000Z")
+                            Text("Nhập đúng endTime do API trả về, dạng 20261120T000000.000Z, để tải dữ liệu chi tiết cuộc hội chiến đã lưu.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         }
                         Button(
                             onClick = {
@@ -1037,12 +1037,12 @@ fun ClashLookupScreen() {
                             LookupFilterField("Số kết quả tối đa", analyticsSecondary, { analyticsSecondary = it }, "100")
                         }
                         "ranked_group" -> {
-                            LookupFilterField("Season ID", analyticsPrimary, { analyticsPrimary = it }, "Season ID")
-                            LookupFilterField("League Group ID", analyticsSecondary, { analyticsSecondary = it }, "League Group ID")
+                            LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it }, "Mã mùa giải")
+                            LookupFilterField("Mã nhóm giải", analyticsSecondary, { analyticsSecondary = it }, "Mã nhóm giải")
                         }
                         "league_tier_statistics" -> {
-                            LookupFilterField("Season ID", analyticsPrimary, { analyticsPrimary = it }, "Season ID")
-                            LookupFilterField("League Tier ID", analyticsSecondary, { analyticsSecondary = it }, "29000000")
+                            LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it }, "Mã mùa giải")
+                            LookupFilterField("Mã bậc giải", analyticsSecondary, { analyticsSecondary = it }, "29000000")
                         }
                         "league_hit_rates" -> {
                             LookupFilterField("Từ ngày", analyticsFrom, { analyticsFrom = it }, "2026-11-01")
@@ -1051,8 +1051,12 @@ fun ClashLookupScreen() {
                                 FilterChip(selected = analyticsMode == "ranked", onClick = { analyticsMode = "ranked" }, label = { Text("RANKED", fontSize = 8.sp) })
                                 FilterChip(selected = analyticsMode == "legend", onClick = { analyticsMode = "legend" }, label = { Text("LEGEND", fontSize = 8.sp) })
                             }
-                            LookupFilterField("League Tier ID (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "29000000")
-                            LookupFilterField("Cấp Nhà chính (tùy chọn)", analyticsSecondary, { analyticsSecondary = it }, "19")
+                            if (analyticsMode == "ranked") {
+                                LookupFilterField("Mã bậc giải (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "29000000")
+                                LookupFilterField("Cấp Nhà chính (tùy chọn)", analyticsSecondary, { analyticsSecondary = it }, "19")
+                            } else {
+                                Text("Thống kê Legend không lọc theo bậc giải hoặc cấp Nhà chính.", fontSize = 9.sp, color = LookupMuted)
+                            }
                         }
                         "legend_days", "legend_performance" -> {
                             LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "2026-11-01")
