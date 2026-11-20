@@ -1,4 +1,4 @@
-// Minimum account profile fields only; legacy activity/device and cloud village writes are denied.
+// Account profiles allow bounded technical compatibility/network fields; detailed activity and cloud village writes remain denied.
 rules_version = '2';
 
 service cloud.firestore {
