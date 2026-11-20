@@ -240,6 +240,10 @@ private object ClashKingLookupApi {
         fun player(route: String, query: String = "") = "/v2/player/$tag/$route" + query
         fun clan(route: String, query: String = "") = "/v2/clan/$tag/$route" + query
         val limit = "?limit=50"
+        val hasCachedClanProfile = entry.raw.has("description") && entry.raw.has("members")
+        fun cachedClanFields(vararg fields: String) = JSONObject().apply {
+            fields.forEach { key -> if (entry.raw.has(key)) put(key, entry.raw.opt(key)) }
+        }
 
         return if (!entry.isClan) {
             when (section) {
@@ -307,7 +311,8 @@ private object ClashKingLookupApi {
         } else {
             when (section) {
                 "TỔNG QUAN" -> listOf(
-                    req("Hồ sơ bang hội và danh sách thành viên", clan("cached"))
+                    if (hasCachedClanProfile) data("Hồ sơ bang hội và danh sách thành viên", entry.raw)
+                    else req("Hồ sơ bang hội và danh sách thành viên", clan("cached"))
                 )
                 "THÀNH VIÊN" -> listOf(
                     req("Thành viên hiện tại và ngày tham gia được ghi nhận", "/v2/clan/$tag/member-joins"),
@@ -326,8 +331,8 @@ private object ClashKingLookupApi {
                     req("Tổng quyên góp trong tháng", clan("donations/summary"))
                 )
                 "THỦ PHỦ" -> listOf(
-                    req("Xếp hạng điểm Thủ phủ", clan("rankings"), setOf("clanCapital", "capitalGold")),
-                    req("Cấp giải và tổng Vàng Thủ phủ", clan("cached"), setOf("capitalGoldTotal", "capitalLeague"))
+                    if (hasCachedClanProfile) data("Cấp giải và tổng Vàng Thủ phủ", cachedClanFields("capitalGoldTotal", "capitalLeague"))
+                    else req("Cấp giải và tổng Vàng Thủ phủ", clan("cached"), setOf("capitalGoldTotal", "capitalLeague"))
                 )
                 "XẾP HẠNG" -> listOf(
                     req("Xếp hạng hiện tại", clan("rankings")),
@@ -341,7 +346,7 @@ private object ClashKingLookupApi {
                     req("Tổng kết Legend và thành tích nổi bật", clan("history/legends/summary", "?top=20"))
                 )
                 "KỶ LỤC" -> listOf(
-                    req("Điểm clan và chuỗi thắng kỷ lục", clan("records"))
+                    req("Điểm bang hội và chuỗi thắng kỷ lục", clan("records"))
                 )
                 "LỊCH SỬ" -> listOf(
                     req("Lịch sử thay đổi cấp và mô tả bang", clan("history/changes", limit))
@@ -900,11 +905,11 @@ fun ClashLookupScreen() {
                                     if (season.isNotBlank()) {
                                         val encodedSeason = URLEncoder.encode(season, "UTF-8")
                                         requests += LookupRequest("Nhóm Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/group")
-                                        requests += LookupRequest("Battlelog Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/battlelog")
+                                        requests += LookupRequest("Nhật ký trận Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/battlelog")
                                     }
                                     if (day.isNotBlank()) {
                                         val encodedDay = URLEncoder.encode(day, "UTF-8")
-                                        requests += LookupRequest("Battlelog Legend ngày $day", "/v2/player/$playerTag/legend/$encodedDay/battlelog")
+                                        requests += LookupRequest("Nhật ký trận Legend ngày $day", "/v2/player/$playerTag/legend/$encodedDay/battlelog")
                                     }
                                     if (otherTag.isNotBlank()) {
                                         val encodedOtherTag = URLEncoder.encode(otherTag, "UTF-8")
@@ -1292,7 +1297,7 @@ fun ClashLookupScreen() {
             )
         }
         Text(
-            "Nguồn dữ liệu: ClashKing API • Creator Code: ClashKing. COC-LIO là công cụ cộng đồng độc lập, không phải ứng dụng chính thức của Supercell.",
+            "Nguồn dữ liệu: ClashKing API • Mã nhà sáng tạo: ClashKing. COC-LIO là công cụ cộng đồng độc lập, không phải ứng dụng chính thức của Supercell.",
             fontSize = 9.sp,
             color = LookupMuted,
             lineHeight = 13.sp
