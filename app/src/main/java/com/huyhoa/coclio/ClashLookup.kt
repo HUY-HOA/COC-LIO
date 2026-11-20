@@ -108,6 +108,23 @@ private data class LookupFilters(
     val townhallLevels: String = "",
 )
 
+private fun normalizeLookupTag(raw: String, label: String): String {
+    val input = raw.trim().uppercase()
+    val normalized = if (input.startsWith("#")) input else "#$input"
+    require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(normalized)) {
+        "$label không hợp lệ. Hãy nhập TAG dạng #ABC123."
+    }
+    return normalized
+}
+
+private fun validateLookupWarEndTime(raw: String): String {
+    val value = raw.trim()
+    require(Regex("^\\d{8}T\\d{6}\\.\\d{3}Z$").matches(value)) {
+        "Thời điểm kết thúc phải đúng dạng YYYYMMDDTHHmmss.SSSZ."
+    }
+    return value
+}
+
 private object ClashKingLookupApi {
     suspend fun get(path: String): JSONObject = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null
@@ -154,14 +171,8 @@ private object ClashKingLookupApi {
         return "/v2/player/search?${params.joinToString("&")}"
     }
 
-    fun clanCachedPath(rawTag: String): String {
-        val input = rawTag.trim().uppercase()
-        val normalized = if (input.startsWith("#")) input else "#$input"
-        require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(normalized)) {
-            "Bang hội cần tra cứu bằng TAG hợp lệ, ví dụ #2PR8V8."
-        }
-        return "/v2/clan/${encode(normalized)}/cached"
-    }
+    fun clanCachedPath(rawTag: String): String =
+        "/v2/clan/${encode(normalizeLookupTag(rawTag, "TAG bang hội"))}/cached"
 
     private fun tag(entry: ClashLookupEntry): String = encode(entry.tag.trim().uppercase())
 
@@ -175,7 +186,7 @@ private object ClashKingLookupApi {
         "clan_cwl" -> {
             require(value.toIntOrNull()?.let { it > 0 } == true) { "Nhập mã bậc giải CWL hợp lệ." }
             require(season.matches(Regex("\\d{4}-(0[1-9]|1[0-2])"))) { "Mùa CWL phải có dạng YYYY-MM." }
-            require(teamSize.toIntOrNull()?.let { it > 0 } == true) { "Quy mô đội phải là số nguyên dương." }
+            require(teamSize == "15" || teamSize == "30") { "Quy mô đội CWL chỉ nhận 15 hoặc 30." }
             "/v2/leaderboard/cwl/${encode(value)}?season=${encode(season)}&team_size=${encode(teamSize)}"
         }
         else -> "/v2/leaderboard/clan/win-streak?limit=100"
@@ -211,6 +222,12 @@ private object ClashKingLookupApi {
         fun validateSeason(raw: String, label: String) {
             require(Regex("\\d{4}-(0[1-9]|1[0-2])").matches(raw.trim())) {
                 "$label phải có dạng YYYY-MM."
+            }
+        }
+        fun validateRankLimit(raw: String) {
+            if (raw.isBlank()) return
+            require(raw.trim() == "200" || raw.trim() == "1000") {
+                "Giới hạn thứ hạng đội hình chỉ nhận 200 hoặc 1000; để trống để xem toàn bộ."
             }
         }
         return when (category) {
@@ -268,7 +285,7 @@ private object ClashKingLookupApi {
             "army_setups" -> {
                 validateRange(from, to)
                 validatePositive(limit.ifBlank { "100" }, "Giới hạn đội hình", 200)
-                if (rankLimit.isNotBlank()) validatePositive(rankLimit, "Giới hạn thứ hạng")
+                validateRankLimit(rankLimit)
                 add("time[after]", from)
                 add("time[before]", to)
                 add("sort", sort)
@@ -281,7 +298,7 @@ private object ClashKingLookupApi {
                 require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
                 validateRange(from, to)
                 validatePositive(limit.ifBlank { "100" }, "Giới hạn đội hình", 200)
-                if (rankLimit.isNotBlank()) validatePositive(rankLimit, "Giới hạn thứ hạng")
+                validateRankLimit(rankLimit)
                 add("time[after]", from)
                 add("time[before]", to)
                 add("groupKey", groupKey)
@@ -294,7 +311,7 @@ private object ClashKingLookupApi {
             "army_setup_rank_history" -> {
                 require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
                 validateRange(from, to)
-                if (rankLimit.isNotBlank()) validatePositive(rankLimit, "Giới hạn thứ hạng")
+                validateRankLimit(rankLimit)
                 add("time[after]", from)
                 add("time[before]", to)
                 add("groupKey", groupKey)
@@ -317,9 +334,11 @@ private object ClashKingLookupApi {
                 }
             }
             "historical_leaderboard" -> {
-                validatePositive(primary, "Mã khu vực")
+                require(primary.trim() == "global" || primary.trim().toIntOrNull()?.let { it > 0 } == true) {
+                    "Mã khu vực phải là số dương hoặc nhập global để xem bảng toàn cầu."
+                }
                 validateDay(date, "ngày snapshot", required = true)
-                "/v2/leaderboard/history/${encode(leaderboardType)}/${encode(primary)}/${encode(date)}"
+                "/v2/leaderboard/history/${encode(leaderboardType)}/${encode(primary.trim())}/${encode(date)}"
             }
             "trophy_buckets" -> {
                 validatePositive(primary, "Mã giải đấu")
@@ -332,11 +351,13 @@ private object ClashKingLookupApi {
                 withQuery("/v2/legends/history/${encode(primary)}")
             }
             "ranked_group" -> {
-                require(primary.isNotBlank() && secondary.isNotBlank()) { "Cần nhập mã mùa giải và mã nhóm giải." }
-                "/v2/ranked/${encode(primary)}/groups/${encode(secondary)}"
+                validatePositive(primary, "Mã mùa giải Ranked")
+                val groupTag = normalizeLookupTag(secondary, "TAG nhóm Ranked")
+                "/v2/ranked/${encode(primary)}/groups/${encode(groupTag)}"
             }
             "league_tier_statistics" -> {
-                require(primary.isNotBlank() && secondary.isNotBlank()) { "Cần nhập mã mùa giải và mã bậc giải." }
+                validatePositive(primary, "Mã mùa giải Ranked")
+                validatePositive(secondary, "Mã bậc giải")
                 "/v2/stats/league/tournaments/${encode(primary)}/tiers/${encode(secondary)}"
             }
             "league_hit_rates" -> {
@@ -1093,7 +1114,7 @@ fun ClashLookupScreen() {
                             Text("Có thể nhập một hoặc nhiều mục: mã mùa giải tải nhóm và nhật ký Ranked; ngày tải nhật ký Legend; TAG khác dùng để so sánh thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         } else {
                             LookupFilterField("Thời điểm kết thúc hội chiến (YYYYMMDDTHHmmss.SSSZ)", extendedWarEndTime, { extendedWarEndTime = it }, "YYYYMMDDTHHmmss.SSSZ")
-                            Text("Nhập đúng endTime do API trả về, dạng 20261120T000000.000Z, để tải dữ liệu chi tiết cuộc hội chiến đã lưu.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
+                            Text("Sao chép nguyên endTime từ dữ liệu API của cuộc hội chiến đã lưu; không tự đổi sang định dạng ISO thông thường.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         }
                         Button(
                             onClick = {
@@ -1103,13 +1124,16 @@ fun ClashLookupScreen() {
                                 if (!entry.isClan) {
                                     val season = extendedSeasonId.trim()
                                     val day = extendedLegendDay.trim()
-                                    val otherTag = extendedOtherPlayerTag.trim().uppercase()
+                                    val otherRawTag = extendedOtherPlayerTag.trim()
+                                    val otherTag = if (otherRawTag.isBlank()) "" else normalizeLookupTag(otherRawTag, "TAG người chơi khác")
                                     if (season.isNotBlank()) {
+                                        require(season.toLongOrNull()?.let { it > 0L } == true) { "Mã mùa giải Ranked phải là số dương." }
                                         val encodedSeason = URLEncoder.encode(season, "UTF-8")
                                         requests += LookupRequest("Nhóm Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/group")
                                         requests += LookupRequest("Nhật ký trận Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/battlelog")
                                     }
                                     if (day.isNotBlank()) {
+                                        require(runCatching { LocalDate.parse(day) }.isSuccess) { "Ngày Legend không hợp lệ. Hãy dùng dạng YYYY-MM-DD." }
                                         val encodedDay = URLEncoder.encode(day, "UTF-8")
                                         requests += LookupRequest("Nhật ký trận Legend ngày $day", "/v2/player/$playerTag/legend/$encodedDay/battlelog")
                                     }
@@ -1118,7 +1142,8 @@ fun ClashLookupScreen() {
                                         requests += LookupRequest("Lịch sử cùng bang với $otherTag", "/v2/player/$playerTag/join-leave/shared?tag=$encodedOtherTag")
                                     }
                                 } else if (extendedWarEndTime.isNotBlank()) {
-                                    val encodedEndTime = URLEncoder.encode(extendedWarEndTime.trim(), "UTF-8")
+                                    val validEndTime = validateLookupWarEndTime(extendedWarEndTime)
+                                    val encodedEndTime = URLEncoder.encode(validEndTime, "UTF-8")
                                     requests += LookupRequest("Chi tiết hội chiến kết thúc $extendedWarEndTime", "/v2/war/$clanTag/previous/$encodedEndTime")
                                 }
                                 if (requests.isEmpty()) {
@@ -1427,12 +1452,12 @@ fun ClashLookupScreen() {
                             LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
                             LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
                             LookupFilterField("Giới hạn số đội hình (tối đa 200)", analyticsLimit, { analyticsLimit = it }, "100")
-                            LookupFilterField("Giới hạn thứ hạng (tùy chọn)", analyticsRankLimit, { analyticsRankLimit = it }, "100")
+                            LookupFilterField("Giới hạn thứ hạng (200 hoặc 1000; để trống xem toàn bộ)", analyticsRankLimit, { analyticsRankLimit = it }, "200 hoặc 1000")
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 FilterChip(selected = analyticsSort == "usage", onClick = { analyticsSort = "usage" }, label = { Text("PHỔ BIẾN", fontSize = 8.sp) })
                                 FilterChip(selected = analyticsSort == "tripleRate", onClick = { analyticsSort = "tripleRate" }, label = { Text("TỶ LỆ 3 SAO", fontSize = 8.sp) })
                             }
-                            Text("Dữ liệu đội hình hiện chỉ có cho giải Legend I.", color = LookupMuted, fontSize = 9.sp)
+                            Text("Dữ liệu đội hình hiện chỉ có cho Legend I. Giới hạn thứ hạng chỉ nhận 200 hoặc 1000; bỏ trống để xem toàn bộ.", color = LookupMuted, fontSize = 9.sp)
                         }
                         "legend_rank_curve" -> LookupFilterField("Ngày (YYYY-MM-DD)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
                         "legend_trophy_buckets" -> LookupFilterField("Ngày lịch sử (để trống xem hiện tại)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
@@ -1456,7 +1481,7 @@ fun ClashLookupScreen() {
                         }
                         "ranked_group" -> {
                             LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it }, "Mã mùa giải")
-                            LookupFilterField("Mã nhóm giải", analyticsSecondary, { analyticsSecondary = it }, "Mã nhóm giải")
+                            LookupFilterField("TAG nhóm Ranked", analyticsSecondary, { analyticsSecondary = it }, "#ABC123")
                         }
                         "league_tier_statistics" -> {
                             LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it }, "Mã mùa giải")
