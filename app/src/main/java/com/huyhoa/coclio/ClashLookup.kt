@@ -175,7 +175,9 @@ private object ClashKingLookupApi {
         "clan_war_wins" -> "/v2/leaderboard/${encode(value)}/clan/war-wins?limit=100"
         "clan_capital_gold" -> "/v2/leaderboard/${encode(value)}/clan/capital-gold?limit=100"
         "clan_cwl" -> {
-            require(season.isNotBlank() && teamSize.toIntOrNull() != null) { "CWL cần mùa giải và quy mô đội (15 hoặc 30)." }
+            require(value.toIntOrNull()?.let { it > 0 } == true) { "Nhập mã bậc giải CWL hợp lệ." }
+            require(season.matches(Regex("\\d{4}-(0[1-9]|1[0-2])"))) { "Mùa CWL phải có dạng YYYY-MM." }
+            require(teamSize.toIntOrNull()?.let { it > 0 } == true) { "Quy mô đội phải là số nguyên dương." }
             "/v2/leaderboard/cwl/${encode(value)}?season=${encode(season)}&team_size=${encode(teamSize)}"
         }
         else -> "/v2/leaderboard/clan/win-streak?limit=100"
@@ -189,15 +191,15 @@ private object ClashKingLookupApi {
         return when (category) {
             "global_counts" -> "/v2/counts"
             "historical_leaderboard" -> {
-                require(primary.isNotBlank() && date.isNotBlank()) { "Cần nhập ID khu vực và ngày (YYYY-MM-DD)." }
+                require(primary.isNotBlank() && date.isNotBlank()) { "Cần nhập mã khu vực và ngày (YYYY-MM-DD)." }
                 "/v2/leaderboard/history/${encode(leaderboardType)}/${encode(primary)}/${encode(date)}"
             }
             "trophy_buckets" -> {
-                require(primary.isNotBlank()) { "Cần nhập ID giải đấu." }
+                require(primary.isNotBlank()) { "Cần nhập mã giải đấu." }
                 "/v2/leaderboard/${encode(primary)}/trophy-buckets"
             }
             "legend_season" -> {
-                require(primary.isNotBlank()) { "Cần nhập mùa Legend, ví dụ YYYY-MM." }
+                require(primary.isNotBlank()) { "Cần nhập mùa Legend theo dạng YYYY-MM." }
                 add("limit", secondary.ifBlank { "100" })
                 withQuery("/v2/legends/history/${encode(primary)}")
             }
@@ -618,9 +620,13 @@ fun ClashLookupScreen() {
             searchError = "Nhập ít nhất 2 ký tự tên hoặc TAG/ID cần tìm."
             return
         }
-        if (isLeaderboard && rankingCategory != "clan_win_streak" && rankingValue.toIntOrNull() == null) {
-            searchError = "Nhập cấp Nhà chính, mã khu vực hoặc mã giải đấu hợp lệ."
-            return
+        if (isLeaderboard && rankingCategory != "clan_win_streak") {
+            val rankingId = rankingValue.toIntOrNull()
+            if (rankingId == null || rankingId <= 0) {
+                searchError = if (rankingCategory == "clan_cwl") "Nhập mã bậc giải CWL hợp lệ."
+                    else "Nhập cấp Nhà chính, mã khu vực hoặc mã giải đấu hợp lệ."
+                return
+            }
         }
         if (isSearching) return
         val oldCursor = if (loadMore) nextCursor else null
@@ -1054,7 +1060,7 @@ fun ClashLookupScreen() {
                             }
                         )
                         if (rankingCategory == "clan_cwl") {
-                            LookupFilterField("Mùa CWL (YYYY-MM)", rankingSeason, { rankingSeason = it }, "2026-11")
+                            LookupFilterField("Mùa CWL (YYYY-MM)", rankingSeason, { rankingSeason = it }, "YYYY-MM")
                             LookupFilterField("Quy mô đội (15 hoặc 30)", rankingTeamSize, { rankingTeamSize = it }, "15")
                         }
                         Text(
