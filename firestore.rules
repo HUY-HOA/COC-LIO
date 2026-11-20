@@ -29,6 +29,28 @@ service cloud.firestore {
       return verifiedAccount() && request.auth.uid == userId;
     }
 
+    function allowedProfileUpdateFields() {
+      return [
+        'email', 'displayName', 'emailVerified', 'providerId',
+        'preferredName', 'signInCount', 'lastSignInAt', 'updatedAt',
+        'givenName', 'familyName', 'photoUrl',
+        'deviceManufacturer', 'deviceModel', 'deviceBrand', 'deviceProduct',
+        'deviceCodeName', 'supportedAbis', 'localeTag', 'timeZoneId',
+        'screenWidthPx', 'screenHeightPx', 'densityDpi', 'networkType',
+        'networkStatus', 'networkValidated', 'androidVersion', 'sdkInt',
+        'appVersionName', 'appVersionCode', 'lastIp', 'lastIpCapturedAt',
+        'firstOpenedAt', 'lastOpenedAt', 'appOpenCount', 'lastActiveAt',
+        'lastBackgroundAt', 'sessionStartedAt', 'activityUpdatedAt',
+        'lastActivityEvent', 'lastSessionDurationSeconds', 'totalForegroundSeconds',
+        'requiredAccountDataConsentVersion', 'requiredAccountDataConsentAt',
+        'activityDataConsentVersion', 'dataSharingConsent', 'analyticsConsent',
+        'diagnosticsConsent', 'villageDataConsent', 'activityConsentAt',
+        'lastVillageTag', 'lastVillageName', 'lastVillageTimestamp',
+        'lastVillageTownHallLevel', 'lastVillageBuilderHallLevel',
+        'villageImportCount', 'lastVillageSyncedAt', 'lastVillageRawJsonBytes'
+      ];
+    }
+
     function obsoleteProfileFields() {
       return [
         'givenName', 'familyName', 'photoUrl',
@@ -80,16 +102,7 @@ service cloud.firestore {
         || (
           isVerifiedSelf(userId)
           && resource.data.get('accountDisabled', false) != true
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'email',
-            'displayName',
-            'emailVerified',
-            'providerId',
-            'preferredName',
-            'signInCount',
-            'lastSignInAt',
-            'updatedAt'
-          ] + obsoleteProfileFields())
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedProfileUpdateFields())
           && request.resource.data.diff(resource.data).removedKeys().hasOnly(obsoleteProfileFields())
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.uid == resource.data.uid
