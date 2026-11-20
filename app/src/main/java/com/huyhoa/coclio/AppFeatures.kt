@@ -171,10 +171,7 @@ private const val ZALO_CONTACT_URL = "https://zaloapp.com/qr/p/1gl8y41uqztdt?src
 
 data class GoogleAccountData(
     val email: String,
-    val displayName: String?,
-    val givenName: String?,
-    val familyName: String?,
-    val profilePictureUri: String?
+    val displayName: String?
 )
 
 class GoogleAccountSelection(
@@ -218,25 +215,28 @@ object AccountProfileStore {
     }
 
     fun saveGoogleData(context: Context, data: GoogleAccountData) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+        val editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString(key(data.email, "google_email"), data.email)
             .putString(key(data.email, "google_display_name"), data.displayName)
-            .putString(key(data.email, "google_given_name"), data.givenName)
-            .putString(key(data.email, "google_family_name"), data.familyName)
-            .putString(key(data.email, "google_picture_uri"), data.profilePictureUri)
-            .apply()
+            // Remove fields cached by older versions; they are not needed for sign-in.
+            .remove(key(data.email, "google_given_name"))
+            .remove(key(data.email, "google_family_name"))
+            .remove(key(data.email, "google_picture_uri"))
+        editor.apply()
         addKnown(context, data.email)
     }
 
     fun googleData(context: Context, email: String): GoogleAccountData? {
         if (email == "local") return null
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        prefs.edit()
+            .remove(key(email, "google_given_name"))
+            .remove(key(email, "google_family_name"))
+            .remove(key(email, "google_picture_uri"))
+            .apply()
         return GoogleAccountData(
             email = prefs.getString(key(email, "google_email"), null) ?: email,
-            displayName = prefs.getString(key(email, "google_display_name"), null),
-            givenName = prefs.getString(key(email, "google_given_name"), null),
-            familyName = prefs.getString(key(email, "google_family_name"), null),
-            profilePictureUri = prefs.getString(key(email, "google_picture_uri"), null)
+            displayName = prefs.getString(key(email, "google_display_name"), null)
         )
     }
 
@@ -462,9 +462,6 @@ data class AdminGoogleAccount(
     val email: String,
     val preferredName: String,
     val displayName: String,
-    val givenName: String,
-    val familyName: String,
-    val photoUrl: String,
     val emailVerified: Boolean,
     val providerId: String,
     val signInCount: Long,
@@ -588,9 +585,6 @@ object FirebaseAccountAdministration {
                 email = email,
                 preferredName = document.getString("preferredName").orEmpty(),
                 displayName = document.getString("displayName").orEmpty(),
-                givenName = "",
-                familyName = "",
-                photoUrl = "",
                 emailVerified = document.getBoolean("emailVerified") ?: false,
                 providerId = document.getString("providerId").orEmpty(),
                 signInCount = document.getLong("signInCount") ?: 0L,
@@ -833,9 +827,6 @@ object GoogleAccountAuth {
             account = GoogleAccountData(
                 email = email.lowercase(),
                 displayName = google.displayName?.trim()?.takeIf { it.isNotBlank() },
-                givenName = google.givenName?.trim()?.takeIf { it.isNotBlank() },
-                familyName = google.familyName?.trim()?.takeIf { it.isNotBlank() },
-                profilePictureUri = google.profilePictureUri?.toString()
             ),
             idToken = google.idToken
         )
@@ -1892,13 +1883,6 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                         horizontalArrangement = Arrangement.spacedBy(9.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (account.photoUrl.isNotBlank()) {
-                            AsyncImage(
-                                model = account.photoUrl,
-                                contentDescription = AppText.translate(context, "Ảnh đại diện Google"),
-                                modifier = Modifier.size(42.dp).clip(CircleShape)
-                            )
-                        }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
                                 account.preferredName.ifBlank { account.displayName.ifBlank { account.email } },
@@ -1975,9 +1959,6 @@ private fun AdminAccountsPanel(onClose: () -> Unit) {
                             ProfileDataRow("Trạng thái truy cập", if (account.accountDisabled) "ĐÃ VÔ HIỆU HÓA" else "ĐANG HOẠT ĐỘNG")
                             ProfileDataRow("Tên người dùng đặt", account.preferredName)
                             ProfileDataRow("Tên Google", account.displayName)
-                            ProfileDataRow("Tên", account.givenName)
-                            ProfileDataRow("Họ", account.familyName)
-                            ProfileDataRow("Ảnh đại diện", account.photoUrl)
                             ProfileDataRow("Email xác minh", if (account.emailVerified) "Đã xác minh" else "Chưa xác minh")
                             ProfileDataRow("Nhà cung cấp", account.providerId)
                             ProfileDataRow(
@@ -2083,13 +2064,6 @@ fun SettingsScreen(
                 }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (!accountData?.profilePictureUri.isNullOrBlank()) {
-                        AsyncImage(
-                            model = accountData?.profilePictureUri,
-                            contentDescription = AppText.translate(context, "Ảnh hồ sơ Google"),
-                            modifier = Modifier.size(52.dp).clip(CircleShape)
-                        )
-                    }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
                             if (isAdmin) preferredName?.takeIf { it.isNotBlank() } ?: accountData?.displayName ?: accountEmail
