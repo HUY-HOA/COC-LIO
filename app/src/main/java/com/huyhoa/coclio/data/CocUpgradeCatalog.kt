@@ -241,7 +241,7 @@ object CocUpgradeCatalog {
                     )
                 }
             }.onFailure { error ->
-                warnings += "$fileName: ${error.message ?: "JSON không hợp lệ"}"
+                warnings += "$fileName: ${appErrorMessage(error.message, "JSON không hợp lệ")}"
             }
         }
         if (names.isEmpty()) warnings += "Không tìm thấy tệp part-XX.json trong assets/coc_upgrade"
