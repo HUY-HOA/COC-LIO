@@ -488,7 +488,7 @@ private object ClashKingLookupApi {
                 "CWL" -> listOf(
                     req("Các mùa CWL", "/v2/cwl/$tag/seasons?limit=30"),
                     req("Lịch sử thứ hạng CWL", "/v2/cwl/$tag/ranking-history"),
-                    req("Nhóm CWL hiện tại", "/v2/cwl/$tag/group")
+                    req("Nhóm CWL mới nhất được lưu", "/v2/cwl/$tag/group")
                 )
                 "QUYÊN GÓP" -> listOf(
                     req("Tổng quyên góp trong tháng", clan("donations/summary"))
