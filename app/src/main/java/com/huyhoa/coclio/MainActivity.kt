@@ -83,6 +83,7 @@ import androidx.compose.material.icons.outlined.MilitaryTech
 import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Star
@@ -750,6 +751,7 @@ private fun CocLioApp(
     var jsonSection by rememberSaveable { mutableStateOf(0) }
     val navigationItems = listOf(
         AppNavigationItem("history", "JSON", 2),
+        AppNavigationItem("lookup", "TRA CỨU", 3),
         AppNavigationItem("settings", "Cài đặt", 4)
     )
     LaunchedEffect(navigationItems, selectedTab) {
@@ -1328,6 +1330,7 @@ private fun CocLioApp(
                         "home" -> Icons.Outlined.Home
                         "buildings" -> Icons.Outlined.AccountBalanceWallet
                         "history" -> Icons.Outlined.Code
+                        "lookup" -> Icons.Outlined.Search
                         else -> Icons.Outlined.Settings
                     }
                     NavigationBarItem(
@@ -1486,6 +1489,7 @@ private fun CocLioApp(
                             }
                         }
                     }
+                    3 -> ClashLookupScreen()
                     4 -> SettingsScreen(
                         accountEmail = activeProfile.takeUnless { it == "local" },
                         isAdmin = FirebaseAccountAdministration.isOwner(FirebaseAuth.getInstance().currentUser?.uid),
