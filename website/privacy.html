@@ -27,8 +27,8 @@
 
     <h2>1. Dữ liệu được xử lý</h2>
     <ul>
-      <li><strong>Hồ sơ tài khoản trực tuyến:</strong> UID, email, tên hiển thị, trạng thái xác minh email và nhà cung cấp đăng nhập. Để quản lý tài khoản, Firestore lưu mốc tạo/cập nhật hồ sơ, số lần đăng nhập và thời điểm đăng nhập gần nhất.</li>
-      <li><strong>Thông tin Google trên thiết bị:</strong> email, tên và thông tin ảnh hồ sơ nếu Google cung cấp được lưu cục bộ để hiển thị/quản lý tài khoản trên điện thoại; các trường họ tên chi tiết và ảnh hồ sơ không được đồng bộ lên hồ sơ Firestore.</li>
+      <li><strong>Thông tin xác thực Google:</strong> Google Sign-In và Firebase Authentication xử lý định danh tài khoản, email và thông tin hồ sơ cơ bản do Google trả về để xác thực. Ứng dụng lưu bản cache tên/ảnh hồ sơ cục bộ để hiển thị trên điện thoại.</li>
+      <li><strong>Hồ sơ tài khoản Firestore:</strong> UID, email, tên hiển thị, trạng thái xác minh email, nhà cung cấp đăng nhập, mốc tạo/cập nhật hồ sơ, số lần đăng nhập và thời điểm đăng nhập gần nhất. Hồ sơ Firestore không ghi thông số thiết bị, màn hình, ngôn ngữ, múi giờ hoặc loại/trạng thái mạng.</li>
       <li><strong>Dữ liệu làng:</strong> JSON, Player Tag, tên làng, công trình và tiến trình do bạn tự nhập; được phân tích và lưu cục bộ trên điện thoại, không tải lên máy chủ.</li>
     </ul>
     <p>Đăng nhập Google đồng bộ hồ sơ tài khoản cần thiết lên Firebase Authentication và Cloud Firestore. Phiên bản hiện tại không tải JSON làng lên máy chủ và không cung cấp đồng bộ JSON đám mây.</p>
