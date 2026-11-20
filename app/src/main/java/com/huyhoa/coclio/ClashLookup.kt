@@ -125,10 +125,8 @@ private fun lookupSearchCandidates(raw: String): List<String> {
     val looksLikeTag = input.startsWith("#") ||
         Regex("^[PYLQGRJCUV0289]{3,15}$").matches(input.uppercase())
     if (looksLikeTag) {
-        runCatching { normalizeLookupTag(input, "TAG tìm kiếm") }
-            .getOrNull()
-            ?.let(candidates::add)
-        return candidates.distinct()
+        val exactTag = runCatching { normalizeLookupTag(input, "TAG tìm kiếm") }.getOrNull()
+        return listOf(exactTag ?: input)
     }
 
     val compatible = Normalizer.normalize(input, Normalizer.Form.NFKD)
