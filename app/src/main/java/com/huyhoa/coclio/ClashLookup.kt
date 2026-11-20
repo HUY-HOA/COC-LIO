@@ -2652,7 +2652,7 @@ private fun lookupJsonArrayDisplayOrder(key: String, values: JSONArray): List<In
     if (indices.size < 2) return indices
     val normalizedKey = key.lowercase().replace("_", "").replace("-", "")
     val chronologicalKeys = listOf("history", "timeline", "series", "battle", "activity", "event", "change", "joinleave", "season", "daily", "day", "war")
-    if (chronologicalKeys.any(normalizedKey::contains)) return indices
+    if (chronologicalKeys.any { marker -> normalizedKey.contains(marker) }) return indices
 
     val ranked = indices.mapNotNull { index ->
         values.optJSONObject(index)?.lookupExplicitRank()?.let { index to it }
