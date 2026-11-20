@@ -87,6 +87,8 @@ private data class ClashLookupEntry(
     val level: String = "",
     val rank: String = "",
     val streak: String = "",
+    val metric: String = "",
+    val metricLabel: String = "",
     val badgeUrl: String = "",
     val raw: JSONObject
 )
@@ -179,6 +181,9 @@ private object ClashKingLookupApi {
     fun leaderboardPath(category: String, value: String): String = when (category) {
         "townhall" -> "/v2/leaderboard/townhalls/${encode(value)}?limit=100"
         "league" -> "/v2/leaderboard/league/${encode(value)}?limit=100"
+        "clan_donations" -> "/v2/leaderboard/${encode(value)}/clan/donations?limit=100"
+        "clan_war_wins" -> "/v2/leaderboard/${encode(value)}/clan/war-wins?limit=100"
+        "clan_capital_gold" -> "/v2/leaderboard/${encode(value)}/clan/capital-gold?limit=100"
         else -> "/v2/leaderboard/clan/win-streak?limit=100"
     }
 
@@ -331,7 +336,14 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
         level = number("clanLevel", "level"),
         rank = number("rank"),
         streak = number("war_win_streak", "warWinStreak"),
-        badgeUrl = badge,
+        metric = number("donations", "war_wins", "capital_gold_total"),
+        metricLabel = when {
+            json.has("donations") -> "Quyên góp"
+            json.has("war_wins") -> "Thắng hội chiến"
+            json.has("capital_gold_total") -> "Vàng Thủ phủ"
+            else -> ""
+        },
+        badgeUrl = json.lookupText("badge_url").ifBlank { badge },
         raw = json
     )
 }
@@ -764,17 +776,49 @@ fun ClashLookupScreen() {
                             label = { Text("GIẢI ĐẤU", fontSize = 9.sp) }
                         )
                         FilterChip(
+                            selected = rankingCategory == "clan_donations",
+                            onClick = { rankingCategory = "clan_donations"; rankingValue = "32000000" },
+                            label = { Text("CLAN QUYÊN GÓP", fontSize = 9.sp) }
+                        )
+                        FilterChip(
+                            selected = rankingCategory == "clan_war_wins",
+                            onClick = { rankingCategory = "clan_war_wins"; rankingValue = "32000000" },
+                            label = { Text("CLAN THẮNG HỘI CHIẾN", fontSize = 9.sp) }
+                        )
+                        FilterChip(
+                            selected = rankingCategory == "clan_capital_gold",
+                            onClick = { rankingCategory = "clan_capital_gold"; rankingValue = "32000000" },
+                            label = { Text("VÀNG THỦ PHỦ", fontSize = 9.sp) }
+                        )
+                        FilterChip(
                             selected = rankingCategory == "clan_win_streak",
                             onClick = { rankingCategory = "clan_win_streak" },
                             label = { Text("CLAN CHUỖI THẮNG", fontSize = 9.sp) }
                         )
                     }
                     if (rankingCategory != "clan_win_streak") {
+                        val isClanLeaderboard = rankingCategory.startsWith("clan_")
+                        val label = when {
+                            rankingCategory == "townhall" -> "Cấp Nhà chính"
+                            rankingCategory == "league" -> "ID giải đấu"
+                            else -> "ID quốc gia / khu vực"
+                        }
                         LookupFilterField(
-                            if (rankingCategory == "townhall") "Cấp Nhà chính" else "ID giải đấu",
+                            label,
                             rankingValue,
                             { rankingValue = it },
-                            if (rankingCategory == "townhall") "19" else "29000000"
+                            when {
+                                rankingCategory == "townhall" -> "19"
+                                rankingCategory == "league" -> "29000000"
+                                else -> "32000000"
+                            }
+                        )
+                        Text(
+                            if (isClanLeaderboard) "Các bảng xếp hạng clan dùng ID khu vực; 32000000 là ID toàn cầu."
+                            else "Nhập đúng ID Nhà chính hoặc ID giải đấu theo dữ liệu ClashKing.",
+                            color = LookupMuted,
+                            fontSize = 9.sp,
+                            lineHeight = 13.sp
                         )
                     } else {
                         Text("Bảng xếp hạng clan theo chuỗi thắng hiện tại.", color = LookupMuted, fontSize = 9.sp)
@@ -971,7 +1015,8 @@ private fun LookupResultCard(
                         entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #$it" },
                         entry.level.takeIf { it.isNotBlank() }?.let { "Cấp $it" },
                         entry.members.takeIf { it.isNotBlank() }?.let { "$it thành viên" },
-                        entry.streak.takeIf { it.isNotBlank() }?.let { "Chuỗi thắng $it" }
+                        entry.streak.takeIf { it.isNotBlank() }?.let { "Chuỗi thắng $it" },
+                        entry.metric.takeIf { it.isNotBlank() }?.let { "${entry.metricLabel}: $it" }
                     ).joinToString(" • ")
                 } else {
                     listOfNotNull(
