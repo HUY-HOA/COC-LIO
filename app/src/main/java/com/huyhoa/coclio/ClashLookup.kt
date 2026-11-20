@@ -185,7 +185,7 @@ private object ClashKingLookupApi {
 
     fun analyticsPath(category: String, primary: String, secondary: String, date: String, from: String, to: String,
         leaderboardType: String, mode: String, cohort: String, interval: String, sort: String, limit: String,
-        rankLimit: String, equalTownHalls: String): String {
+        rankLimit: String, equalTownHalls: String, groupKey: String, variantKey: String): String {
         val params = mutableListOf<String>()
         fun add(key: String, value: String) { value.trim().takeIf(String::isNotBlank)?.let { params += "$key=${encode(it)}" } }
         fun withQuery(path: String): String = if (params.isEmpty()) path else "$path?${params.joinToString("&")}"
@@ -241,6 +241,28 @@ private object ClashKingLookupApi {
                 add("rankLimit", rankLimit)
                 add("leagueTierId", "105000036")
                 withQuery("/v2/stats/army-setups")
+            }
+            "army_setup_timeline" -> {
+                require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
+                add("time[after]", from)
+                add("time[before]", to)
+                add("groupKey", groupKey)
+                add("sort", sort)
+                add("limit", limit.ifBlank { "100" })
+                add("rankLimit", rankLimit)
+                add("leagueTierId", "105000036")
+                withQuery("/v2/stats/army-setups/timeline")
+            }
+            "army_setup_rank_history" -> {
+                require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
+                add("time[after]", from)
+                add("time[before]", to)
+                add("groupKey", groupKey)
+                add("variantKey", variantKey)
+                add("sort", sort)
+                add("rankLimit", rankLimit)
+                add("leagueTierId", "105000036")
+                withQuery("/v2/stats/army-setups/rank-history")
             }
             "legend_rank_curve" -> {
                 require(date.isNotBlank()) { "Nhập ngày cần xem đường cong xếp hạng Legend." }
@@ -698,6 +720,8 @@ fun ClashLookupScreen() {
     var analyticsSort by rememberSaveable { mutableStateOf("usage") }
     var analyticsLimit by rememberSaveable { mutableStateOf("100") }
     var analyticsRankLimit by rememberSaveable { mutableStateOf("") }
+    var analyticsGroupKey by rememberSaveable { mutableStateOf("") }
+    var analyticsVariantKey by rememberSaveable { mutableStateOf("") }
     var analyticsEqualTownHalls by rememberSaveable { mutableStateOf("all") }
     var analyticsResult by remember { mutableStateOf<JSONObject?>(null) }
     var analyticsResultTitle by remember { mutableStateOf("DỮ LIỆU THỐNG KÊ") }
@@ -758,7 +782,7 @@ fun ClashLookupScreen() {
                     val path = ClashKingLookupApi.analyticsPath(
                         analyticsCategory, analyticsPrimary, analyticsSecondary, analyticsDate, analyticsFrom, analyticsTo,
                         analyticsLeaderboardType, analyticsMode, analyticsCohort, analyticsInterval, analyticsSort,
-                        analyticsLimit, analyticsRankLimit, analyticsEqualTownHalls
+                        analyticsLimit, analyticsRankLimit, analyticsEqualTownHalls, analyticsGroupKey, analyticsVariantKey
                     )
                     analyticsResult = ClashKingLookupApi.get(path)
                     analyticsResultTitle = when (analyticsCategory) {
@@ -775,6 +799,8 @@ fun ClashLookupScreen() {
                         "wars_hit_rates" -> "TỶ LỆ SAO HỘI CHIẾN"
                         "wars_summary" -> "TỔNG KẾT HỘI CHIẾN"
                         "army_setups" -> "ĐỘI HÌNH LEGEND PHỔ BIẾN"
+                        "army_setup_timeline" -> "LỊCH SỬ ĐỘI HÌNH LEGEND"
+                        "army_setup_rank_history" -> "LỊCH SỬ XẾP HẠNG ĐỘI HÌNH"
                         "legend_rank_curve" -> "ĐƯỜNG CONG XẾP HẠNG LEGEND"
                         "legend_trophy_buckets" -> "PHÂN BỐ CÚP LEGEND"
                         "historical_leaderboard" -> "BẢNG XẾP HẠNG LỊCH SỬ"
@@ -1226,6 +1252,8 @@ fun ClashLookupScreen() {
                             "wars_hit_rates" to "TỶ LỆ SAO HỘI CHIẾN",
                             "wars_summary" to "TỔNG KẾT HỘI CHIẾN",
                             "army_setups" to "ĐỘI HÌNH LEGEND",
+                            "army_setup_timeline" to "LỊCH SỬ ĐỘI HÌNH",
+                            "army_setup_rank_history" to "HẠNG ĐỘI HÌNH",
                             "legend_rank_curve" to "XẾP HẠNG LEGEND",
                             "legend_trophy_buckets" to "PHÂN BỐ CÚP LEGEND",
                             "historical_leaderboard" to "BXH LỊCH SỬ",
@@ -1282,7 +1310,13 @@ fun ClashLookupScreen() {
                                 }
                             }
                         }
-                        "army_setups" -> {
+                        "army_setups", "army_setup_timeline", "army_setup_rank_history" -> {
+                            if (analyticsCategory != "army_setups") {
+                                LookupFilterField("Mã nhóm đội hình", analyticsGroupKey, { analyticsGroupKey = it }, "Lấy từ kết quả Đội hình Legend")
+                                if (analyticsCategory == "army_setup_rank_history") {
+                                    LookupFilterField("Mã biến thể (để trống xem cả nhóm)", analyticsVariantKey, { analyticsVariantKey = it }, "Có thể để trống")
+                                }
+                            }
                             LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
                             LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
                             LookupFilterField("Giới hạn số đội hình (tối đa 200)", analyticsLimit, { analyticsLimit = it }, "100")
