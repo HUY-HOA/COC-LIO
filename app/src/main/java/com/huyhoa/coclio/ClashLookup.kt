@@ -764,6 +764,31 @@ private fun humanizeLookupKey(key: String): String {
         "playerDays" to "Số ngày người chơi",
         "share" to "Tỷ lệ",
         "points" to "Điểm",
+        "warTag" to "TAG hội chiến",
+        "warStartTime" to "Thời điểm bắt đầu hội chiến",
+        "attacksPerMember" to "Số lượt đánh mỗi thành viên",
+        "battleModifier" to "Điều kiện hội chiến",
+        "battleType" to "Loại trận đấu",
+        "gameMode" to "Chế độ trò chơi",
+        "result" to "Kết quả",
+        "previousRank" to "Thứ hạng trước",
+        "previousDayRank" to "Thứ hạng ngày trước",
+        "dailyRank" to "Thứ hạng trong ngày",
+        "rankChange" to "Thay đổi thứ hạng",
+        "clanName" to "Tên bang hội",
+        "opponentTag" to "TAG đối thủ",
+        "opponentName" to "Tên đối thủ",
+        "attacksPerDay" to "Lượt đánh mỗi ngày",
+        "from" to "Từ thời điểm",
+        "until" to "Đến thời điểm",
+        "asOf" to "Dữ liệu tính đến",
+        "observations" to "Số lần ghi nhận",
+        "capitalGoldTotal" to "Tổng Vàng Thủ phủ",
+        "leagueId" to "Mã giải đấu",
+        "totalStars" to "Tổng số sao",
+        "totalDestruction" to "Tổng tỷ lệ phá hủy",
+        "attackSeconds" to "Thời lượng tấn công (giây)",
+        "sessionSeconds" to "Thời lượng phiên chơi (giây)",
         "attack_count" to "Số lượt tấn công"
     )
     return known[key] ?: key
@@ -807,7 +832,7 @@ private fun lookupValue(value: Any?): String = when (value) {
     is JSONObject -> ""
     is JSONArray -> "${value.length()} mục"
     is Boolean -> if (value) "Có" else "Không"
-    else -> value.toString().take(500)
+    else -> value.toString().take(2000)
 }
 
 @Composable
@@ -1808,8 +1833,8 @@ private fun LookupDataPanel(title: String, payload: JSONObject) {
 
 @Composable
 private fun LookupJsonObject(payload: JSONObject, depth: Int) {
-    if (depth > 5) {
-        Text("Dữ liệu lồng sâu hơn không được mở rộng ở cấp này.", fontSize = 9.sp, color = LookupMuted)
+    if (depth > 8) {
+        Text("Dữ liệu lồng quá sâu, không thể mở rộng thêm.", fontSize = 9.sp, color = LookupMuted)
         return
     }
     val keys = remember(payload) { payload.keys().asSequence().toList() }
