@@ -1178,7 +1178,7 @@ fun ClashLookupScreen() {
                     Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                         Text("API CÔNG KHAI CẦN THAM SỐ", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
                         if (!entry.isClan) {
-                            LookupFilterField("Mã mùa giải xếp hạng (Ranked) (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it; clearExtendedResults() }, "Mã mùa giải")
+                            LookupFilterField("Mã mùa giải xếp hạng (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it; clearExtendedResults() }, "Mã mùa giải")
                             LookupFilterField("Ngày Huyền thoại (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it; clearExtendedResults() }, "YYYY-MM-DD")
                             LookupFilterField("TAG người chơi khác (để so lịch sử bang)", extendedOtherPlayerTag, { extendedOtherPlayerTag = it; clearExtendedResults() }, "#ABC123")
                             Text("Có thể nhập một hoặc nhiều mục: mã mùa xếp hạng tải nhóm và nhật ký trận; ngày tải nhật ký Huyền thoại; TAG khác dùng để so sánh thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
@@ -1530,7 +1530,7 @@ fun ClashLookupScreen() {
                         }
                         "army_setups", "army_setup_timeline", "army_setup_rank_history" -> {
                             if (analyticsCategory != "army_setups") {
-                                LookupFilterField("Mã nhóm đội hình", analyticsGroupKey, { analyticsGroupKey = it; clearAnalyticsResult() }, "Lấy từ kết quả Đội hình Legend")
+                                LookupFilterField("Mã nhóm đội hình", analyticsGroupKey, { analyticsGroupKey = it; clearAnalyticsResult() }, "Lấy từ kết quả Đội hình Huyền thoại")
                                 if (analyticsCategory == "army_setup_rank_history") {
                                     LookupFilterField("Mã biến thể (bỏ trống để xem đội hình chính)", analyticsVariantKey, { analyticsVariantKey = it; clearAnalyticsResult() }, "Có thể để trống")
                                 }
@@ -1586,7 +1586,7 @@ fun ClashLookupScreen() {
                                 LookupFilterField("Mã bậc giải (tùy chọn)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "105000036")
                                 LookupFilterField("Cấp Nhà chính (tùy chọn)", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "19")
                             } else {
-                                Text("Thống kê Legend không lọc theo bậc giải hoặc cấp Nhà chính.", fontSize = 9.sp, color = LookupMuted)
+                                Text("Thống kê Huyền thoại không lọc theo bậc giải hoặc cấp Nhà chính.", fontSize = 9.sp, color = LookupMuted)
                             }
                         }
                         "legend_days", "legend_performance" -> {
@@ -1689,10 +1689,10 @@ fun ClashLookupScreen() {
         } else if (searchError == null && !isSearching && analyticsResult == null) {
             LookupMessageCard(
                 when (searchMode) {
-                    "player" -> "Tìm người chơi bằng tên hoặc TAG. Hồ sơ hỗ trợ hoạt động, lịch sử quân đội, trận đấu, hội chiến, CWL, Legend, Ranked và xếp hạng."
+                    "player" -> "Tìm người chơi bằng tên hoặc TAG. Hồ sơ hỗ trợ hoạt động, lịch sử quân đội, trận đấu, hội chiến, CWL, Huyền thoại và xếp hạng (Ranked)."
                     "clan" -> "Nhập TAG bang hội để mở hồ sơ thành viên, hội chiến, CWL, quyên góp, Thủ phủ, xếp hạng, kỷ lục và lịch sử."
                     "leaderboard" -> "Tra cứu bảng xếp hạng theo Nhà chính, giải đấu, chuỗi 3 sao và các hạng mục bang hội."
-                    else -> "Truy cập thống kê công khai: bảng xếp hạng lịch sử, nhóm Ranked, phân bố cúp, Legend và dữ liệu tổng quan."
+                    else -> "Truy cập thống kê công khai: bảng xếp hạng lịch sử, nhóm xếp hạng, phân bố cúp Huyền thoại và dữ liệu tổng quan."
                 }
             )
         }
