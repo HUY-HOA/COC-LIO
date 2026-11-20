@@ -757,6 +757,7 @@ private fun lookupErrorMessage(error: Throwable): String {
     val message = error.message.orEmpty()
     val normalized = message.lowercase()
     return when {
+        error is IllegalArgumentException && message.isNotBlank() -> message
         message.startsWith("Không") || message.startsWith("Nhập") || message.startsWith("Trang") ||
             message.startsWith("Bạn") || message.startsWith("Dịch vụ") -> message
         normalized.contains("sockettimeoutexception") || normalized.contains("timed out") ->
@@ -1359,7 +1360,18 @@ fun ClashLookupScreen() {
                             "legend_performance" to "HIỆU SUẤT LEGEND"
                         ).forEach { (key, label) ->
                             FilterChip(selected = analyticsCategory == key,
-                                onClick = { analyticsCategory = key; analyticsResult = null; searchError = null },
+                                onClick = {
+                                    analyticsCategory = key
+                                    analyticsPrimary = ""
+                                    analyticsSecondary = ""
+                                    analyticsDate = ""
+                                    analyticsFrom = ""
+                                    analyticsTo = ""
+                                    analyticsGroupKey = ""
+                                    analyticsVariantKey = ""
+                                    analyticsResult = null
+                                    searchError = null
+                                },
                                 label = { Text(label, fontSize = 8.sp) })
                         }
                     }
