@@ -1,6 +1,9 @@
 name: Build COC-LIO APK
 
 on:
+  push:
+    branches:
+      - feature/clashking-lookup-page
   workflow_dispatch:
     inputs:
       confirmation:
@@ -17,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    if: inputs.confirmation == 'BUILD APK' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/clashking-lookup-page')
+    if: (inputs.confirmation == 'BUILD APK' || github.event_name == 'push') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/clashking-lookup-page')
     permissions:
       contents: read
     runs-on: ubuntu-22.04
