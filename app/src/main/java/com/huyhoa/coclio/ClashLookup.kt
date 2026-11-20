@@ -211,7 +211,10 @@ private object ClashKingLookupApi {
             }
             "league_hit_rates" -> {
                 add("time[after]", from); add("time[before]", to); add("mode", mode)
-                add("leagueTierId", primary); add("townHallLevel", secondary)
+                if (mode == "ranked") {
+                    add("leagueTierId", primary)
+                    add("townHallLevel", secondary)
+                }
                 withQuery("/v2/stats/league/hit-rates")
             }
             "legend_days" -> {
