@@ -1315,36 +1315,36 @@ fun ClashLookupScreen() {
                     ) {
                         FilterChip(
                             selected = rankingCategory == "townhall",
-                            onClick = { rankingCategory = "townhall"; rankingValue = "19" },
+                            onClick = { rankingCategory = "townhall"; rankingValue = "19"; resetSearchPage() },
                             label = { Text("NHÀ CHÍNH", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "league",
-                            onClick = { rankingCategory = "league"; rankingValue = "29000000" },
+                            onClick = { rankingCategory = "league"; rankingValue = "29000000"; resetSearchPage() },
                             label = { Text("GIẢI ĐẤU", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_donations",
-                            onClick = { rankingCategory = "clan_donations"; rankingValue = "32000006" },
+                            onClick = { rankingCategory = "clan_donations"; rankingValue = "32000006"; resetSearchPage() },
                             label = { Text("BANG HỘI QUYÊN GÓP", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_war_wins",
-                            onClick = { rankingCategory = "clan_war_wins"; rankingValue = "32000006" },
+                            onClick = { rankingCategory = "clan_war_wins"; rankingValue = "32000006"; resetSearchPage() },
                             label = { Text("BANG HỘI THẮNG HỘI CHIẾN", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_capital_gold",
-                            onClick = { rankingCategory = "clan_capital_gold"; rankingValue = "32000006" },
+                            onClick = { rankingCategory = "clan_capital_gold"; rankingValue = "32000006"; resetSearchPage() },
                             label = { Text("VÀNG THỦ PHỦ", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_win_streak",
-                            onClick = { rankingCategory = "clan_win_streak" },
+                            onClick = { rankingCategory = "clan_win_streak"; resetSearchPage() },
                             label = { Text("BANG HỘI CHUỖI THẮNG", fontSize = 9.sp) }
                         )
-                        FilterChip(selected = rankingCategory == "clan_cwl", onClick = { rankingCategory = "clan_cwl"; rankingValue = "" }, label = { Text("BANG HỘI CWL", fontSize = 9.sp) })
-                        FilterChip(selected = rankingCategory == "war_triples", onClick = { rankingCategory = "war_triples"; rankingValue = "19" }, label = { Text("CHUỖI 3 SAO", fontSize = 9.sp) })
+                        FilterChip(selected = rankingCategory == "clan_cwl", onClick = { rankingCategory = "clan_cwl"; rankingValue = ""; resetSearchPage() }, label = { Text("BANG HỘI CWL", fontSize = 9.sp) })
+                        FilterChip(selected = rankingCategory == "war_triples", onClick = { rankingCategory = "war_triples"; rankingValue = "19"; resetSearchPage() }, label = { Text("CHUỖI 3 SAO", fontSize = 9.sp) })
                     }
                     if (rankingCategory != "clan_win_streak") {
                         val isClanLeaderboard = rankingCategory.startsWith("clan_")
@@ -1358,7 +1358,7 @@ fun ClashLookupScreen() {
                         LookupFilterField(
                             label,
                             rankingValue,
-                            { rankingValue = it },
+                            { rankingValue = it; resetSearchPage() },
                             when {
                                 rankingCategory == "townhall" || rankingCategory == "war_triples" -> "19"
                                 rankingCategory == "league" -> "29000000"
@@ -1368,8 +1368,8 @@ fun ClashLookupScreen() {
                             }
                         )
                         if (rankingCategory == "clan_cwl") {
-                            LookupFilterField("Mùa CWL (YYYY-MM)", rankingSeason, { rankingSeason = it }, "YYYY-MM")
-                            LookupFilterField("Quy mô đội (15 hoặc 30)", rankingTeamSize, { rankingTeamSize = it }, "15")
+                            LookupFilterField("Mùa CWL (YYYY-MM)", rankingSeason, { rankingSeason = it; resetSearchPage() }, "YYYY-MM")
+                            LookupFilterField("Quy mô đội (15 hoặc 30)", rankingTeamSize, { rankingTeamSize = it; resetSearchPage() }, "15")
                         }
                         Text(
                             when {
