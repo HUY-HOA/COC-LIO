@@ -521,6 +521,16 @@ object FirebaseAccountAdministration {
 
     fun isOwner(uid: String?): Boolean = uid?.trim() == OWNER_UID
 
+    suspend fun isCurrentAccountEnabled(): Boolean {
+        val user = FirebaseAuth.getInstance().currentUser ?: return false
+        val profile = FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(user.uid)
+            .get()
+            .awaitFirebaseResult()
+        return profile.exists() && profile.getBoolean("accountDisabled") != true
+    }
+
     suspend fun savePreferredName(name: String) {
         val user = FirebaseAuth.getInstance().currentUser
             ?: throw IllegalStateException("Bạn cần đăng nhập Google để đồng bộ tên hiển thị.")
