@@ -124,10 +124,7 @@ private object ClashKingLookupApi {
             val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
             if (status !in 200..299) {
                 val detail = runCatching { JSONObject(body).optString("message") }.getOrNull().orEmpty()
-                throw IOException(
-                    if (detail.isNotBlank()) "HTTP $status • $detail"
-                    else "Dịch vụ tra cứu trả về mã HTTP $status."
-                )
+                throw IOException(httpErrorMessage(status, detail))
             }
             if (body.isBlank()) throw IOException("Dịch vụ không trả về dữ liệu.")
             when (val value = JSONTokener(body).nextValue()) {
@@ -690,6 +687,35 @@ private fun humanizeLookupKey(key: String): String {
         .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }
 
+private fun httpErrorMessage(status: Int, detail: String): String {
+    val cause = detail.lowercase()
+    return when {
+        status == 400 && cause.contains("cursor") -> "Trang kết quả đã hết hạn hoặc không còn khớp với bộ lọc. Hãy tìm kiếm lại từ đầu."
+        status == 400 -> "Tham số tra cứu chưa hợp lệ. Hãy kiểm tra TAG, mã giải, mùa giải và khoảng ngày."
+        status == 401 -> "Dịch vụ yêu cầu xác thực tài khoản ClashKing cho dữ liệu này."
+        status == 403 -> "Tài khoản hiện không có quyền xem dữ liệu này."
+        status == 404 -> "Không tìm thấy dữ liệu phù hợp hoặc ClashKing chưa lưu hồ sơ."
+        status == 429 -> "Bạn gửi yêu cầu quá nhanh. Hãy thử lại sau."
+        status in 500..599 -> "Dịch vụ ClashKing đang gặp sự cố tạm thời. Hãy thử lại sau. (HTTP $status)"
+        else -> "Dịch vụ tra cứu trả về lỗi HTTP $status."
+    }
+}
+
+private fun lookupErrorMessage(error: Throwable): String {
+    val message = error.message.orEmpty()
+    val normalized = message.lowercase()
+    return when {
+        message.startsWith("Không") || message.startsWith("Nhập") || message.startsWith("Trang") ||
+            message.startsWith("Bạn") || message.startsWith("Dịch vụ") -> message
+        normalized.contains("sockettimeoutexception") || normalized.contains("timed out") ->
+            "Kết nối đến ClashKing quá thời gian chờ. Hãy thử lại."
+        normalized.contains("unknownhostexception") || normalized.contains("unable to resolve host") ||
+            normalized.contains("failed to connect") ->
+            "Không thể kết nối máy chủ ClashKing. Hãy kiểm tra mạng rồi thử lại."
+        else -> "Không thể tải dữ liệu từ ClashKing. Hãy kiểm tra kết nối rồi thử lại."
+    }
+}
+
 private fun lookupValue(value: Any?): String = when (value) {
     null, JSONObject.NULL -> "—"
     is JSONObject -> ""
@@ -844,7 +870,7 @@ fun ClashLookupScreen() {
                     if (results.isEmpty()) searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên, TAG/ID hoặc bộ lọc."
                 }
             } catch (error: Exception) {
-                searchError = error.message ?: "Không thể kết nối dịch vụ tra cứu."
+                searchError = lookupErrorMessage(error)
             } finally {
                 isSearching = false
             }
@@ -881,7 +907,7 @@ fun ClashLookupScreen() {
                     } ?: payload
                     LookupPanel(request.title, visiblePayload)
                 }.getOrElse { error ->
-                    LookupPanel(request.title, null, error.message ?: "Không thể tải dữ liệu.")
+                    LookupPanel(request.title, null, lookupErrorMessage(error))
                 }
             }
         }.awaitAll()
@@ -1049,7 +1075,7 @@ fun ClashLookupScreen() {
                                         detailPanels = requests.map { request ->
                                             async {
                                                 runCatching { LookupPanel(request.title, ClashKingLookupApi.get(request.path)) }
-                                                    .getOrElse { error -> LookupPanel(request.title, null, error.message ?: "Không thể tải dữ liệu.") }
+                                                    .getOrElse { error -> LookupPanel(request.title, null, lookupErrorMessage(error)) }
                                             }
                                         }.awaitAll()
                                         val failures = detailPanels.filter { it.payload == null }
