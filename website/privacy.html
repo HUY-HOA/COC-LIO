@@ -18,7 +18,7 @@
 <body>
   <header><div class="wrap"><a class="brand" href="/">AILIO</a> · <a href="/">Trang chủ COC-LIO</a></div></header>
   <main class="wrap">
-    <p class="meta">Có hiệu lực từ ngày 18 tháng 11 năm 2026 · Cập nhật lần cuối: 18 tháng 11 năm 2026</p>
+    <p class="meta">Có hiệu lực từ ngày 20 tháng 11 năm 2026 · Cập nhật lần cuối: 20 tháng 11 năm 2026</p>
     <h1>Chính sách bảo vệ dữ liệu và quyền riêng tư</h1>
     <p>Chính sách này giải thích cách dữ liệu được xử lý và bảo vệ khi bạn sử dụng ứng dụng Android COC-LIO do thương hiệu <strong>AILIO</strong> vận hành. AILIO là đầu mối tiếp nhận các yêu cầu và câu hỏi liên quan đến dữ liệu cá nhân.</p>
     <div class="callout">
@@ -28,7 +28,8 @@
     <h2>1. Dữ liệu được xử lý</h2>
     <ul>
       <li><strong>Hồ sơ tài khoản Google:</strong> UID, email, tên hiển thị, họ tên và ảnh hồ sơ theo thông tin Google, tên hiển thị bạn đặt, trạng thái xác minh email và nhà cung cấp đăng nhập.</li>
-      <li><strong>Thông tin duy trì tài khoản:</strong> số lần đăng nhập và các mốc tạo, cập nhật, đăng nhập gần nhất để xác thực, duy trì hồ sơ và hỗ trợ quản lý tài khoản.</li>
+      <li><strong>Thông tin duy trì tài khoản:</strong> số lần đăng nhập, số lần mở ứng dụng được ghi nhận khi đồng bộ hồ sơ, cùng các mốc tạo, cập nhật, mở ứng dụng và đăng nhập gần nhất.</li>
+      <li><strong>Thông tin kỹ thuật cơ bản:</strong> hãng/model, thương hiệu và mã thiết bị do Android cung cấp, kiến trúc CPU được hỗ trợ, phiên bản Android/API, phiên bản ứng dụng, ngôn ngữ hệ thống, múi giờ, kích thước/độ phân giải vùng hiển thị và mật độ điểm ảnh, loại/trạng thái kết nối mạng cùng khả năng truy cập Internet tại thời điểm đồng bộ hồ sơ.</li>
       <li><strong>Dữ liệu làng:</strong> JSON, Player Tag, tên làng, công trình và tiến trình do bạn tự nhập; được phân tích và lưu cục bộ trên điện thoại.</li>
     </ul>
     <p>Đăng nhập Google đồng bộ hồ sơ tài khoản cần thiết lên Firebase Authentication và Cloud Firestore. Phiên bản hiện tại không tải JSON làng lên máy chủ và không cung cấp đồng bộ JSON đám mây.</p>
@@ -36,14 +37,14 @@
     <h2>2. Mục đích sử dụng</h2>
     <ul>
       <li><strong>Xác thực:</strong> xác minh tài khoản Google để cung cấp chức năng đăng nhập.</li>
-      <li><strong>Quản lý tài khoản:</strong> duy trì hồ sơ cơ bản, xác minh trạng thái tài khoản và hỗ trợ chủ sở hữu quản lý quyền truy cập.</li>
+      <li><strong>Quản lý tài khoản và bảo mật:</strong> duy trì hồ sơ, kiểm tra khả năng tương thích thiết bị/phiên bản, xác định loại kết nối để hỗ trợ chẩn đoán lỗi kết nối và bảo vệ quyền truy cập.</li>
       <li><strong>Phân tích dữ liệu làng:</strong> xử lý JSON bạn tự nhập và lưu lịch sử trên thiết bị để hiển thị tiến trình.</li>
     </ul>
-    <p>Firebase Analytics, Crashlytics và Performance Monitoring không được bật. Ứng dụng cũng không bật ghi nhận hoạt động/thiết bị hoặc tải JSON lên đám mây.</p>
+    <p>Firebase Analytics, Crashlytics và Performance Monitoring không được bật. COC-LIO chỉ ghi nhận nhóm thông tin kỹ thuật nêu tại mục 1 khi hồ sơ tài khoản được đồng bộ; ứng dụng không theo dõi thao tác chi tiết trên từng màn hình và không tải JSON làng lên đám mây.</p>
 
     <h2>3. Lựa chọn xử lý dữ liệu</h2>
     <p>Trước khi đăng nhập Google, bạn cần tích một ô xác nhận đã đọc và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư. Trang chi tiết trong ứng dụng giải thích các trường hồ sơ tài khoản cần thiết. Không có các ô bật/tắt thu thập dữ liệu tùy chọn trong phiên bản hiện tại.</p>
-    <p>Ứng dụng không đọc hoặc ghi IP, IMEI, số sê-ri, MAC, Android ID, vị trí GPS, danh bạ, SMS hoặc lịch sử cuộc gọi vào hồ sơ tài khoản. Ứng dụng không yêu cầu các quyền Android để truy cập vị trí, danh bạ, SMS hoặc nhật ký cuộc gọi.</p>
+    <p>Ứng dụng dùng các quyền Android thông thường <code>INTERNET</code> và <code>ACCESS_NETWORK_STATE</code> để kết nối dịch vụ và kiểm tra trạng thái mạng. Hai quyền này được Android tự cấp khi cài đặt, không làm hiện hộp thoại xin quyền. Ứng dụng không đọc hoặc ghi IP, IMEI, số sê-ri, MAC, Android ID, vị trí GPS, danh bạ, SMS hoặc lịch sử cuộc gọi vào hồ sơ tài khoản; không yêu cầu quyền Android nhạy cảm để truy cập các dữ liệu đó.</p>
     <p>Những bản JSON từng được đồng bộ từ phiên bản cũ (nếu có) không tự động bị xóa khi cập nhật ứng dụng. Bạn có thể liên hệ email hỗ trợ để yêu cầu kiểm tra và xử lý dữ liệu cũ thuộc tài khoản.</p>
     <p>Thông tin hồ sơ cần thiết được xử lý bởi Google Firebase Authentication và Cloud Firestore để cung cấp đăng nhập và quản lý tài khoản. Dữ liệu không được bán hoặc chia sẻ cho bên khác để quảng cáo.</p>
     <p>Tùy dịch vụ và vị trí máy chủ, dữ liệu tài khoản trực tuyến có thể được lưu trữ hoặc xử lý ngoài Việt Nam. Việc chuyển dữ liệu xuyên biên giới, nếu phát sinh, phải được thực hiện theo quy định pháp luật áp dụng.</p>
