@@ -160,7 +160,7 @@ private object ClashKingLookupApi {
         val input = rawTag.trim().uppercase()
         val normalized = if (input.startsWith("#")) input else "#$input"
         require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(normalized)) {
-            "Bang hội hiện cần tra cứu bằng Clan TAG hợp lệ, ví dụ #2PR8V8."
+            "Bang hội cần tra cứu bằng TAG hợp lệ, ví dụ #2PR8V8."
         }
         return "/v2/clan/${encode(normalized)}/cached"
     }
@@ -202,11 +202,11 @@ private object ClashKingLookupApi {
                 withQuery("/v2/legends/history/${encode(primary)}")
             }
             "ranked_group" -> {
-                require(primary.isNotBlank() && secondary.isNotBlank()) { "Cần nhập Season ID và League Group ID." }
+                require(primary.isNotBlank() && secondary.isNotBlank()) { "Cần nhập mã mùa giải và mã nhóm giải." }
                 "/v2/ranked/${encode(primary)}/groups/${encode(secondary)}"
             }
             "league_tier_statistics" -> {
-                require(primary.isNotBlank() && secondary.isNotBlank()) { "Cần nhập Season ID và League Tier ID." }
+                require(primary.isNotBlank() && secondary.isNotBlank()) { "Cần nhập mã mùa giải và mã bậc giải." }
                 "/v2/stats/league/tournaments/${encode(primary)}/tiers/${encode(secondary)}"
             }
             "league_hit_rates" -> {
@@ -313,7 +313,7 @@ private object ClashKingLookupApi {
                 )
                 "HỘI CHIẾN" -> listOf(
                     req("Các cuộc hội chiến đã lưu", clan("wars", limit)),
-                    req("Trạng thái cuộc hội chiến hiện tại", "/v2/war/$tag/basic")
+                    req("Mốc hội chiến gần nhất được ghi nhận", "/v2/war/$tag/basic")
                 )
                 "CWL" -> listOf(
                     req("Các mùa CWL", "/v2/cwl/$tag/seasons?limit=30"),
@@ -485,37 +485,21 @@ private fun humanizeLookupKey(key: String): String {
         "clanPoints" to "Điểm bang hội",
         "builderBasePoints" to "Điểm Nhà thợ xây",
         "capitalGold" to "Vàng Thủ phủ",
-        "capitalGoldTotal" to "Tổng Vàng Thủ phủ",
-        "capitalLeague" to "Giải Thủ phủ",
         "clanCapital" to "Thủ phủ bang hội",
-        "clanTag" to "TAG bang hội",
-        "playerTag" to "TAG người chơi",
-        "leagueGroupId" to "Mã nhóm giải",
-        "seasonId" to "Mã mùa giải",
-        "leagueTierId" to "Mã bậc giải",
-        "cwlLeagueId" to "Mã bậc CWL",
         "homeVillage" to "Làng chính",
         "builderBase" to "Nhà thợ xây",
         "builderBaseTrophies" to "Cúp Nhà thợ xây",
-        "clanPoints" to "Điểm bang hội",
-        "warLeague" to "Giải hội chiến",
         "warSize" to "Quy mô đội",
         "warsFinished" to "Số hội chiến đã kết thúc",
         "totalClansInGroup" to "Tổng số bang hội trong nhóm",
         "groupRank" to "Hạng trong nhóm",
-        "globalRank" to "Hạng toàn cầu",
         "updatedAt" to "Cập nhật lúc",
         "destruction" to "Tỷ lệ phá hủy",
         "wins" to "Thắng",
         "losses" to "Thua",
         "ties" to "Hòa",
-        "stars" to "Số sao",
         "attacks" to "Số lượt tấn công",
         "defenses" to "Số lượt phòng thủ",
-        "attackWins" to "Số trận thắng tấn công",
-        "defenseWins" to "Số trận thắng phòng thủ",
-        "attackTriples" to "Số trận tấn công 3 sao",
-        "defenseTriples" to "Số trận phòng thủ 3 sao",
         "averageDuration" to "Thời lượng trung bình",
         "averageDestruction" to "Phá hủy trung bình",
         "currentDay" to "Ngày hiện tại",
@@ -553,7 +537,6 @@ private fun humanizeLookupKey(key: String): String {
         "location" to "Khu vực",
         "description" to "Mô tả",
         "publicWarLog" to "Nhật ký hội chiến công khai",
-        "townhall_level" to "Nhà chính",
         "builder_base_points" to "Điểm Nhà thợ xây",
         "builder_base_trophies" to "Cúp Nhà thợ xây",
         "clan_home_points" to "Điểm làng chính",
@@ -852,9 +835,9 @@ fun ClashLookupScreen() {
                             LookupFilterField("Mã mùa giải Ranked (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it }, "Mã mùa giải")
                             LookupFilterField("Ngày Legend (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it }, "YYYY-MM-DD")
                             LookupFilterField("TAG người chơi khác (để so lịch sử bang)", extendedOtherPlayerTag, { extendedOtherPlayerTag = it }, "#ABC123")
-                            Text("Nhập một hoặc nhiều trường. Season ID tải nhóm Ranked và battlelog; ngày tải battlelog Legend; TAG khác tải thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
+                            Text("Có thể nhập một hoặc nhiều mục: mã mùa giải tải nhóm và nhật ký Ranked; ngày tải nhật ký Legend; TAG khác dùng để so sánh thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         } else {
-                            LookupFilterField("Thời điểm kết thúc hội chiến (YYYYMMDDTHHmmss.SSSZ)", extendedWarEndTime, { extendedWarEndTime = it }, "20261120T000000.000Z")
+                            LookupFilterField("Thời điểm kết thúc hội chiến (YYYYMMDDTHHmmss.SSSZ)", extendedWarEndTime, { extendedWarEndTime = it }, "YYYYMMDDTHHmmss.SSSZ")
                             Text("Nhập đúng endTime do API trả về, dạng 20261120T000000.000Z, để tải dữ liệu chi tiết cuộc hội chiến đã lưu.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         }
                         Button(
@@ -1118,7 +1101,7 @@ fun ClashLookupScreen() {
                         }
                         "trophy_buckets" -> LookupFilterField("Mã giải đấu", analyticsPrimary, { analyticsPrimary = it }, "29000000")
                         "legend_season" -> {
-                            LookupFilterField("Mùa Legend (YYYY-MM)", analyticsPrimary, { analyticsPrimary = it }, "2026-10")
+                            LookupFilterField("Mùa Legend (YYYY-MM)", analyticsPrimary, { analyticsPrimary = it }, "YYYY-MM")
                             LookupFilterField("Số kết quả tối đa", analyticsSecondary, { analyticsSecondary = it }, "100")
                         }
                         "ranked_group" -> {
@@ -1156,7 +1139,7 @@ fun ClashLookupScreen() {
                             }
                         }
                     }
-                    Text("Ngày có thể để trống nếu API hỗ trợ mặc định. ID và Season ID phải lấy từ dữ liệu ClashKing.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
+                    Text("Ngày có thể để trống nếu API hỗ trợ mặc định. Mã định danh và mã mùa giải phải lấy từ dữ liệu ClashKing.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
                 }
 
                 if (searchMode == "player") Button(
@@ -1244,7 +1227,7 @@ fun ClashLookupScreen() {
             LookupMessageCard(
                 when (searchMode) {
                     "player" -> "Tìm người chơi bằng tên hoặc TAG. Hồ sơ hỗ trợ hoạt động, lịch sử quân đội, trận đấu, hội chiến, CWL, Legend, Ranked và xếp hạng."
-                    "clan" -> "Tìm bang hội bằng tên hoặc Clan TAG. Hồ sơ hỗ trợ thành viên, hội chiến, CWL, quyên góp, Thủ phủ, xếp hạng, kỷ lục và lịch sử."
+                    "clan" -> "Nhập TAG bang hội để mở hồ sơ thành viên, hội chiến, CWL, quyên góp, Thủ phủ, xếp hạng, kỷ lục và lịch sử."
                     "leaderboard" -> "Tra cứu bảng xếp hạng theo Nhà chính, giải đấu, chuỗi 3 sao và các hạng mục bang hội."
                     else -> "Truy cập thống kê công khai: bảng xếp hạng lịch sử, nhóm Ranked, phân bố cúp, Legend và dữ liệu tổng quan."
                 }
@@ -1316,7 +1299,7 @@ private fun LookupResultCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        if (entry.isClan) entry.level.ifBlank { "CLAN" } else "TH ${entry.townHall.ifBlank { "?" }}",
+                        if (entry.isClan) entry.level.ifBlank { "BANG HỘI" } else "TH ${entry.townHall.ifBlank { "?" }}",
                         color = LookupCyan,
                         fontSize = if (entry.isClan) 10.sp else 9.sp,
                         fontWeight = FontWeight.Black
