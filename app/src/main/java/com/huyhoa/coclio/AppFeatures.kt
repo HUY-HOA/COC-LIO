@@ -427,23 +427,25 @@ private suspend fun syncFirebaseUserProfile(
     // Remove technical/device, network, detailed activity and consent-receipt fields
     // written by older releases. Only the account identity and minimal sign-in
     // administration fields remain stored in Firestore.
-    listOf(
-        "givenName", "familyName", "photoUrl",
-        "deviceManufacturer", "deviceModel", "deviceBrand", "deviceProduct",
-        "deviceCodeName", "supportedAbis", "localeTag", "timeZoneId",
-        "screenWidthPx", "screenHeightPx", "densityDpi", "networkType",
-        "networkStatus", "networkValidated", "androidVersion", "sdkInt",
-        "appVersionName", "appVersionCode", "lastIp", "lastIpCapturedAt",
-        "firstOpenedAt", "lastOpenedAt", "appOpenCount", "lastActiveAt",
-        "lastBackgroundAt", "sessionStartedAt", "activityUpdatedAt",
-        "lastActivityEvent", "lastSessionDurationSeconds", "totalForegroundSeconds",
-        "requiredAccountDataConsentVersion", "requiredAccountDataConsentAt",
-        "activityDataConsentVersion", "dataSharingConsent", "analyticsConsent",
-        "diagnosticsConsent", "villageDataConsent", "activityConsentAt",
-        "lastVillageTag", "lastVillageName", "lastVillageTimestamp",
-        "lastVillageTownHallLevel", "lastVillageBuilderHallLevel",
-        "villageImportCount", "lastVillageSyncedAt", "lastVillageRawJsonBytes"
-    ).forEach { field -> profile[field] = FieldValue.delete() }
+    if (existing.exists()) {
+        listOf(
+            "givenName", "familyName", "photoUrl",
+            "deviceManufacturer", "deviceModel", "deviceBrand", "deviceProduct",
+            "deviceCodeName", "supportedAbis", "localeTag", "timeZoneId",
+            "screenWidthPx", "screenHeightPx", "densityDpi", "networkType",
+            "networkStatus", "networkValidated", "androidVersion", "sdkInt",
+            "appVersionName", "appVersionCode", "lastIp", "lastIpCapturedAt",
+            "firstOpenedAt", "lastOpenedAt", "appOpenCount", "lastActiveAt",
+            "lastBackgroundAt", "sessionStartedAt", "activityUpdatedAt",
+            "lastActivityEvent", "lastSessionDurationSeconds", "totalForegroundSeconds",
+            "requiredAccountDataConsentVersion", "requiredAccountDataConsentAt",
+            "activityDataConsentVersion", "dataSharingConsent", "analyticsConsent",
+            "diagnosticsConsent", "villageDataConsent", "activityConsentAt",
+            "lastVillageTag", "lastVillageName", "lastVillageTimestamp",
+            "lastVillageTownHallLevel", "lastVillageBuilderHallLevel",
+            "villageImportCount", "lastVillageSyncedAt", "lastVillageRawJsonBytes"
+        ).forEach { field -> profile[field] = FieldValue.delete() }
+    }
     if (!existing.exists()) {
         profile["createdAt"] = FieldValue.serverTimestamp()
         profile["signInCount"] = 1L
@@ -562,36 +564,15 @@ object FirebaseAccountAdministration {
                 email = email,
                 preferredName = document.getString("preferredName").orEmpty(),
                 displayName = document.getString("displayName").orEmpty(),
-                givenName = document.getString("givenName").orEmpty(),
-                familyName = document.getString("familyName").orEmpty(),
-                photoUrl = document.getString("photoUrl").orEmpty(),
+                givenName = "",
+                familyName = "",
+                photoUrl = "",
                 emailVerified = document.getBoolean("emailVerified") ?: false,
                 providerId = document.getString("providerId").orEmpty(),
                 signInCount = document.getLong("signInCount") ?: 0L,
                 createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
                 lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
                 updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L,
-                firstOpenedAt = document.getTimestamp("firstOpenedAt")?.toDate()?.time ?: 0L,
-                lastOpenedAt = document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L,
-                appOpenCount = document.getLong("appOpenCount") ?: 0L,
-                deviceManufacturer = document.getString("deviceManufacturer").orEmpty(),
-                deviceModel = document.getString("deviceModel").orEmpty(),
-                deviceBrand = document.getString("deviceBrand").orEmpty(),
-                deviceProduct = document.getString("deviceProduct").orEmpty(),
-                deviceCodeName = document.getString("deviceCodeName").orEmpty(),
-                supportedAbis = document.getString("supportedAbis").orEmpty(),
-                localeTag = document.getString("localeTag").orEmpty(),
-                timeZoneId = document.getString("timeZoneId").orEmpty(),
-                screenWidthPx = document.getLong("screenWidthPx") ?: 0L,
-                screenHeightPx = document.getLong("screenHeightPx") ?: 0L,
-                densityDpi = document.getLong("densityDpi") ?: 0L,
-                networkType = document.getString("networkType").orEmpty(),
-                networkStatus = document.getString("networkStatus").orEmpty(),
-                networkValidated = document.getBoolean("networkValidated") ?: false,
-                androidVersion = document.getString("androidVersion").orEmpty(),
-                sdkInt = document.getLong("sdkInt") ?: 0L,
-                appVersionName = document.getString("appVersionName").orEmpty(),
-                appVersionCode = document.getLong("appVersionCode") ?: 0L,
                 isAdmin = isOwner(document.getString("uid") ?: document.id),
                 accountDisabled = document.getBoolean("accountDisabled") ?: false
             )
