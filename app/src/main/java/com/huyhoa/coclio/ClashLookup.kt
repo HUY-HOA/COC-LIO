@@ -161,13 +161,21 @@ private object ClashKingLookupApi {
     fun playerSearchPath(query: String, cursor: String?, filters: LookupFilters): String {
         val params = mutableListOf("query=${encode(query)}", "limit=20")
         cursor?.takeIf { it.isNotBlank() }?.let { params += "cursor=${encode(it)}" }
-        fun addList(name: String, raw: String) {
-            raw.split(",", ";", " ").map(String::trim).filter(String::isNotBlank)
-                .forEach { params += "${name}=${encode(it)}" }
+        fun values(raw: String) = raw.split(",", ";", " ").map(String::trim).filter(String::isNotBlank)
+        fun addList(name: String, raw: String, maximumCount: Int, validate: (String) -> String) {
+            val entries = values(raw)
+            require(entries.size <= maximumCount) { "$name chỉ nhận tối đa $maximumCount giá trị." }
+            entries.forEach { params += "${name}=${encode(validate(it))}" }
         }
-        addList("clanTags", filters.clanTags)
-        addList("leagueIds", filters.leagueIds)
-        addList("townhallLevels", filters.townhallLevels)
+        addList("clanTags", filters.clanTags, 100) { normalizeLookupTag(it, "TAG bang hội") }
+        addList("leagueIds", filters.leagueIds, 5) {
+            require(it.toLongOrNull()?.let { value -> value > 0L } == true) { "Mã giải đấu phải là số nguyên dương." }
+            it
+        }
+        addList("townhallLevels", filters.townhallLevels, 100) {
+            require(it.toIntOrNull()?.let { value -> value in 1..100 } == true) { "Cấp Nhà chính phải là số nguyên từ 1 đến 100." }
+            it
+        }
         return "/v2/player/search?${params.joinToString("&")}"
     }
 
@@ -1533,7 +1541,7 @@ fun ClashLookupScreen() {
                     LookupFilterField("Mã giải đấu (phân cách bằng dấu phẩy)", leagueIds, { leagueIds = it; resetSearchPage() }, "29000000")
                     LookupFilterField("Cấp Nhà chính (phân cách bằng dấu phẩy)", townhallLevels, { townhallLevels = it; resetSearchPage() }, "17,18,19")
                     Text(
-                        "Bộ lọc phải dùng TAG và ID đúng theo dữ liệu ClashKing. Để trống mục nào thì không áp dụng mục đó.",
+                        "Tối đa 100 TAG bang hội, 5 mã giải và 100 cấp Nhà chính. Nhập nhiều giá trị cách nhau bằng dấu phẩy; bỏ trống mục nào thì không lọc mục đó.",
                         fontSize = 9.sp,
                         color = LookupMuted,
                         lineHeight = 13.sp
