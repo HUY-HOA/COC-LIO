@@ -104,6 +104,7 @@ service cloud.firestore {
           && resource.data.get('accountDisabled', false) != true
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedProfileUpdateFields())
           && request.resource.data.diff(resource.data).removedKeys().hasOnly(obsoleteProfileFields())
+          && !request.resource.data.keys().hasAny(obsoleteProfileFields())
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.email == request.auth.token.email
