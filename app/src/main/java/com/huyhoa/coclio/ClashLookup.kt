@@ -428,10 +428,13 @@ private object ClashKingLookupApi {
                     req("Lịch sử cấp kinh nghiệm", player("history/changes", "?type=exp_level&limit=50")),
                     req("Lịch sử ưu tiên hội chiến", player("history/changes", "?type=war_preference&limit=50")),
                     req("Lịch sử đổi tên", player("history/changes", "?type=name&limit=50")),
+                    req("Lịch sử thay đổi giải đấu", player("history/changes", "?type=league_tier&limit=50")),
+                    req("Lịch sử sao hội chiến", player("history/changes", "?type=war_stars&limit=50")),
+                    req("Lịch sử đóng góp Thủ phủ", player("history/changes", "?type=clan_capital_contributions&limit=50"))
                 )
                 "HOẠT ĐỘNG" -> listOf(
                     req("Hoạt động 30 ngày", player("activity-summary")),
-                    req("Tổng tài nguyên cướp được", player("farming")),
+                    req("Tổng tài nguyên cướp được trong tháng", player("farming")),
                     req("Lịch sử quyên góp", player("history/stats", "?type=donated&limit=50")),
                     req("Lịch sử nhận quân", player("history/stats", "?type=received&limit=50")),
                     req("Điểm Trò chơi bang hội", player("history/stats", "?type=clan_games&limit=50")),
