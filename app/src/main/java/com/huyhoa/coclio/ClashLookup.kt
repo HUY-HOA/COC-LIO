@@ -373,6 +373,8 @@ private object ClashKingLookupApi {
                 require(mode == "ranked" || mode == "legend") { "Chế độ phải là Ranked hoặc Legend." }
                 add("time[after]", from); add("time[before]", to); add("mode", mode)
                 if (mode == "ranked") {
+                    if (primary.isNotBlank()) validatePositive(primary, "Mã bậc giải Ranked")
+                    if (secondary.isNotBlank()) validatePositive(secondary, "Cấp Nhà chính", 20)
                     add("leagueTierId", primary)
                     add("townHallLevel", secondary)
                 }
@@ -1435,7 +1437,7 @@ fun ClashLookupScreen() {
                     when (analyticsCategory) {
                         "stats_ranked" -> {
                             LookupFilterField("Cấp Nhà chính", analyticsPrimary, { analyticsPrimary = it }, "19")
-                            LookupFilterField("Mã bậc giải Ranked", analyticsSecondary, { analyticsSecondary = it }, "29000000")
+                            LookupFilterField("Mã bậc giải Ranked", analyticsSecondary, { analyticsSecondary = it }, "105000036")
                             LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
                             LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
                         }
@@ -1517,7 +1519,7 @@ fun ClashLookupScreen() {
                         }
                         "league_tier_statistics" -> {
                             LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it }, "Mã mùa giải")
-                            LookupFilterField("Mã bậc giải", analyticsSecondary, { analyticsSecondary = it }, "29000000")
+                            LookupFilterField("Mã bậc giải", analyticsSecondary, { analyticsSecondary = it }, "105000036")
                         }
                         "league_hit_rates" -> {
                             LookupFilterField("Từ ngày", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
@@ -1527,7 +1529,7 @@ fun ClashLookupScreen() {
                                 FilterChip(selected = analyticsMode == "legend", onClick = { analyticsMode = "legend" }, label = { Text("LEGEND", fontSize = 8.sp) })
                             }
                             if (analyticsMode == "ranked") {
-                                LookupFilterField("Mã bậc giải (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "29000000")
+                                LookupFilterField("Mã bậc giải (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "105000036")
                                 LookupFilterField("Cấp Nhà chính (tùy chọn)", analyticsSecondary, { analyticsSecondary = it }, "19")
                             } else {
                                 Text("Thống kê Legend không lọc theo bậc giải hoặc cấp Nhà chính.", fontSize = 9.sp, color = LookupMuted)
