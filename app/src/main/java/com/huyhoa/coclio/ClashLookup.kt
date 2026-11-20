@@ -93,6 +93,9 @@ private data class ClashLookupEntry(
     val tag: String,
     val isClan: Boolean,
     val townHall: String = "",
+    val builderHall: String = "",
+    val playerLevel: String = "",
+    val builderTrophies: String = "",
     val clanName: String = "",
     val league: String = "",
     val trophies: String = "",
@@ -600,6 +603,9 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
         tag = json.lookupText("tag").ifBlank { json.lookupText("playerTag").ifBlank { json.lookupText("clanTag") } },
         isClan = isClan,
         townHall = number("townHallLevel", "townhallLevel", "townhall_level"),
+        builderHall = number("builderHallLevel", "builderHall"),
+        playerLevel = if (isClan) "" else number("expLevel", "experienceLevel", "playerLevel"),
+        builderTrophies = number("builderBaseTrophies", "builderTrophies"),
         clanName = clan?.lookupText("name").orEmpty(),
         league = league?.lookupText("name").orEmpty(),
         trophies = number("trophies", "leagueTrophies"),
@@ -615,7 +621,11 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
             json.has("stars") -> "Sao CWL"
             else -> ""
         },
-        badgeUrl = json.lookupText("badge_url").ifBlank { badge },
+        badgeUrl = json.lookupText("badge_url").ifBlank { badge }.ifBlank {
+            league?.optJSONObject("iconUrls")?.let { icons ->
+                icons.lookupText("medium").ifBlank { icons.lookupText("large") }.ifBlank { icons.lookupText("small") }
+            }.orEmpty()
+        },
         raw = json
     )
 }
@@ -765,6 +775,186 @@ private fun shareLookupEntry(context: Context, entry: ClashLookupEntry) {
     runCatching { context.startActivity(Intent.createChooser(intent, "Chia sẻ hồ sơ COC-LIO")) }
 }
 
+
+
+private fun lookupAssetName(value: String): String =
+    Normalizer.normalize(value.trim(), Normalizer.Form.NFKD)
+        .replace(Regex("[\\p{M}\\p{Cf}]"), "")
+        .lowercase()
+        .replace(Regex("[^\\p{L}\\p{N}]"), "")
+
+private fun lookupCatalogCategory(parentKey: String): String? = when (parentKey.lowercase()) {
+    "troops", "supertroops", "units", "siege", "siegemachines" -> "troops"
+    "heroes" -> "heroes"
+    "spells" -> "spells"
+    "pets" -> "pets"
+    "equipment", "heroequipment" -> "equipment"
+    "defenses", "defence", "defense" -> "defense"
+    "traps" -> "traps"
+    "buildings" -> "other"
+    else -> null
+}
+
+private fun lookupCatalogEntry(
+    payload: JSONObject,
+    catalog: Map<Int, SupplementalCatalogEntry>,
+    parentKey: String
+): SupplementalCatalogEntry? {
+    val idKeys = listOf("dataId", "id", "unitId", "troopId", "heroId", "spellId", "petId", "equipmentId", "buildingId", "itemId")
+    val id = idKeys.firstNotNullOfOrNull { key ->
+        (payload.opt(key) as? Number)?.toInt() ?: payload.optString(key).toIntOrNull()
+    }
+    if (id != null) catalog[id]?.let { return it }
+
+    val name = listOf("name", "unitName", "troopName", "heroName", "spellName", "petName", "equipmentName", "buildingName")
+        .firstNotNullOfOrNull { key -> payload.lookupText(key).takeIf(String::isNotBlank) }
+        ?: return null
+    val normalizedName = lookupAssetName(name)
+    val preferredCategory = lookupCatalogCategory(parentKey)
+    val matching = catalog.values.asSequence().let { entries ->
+        if (preferredCategory == null) entries else entries.filter { it.category == preferredCategory }
+    }
+    return matching.firstOrNull { entry ->
+        lookupAssetName(entry.name) == normalizedName ||
+            entry.aliases.any { lookupAssetName(it) == normalizedName }
+    } ?: if (preferredCategory != null) {
+        catalog.values.firstOrNull { entry ->
+            lookupAssetName(entry.name) == normalizedName ||
+                entry.aliases.any { lookupAssetName(it) == normalizedName }
+        }
+    } else null
+}
+
+private fun lookupImageUrl(
+    payload: JSONObject,
+    catalog: Map<Int, SupplementalCatalogEntry>,
+    parentKey: String
+): String {
+    lookupCatalogEntry(payload, catalog, parentKey)?.imageUrl
+        ?.takeIf { it.startsWith("https://", ignoreCase = true) }
+        ?.let { return it }
+
+    val directKeys = listOf("imageUrl", "image_url", "badge_url", "iconUrl", "icon_url", "avatarUrl", "avatar_url")
+    directKeys.firstNotNullOfOrNull { key ->
+        payload.lookupText(key).takeIf { it.startsWith("https://", ignoreCase = true) }
+    }?.let { return it }
+
+    for (key in listOf("iconUrls", "badgeUrls", "icons", "images")) {
+        val nested = payload.optJSONObject(key) ?: continue
+        listOf("medium", "large", "small", "tiny").firstNotNullOfOrNull { size ->
+            nested.lookupText(size).takeIf { it.startsWith("https://", ignoreCase = true) }
+        }?.let { return it }
+    }
+    return ""
+}
+
+private fun lookupGameIconResource(key: String): Int? {
+    val normalized = key.lowercase().replace(Regex("[_\\s-]"), "")
+    return when (normalized) {
+        "townhalllevel", "townhall" -> R.drawable.ic_coc_buildings
+        "builderhalllevel", "builderhall", "builderbase", "builderbasevillage" -> R.drawable.ic_coc_home
+        "explevel", "experiencelevel", "playerlevel", "rank", "globalrank", "localrank", "grouprank",
+        "trophies", "leaguetrophies", "builderbasetrophies", "buildertrophies", "stars", "attacktrophies", "defensetrophies" -> R.drawable.ic_coc_star
+        "clanlevel", "membercount", "members", "clan", "clantag", "clancapital" -> R.drawable.ic_coc_clan
+        "leaguetier", "league", "warleague", "capitalleague", "cwlleagueid", "leaguetierid", "leaguegroupid" -> R.drawable.ic_coc_star
+        "warwins", "warlosses", "warties", "warwinstreak", "attackwins", "defensewins",
+        "attacktriples", "defensetriples", "attacks", "defenses", "wins", "losses", "ties", "destructionpercentage" -> R.drawable.ic_coc_swords
+        "donated", "received", "troopsdonated", "troopsreceived", "troops", "supertroops", "siege", "siegemachines" -> R.drawable.ic_coc_guardian
+        "capitalgoldtotal", "capitalgold", "capitalpoints" -> R.drawable.ic_coc_capital_gold
+        "gold", "goldloot", "goldstorage", "goldmine" -> R.drawable.ic_coc_gold
+        "elixir", "elixirloot", "elixirstorage" -> R.drawable.ic_coc_elixir
+        "darkelixir", "darkelixirloot" -> R.drawable.ic_coc_dark_elixir
+        "shinyore", "glowyore", "starryore" -> R.drawable.ic_coc_ore_shiny
+        "hero", "heroes" -> R.drawable.ic_coc_hero
+        "spell", "spells" -> R.drawable.ic_coc_spell
+        "pet", "pets" -> R.drawable.ic_coc_pet
+        "equipment", "heroequipment" -> R.drawable.ic_coc_equipment
+        "defense", "defenses" -> R.drawable.ic_coc_defense
+        "trap", "traps" -> R.drawable.ic_coc_trap
+        "wall", "walls" -> R.drawable.ic_coc_wall
+        "tag", "playertag" -> R.drawable.ic_coc_tag
+        "time", "duration", "battletime", "starttime", "endtime", "updatedat" -> R.drawable.ic_coc_time
+        "homevillage" -> R.drawable.ic_coc_buildings
+        else -> null
+    }
+}
+
+private data class LookupMiniStat(
+    val label: String,
+    val value: String,
+    val iconRes: Int,
+    val imageUrl: String = ""
+)
+
+private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
+    fun stat(label: String, value: String, icon: Int, image: String = "") =
+        value.takeIf(String::isNotBlank)?.let { LookupMiniStat(label, it, icon, image) }
+    return if (entry.isClan) {
+        listOfNotNull(
+            stat("LV BANG", entry.level, R.drawable.ic_coc_clan),
+            stat("THÀNH VIÊN", entry.members, R.drawable.ic_coc_clan),
+            stat("HẠNG", entry.rank, R.drawable.ic_coc_star),
+            stat("CHUỖI THẮNG", entry.streak, R.drawable.ic_coc_swords)
+        )
+    } else {
+        listOfNotNull(
+            stat("LV NGƯỜI CHƠI", entry.playerLevel, R.drawable.ic_coc_star),
+            stat("NHÀ CHÍNH", entry.townHall, R.drawable.ic_coc_buildings),
+            stat("NHÀ THỢ XÂY", entry.builderHall, R.drawable.ic_coc_home),
+            stat("CÚP", entry.trophies, R.drawable.ic_coc_star),
+            stat("CÚP XÂY DỰNG", entry.builderTrophies, R.drawable.ic_coc_home),
+            stat("GIẢI ĐẤU", entry.league, R.drawable.ic_coc_star, entry.badgeUrl)
+        )
+    }
+}
+
+@Composable
+private fun LookupGameFieldIcon(
+    key: String,
+    imageUrl: String = "",
+    modifier: Modifier = Modifier.size(18.dp)
+) {
+    if (imageUrl.startsWith("https://", ignoreCase = true)) {
+        AsyncImage(model = imageUrl, contentDescription = null, modifier = modifier)
+    } else {
+        lookupGameIconResource(key)?.let { icon ->
+            CocGameIcon(icon, modifier, humanizeLookupKey(key))
+        }
+    }
+}
+
+@Composable
+private fun LookupMiniStatChip(stat: LookupMiniStat) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f))
+            .padding(horizontal = 7.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (stat.imageUrl.startsWith("https://", ignoreCase = true)) {
+            AsyncImage(model = stat.imageUrl, contentDescription = null, modifier = Modifier.size(15.dp))
+        } else {
+            CocGameIcon(stat.iconRes, Modifier.size(15.dp), stat.label)
+        }
+        Text("${stat.label}: ${stat.value}", fontSize = 8.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    }
+}
+
+@Composable
+private fun LookupEntryQuickStats(entry: ClashLookupEntry) {
+    val stats = lookupMiniStats(entry)
+    if (stats.isNotEmpty()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            stats.forEach { LookupMiniStatChip(it) }
+        }
+    }
+}
+
 private fun humanizeLookupKey(key: String): String {
     val known = mapOf(
         "tag" to "TAG / ID",
@@ -778,6 +968,10 @@ private fun humanizeLookupKey(key: String): String {
         "townHallLevel" to "Nhà chính",
         "townhallLevel" to "Nhà chính",
         "builderHallLevel" to "Nhà thợ xây",
+        "builderHall" to "Nhà thợ xây",
+        "expLevel" to "Cấp người chơi",
+        "experienceLevel" to "Cấp người chơi",
+        "playerLevel" to "Cấp người chơi",
         "leagueTier" to "Giải đấu",
         "league" to "Giải đấu",
         "trophies" to "Cúp",
@@ -835,6 +1029,7 @@ private fun humanizeLookupKey(key: String): String {
         "homeVillage" to "Làng chính",
         "builderBase" to "Nhà thợ xây",
         "builderBaseTrophies" to "Cúp Nhà thợ xây",
+        "builderTrophies" to "Cúp Nhà thợ xây",
         "warSize" to "Quy mô đội",
         "warsFinished" to "Số hội chiến đã kết thúc",
         "totalClansInGroup" to "Tổng số bang hội trong nhóm",
@@ -1013,6 +1208,10 @@ fun ClashLookupScreen() {
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var lookupCatalog by remember { mutableStateOf<Map<Int, SupplementalCatalogEntry>>(emptyMap()) }
+    LaunchedEffect(context) {
+        lookupCatalog = withContext(Dispatchers.IO) { LocalSupplementalCatalog.load(context) }
+    }
     var recentSearches by remember(context) { mutableStateOf(loadLookupHistory(context)) }
     var favoriteEntries by remember(context) { mutableStateOf(loadLookupFavorites(context)) }
     var comparedTags by remember { mutableStateOf(emptyList<String>()) }
@@ -1381,6 +1580,8 @@ fun ClashLookupScreen() {
                 }
             }
 
+            LookupEntryQuickStats(entry)
+
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1500,7 +1701,7 @@ fun ClashLookupScreen() {
             }
             detailPanels.forEach { panel ->
                 if (panel.payload != null) {
-                    LookupDataPanel(title = panel.title, payload = panel.payload)
+                    LookupDataPanel(title = panel.title, payload = panel.payload, catalog = lookupCatalog)
                 } else if (!detailLoading) {
                     LookupMessageCard("${panel.title}: ${panel.error ?: "Chưa có dữ liệu"}")
                 }
@@ -1976,7 +2177,7 @@ fun ClashLookupScreen() {
         }
 
         if (searchError != null) LookupMessageCard(searchError ?: "", isError = true)
-        analyticsResult?.let { LookupDataPanel(title = analyticsResultTitle, payload = it) }
+        analyticsResult?.let { LookupDataPanel(title = analyticsResultTitle, payload = it, catalog = lookupCatalog) }
         if (searchMode == "clan" && searchError == null) {
             Text("Có thể tìm bang hội bằng tên, TAG hoặc tên có biểu tượng/ký tự trang trí. Ứng dụng tự thử dạng chữ chuẩn hóa khi cần.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
         }
@@ -2068,8 +2269,11 @@ private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
         )
     } else {
         listOf(
+            Triple("Cấp người chơi", first.playerLevel, second.playerLevel),
             Triple("Nhà chính", first.townHall, second.townHall),
+            Triple("Nhà thợ xây", first.builderHall, second.builderHall),
             Triple("Cúp", first.trophies, second.trophies),
+            Triple("Cúp Nhà thợ xây", first.builderTrophies, second.builderTrophies),
             Triple("Giải đấu", first.league, second.league),
             Triple("Bang hội", first.clanName, second.clanName),
             Triple("Thứ hạng", first.rank, second.rank),
@@ -2194,6 +2398,7 @@ private fun LookupResultCard(
                     ).joinToString(" • ")
                 }
                 Text(subtitle.ifBlank { if (entry.isClan) "Bang hội" else "Người chơi" }, fontSize = 9.sp, color = LookupMuted, maxLines = 2)
+                LookupEntryQuickStats(entry)
             }
             IconButton(onClick = onFavorite) {
                 Icon(
@@ -2224,7 +2429,11 @@ private fun LookupResultCard(
 }
 
 @Composable
-private fun LookupDataPanel(title: String, payload: JSONObject) {
+private fun LookupDataPanel(
+    title: String,
+    payload: JSONObject,
+    catalog: Map<Int, SupplementalCatalogEntry>
+) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
@@ -2242,29 +2451,41 @@ private fun LookupDataPanel(title: String, payload: JSONObject) {
                 letterSpacing = 0.7.sp
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-            LookupJsonObject(payload, depth = 0)
+            LookupJsonObject(payload, depth = 0, catalog = catalog)
         }
     }
 }
 
 @Composable
-private fun LookupJsonObject(payload: JSONObject, depth: Int) {
+private fun LookupJsonObject(
+    payload: JSONObject,
+    depth: Int,
+    catalog: Map<Int, SupplementalCatalogEntry>
+) {
     if (depth > 8) {
         Text("Dữ liệu lồng quá sâu, không thể mở rộng thêm.", fontSize = 9.sp, color = LookupMuted)
         return
     }
     val keys = remember(payload) { payload.keys().asSequence().toList() }
     keys.forEach { key ->
+        val normalizedKey = key.lowercase()
+        if (normalizedKey in setOf("iconurls", "badgeurls", "icons", "images", "imageurl", "image_url", "badge_url", "iconurl", "icon_url", "avatarurl", "avatar_url")) {
+            return@forEach
+        }
         val value = payload.opt(key)
         when (value) {
             is JSONObject -> {
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(
-                        humanizeLookupKey(key),
-                        color = if (depth == 0) LookupGold else LookupCyan,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    val imageUrl = lookupImageUrl(value, catalog, key)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        LookupGameFieldIcon(key, imageUrl, Modifier.size(23.dp))
+                        Text(
+                            humanizeLookupKey(key),
+                            color = if (depth == 0) LookupGold else LookupCyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.36f)),
@@ -2276,20 +2497,27 @@ private fun LookupJsonObject(payload: JSONObject, depth: Int) {
                     }
                 }
             }
-            is JSONArray -> LookupJsonArray(humanizeLookupKey(key), value, depth + 1)
+            is JSONArray -> LookupJsonArray(key, humanizeLookupKey(key), value, depth + 1, catalog)
             else -> {
                 val display = lookupValue(value)
-                if (display.isNotBlank()) LookupDetailRow(humanizeLookupKey(key), display)
+                if (display.isNotBlank()) LookupDetailRow(humanizeLookupKey(key), display, key)
             }
         }
     }
 }
 
 @Composable
-private fun LookupJsonArray(label: String, values: JSONArray, depth: Int) {
+private fun LookupJsonArray(
+    key: String,
+    label: String,
+    values: JSONArray,
+    depth: Int,
+    catalog: Map<Int, SupplementalCatalogEntry>
+) {
     var visibleCount by remember(values) { mutableIntStateOf(20) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            LookupGameFieldIcon(key, modifier = Modifier.size(18.dp))
             Text(label, color = if (depth <= 1) LookupGold else LookupCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
             Text("${values.length()} mục", color = LookupMuted, fontSize = 9.sp)
@@ -2310,13 +2538,27 @@ private fun LookupJsonArray(label: String, values: JSONArray, depth: Int) {
                                 Modifier.fillMaxWidth().padding(9.dp),
                                 verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
-                                Text("#${index + 1}", fontSize = 9.sp, color = LookupGold, fontWeight = FontWeight.Bold)
-                                LookupJsonObject(value, depth + 1)
+                                val imageUrl = lookupImageUrl(value, catalog, key)
+                                val objectName = value.lookupText("name")
+                                    .ifBlank { value.lookupText("unitName") }
+                                    .ifBlank { value.lookupText("heroName") }
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                    if (imageUrl.isNotBlank()) {
+                                        AsyncImage(model = imageUrl, contentDescription = objectName, modifier = Modifier.size(36.dp))
+                                    } else {
+                                        LookupGameFieldIcon(key, modifier = Modifier.size(22.dp))
+                                    }
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(objectName.ifBlank { "MỤC ${index + 1}" }, fontSize = 10.sp, color = LookupGold, fontWeight = FontWeight.Bold, maxLines = 1)
+                                        Text("#${index + 1}", fontSize = 8.sp, color = LookupMuted)
+                                    }
+                                }
+                                LookupJsonObject(value, depth + 1, catalog)
                             }
                         }
                     }
-                    is JSONArray -> LookupJsonArray("#${index + 1}", value, depth + 1)
-                    else -> LookupDetailRow("#${index + 1}", lookupValue(value))
+                    is JSONArray -> LookupJsonArray(key, "#${index + 1}", value, depth + 1, catalog)
+                    else -> LookupDetailRow("#${index + 1}", lookupValue(value), key)
                 }
             }
             if (end < values.length()) {
@@ -2336,13 +2578,22 @@ private fun LookupJsonArray(label: String, values: JSONArray, depth: Int) {
 }
 
 @Composable
-private fun LookupDetailRow(label: String, value: String) {
+private fun LookupDetailRow(label: String, value: String, key: String = "") {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.Top
     ) {
-        Text(label, modifier = Modifier.weight(0.9f), color = LookupMuted, fontSize = 10.sp, lineHeight = 14.sp)
+        Row(
+            modifier = Modifier.weight(0.9f),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            lookupGameIconResource(key)?.let { icon ->
+                CocGameIcon(icon, Modifier.size(16.dp), label)
+            }
+            Text(label, color = LookupMuted, fontSize = 10.sp, lineHeight = 14.sp)
+        }
         Text(
             value,
             modifier = Modifier.weight(1.1f),
