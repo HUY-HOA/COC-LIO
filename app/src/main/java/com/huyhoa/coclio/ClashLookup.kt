@@ -894,6 +894,7 @@ fun ClashLookupScreen() {
     fun clearExtendedResults() {
         detailPanels = emptyList()
         detailError = null
+        detailLoading = false
     }
 
     fun currentExtendedKey(entry: ClashLookupEntry): String = listOf(
@@ -1085,9 +1086,8 @@ fun ClashLookupScreen() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(
                     onClick = {
+                        clearExtendedResults()
                         selectedEntry = null
-                        detailPanels = emptyList()
-                        detailError = null
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -1164,7 +1164,7 @@ fun ClashLookupScreen() {
                 sections.forEach { section ->
                     FilterChip(
                         selected = selectedSection == section,
-                        onClick = { selectedSection = section },
+                        onClick = { clearExtendedResults(); selectedSection = section },
                         label = { Text(section, fontSize = 9.sp, maxLines = 1) }
                     )
                 }
@@ -1245,8 +1245,8 @@ fun ClashLookupScreen() {
                                                 selectedSection == "DỮ LIỆU MỞ RỘNG" && currentExtendedKey(entry) == requestKey) {
                                                 val failures = loaded.filter { it.payload == null }
                                                 detailError = failures.takeIf { it.isNotEmpty() }?.joinToString("\n") { "• ${it.title}: ${it.error}" }
+                                                detailLoading = false
                                             }
-                                            detailLoading = false
                                         }
                                     }
                                 } catch (error: Exception) {
@@ -1673,10 +1673,9 @@ fun ClashLookupScreen() {
                 LookupResultCard(
                     entry = result,
                     onClick = {
+                        clearExtendedResults()
                         selectedEntry = result
                         selectedSection = "TỔNG QUAN"
-                        detailPanels = emptyList()
-                        detailError = null
                     },
                     onCopy = { clipboard.setText(AnnotatedString(result.tag)) }
                 )
