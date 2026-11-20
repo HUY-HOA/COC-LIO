@@ -1879,12 +1879,12 @@ fun ClashLookupScreen() {
                     )
                     FilterChip(
                         selected = searchMode == "leaderboard",
-                        onClick = { searchMode = "leaderboard"; results = emptyList(); nextCursor = null; analyticsResult = null; searchError = null },
+                        onClick = { searchMode = "leaderboard"; resetSearchPage(); analyticsResult = null },
                         label = { Text("XẾP HẠNG", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
                     )
                     FilterChip(
                         selected = searchMode == "analytics",
-                        onClick = { searchMode = "analytics"; results = emptyList(); nextCursor = null; analyticsResult = null; searchError = null },
+                        onClick = { searchMode = "analytics"; resetSearchPage(); analyticsResult = null },
                         label = { Text("THỐNG KÊ MỞ RỘNG", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
                     )
                 }
@@ -2014,16 +2014,16 @@ fun ClashLookupScreen() {
                         "HUYỀN THOẠI & DỮ LIỆU LỊCH SỬ",
                         analyticsCategory,
                         listOf(
-                            "legend_rank_curve" to "XẾP HẠNG LEGEND",
-                            "legend_trophy_buckets" to "PHÂN BỐ CÚP LEGEND",
+                            "legend_rank_curve" to "XẾP HẠNG HUYỀN THOẠI",
+                            "legend_trophy_buckets" to "PHÂN BỐ CÚP HUYỀN THOẠI",
                             "historical_leaderboard" to "BXH LỊCH SỬ",
                             "trophy_buckets" to "PHÂN BỐ CÚP",
-                            "legend_season" to "MÙA LEGEND",
-                            "ranked_group" to "NHÓM RANKED",
+                            "legend_season" to "MÙA HUYỀN THOẠI",
+                            "ranked_group" to "NHÓM XẾP HẠNG",
                             "league_tier_statistics" to "THỐNG KÊ HẠNG",
                             "league_hit_rates" to "TỶ LỆ SAO",
-                            "legend_days" to "LEGEND THEO NGÀY",
-                            "legend_performance" to "HIỆU SUẤT LEGEND"
+                            "legend_days" to "HUYỀN THOẠI THEO NGÀY",
+                            "legend_performance" to "HIỆU SUẤT HUYỀN THOẠI"
                         ),
                         ::selectAnalyticsCategory
                     )
@@ -2640,7 +2640,8 @@ private fun lookupOrderedJsonKeys(payload: JSONObject): List<String> {
 }
 
 private fun JSONObject.lookupExplicitRank(): Long? {
-    for (key in listOf("rank", "rankPosition", "position", "globalRank", "groupRank", "localRank")) {
+    // "position" is often a war map position, not a leaderboard rank.
+    for (key in listOf("rank", "rankPosition", "globalRank", "groupRank", "localRank")) {
         val parsed = lookupText(key).trim().removePrefix("#").toLongOrNull()
         if (parsed != null && parsed > 0L) return parsed
     }
@@ -2653,6 +2654,15 @@ private fun lookupJsonArrayDisplayOrder(key: String, values: JSONArray): List<In
     val normalizedKey = key.lowercase().replace("_", "").replace("-", "")
     val chronologicalKeys = listOf("history", "timeline", "series", "battle", "activity", "event", "change", "joinleave", "season", "daily", "day", "war")
     if (chronologicalKeys.any { marker -> normalizedKey.contains(marker) }) return indices
+
+    val timeKeys = setOf(
+        "date", "timestamp", "time", "eventTime", "battleTime", "updatedAt",
+        "lastObservedAt", "joinedAt", "startTime", "endTime", "createdAt"
+    )
+    val objectRows = indices.mapNotNull(values::optJSONObject)
+    // API arrays can be wrapped under generic keys such as "items". Preserve their original
+    // chronology when every row contains a timestamp, even if the parent key is generic.
+    if (objectRows.size == indices.size && objectRows.all { row -> timeKeys.any(row::has) }) return indices
 
     val ranked = indices.mapNotNull { index ->
         values.optJSONObject(index)?.lookupExplicitRank()?.let { index to it }
