@@ -69,6 +69,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.time.LocalDate
 
 private const val CLASHKING_API = "https://api.clashk.ing"
 private val LookupCyan = Color(0xFF36F4FF)
@@ -186,6 +187,32 @@ private object ClashKingLookupApi {
         val params = mutableListOf<String>()
         fun add(key: String, value: String) { value.trim().takeIf(String::isNotBlank)?.let { params += "$key=${encode(it)}" } }
         fun withQuery(path: String): String = if (params.isEmpty()) path else "$path?${params.joinToString("&")}"
+        fun validateDay(raw: String, label: String, required: Boolean = false) {
+            val value = raw.trim()
+            if (value.isBlank()) {
+                require(!required) { "Cần nhập $label theo dạng YYYY-MM-DD." }
+                return
+            }
+            require(runCatching { LocalDate.parse(value) }.isSuccess) {
+                "$label không hợp lệ. Hãy dùng dạng YYYY-MM-DD."
+            }
+        }
+        fun validateRange(start: String, end: String) {
+            validateDay(start, "ngày bắt đầu")
+            validateDay(end, "ngày kết thúc")
+            if (start.isNotBlank() && end.isNotBlank()) {
+                require(start.trim() <= end.trim()) { "Ngày bắt đầu không được sau ngày kết thúc." }
+            }
+        }
+        fun validatePositive(raw: String, label: String, maximum: Int = Int.MAX_VALUE) {
+            val value = raw.trim().toIntOrNull()
+            require(value != null && value in 1..maximum) { "$label phải là số nguyên từ 1 đến $maximum." }
+        }
+        fun validateSeason(raw: String, label: String) {
+            require(Regex("\\d{4}-(0[1-9]|1[0-2])").matches(raw.trim())) {
+                "$label phải có dạng YYYY-MM."
+            }
+        }
         return when (category) {
             "global_counts" -> "/v2/counts"
             "counts_townhalls" -> "/v2/counts/players/town-halls"
@@ -195,9 +222,9 @@ private object ClashKingLookupApi {
             "counts_capital_leagues" -> "/v2/counts/clans/capital-leagues"
             "counts_clan_members" -> "/v2/counts/clans/member-bins"
             "stats_ranked" -> {
-                require(primary.toIntOrNull()?.let { it > 0 } == true && secondary.toIntOrNull()?.let { it > 0 } == true) {
-                    "Thống kê Ranked cần cấp Nhà chính và mã bậc giải hợp lệ."
-                }
+                validatePositive(primary, "Cấp Nhà chính", 20)
+                validatePositive(secondary, "Mã bậc giải Ranked")
+                validateRange(from, to)
                 add("townHallLevel", primary)
                 add("leagueTierId", secondary)
                 add("startDate", from)
@@ -205,6 +232,9 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/ranked")
             }
             "stats_war" -> {
+                validateRange(from, to)
+                if (primary.isNotBlank()) validatePositive(primary, "Nhà chính người tấn công", 20)
+                if (secondary.isNotBlank()) validatePositive(secondary, "Nhà chính đối thủ", 20)
                 add("startDate", from)
                 add("endDate", to)
                 add("townHallLevel", primary)
@@ -213,10 +243,13 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/war")
             }
             "stats_cwl" -> {
+                if (primary.isNotBlank()) validateSeason(primary, "Mùa CWL")
                 add("season", primary)
                 withQuery("/v2/stats/cwl")
             }
             "wars_hit_rates" -> {
+                validateRange(from, to)
+                if (primary.isNotBlank()) validatePositive(primary, "Cấp Nhà chính", 20)
                 add("time[after]", from)
                 add("time[before]", to)
                 add("interval", interval)
@@ -224,6 +257,8 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/wars/hitrates")
             }
             "wars_summary" -> {
+                validateRange(from, to)
+                if (primary.isNotBlank()) validatePositive(primary, "Quy mô hội chiến", 100)
                 add("time[after]", from)
                 add("time[before]", to)
                 add("interval", interval)
@@ -231,6 +266,9 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/wars/summary")
             }
             "army_setups" -> {
+                validateRange(from, to)
+                validatePositive(limit.ifBlank { "100" }, "Giới hạn đội hình", 200)
+                if (rankLimit.isNotBlank()) validatePositive(rankLimit, "Giới hạn thứ hạng")
                 add("time[after]", from)
                 add("time[before]", to)
                 add("sort", sort)
@@ -241,6 +279,9 @@ private object ClashKingLookupApi {
             }
             "army_setup_timeline" -> {
                 require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
+                validateRange(from, to)
+                validatePositive(limit.ifBlank { "100" }, "Giới hạn đội hình", 200)
+                if (rankLimit.isNotBlank()) validatePositive(rankLimit, "Giới hạn thứ hạng")
                 add("time[after]", from)
                 add("time[before]", to)
                 add("groupKey", groupKey)
@@ -252,6 +293,8 @@ private object ClashKingLookupApi {
             }
             "army_setup_rank_history" -> {
                 require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
+                validateRange(from, to)
+                if (rankLimit.isNotBlank()) validatePositive(rankLimit, "Giới hạn thứ hạng")
                 add("time[after]", from)
                 add("time[before]", to)
                 add("groupKey", groupKey)
@@ -262,24 +305,29 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/army-setups/rank-history")
             }
             "legend_rank_curve" -> {
-                require(date.isNotBlank()) { "Nhập ngày cần xem đường cong xếp hạng Legend." }
+                validateDay(date, "ngày xem xếp hạng Legend", required = true)
                 add("day", date)
                 withQuery("/v2/legends/rank-curve")
             }
             "legend_trophy_buckets" -> {
                 if (date.isBlank()) "/v2/legends/trophy-buckets"
-                else "/v2/legends/trophy-buckets/${encode(date)}"
+                else {
+                    validateDay(date, "ngày thống kê Legend")
+                    "/v2/legends/trophy-buckets/${encode(date)}"
+                }
             }
             "historical_leaderboard" -> {
-                require(primary.isNotBlank() && date.isNotBlank()) { "Cần nhập mã khu vực và ngày (YYYY-MM-DD)." }
+                validatePositive(primary, "Mã khu vực")
+                validateDay(date, "ngày snapshot", required = true)
                 "/v2/leaderboard/history/${encode(leaderboardType)}/${encode(primary)}/${encode(date)}"
             }
             "trophy_buckets" -> {
-                require(primary.isNotBlank()) { "Cần nhập mã giải đấu." }
+                validatePositive(primary, "Mã giải đấu")
                 "/v2/leaderboard/${encode(primary)}/trophy-buckets"
             }
             "legend_season" -> {
-                require(primary.isNotBlank()) { "Cần nhập mùa Legend theo dạng YYYY-MM." }
+                validateSeason(primary, "Mùa Legend")
+                validatePositive(secondary.ifBlank { "100" }, "Số kết quả tối đa", 200)
                 add("limit", secondary.ifBlank { "100" })
                 withQuery("/v2/legends/history/${encode(primary)}")
             }
@@ -292,6 +340,8 @@ private object ClashKingLookupApi {
                 "/v2/stats/league/tournaments/${encode(primary)}/tiers/${encode(secondary)}"
             }
             "league_hit_rates" -> {
+                validateRange(from, to)
+                require(mode == "ranked" || mode == "legend") { "Chế độ phải là Ranked hoặc Legend." }
                 add("time[after]", from); add("time[before]", to); add("mode", mode)
                 if (mode == "ranked") {
                     add("leagueTierId", primary)
@@ -300,10 +350,12 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/league/hit-rates")
             }
             "legend_days" -> {
+                validateRange(from, to)
                 add("time[after]", from); add("time[before]", to); add("cohort", cohort)
                 withQuery("/v2/stats/legend/days")
             }
             "legend_performance" -> {
+                validateRange(from, to)
                 add("time[after]", from); add("time[before]", to); add("cohort", cohort)
                 add("compare", "true"); add("armyTypes", "true")
                 withQuery("/v2/stats/legend/performance")
