@@ -523,14 +523,38 @@ object FirebaseAccountAdministration {
 
     fun isOwner(uid: String?): Boolean = uid?.trim() == OWNER_UID
 
-    suspend fun isCurrentAccountEnabled(): Boolean {
+    suspend fun prepareCurrentAccount(): Boolean {
         val user = FirebaseAuth.getInstance().currentUser ?: return false
-        val profile = FirebaseFirestore.getInstance()
+        val reference = FirebaseFirestore.getInstance()
             .collection("users")
             .document(user.uid)
-            .get()
-            .awaitFirebaseResult()
-        return profile.exists() && profile.getBoolean("accountDisabled") != true
+        val profile = reference.get().awaitFirebaseResult()
+        if (!profile.exists() || profile.getBoolean("accountDisabled") == true) return false
+
+        val obsoleteFields = listOf(
+            "givenName", "familyName", "photoUrl",
+            "deviceManufacturer", "deviceModel", "deviceBrand", "deviceProduct",
+            "deviceCodeName", "supportedAbis", "localeTag", "timeZoneId",
+            "screenWidthPx", "screenHeightPx", "densityDpi", "networkType",
+            "networkStatus", "networkValidated", "androidVersion", "sdkInt",
+            "appVersionName", "appVersionCode", "lastIp", "lastIpCapturedAt",
+            "firstOpenedAt", "lastOpenedAt", "appOpenCount", "lastActiveAt",
+            "lastBackgroundAt", "sessionStartedAt", "activityUpdatedAt",
+            "lastActivityEvent", "lastSessionDurationSeconds", "totalForegroundSeconds",
+            "requiredAccountDataConsentVersion", "requiredAccountDataConsentAt",
+            "activityDataConsentVersion", "dataSharingConsent", "analyticsConsent",
+            "diagnosticsConsent", "villageDataConsent", "activityConsentAt",
+            "lastVillageTag", "lastVillageName", "lastVillageTimestamp",
+            "lastVillageTownHallLevel", "lastVillageBuilderHallLevel",
+            "villageImportCount", "lastVillageSyncedAt", "lastVillageRawJsonBytes"
+        )
+        val obsoleteValues = obsoleteFields
+            .filter(profile::contains)
+            .associateWith { FieldValue.delete() }
+        if (obsoleteValues.isNotEmpty()) {
+            reference.update(obsoleteValues).awaitFirebaseResult()
+        }
+        return true
     }
 
     suspend fun savePreferredName(name: String) {
