@@ -638,7 +638,7 @@ fun ClashLookupScreen() {
             )
         }
         Text(
-            "Nguồn dữ liệu: ClashKing API. Đây là công cụ cộng đồng độc lập, không phải ứng dụng chính thức của Supercell.",
+            "Nguồn dữ liệu: ClashKing API • Creator Code: ClashKing. Đây là công cụ cộng đồng độc lập, không phải ứng dụng chính thức của Supercell.",
             fontSize = 9.sp,
             color = LookupMuted,
             lineHeight = 13.sp
