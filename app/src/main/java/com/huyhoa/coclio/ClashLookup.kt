@@ -300,7 +300,7 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/wars/summary")
             }
             "army_setups" -> {
-                validateRange(from, to)
+                validateRange(from, to, 90)
                 validatePositive(limit.ifBlank { "100" }, "Giới hạn đội hình", 200)
                 validateRankLimit(rankLimit)
                 add("time[after]", from)
@@ -313,7 +313,7 @@ private object ClashKingLookupApi {
             }
             "army_setup_timeline" -> {
                 require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Huyền thoại." }
-                validateRange(from, to)
+                validateRange(from, to, 365)
                 validateRankLimit(rankLimit)
                 add("time[after]", from)
                 add("time[before]", to)
@@ -325,7 +325,7 @@ private object ClashKingLookupApi {
             }
             "army_setup_rank_history" -> {
                 require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Huyền thoại." }
-                validateRange(from, to)
+                validateRange(from, to, 365)
                 validateRankLimit(rankLimit)
                 add("time[after]", from)
                 add("time[before]", to)
