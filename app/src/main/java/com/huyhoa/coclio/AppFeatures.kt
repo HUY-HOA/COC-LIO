@@ -401,7 +401,8 @@ private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
         }
     }
 
-private suspend private fun collectAccountTechnicalInfo(context: Context): Map<String, Any> {
+private suspend @Suppress("DEPRECATION")
+private fun collectAccountTechnicalInfo(context: Context): Map<String, Any> {
     val appContext = context.applicationContext
     val metrics = appContext.resources.displayMetrics
     val locale = java.util.Locale.getDefault()
@@ -409,7 +410,6 @@ private suspend private fun collectAccountTechnicalInfo(context: Context): Map<S
     val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         packageInfo.longVersionCode
     } else {
-        @Suppress("DEPRECATION")
         packageInfo.versionCode.toLong()
     }
 
