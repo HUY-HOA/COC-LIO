@@ -944,8 +944,7 @@ private fun CocLioApp(
             scope.launch {
                 snackbar.showAppSnackbar(
                     context,
-                    error.message?.takeIf { it.isNotBlank() }
-                        ?: "Không thể khởi động bong bóng thông báo."
+                    appErrorMessage(error.message, "Không thể khởi động bong bóng thông báo.")
                 )
             }
         }
@@ -1100,9 +1099,7 @@ private fun CocLioApp(
             .onFailure { error ->
                 accountProfileReady = false
                 accountProfileReadyForEmail = email
-                accountProfileError = error.message
-                    ?.takeIf { it.isNotBlank() }
-                    ?: "Không thể thiết lập hồ sơ tài khoản."
+                accountProfileError = appErrorMessage(error.message, "Không thể thiết lập hồ sơ tài khoản.")
             }
     }
 
@@ -1193,7 +1190,7 @@ private fun CocLioApp(
             showImportDialog = false
             importSummary = summary
         } catch (error: Exception) {
-            importError = error.message ?: "Không thể đọc JSON này."
+            importError = appErrorMessage(error.message, "Không thể đọc JSON này.")
         }
     }
 
@@ -1273,9 +1270,7 @@ private fun CocLioApp(
                     googleAuthError = null
                     snackbar.showAppSnackbar(context, "Bạn đã hủy đăng nhập Google.")
                 } else {
-                    googleAuthError = error.message
-                        ?.takeIf { it.isNotBlank() }
-                        ?: "Không thể hoàn tất đăng nhập. Hãy kiểm tra quyền truy cập tài khoản và kết nối mạng."
+                    googleAuthError = appErrorMessage(error.message, "Không thể hoàn tất đăng nhập. Hãy kiểm tra quyền truy cập tài khoản và kết nối mạng.")
                 }
             }
         }
