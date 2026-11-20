@@ -178,14 +178,17 @@ private object ClashKingLookupApi {
 
     private fun tag(entry: ClashLookupEntry): String = encode(entry.tag.trim().uppercase())
 
-    fun leaderboardPath(category: String, value: String): String = when (category) {
+    fun leaderboardPath(category: String, value: String, season: String, teamSize: String): String = when (category) {
         "townhall" -> "/v2/leaderboard/townhalls/${encode(value)}?limit=100"
         "league" -> "/v2/leaderboard/league/${encode(value)}?limit=100"
         "war_triples" -> "/v2/leaderboard/war-triples/${encode(value)}?limit=100"
         "clan_donations" -> "/v2/leaderboard/${encode(value)}/clan/donations?limit=100"
         "clan_war_wins" -> "/v2/leaderboard/${encode(value)}/clan/war-wins?limit=100"
         "clan_capital_gold" -> "/v2/leaderboard/${encode(value)}/clan/capital-gold?limit=100"
-        "clan_cwl" -> "/v2/leaderboard/cwl/${encode(value)}?limit=100"
+        "clan_cwl" -> {
+            require(season.isNotBlank() && teamSize.toIntOrNull() != null) { "CWL cần mùa giải và quy mô đội (15 hoặc 30)." }
+            "/v2/leaderboard/cwl/${encode(value)}?season=${encode(season)}&team_size=${encode(teamSize)}"
+        }
         else -> "/v2/leaderboard/clan/win-streak?limit=100"
     }
 
@@ -507,6 +510,8 @@ fun ClashLookupScreen() {
     var searchMode by rememberSaveable { mutableStateOf("player") }
     var rankingCategory by rememberSaveable { mutableStateOf("townhall") }
     var rankingValue by rememberSaveable { mutableStateOf("19") }
+    var rankingSeason by rememberSaveable { mutableStateOf("") }
+    var rankingTeamSize by rememberSaveable { mutableStateOf("15") }
     var analyticsCategory by rememberSaveable { mutableStateOf("global_counts") }
     var analyticsPrimary by rememberSaveable { mutableStateOf("") }
     var analyticsSecondary by rememberSaveable { mutableStateOf("") }
@@ -599,7 +604,7 @@ fun ClashLookupScreen() {
                     nextCursor = null
                 } else {
                     val response = if (isLeaderboard) {
-                        ClashKingLookupApi.get(ClashKingLookupApi.leaderboardPath(rankingCategory, rankingValue))
+                        ClashKingLookupApi.get(ClashKingLookupApi.leaderboardPath(rankingCategory, rankingValue, rankingSeason, rankingTeamSize))
                     } else {
                         ClashKingLookupApi.get(ClashKingLookupApi.searchPath(isClan, term, oldCursor, selectedFilters))
                     }
@@ -986,9 +991,13 @@ fun ClashLookupScreen() {
                                 else -> "32000006"
                             }
                         )
+                        if (rankingCategory == "clan_cwl") {
+                            LookupFilterField("Mùa CWL (YYYY-MM)", rankingSeason, { rankingSeason = it }, "2026-11")
+                            LookupFilterField("Quy mô đội (15 hoặc 30)", rankingTeamSize, { rankingTeamSize = it }, "15")
+                        }
                         Text(
                             when {
-                                rankingCategory == "clan_cwl" -> "Nhập ID giải Clan War League."
+                                rankingCategory == "clan_cwl" -> "Bảng xếp hạng CWL cần ID giải, mùa giải và quy mô đội."
                                 rankingCategory == "war_triples" -> "Bảng chuỗi 3 sao theo cấp Nhà chính."
                                 isClanLeaderboard -> "Các bảng xếp hạng clan dùng ID khu vực; 32000006 là khu vực International."
                                 else -> "Nhập đúng ID Nhà chính hoặc ID giải đấu theo dữ liệu ClashKing."
