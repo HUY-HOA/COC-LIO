@@ -744,10 +744,17 @@ fun ClashLookupScreen() {
     var detailLoading by remember { mutableStateOf(false) }
     var detailError by remember { mutableStateOf<String?>(null) }
 
+    fun resetSearchPage() {
+        results = emptyList()
+        nextCursor = null
+        searchError = null
+    }
+
     val filters = LookupFilters(
         clanTags = clanTags,
         leagueIds = leagueIds,
-        townhallLevels = townhallLevels    )
+        townhallLevels = townhallLevels
+    )
 
     fun runSearch(loadMore: Boolean = false) {
         val term = query.trim()
@@ -755,6 +762,10 @@ fun ClashLookupScreen() {
         val isAnalytics = searchMode == "analytics"
         if (!isLeaderboard && !isAnalytics && term.length < 2) {
             searchError = "Nhập ít nhất 2 ký tự tên hoặc TAG/ID cần tìm."
+            return
+        }
+        if (!isLeaderboard && !isAnalytics && term.length > 100) {
+            searchError = "Từ khóa tìm kiếm không được dài quá 100 ký tự."
             return
         }
         if (isLeaderboard && rankingCategory != "clan_win_streak") {
@@ -1113,9 +1124,8 @@ fun ClashLookupScreen() {
                         selected = searchMode == "player",
                         onClick = {
                             searchMode = "player"
-                            results = emptyList()
+                            resetSearchPage()
                             analyticsResult = null
-                            searchError = null
                         },
                         label = { Text("NGƯỜI CHƠI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
                         leadingIcon = { Icon(Icons.Outlined.Person, null, modifier = Modifier.size(16.dp)) }
@@ -1124,9 +1134,8 @@ fun ClashLookupScreen() {
                         selected = searchMode == "clan",
                         onClick = {
                             searchMode = "clan"
-                            results = emptyList()
+                            resetSearchPage()
                             analyticsResult = null
-                            searchError = null
                         },
                         label = { Text("BANG HỘI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
                         leadingIcon = { Icon(Icons.Outlined.Groups, null, modifier = Modifier.size(16.dp)) }
@@ -1145,7 +1154,12 @@ fun ClashLookupScreen() {
 
                 if (searchMode != "leaderboard" && searchMode != "analytics") OutlinedTextField(
                     value = query,
-                    onValueChange = { query = it },
+                    onValueChange = {
+                        if (query != it) {
+                            query = it
+                            resetSearchPage()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (searchMode == "player") "Tên người chơi hoặc #TAG" else "TAG bang hội (bắt buộc)") },
@@ -1398,9 +1412,9 @@ fun ClashLookupScreen() {
                 }
 
                 if (showAdvancedFilters && searchMode == "player") {
-                    LookupFilterField("TAG bang hội (phân cách bằng dấu phẩy)", clanTags, { clanTags = it }, "#ABC123")
-                    LookupFilterField("ID giải đấu (phân cách bằng dấu phẩy)", leagueIds, { leagueIds = it }, "29000000")
-                    LookupFilterField("Cấp Nhà chính (phân cách bằng dấu phẩy)", townhallLevels, { townhallLevels = it }, "17,18,19")
+                    LookupFilterField("TAG bang hội (phân cách bằng dấu phẩy)", clanTags, { clanTags = it; resetSearchPage() }, "#ABC123")
+                    LookupFilterField("Mã giải đấu (phân cách bằng dấu phẩy)", leagueIds, { leagueIds = it; resetSearchPage() }, "29000000")
+                    LookupFilterField("Cấp Nhà chính (phân cách bằng dấu phẩy)", townhallLevels, { townhallLevels = it; resetSearchPage() }, "17,18,19")
                     Text(
                         "Bộ lọc phải dùng TAG và ID đúng theo dữ liệu ClashKing. Để trống mục nào thì không áp dụng mục đó.",
                         fontSize = 9.sp,
