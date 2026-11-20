@@ -862,6 +862,11 @@ fun ClashLookupScreen() {
         searchError = null
     }
 
+    fun clearAnalyticsResult() {
+        analyticsResult = null
+        searchError = null
+    }
+
     fun currentSearchKey(): String = listOf(
         searchMode, query.trim(), clanTags, leagueIds, townhallLevels,
         rankingCategory, rankingValue, rankingSeason, rankingTeamSize,
@@ -1439,113 +1444,113 @@ fun ClashLookupScreen() {
                     }
                     when (analyticsCategory) {
                         "stats_ranked" -> {
-                            LookupFilterField("Cấp Nhà chính", analyticsPrimary, { analyticsPrimary = it }, "19")
-                            LookupFilterField("Mã bậc giải Ranked", analyticsSecondary, { analyticsSecondary = it }, "105000036")
-                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
-                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            LookupFilterField("Cấp Nhà chính", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "19")
+                            LookupFilterField("Mã bậc giải Ranked", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "105000036")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                         }
                         "stats_war" -> {
-                            LookupFilterField("Nhà chính người tấn công (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "19")
-                            LookupFilterField("Nhà chính đối thủ (tùy chọn)", analyticsSecondary, { analyticsSecondary = it }, "19")
-                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
-                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            LookupFilterField("Nhà chính người tấn công (tùy chọn)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "19")
+                            LookupFilterField("Nhà chính đối thủ (tùy chọn)", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "19")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             Text("Lọc Nhà chính bằng cách nhập cấp; có thể bỏ trống để xem tổng hợp.", fontSize = 9.sp, color = LookupMuted)
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                FilterChip(selected = analyticsEqualTownHalls == "all", onClick = { analyticsEqualTownHalls = "all" }, label = { Text("MỌI CẶP", fontSize = 8.sp) })
-                                FilterChip(selected = analyticsEqualTownHalls == "true", onClick = { analyticsEqualTownHalls = "true" }, label = { Text("CÙNG NHÀ CHÍNH", fontSize = 8.sp) })
-                                FilterChip(selected = analyticsEqualTownHalls == "false", onClick = { analyticsEqualTownHalls = "false" }, label = { Text("KHÁC NHÀ CHÍNH", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsEqualTownHalls == "all", onClick = { analyticsEqualTownHalls = "all"; clearAnalyticsResult() }, label = { Text("MỌI CẶP", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsEqualTownHalls == "true", onClick = { analyticsEqualTownHalls = "true"; clearAnalyticsResult() }, label = { Text("CÙNG NHÀ CHÍNH", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsEqualTownHalls == "false", onClick = { analyticsEqualTownHalls = "false"; clearAnalyticsResult() }, label = { Text("KHÁC NHÀ CHÍNH", fontSize = 8.sp) })
                             }
                         }
-                        "stats_cwl" -> LookupFilterField("Mùa CWL (tùy chọn, YYYY-MM)", analyticsPrimary, { analyticsPrimary = it }, "YYYY-MM")
+                        "stats_cwl" -> LookupFilterField("Mùa CWL (tùy chọn, YYYY-MM)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "YYYY-MM")
                         "wars_hit_rates" -> {
-                            LookupFilterField("Nhà chính (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "19")
-                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
-                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            LookupFilterField("Nhà chính (tùy chọn)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "19")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 listOf("day" to "NGÀY", "week" to "TUẦN", "month" to "THÁNG").forEach { (value, label) ->
-                                    FilterChip(selected = analyticsInterval == value, onClick = { analyticsInterval = value }, label = { Text(label, fontSize = 8.sp) })
+                                    FilterChip(selected = analyticsInterval == value, onClick = { analyticsInterval = value; clearAnalyticsResult() }, label = { Text(label, fontSize = 8.sp) })
                                 }
                             }
                         }
                         "wars_summary" -> {
-                            LookupFilterField("Quy mô hội chiến (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "15")
-                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
-                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            LookupFilterField("Quy mô hội chiến (tùy chọn)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "15")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 listOf("day" to "NGÀY", "week" to "TUẦN", "month" to "THÁNG").forEach { (value, label) ->
-                                    FilterChip(selected = analyticsInterval == value, onClick = { analyticsInterval = value }, label = { Text(label, fontSize = 8.sp) })
+                                    FilterChip(selected = analyticsInterval == value, onClick = { analyticsInterval = value; clearAnalyticsResult() }, label = { Text(label, fontSize = 8.sp) })
                                 }
                             }
                         }
                         "army_setups", "army_setup_timeline", "army_setup_rank_history" -> {
                             if (analyticsCategory != "army_setups") {
-                                LookupFilterField("Mã nhóm đội hình", analyticsGroupKey, { analyticsGroupKey = it }, "Lấy từ kết quả Đội hình Legend")
+                                LookupFilterField("Mã nhóm đội hình", analyticsGroupKey, { analyticsGroupKey = it; clearAnalyticsResult() }, "Lấy từ kết quả Đội hình Legend")
                                 if (analyticsCategory == "army_setup_rank_history") {
-                                    LookupFilterField("Mã biến thể (bỏ trống để xem đội hình chính)", analyticsVariantKey, { analyticsVariantKey = it }, "Có thể để trống")
+                                    LookupFilterField("Mã biến thể (bỏ trống để xem đội hình chính)", analyticsVariantKey, { analyticsVariantKey = it; clearAnalyticsResult() }, "Có thể để trống")
                                 }
                             }
-                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
-                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             if (analyticsCategory == "army_setups") {
-                                LookupFilterField("Giới hạn số đội hình (tối đa 200)", analyticsLimit, { analyticsLimit = it }, "100")
+                                LookupFilterField("Giới hạn số đội hình (tối đa 200)", analyticsLimit, { analyticsLimit = it; clearAnalyticsResult() }, "100")
                             }
-                            LookupFilterField("Giới hạn thứ hạng (200 hoặc 1000; để trống xem toàn bộ)", analyticsRankLimit, { analyticsRankLimit = it }, "200 hoặc 1000")
+                            LookupFilterField("Giới hạn thứ hạng (200 hoặc 1000; để trống xem toàn bộ)", analyticsRankLimit, { analyticsRankLimit = it; clearAnalyticsResult() }, "200 hoặc 1000")
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                FilterChip(selected = analyticsSort == "usage", onClick = { analyticsSort = "usage" }, label = { Text("PHỔ BIẾN", fontSize = 8.sp) })
-                                FilterChip(selected = analyticsSort == "tripleRate", onClick = { analyticsSort = "tripleRate" }, label = { Text("TỶ LỆ 3 SAO", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsSort == "usage", onClick = { analyticsSort = "usage"; clearAnalyticsResult() }, label = { Text("PHỔ BIẾN", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsSort == "tripleRate", onClick = { analyticsSort = "tripleRate"; clearAnalyticsResult() }, label = { Text("TỶ LỆ 3 SAO", fontSize = 8.sp) })
                             }
                             Text("Dữ liệu đội hình hiện chỉ có cho Legend I. Giới hạn thứ hạng chỉ nhận 200 hoặc 1000; bỏ trống để xem toàn bộ.", color = LookupMuted, fontSize = 9.sp)
                         }
-                        "legend_rank_curve" -> LookupFilterField("Ngày (YYYY-MM-DD)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
-                        "legend_trophy_buckets" -> LookupFilterField("Ngày lịch sử (để trống xem hiện tại)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
+                        "legend_rank_curve" -> LookupFilterField("Ngày (YYYY-MM-DD)", analyticsDate, { analyticsDate = it; clearAnalyticsResult() }, "YYYY-MM-DD")
+                        "legend_trophy_buckets" -> LookupFilterField("Ngày lịch sử (để trống xem hiện tại)", analyticsDate, { analyticsDate = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                         "historical_leaderboard" -> {
                             Text("Loại bảng xếp hạng", color = LookupMuted, fontSize = 9.sp)
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                 listOf("player_home_trophies" to "NHÀ CHÍNH", "player_builder_base_trophies" to "NHÀ THỢ XÂY",
                                     "clan_home_points" to "ĐIỂM BANG HỘI", "clan_builder_base_points" to "ĐIỂM XÂY",
                                     "clan_capital_points" to "ĐIỂM THỦ PHỦ").forEach { (key, label) ->
-                                    FilterChip(selected = analyticsLeaderboardType == key, onClick = { analyticsLeaderboardType = key },
+                                    FilterChip(selected = analyticsLeaderboardType == key, onClick = { analyticsLeaderboardType = key; clearAnalyticsResult() },
                                         label = { Text(label, fontSize = 8.sp) })
                                 }
                             }
-                            LookupFilterField("Mã khu vực", analyticsPrimary, { analyticsPrimary = it }, "32000006")
-                            LookupFilterField("Ngày snapshot (YYYY-MM-DD)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
+                            LookupFilterField("Mã khu vực", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "32000006")
+                            LookupFilterField("Ngày snapshot (YYYY-MM-DD)", analyticsDate, { analyticsDate = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                         }
-                        "trophy_buckets" -> LookupFilterField("Mã giải đấu", analyticsPrimary, { analyticsPrimary = it }, "29000000")
+                        "trophy_buckets" -> LookupFilterField("Mã giải đấu", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "29000000")
                         "legend_season" -> {
-                            LookupFilterField("Mùa Legend (YYYY-MM)", analyticsPrimary, { analyticsPrimary = it }, "YYYY-MM")
-                            LookupFilterField("Số kết quả tối đa", analyticsSecondary, { analyticsSecondary = it }, "100")
+                            LookupFilterField("Mùa Legend (YYYY-MM)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "YYYY-MM")
+                            LookupFilterField("Số kết quả tối đa", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "100")
                         }
                         "ranked_group" -> {
-                            LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it }, "Mã mùa giải")
-                            LookupFilterField("TAG nhóm Ranked", analyticsSecondary, { analyticsSecondary = it }, "#ABC123")
+                            LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "Mã mùa giải")
+                            LookupFilterField("TAG nhóm Ranked", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "#ABC123")
                         }
                         "league_tier_statistics" -> {
-                            LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it }, "Mã mùa giải")
-                            LookupFilterField("Mã bậc giải", analyticsSecondary, { analyticsSecondary = it }, "105000036")
+                            LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "Mã mùa giải")
+                            LookupFilterField("Mã bậc giải", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "105000036")
                         }
                         "league_hit_rates" -> {
-                            LookupFilterField("Từ ngày", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
-                            LookupFilterField("Đến ngày", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            LookupFilterField("Từ ngày", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                FilterChip(selected = analyticsMode == "ranked", onClick = { analyticsMode = "ranked" }, label = { Text("RANKED", fontSize = 8.sp) })
-                                FilterChip(selected = analyticsMode == "legend", onClick = { analyticsMode = "legend" }, label = { Text("LEGEND", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsMode == "ranked", onClick = { analyticsMode = "ranked"; clearAnalyticsResult() }, label = { Text("RANKED", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsMode == "legend", onClick = { analyticsMode = "legend"; clearAnalyticsResult() }, label = { Text("LEGEND", fontSize = 8.sp) })
                             }
                             if (analyticsMode == "ranked") {
-                                LookupFilterField("Mã bậc giải (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "105000036")
-                                LookupFilterField("Cấp Nhà chính (tùy chọn)", analyticsSecondary, { analyticsSecondary = it }, "19")
+                                LookupFilterField("Mã bậc giải (tùy chọn)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "105000036")
+                                LookupFilterField("Cấp Nhà chính (tùy chọn)", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "19")
                             } else {
                                 Text("Thống kê Legend không lọc theo bậc giải hoặc cấp Nhà chính.", fontSize = 9.sp, color = LookupMuted)
                             }
                         }
                         "legend_days", "legend_performance" -> {
-                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
-                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             Text("Nhóm dữ liệu", color = LookupMuted, fontSize = 9.sp)
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 val cohorts = if (analyticsCategory == "legend_days") listOf("legend_i", "top_1000", "top_200") else listOf("observed", "legend_i", "top_1000", "top_200")
                                 cohorts.forEach { cohort ->
-                                    FilterChip(selected = analyticsCohort == cohort, onClick = { analyticsCohort = cohort },
+                                    FilterChip(selected = analyticsCohort == cohort, onClick = { analyticsCohort = cohort; clearAnalyticsResult() },
                                         label = { Text(cohort.uppercase().replace('_', ' '), fontSize = 8.sp) })
                                 }
                             }
