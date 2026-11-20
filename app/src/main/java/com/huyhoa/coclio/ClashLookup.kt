@@ -69,6 +69,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.text.Normalizer
 import java.time.LocalDate
 
 private const val CLASHKING_API = "https://api.clashk.ing"
@@ -109,12 +110,34 @@ private data class LookupFilters(
 )
 
 private fun normalizeLookupTag(raw: String, label: String): String {
-    val input = raw.trim().uppercase()
+    val input = raw.trim().uppercase().replace('O', '0')
     val normalized = if (input.startsWith("#")) input else "#$input"
     require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(normalized)) {
         "$label không hợp lệ. Hãy nhập TAG dạng #ABC123."
     }
     return normalized
+}
+
+private fun lookupSearchCandidates(raw: String): List<String> {
+    val input = raw.trim()
+    if (input.isBlank()) return emptyList()
+    val candidates = mutableListOf(input)
+    val looksLikeTag = input.startsWith("#") ||
+        Regex("^[PYLQGRJCUV0289]{3,15}$").matches(input.uppercase())
+    if (looksLikeTag) {
+        runCatching { normalizeLookupTag(input, "TAG tìm kiếm") }
+            .getOrNull()
+            ?.let(candidates::add)
+        return candidates.distinct()
+    }
+
+    val compatible = Normalizer.normalize(input, Normalizer.Form.NFKD)
+        .replace(Regex("[\\p{M}\\p{Cf}\\p{So}]"), " ")
+        .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+    if (compatible.length >= 2 && compatible != input) candidates += compatible
+    return candidates.distinct()
 }
 
 private fun validateLookupWarEndTime(raw: String): String {
@@ -181,8 +204,11 @@ private object ClashKingLookupApi {
         return "/v2/player/search?${params.joinToString("&")}"
     }
 
-    fun clanCachedPath(rawTag: String): String =
-        "/v2/clan/${encode(normalizeLookupTag(rawTag, "TAG bang hội"))}/cached"
+    fun clanSearchPath(query: String, cursor: String?): String {
+        val params = mutableListOf("query=${encode(query)}", "limit=20")
+        cursor?.takeIf { it.isNotBlank() }?.let { params += "cursor=${encode(it)}" }
+        return "/v2/clan/search?${params.joinToString("&")}"
+    }
 
     private fun tag(entry: ClashLookupEntry): String = encode(entry.tag.trim().uppercase())
 
@@ -873,6 +899,7 @@ fun ClashLookupScreen() {
     var extendedOtherPlayerTag by rememberSaveable { mutableStateOf("") }
     var extendedWarEndTime by rememberSaveable { mutableStateOf("") }
     var query by rememberSaveable { mutableStateOf("") }
+    var effectiveSearchQuery by rememberSaveable { mutableStateOf("") }
     var showAdvancedFilters by rememberSaveable { mutableStateOf(false) }
     var clanTags by rememberSaveable { mutableStateOf("") }
     var leagueIds by rememberSaveable { mutableStateOf("") }
@@ -890,6 +917,7 @@ fun ClashLookupScreen() {
     fun resetSearchPage() {
         results = emptyList()
         nextCursor = null
+        effectiveSearchQuery = ""
         searchError = null
     }
 
@@ -948,6 +976,11 @@ fun ClashLookupScreen() {
         if (isSearching) return
         val oldCursor = if (loadMore) nextCursor else null
         val selectedFilters = filters
+        val searchCandidates = if (loadMore) {
+            listOf(effectiveSearchQuery.ifBlank { term })
+        } else {
+            lookupSearchCandidates(term)
+        }
         val isClanLeaderboard = isLeaderboard && rankingCategory.startsWith("clan_")
         val requestKey = currentSearchKey()
         val requestAnalyticsCategory = analyticsCategory
@@ -1006,19 +1039,30 @@ fun ClashLookupScreen() {
                             results = lookupItems(response, isClanLeaderboard)
                             nextCursor = null
                         }
-                    } else if (searchMode == "clan") {
-                        val clan = ClashKingLookupApi.get(ClashKingLookupApi.clanCachedPath(term))
-                        if (clan.lookupText("tag").isBlank()) throw IOException("Không tìm thấy bang hội theo TAG này hoặc ClashKing chưa lưu hồ sơ.")
-                        if (currentSearchKey() == requestKey) {
-                            results = listOf(lookupEntry(clan, true))
-                            nextCursor = null
-                        }
                     } else {
-                        val response = ClashKingLookupApi.get(ClashKingLookupApi.playerSearchPath(term, oldCursor, selectedFilters))
-                        val found = lookupItems(response, false)
+                        val isClanSearch = searchMode == "clan"
+                        var found = emptyList<ClashLookupEntry>()
+                        var foundCursor: String? = null
+                        var usedQuery = searchCandidates.firstOrNull().orEmpty()
+                        for (candidate in searchCandidates) {
+                            val response = if (isClanSearch) {
+                                ClashKingLookupApi.get(ClashKingLookupApi.clanSearchPath(candidate, oldCursor))
+                            } else {
+                                ClashKingLookupApi.get(ClashKingLookupApi.playerSearchPath(candidate, oldCursor, selectedFilters))
+                            }
+                            found = lookupItems(response, isClanSearch)
+                            usedQuery = candidate
+                            if (found.isNotEmpty() || loadMore || candidate == searchCandidates.lastOrNull()) {
+                                foundCursor = response.optJSONObject("pagination")
+                                    ?.lookupText("nextCursor")
+                                    ?.takeIf { it.isNotBlank() }
+                                break
+                            }
+                        }
                         if (currentSearchKey() == requestKey) {
                             results = if (loadMore) results + found else found
-                            nextCursor = response.optJSONObject("pagination")?.lookupText("nextCursor")?.takeIf { it.isNotBlank() }
+                            nextCursor = foundCursor
+                            effectiveSearchQuery = usedQuery
                         }
                     }
                     if (currentSearchKey() == requestKey && results.isEmpty()) searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên, TAG/ID hoặc bộ lọc."
@@ -1365,8 +1409,8 @@ fun ClashLookupScreen() {
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (searchMode == "player") "Tên người chơi hoặc #TAG" else "TAG bang hội (bắt buộc)") },
-                    placeholder = { Text(if (searchMode == "player") "Nhập tên hoặc #ABC123" else "Nhập #2PR8V8") },
+                    label = { Text(if (searchMode == "player") "Tên, ký tự trang trí hoặc TAG người chơi" else "Tên, ký tự trang trí hoặc TAG bang hội") },
+                    placeholder = { Text(if (searchMode == "player") "Tên thường, 𝑻𝒆̂𝒏 kiểu chữ hoặc #TAG" else "Tên bang hội, biểu tượng hoặc #TAG") },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = LookupCyan) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = LookupCyan,
@@ -1667,7 +1711,7 @@ fun ClashLookupScreen() {
         if (searchError != null) LookupMessageCard(searchError ?: "", isError = true)
         analyticsResult?.let { LookupDataPanel(title = analyticsResultTitle, payload = it) }
         if (searchMode == "clan" && searchError == null) {
-            Text("Tra cứu bang hội bằng TAG. API công khai hiện chưa có chức năng tìm bang hội theo tên.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
+            Text("Có thể tìm bang hội bằng tên, TAG hoặc tên có biểu tượng/ký tự trang trí. Ứng dụng tự thử dạng chữ chuẩn hóa khi cần.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
         }
 
         if (results.isNotEmpty()) {
@@ -1703,8 +1747,8 @@ fun ClashLookupScreen() {
         } else if (searchError == null && !isSearching && analyticsResult == null) {
             LookupMessageCard(
                 when (searchMode) {
-                    "player" -> "Tìm người chơi bằng tên hoặc TAG. Hồ sơ hỗ trợ hoạt động, lịch sử quân đội, trận đấu, hội chiến, CWL, Huyền thoại và xếp hạng (Ranked)."
-                    "clan" -> "Nhập TAG bang hội để mở hồ sơ thành viên, hội chiến, CWL, quyên góp, Thủ phủ, xếp hạng, kỷ lục và lịch sử."
+                    "player" -> "Tìm người chơi bằng tên, TAG hoặc tên có biểu tượng/ký tự trang trí. Nếu không khớp, ứng dụng thử chuẩn hóa chữ để tìm."
+                    "clan" -> "Tìm bang hội bằng tên hoặc TAG, kể cả tên có biểu tượng/ký tự trang trí; mở được hồ sơ thành viên, hội chiến, CWL, quyên góp, Thủ phủ và lịch sử."
                     "leaderboard" -> "Tra cứu bảng xếp hạng theo Nhà chính, giải đấu, chuỗi 3 sao và các hạng mục bang hội."
                     else -> "Truy cập thống kê công khai: bảng xếp hạng lịch sử, nhóm xếp hạng, phân bố cúp Huyền thoại và dữ liệu tổng quan."
                 }
