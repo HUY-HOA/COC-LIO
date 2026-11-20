@@ -134,23 +134,47 @@ private fun normalizeLookupTag(raw: String, label: String): String {
     return normalized
 }
 
-private fun lookupSearchCandidates(raw: String): List<String> {
+internal fun lookupSearchCandidates(raw: String): List<String> {
     val input = raw.trim()
     if (input.isBlank()) return emptyList()
-    val candidates = mutableListOf(input)
-    val looksLikeTag = input.startsWith("#") ||
-        Regex("^[PYLQGRJCUV0289]{3,15}$").matches(input.uppercase())
-    if (looksLikeTag) {
-        val exactTag = runCatching { normalizeLookupTag(input, "TAG tìm kiếm") }.getOrNull()
-        return listOf(exactTag ?: input)
+
+    val candidates = mutableListOf<String>()
+    val tagPattern = Regex("^[PYLQGRJCUV0289]{3,15}$")
+    val embeddedTag = Regex("#[PYLQGRJCUV0289]{3,15}", RegexOption.IGNORE_CASE)
+        .find(input.uppercase())
+        ?.value
+    val standaloneTag = input.removePrefix("#").uppercase().let { value ->
+        value.takeIf { tagPattern.matches(it) }
+    }
+    val tagInput = embeddedTag ?: standaloneTag
+    if (tagInput != null) {
+        val exactTag = runCatching { normalizeLookupTag(tagInput, "TAG tìm kiếm") }.getOrNull()
+        if (exactTag != null) {
+            candidates += exactTag
+            candidates += exactTag.removePrefix("#")
+        }
+        if (!input.equals(exactTag, ignoreCase = true)) candidates += input
+        return candidates.distinct()
     }
 
+    candidates += input
     val compatible = Normalizer.normalize(input, Normalizer.Form.NFKD)
         .replace(Regex("[\\p{M}\\p{Cf}\\p{So}]"), " ")
         .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
         .replace(Regex("\\s+"), " ")
         .trim()
     if (compatible.length >= 2 && compatible != input) candidates += compatible
+
+    // ClashKing matches all words in one query. Retry meaningful name parts
+    // individually so a partial or decorated multi-word name can still match.
+    compatible.split(' ')
+        .asSequence()
+        .filter { it.length >= 2 }
+        .distinct()
+        .sortedByDescending { it.length }
+        .take(4)
+        .forEach { candidates += it }
+
     return candidates.distinct()
 }
 
@@ -223,6 +247,9 @@ private object ClashKingLookupApi {
         cursor?.takeIf { it.isNotBlank() }?.let { params += "cursor=${encode(it)}" }
         return "/v2/clan/search?${params.joinToString("&")}"
     }
+
+    fun cachedClanPath(tag: String): String =
+        "/v2/clan/${encode(normalizeLookupTag(tag, "TAG bang hội"))}/cached"
 
     private fun tag(entry: ClashLookupEntry): String = encode(entry.tag.trim().uppercase())
 
@@ -1369,7 +1396,8 @@ fun ClashLookupScreen() {
         if (isSearching) return
         if (!loadMore) recentSearches = recordLookupHistory(context, searchMode, term)
         val oldCursor = if (loadMore) nextCursor else null
-        val selectedFilters = filters
+        // Never apply saved advanced filters while their controls are hidden.
+        val selectedFilters = if (showAdvancedFilters && searchMode == "player") filters else LookupFilters()
         val searchCandidates = if (loadMore) {
             listOf(effectiveSearchQuery.ifBlank { term })
         } else {
@@ -1454,13 +1482,24 @@ fun ClashLookupScreen() {
                                 break
                             }
                         }
+                        if (found.isEmpty() && isClanSearch && !loadMore) {
+                            val directTag = runCatching { normalizeLookupTag(term, "TAG bang hội") }.getOrNull()
+                            if (directTag != null) {
+                                val cached = ClashKingLookupApi.get(ClashKingLookupApi.cachedClanPath(directTag))
+                                val profile = cached.optJSONObject("clan") ?: cached
+                                if (profile.lookupText("tag").isNotBlank()) {
+                                    found = listOf(lookupEntry(profile, isClan = true))
+                                    foundCursor = null
+                                }
+                            }
+                        }
                         if (currentSearchKey() == requestKey) {
                             results = if (loadMore) results + found else found
                             nextCursor = foundCursor
                             effectiveSearchQuery = usedQuery
                         }
                     }
-                    if (currentSearchKey() == requestKey && results.isEmpty()) searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên, TAG/ID hoặc bộ lọc."
+                    if (currentSearchKey() == requestKey && results.isEmpty()) searchError = "Không tìm thấy kết quả. Kiểm tra ID/TAG, tên và chế độ Người chơi/Bang hội. Bộ lọc nâng cao chỉ có hiệu lực khi đang mở."
                 }
             } catch (error: Exception) {
                 if (currentSearchKey() == requestKey) searchError = lookupErrorMessage(error)
@@ -1817,8 +1856,8 @@ fun ClashLookupScreen() {
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (searchMode == "player") "Tên, ký tự trang trí hoặc TAG người chơi" else "Tên, ký tự trang trí hoặc TAG bang hội") },
-                    placeholder = { Text(if (searchMode == "player") "Tên thường, 𝑻𝒆̂𝒏 kiểu chữ hoặc #TAG" else "Tên bang hội, biểu tượng hoặc #TAG") },
+                    label = { Text(if (searchMode == "player") "ID hoặc tên người chơi" else "ID hoặc tên bang hội") },
+                    placeholder = { Text("Nhập ID hoặc tên") },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = LookupCyan) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = LookupCyan,
@@ -2262,8 +2301,8 @@ fun ClashLookupScreen() {
         } else if (searchError == null && !isSearching && analyticsResult == null) {
             LookupMessageCard(
                 when (searchMode) {
-                    "player" -> "Tìm người chơi bằng tên, TAG hoặc tên có biểu tượng/ký tự trang trí. Nếu không khớp, ứng dụng thử chuẩn hóa chữ để tìm."
-                    "clan" -> "Tìm bang hội bằng tên hoặc TAG, kể cả tên có biểu tượng/ký tự trang trí; mở được hồ sơ thành viên, hội chiến, CWL, quyên góp, Thủ phủ và lịch sử."
+                    "player" -> "Nhập ID/TAG (ví dụ #ABC123) hoặc tên người chơi. Có thể tìm một phần tên; ứng dụng sẽ thử cả tên đã chuẩn hóa."
+                    "clan" -> "Nhập ID/TAG (ví dụ #ABC123) hoặc tên bang hội. Nếu tìm theo TAG, ứng dụng còn đối chiếu hồ sơ bang đã lưu."
                     "leaderboard" -> "Tra cứu bảng xếp hạng theo Nhà chính, giải đấu, chuỗi 3 sao và các hạng mục bang hội."
                     else -> "Truy cập thống kê công khai: bảng xếp hạng lịch sử, nhóm xếp hạng, phân bố cúp Huyền thoại và dữ liệu tổng quan."
                 }
