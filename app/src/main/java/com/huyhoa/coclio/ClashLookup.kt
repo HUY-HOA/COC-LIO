@@ -140,10 +140,11 @@ internal fun lookupSearchCandidates(raw: String): List<String> {
 
     val candidates = mutableListOf<String>()
     val tagPattern = Regex("^[PYLQGRJCUV0289]{3,15}$")
-    val embeddedTag = Regex("#[PYLQGRJCUV0289]{3,15}", RegexOption.IGNORE_CASE)
-        .find(input.uppercase())
+    val normalizedInput = input.uppercase().replace('O', '0')
+    val embeddedTag = Regex("#[PYLQGRJCUV0289]{3,15}")
+        .find(normalizedInput)
         ?.value
-    val standaloneTag = input.removePrefix("#").uppercase().let { value ->
+    val standaloneTag = normalizedInput.removePrefix("#").let { value ->
         value.takeIf { tagPattern.matches(it) }
     }
     val tagInput = embeddedTag ?: standaloneTag
