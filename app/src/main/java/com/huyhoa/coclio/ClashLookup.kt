@@ -834,7 +834,7 @@ private fun lookupImageUrl(
         ?.takeIf { it.startsWith("https://", ignoreCase = true) }
         ?.let { return it }
 
-    val directKeys = listOf("imageUrl", "image_url", "badge_url", "iconUrl", "icon_url", "avatarUrl", "avatar_url")
+    val directKeys = listOf("imageUrl", "image_url", "image", "badge_url", "badge", "iconUrl", "icon_url", "icon", "avatarUrl", "avatar_url")
     directKeys.firstNotNullOfOrNull { key ->
         payload.lookupText(key).takeIf { it.startsWith("https://", ignoreCase = true) }
     }?.let { return it }
@@ -2492,7 +2492,7 @@ private fun LookupJsonObject(
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Column(Modifier.fillMaxWidth().padding(9.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            LookupJsonObject(value, depth + 1)
+                            LookupJsonObject(value, depth + 1, catalog)
                         }
                     }
                 }
