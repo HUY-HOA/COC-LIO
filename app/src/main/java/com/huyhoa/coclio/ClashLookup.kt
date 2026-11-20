@@ -203,10 +203,22 @@ private object ClashKingLookupApi {
                 )
                 "QUÂN ĐỘI" -> listOf(
                     req("Lịch sử nâng cấp quân lính", player("history/changes", "?type=troop_level&limit=50")),
+                    req("Lịch sử kích hoạt Super Troop", player("history/changes", "?type=super_troop_boost&limit=50")),
                     req("Lịch sử anh hùng", player("history/changes", "?type=hero_level&limit=50")),
                     req("Lịch sử phép", player("history/changes", "?type=spell_level&limit=50")),
                     req("Lịch sử thú cưng", player("history/changes", "?type=pet_level&limit=50")),
-                    req("Lịch sử trang bị anh hùng", player("history/changes", "?type=equipment_level&limit=50"))
+                    req("Lịch sử trang bị anh hùng", player("history/changes", "?type=equipment_level&limit=50")),
+                    req("Lịch sử nâng Nhà chính", player("history/changes", "?type=townhall_level&limit=50"))
+                )
+                "THÀNH TÍCH" -> listOf(
+                    req("Kỷ lục cúp Nhà chính", player("history/changes", "?type=best_trophies&limit=50")),
+                    req("Kỷ lục cúp Nhà thợ xây", player("history/changes", "?type=best_builder_base_trophies&limit=50")),
+                    req("Lịch sử cấp kinh nghiệm", player("history/changes", "?type=exp_level&limit=50")),
+                    req("Lịch sử ưu tiên hội chiến", player("history/changes", "?type=war_preference&limit=50")),
+                    req("Lịch sử đổi tên", player("history/changes", "?type=name&limit=50")),
+                    req("Lịch sử giải đấu", player("history/changes", "?type=league_tier&limit=50")),
+                    req("Lịch sử sao hội chiến", player("history/changes", "?type=war_stars&limit=50")),
+                    req("Lịch sử đóng góp Thủ phủ", player("history/changes", "?type=clan_capital_contributions&limit=50"))
                 )
                 "HOẠT ĐỘNG" -> listOf(
                     req("Hoạt động 30 ngày", player("activity-summary")),
@@ -562,7 +574,7 @@ fun ClashLookupScreen() {
         val sections = if (entry.isClan) {
             listOf("TỔNG QUAN", "THÀNH VIÊN", "HỘI CHIẾN", "CWL", "QUYÊN GÓP", "THỦ PHỦ", "XẾP HẠNG", "HUYỀN THOẠI", "KỶ LỤC", "LỊCH SỬ")
         } else {
-            listOf("TỔNG QUAN", "QUÂN ĐỘI", "HOẠT ĐỘNG", "TRẬN ĐẤU", "HỘI CHIẾN", "CWL", "HUYỀN THOẠI", "XẾP HẠNG", "BANG HỘI", "THỜI GIAN")
+            listOf("TỔNG QUAN", "QUÂN ĐỘI", "THÀNH TÍCH", "HOẠT ĐỘNG", "TRẬN ĐẤU", "HỘI CHIẾN", "CWL", "HUYỀN THOẠI", "XẾP HẠNG", "BANG HỘI", "THỜI GIAN")
         }
         Column(
             modifier = Modifier
