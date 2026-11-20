@@ -2102,7 +2102,7 @@ fun SettingsScreen(
             if (accountEmail.isNullOrBlank()) {
                 Text("Chưa đăng nhập", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                 Text(
-                    "Khi đăng nhập Google, hồ sơ cơ bản gồm mã tài khoản, email, tên và ảnh đại diện sẽ được đồng bộ để quản lý tài khoản. IP, thiết bị và lịch sử hoạt động không được tự động thu thập chỉ vì bạn đăng nhập Google.",
+                    "Khi đăng nhập Google, hồ sơ tài khoản và thông tin kỹ thuật cơ bản của thiết bị/kết nối (hãng, model, phiên bản Android/ứng dụng, ngôn ngữ, múi giờ, kích thước màn hình và trạng thái mạng) được đồng bộ để bảo mật tài khoản và hỗ trợ tương thích. Ứng dụng không ghi IP, IMEI, số sê-ri, vị trí GPS hoặc nhật ký thao tác chi tiết vào hồ sơ.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     lineHeight = 16.sp
