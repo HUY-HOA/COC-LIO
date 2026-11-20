@@ -401,9 +401,60 @@ private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
         }
     }
 
-private suspend fun syncFirebaseUserProfile(
+private suspend private fun collectAccountTechnicalInfo(context: Context): Map<String, Any> {
+    val appContext = context.applicationContext
+    val metrics = appContext.resources.displayMetrics
+    val locale = java.util.Locale.getDefault()
+    val packageInfo = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
+    val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        packageInfo.longVersionCode
+    } else {
+        @Suppress("DEPRECATION")
+        packageInfo.versionCode.toLong()
+    }
+
+    val connectivity = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+    val activeNetwork = connectivity?.activeNetwork
+    val capabilities = activeNetwork?.let { connectivity.getNetworkCapabilities(it) }
+    val networkType = when {
+        capabilities == null -> "NONE"
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "VPN"
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WIFI"
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
+        else -> "OTHER"
+    }
+    val networkConnected = activeNetwork != null
+    val internetValidated = capabilities?.hasCapability(
+        NetworkCapabilities.NET_CAPABILITY_VALIDATED
+    ) == true
+
+    return mapOf(
+        "deviceManufacturer" to Build.MANUFACTURER.orEmpty().take(80),
+        "deviceModel" to Build.MODEL.orEmpty().take(100),
+        "deviceBrand" to Build.BRAND.orEmpty().take(80),
+        "deviceProduct" to Build.PRODUCT.orEmpty().take(100),
+        "deviceCodeName" to Build.DEVICE.orEmpty().take(100),
+        "supportedAbis" to Build.SUPPORTED_ABIS.joinToString(",").take(300),
+        "localeTag" to locale.toLanguageTag().take(40),
+        "timeZoneId" to java.util.TimeZone.getDefault().id.take(80),
+        "screenWidthPx" to metrics.widthPixels.toLong(),
+        "screenHeightPx" to metrics.heightPixels.toLong(),
+        "densityDpi" to metrics.densityDpi.toLong(),
+        "networkType" to networkType,
+        "networkStatus" to if (networkConnected) "CONNECTED" else "OFFLINE",
+        "networkValidated" to internetValidated,
+        "androidVersion" to Build.VERSION.RELEASE.orEmpty().take(40),
+        "sdkInt" to Build.VERSION.SDK_INT.toLong(),
+        "appVersionName" to (packageInfo.versionName ?: "").take(40),
+        "appVersionCode" to versionCode
+    )
+}
+
+fun syncFirebaseUserProfile(
     user: FirebaseUser,
     google: GoogleAccountData,
+    context: Context,
     countAsSignIn: Boolean = true
 ) {
     val email = user.email?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
@@ -427,6 +478,7 @@ private suspend fun syncFirebaseUserProfile(
         "providerId" to "google.com",
         "updatedAt" to FieldValue.serverTimestamp()
     )
+    profile.putAll(collectAccountTechnicalInfo(context))
     if (!existing.exists()) {
         profile["createdAt"] = FieldValue.serverTimestamp()
         profile["signInCount"] = 1L
@@ -434,6 +486,14 @@ private suspend fun syncFirebaseUserProfile(
     } else if (countAsSignIn) {
         profile["signInCount"] = signInCount
         profile["lastSignInAt"] = FieldValue.serverTimestamp()
+    }
+    if (!existing.exists()) {
+        profile["firstOpenedAt"] = FieldValue.serverTimestamp()
+        profile["appOpenCount"] = 1L
+        profile["lastOpenedAt"] = FieldValue.serverTimestamp()
+    } else if (countAsSignIn) {
+        profile["appOpenCount"] = (existing.getLong("appOpenCount") ?: 0L) + 1L
+        profile["lastOpenedAt"] = FieldValue.serverTimestamp()
     }
     reference.set(profile, SetOptions.merge()).awaitFirebaseResult()
 }
@@ -476,6 +536,8 @@ data class AdminGoogleAccount(
     val screenHeightPx: Long = 0L,
     val densityDpi: Long = 0L,
     val networkType: String = "",
+    val networkStatus: String = "",
+    val networkValidated: Boolean = false,
     val androidVersion: String = "",
     val sdkInt: Long = 0L,
     val appVersionName: String = "",
@@ -542,6 +604,27 @@ object FirebaseAccountAdministration {
                 createdAt = document.getTimestamp("createdAt")?.toDate()?.time ?: 0L,
                 lastSignInAt = document.getTimestamp("lastSignInAt")?.toDate()?.time ?: 0L,
                 updatedAt = document.getTimestamp("updatedAt")?.toDate()?.time ?: 0L,
+                firstOpenedAt = document.getTimestamp("firstOpenedAt")?.toDate()?.time ?: 0L,
+                lastOpenedAt = document.getTimestamp("lastOpenedAt")?.toDate()?.time ?: 0L,
+                appOpenCount = document.getLong("appOpenCount") ?: 0L,
+                deviceManufacturer = document.getString("deviceManufacturer").orEmpty(),
+                deviceModel = document.getString("deviceModel").orEmpty(),
+                deviceBrand = document.getString("deviceBrand").orEmpty(),
+                deviceProduct = document.getString("deviceProduct").orEmpty(),
+                deviceCodeName = document.getString("deviceCodeName").orEmpty(),
+                supportedAbis = document.getString("supportedAbis").orEmpty(),
+                localeTag = document.getString("localeTag").orEmpty(),
+                timeZoneId = document.getString("timeZoneId").orEmpty(),
+                screenWidthPx = document.getLong("screenWidthPx") ?: 0L,
+                screenHeightPx = document.getLong("screenHeightPx") ?: 0L,
+                densityDpi = document.getLong("densityDpi") ?: 0L,
+                networkType = document.getString("networkType").orEmpty(),
+                networkStatus = document.getString("networkStatus").orEmpty(),
+                networkValidated = document.getBoolean("networkValidated") ?: false,
+                androidVersion = document.getString("androidVersion").orEmpty(),
+                sdkInt = document.getLong("sdkInt") ?: 0L,
+                appVersionName = document.getString("appVersionName").orEmpty(),
+                appVersionCode = document.getLong("appVersionCode") ?: 0L,
                 isAdmin = isOwner(document.getString("uid") ?: document.id),
                 accountDisabled = document.getBoolean("accountDisabled") ?: false
             )
@@ -820,6 +903,7 @@ object GoogleAccountAuth {
 
     suspend fun shareProfile(
         google: GoogleAccountData,
+        context: Context,
         countAsSignIn: Boolean = true
     ) {
         val user = FirebaseAuth.getInstance().currentUser
@@ -828,7 +912,7 @@ object GoogleAccountAuth {
             throw IllegalStateException("Tài khoản Google hiện tại không khớp với hồ sơ vừa chọn.")
         }
         try {
-            syncFirebaseUserProfile(user, google, countAsSignIn)
+            syncFirebaseUserProfile(user, google, context, countAsSignIn)
         } catch (error: Exception) {
             if (error.message?.contains("đã bị quản lý vô hiệu hóa", ignoreCase = true) == true) {
                 FirebaseAuth.getInstance().signOut()
