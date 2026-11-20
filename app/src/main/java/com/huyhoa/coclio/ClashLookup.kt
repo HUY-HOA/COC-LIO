@@ -913,7 +913,7 @@ fun ClashLookupScreen() {
                     )
                 }
 
-                if (searchMode != "leaderboard") OutlinedTextField(
+                if (searchMode != "leaderboard" && searchMode != "analytics") OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth(),
