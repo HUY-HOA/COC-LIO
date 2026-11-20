@@ -31,6 +31,34 @@ fun clearLegacyLanguagePreference(context: Context) {
         .apply()
 }
 
+fun appErrorMessage(message: String?, fallback: String): String {
+    val value = message?.trim().orEmpty()
+    if (value.isBlank()) return fallback
+    if (Regex("[À-ỹ]").containsMatchIn(value)) return value
+
+    val normalized = value.lowercase(java.util.Locale.ROOT)
+    return when {
+        normalized.contains("permission_denied") ||
+            normalized.contains("missing or insufficient permissions") ->
+            "Tài khoản hiện không có quyền truy cập dữ liệu này. Vui lòng đăng nhập lại hoặc liên hệ quản lý ứng dụng."
+        normalized.contains("network") ||
+            normalized.contains("unavailable") ||
+            normalized.contains("unable to resolve host") ||
+            normalized.contains("timed out") ||
+            normalized.contains("timeout") ->
+            "Không thể kết nối mạng. Vui lòng kiểm tra kết nối rồi thử lại."
+        normalized.contains("too many requests") ->
+            "Bạn thao tác quá nhanh. Vui lòng chờ một lúc rồi thử lại."
+        normalized.contains("invalid-credential") ||
+            normalized.contains("credential is malformed") ||
+            normalized.contains("invalid id token") ->
+            "Thông tin đăng nhập Google không hợp lệ. Vui lòng đăng nhập lại."
+        normalized.contains("email address is already in use") ->
+            "Địa chỉ email này đã được sử dụng cho một tài khoản khác."
+        else -> fallback
+    }
+}
+
 @Composable
 fun Text(
     text: String,
