@@ -1042,28 +1042,29 @@ fun ClashLookupScreen() {
         detailLoading = true
         detailError = null
         detailPanels = emptyList()
-        val loaded = requests.map { request ->
-            async {
-                if (request.staticPayload != null) {
-                    LookupPanel(request.title, request.staticPayload)
-                } else runCatching {
-                    val payload = ClashKingLookupApi.get(request.path)
-                    val visiblePayload = request.includeFields?.let { fields ->
-                        JSONObject().apply { fields.forEach { key -> if (payload.has(key)) put(key, payload.opt(key)) } }
-                    } ?: payload
-                    LookupPanel(request.title, visiblePayload)
-                }.getOrElse { error ->
-                    LookupPanel(request.title, null, lookupErrorMessage(error))
+        val loaded = mutableListOf<LookupPanel>()
+        requests.chunked(3).forEach { batch ->
+            val batchPanels = batch.map { request ->
+                async {
+                    if (request.staticPayload != null) {
+                        LookupPanel(request.title, request.staticPayload)
+                    } else runCatching {
+                        val payload = ClashKingLookupApi.get(request.path)
+                        val visiblePayload = request.includeFields?.let { fields ->
+                            JSONObject().apply { fields.forEach { key -> if (payload.has(key)) put(key, payload.opt(key)) } }
+                        } ?: payload
+                        LookupPanel(request.title, visiblePayload)
+                    }.getOrElse { error ->
+                        LookupPanel(request.title, null, lookupErrorMessage(error))
+                    }
                 }
-            }
-        }.awaitAll()
-        detailPanels = loaded
-        val failures = loaded.filter { it.payload == null }
-        detailError = when {
-            failures.size == loaded.size -> failures.joinToString("\n") { "• ${it.title}: ${it.error}" }
-            failures.isNotEmpty() -> failures.joinToString("\n") { "• ${it.title}: ${it.error}" }
-            else -> null
+            }.awaitAll()
+            loaded.addAll(batchPanels)
+            detailPanels = loaded.toList()
         }
+        val completed = loaded.toList()
+        val failures = completed.filter { it.payload == null }
+        detailError = failures.takeIf { it.isNotEmpty() }?.joinToString("\n") { "• ${it.title}: ${it.error}" }
         detailLoading = false
     }
 
@@ -1226,15 +1227,22 @@ fun ClashLookupScreen() {
                                         scope.launch {
                                             detailLoading = true
                                             detailError = null
-                                            val loaded = requests.map { request ->
-                                                async {
-                                                    runCatching { LookupPanel(request.title, ClashKingLookupApi.get(request.path)) }
-                                                        .getOrElse { error -> LookupPanel(request.title, null, lookupErrorMessage(error)) }
+                                            val loaded = mutableListOf<LookupPanel>()
+                                            requests.chunked(3).forEach { batch ->
+                                                val batchPanels = batch.map { request ->
+                                                    async {
+                                                        runCatching { LookupPanel(request.title, ClashKingLookupApi.get(request.path)) }
+                                                            .getOrElse { error -> LookupPanel(request.title, null, lookupErrorMessage(error)) }
+                                                    }
+                                                }.awaitAll()
+                                                loaded.addAll(batchPanels)
+                                                if (selectedEntry?.tag == entry.tag && selectedEntry?.isClan == entry.isClan &&
+                                                    selectedSection == "DỮ LIỆU MỞ RỘNG" && currentExtendedKey(entry) == requestKey) {
+                                                    detailPanels = loaded.toList()
                                                 }
-                                            }.awaitAll()
+                                            }
                                             if (selectedEntry?.tag == entry.tag && selectedEntry?.isClan == entry.isClan &&
                                                 selectedSection == "DỮ LIỆU MỞ RỘNG" && currentExtendedKey(entry) == requestKey) {
-                                                detailPanels = loaded
                                                 val failures = loaded.filter { it.payload == null }
                                                 detailError = failures.takeIf { it.isNotEmpty() }?.joinToString("\n") { "• ${it.title}: ${it.error}" }
                                             }
