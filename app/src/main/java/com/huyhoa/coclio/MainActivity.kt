@@ -1053,9 +1053,24 @@ private fun CocLioApp(
             return@LaunchedEffect
         }
         if (googleSignInSubmitting) return@LaunchedEffect
-        accountProfileReady = true
-        accountProfileReadyForEmail = email
+        accountProfileReady = false
+        accountProfileReadyForEmail = null
         accountProfileError = null
+        runCatching { FirebaseAccountAdministration.isCurrentAccountEnabled() }
+            .onSuccess { enabled ->
+                accountProfileReady = enabled
+                accountProfileReadyForEmail = email
+                if (!enabled) {
+                    accountProfileError = "Không tìm thấy hồ sơ COC-LIO hoặc tài khoản đã bị vô hiệu hóa."
+                }
+            }
+            .onFailure { error ->
+                accountProfileReady = false
+                accountProfileReadyForEmail = email
+                accountProfileError = error.message
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Không thể kiểm tra trạng thái tài khoản."
+            }
     }
 
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
