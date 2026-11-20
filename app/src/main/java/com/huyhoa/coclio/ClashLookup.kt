@@ -390,9 +390,9 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
 
     return ClashLookupEntry(
         name = json.lookupText("name").ifBlank {
-            if (isClan) "Bang hội chưa rõ tên" else "Người chơi chưa rõ tên"
+            if (isClan) json.lookupText("clanTag").ifBlank { "Bang hội chưa rõ tên" } else "Người chơi chưa rõ tên"
         },
-        tag = json.lookupText("tag").ifBlank { json.lookupText("playerTag") },
+        tag = json.lookupText("tag").ifBlank { json.lookupText("playerTag").ifBlank { json.lookupText("clanTag") } },
         isClan = isClan,
         townHall = number("townHallLevel", "townhallLevel", "townhall_level"),
         clanName = clan?.lookupText("name").orEmpty(),
@@ -400,13 +400,14 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
         trophies = number("trophies", "leagueTrophies"),
         members = number("members", "memberCount"),
         level = number("clanLevel", "level"),
-        rank = number("rank"),
-        streak = number("war_win_streak", "warWinStreak"),
-        metric = number("donations", "war_wins", "capital_gold_total"),
+        rank = number("rank", "globalRank", "groupRank"),
+        streak = number("war_win_streak", "warWinStreak", "streak"),
+        metric = number("donations", "war_wins", "capital_gold_total", "stars"),
         metricLabel = when {
             json.has("donations") -> "Quyên góp"
             json.has("war_wins") -> "Thắng hội chiến"
             json.has("capital_gold_total") -> "Vàng Thủ phủ"
+            json.has("stars") -> "Sao CWL"
             else -> ""
         },
         badgeUrl = json.lookupText("badge_url").ifBlank { badge },
@@ -891,6 +892,7 @@ fun ClashLookupScreen() {
                         onClick = {
                             searchMode = "player"
                             results = emptyList()
+                            analyticsResult = null
                             searchError = null
                         },
                         label = { Text("NGƯỜI CHƠI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
@@ -901,6 +903,7 @@ fun ClashLookupScreen() {
                         onClick = {
                             searchMode = "clan"
                             results = emptyList()
+                            analyticsResult = null
                             searchError = null
                         },
                         label = { Text("BANG HỘI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
@@ -1275,7 +1278,8 @@ private fun LookupResultCard(
                         entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #$it" },
                         entry.townHall.takeIf { it.isNotBlank() }?.let { "Nhà chính $it" },
                         entry.league.takeIf { it.isNotBlank() },
-                        entry.clanName.takeIf { it.isNotBlank() }
+                        entry.clanName.takeIf { it.isNotBlank() },
+                        entry.streak.takeIf { it.isNotBlank() }?.let { "$it chuỗi 3 sao" }
                     ).joinToString(" • ")
                 }
                 Text(subtitle.ifBlank { if (entry.isClan) "Bang hội" else "Người chơi" }, fontSize = 9.sp, color = LookupMuted, maxLines = 2)
