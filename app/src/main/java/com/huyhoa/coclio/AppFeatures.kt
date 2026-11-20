@@ -401,7 +401,7 @@ private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
         }
     }
 
-private suspend @Suppress("DEPRECATION")
+@Suppress("DEPRECATION")
 private fun collectAccountTechnicalInfo(context: Context): Map<String, Any> {
     val appContext = context.applicationContext
     val metrics = appContext.resources.displayMetrics
@@ -451,7 +451,7 @@ private fun collectAccountTechnicalInfo(context: Context): Map<String, Any> {
     )
 }
 
-fun syncFirebaseUserProfile(
+private suspend fun syncFirebaseUserProfile(
     user: FirebaseUser,
     google: GoogleAccountData,
     context: Context,
