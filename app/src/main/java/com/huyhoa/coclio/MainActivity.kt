@@ -1056,7 +1056,7 @@ private fun CocLioApp(
         accountProfileReady = false
         accountProfileReadyForEmail = null
         accountProfileError = null
-        runCatching { FirebaseAccountAdministration.isCurrentAccountEnabled() }
+        runCatching { FirebaseAccountAdministration.prepareCurrentAccount() }
             .onSuccess { enabled ->
                 accountProfileReady = enabled
                 accountProfileReadyForEmail = email
