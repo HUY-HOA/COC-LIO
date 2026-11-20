@@ -100,12 +100,6 @@ private data class LookupFilters(
     val clanTags: String = "",
     val leagueIds: String = "",
     val townhallLevels: String = "",
-    val locationIds: String = "",
-    val warLeagueIds: String = "",
-    val clanMinLevel: String = "",
-    val clanMaxLevel: String = "",
-    val minMembers: String = "",
-    val maxMembers: String = ""
 )
 
 private object ClashKingLookupApi {
@@ -144,36 +138,26 @@ private object ClashKingLookupApi {
 
     private fun encode(value: String): String = URLEncoder.encode(value.trim(), "UTF-8")
 
-    fun searchPath(
-        isClan: Boolean,
-        query: String,
-        cursor: String?,
-        filters: LookupFilters
-    ): String {
+    fun playerSearchPath(query: String, cursor: String?, filters: LookupFilters): String {
         val params = mutableListOf("query=${encode(query)}", "limit=20")
         cursor?.takeIf { it.isNotBlank() }?.let { params += "cursor=${encode(it)}" }
-
         fun addList(name: String, raw: String) {
             raw.split(",", ";", " ").map(String::trim).filter(String::isNotBlank)
                 .forEach { params += "${name}=${encode(it)}" }
         }
-        fun addRange(name: String, min: String, max: String) {
-            min.trim().takeIf(String::isNotBlank)?.let { params += "${name}[min]=${encode(it)}" }
-            max.trim().takeIf(String::isNotBlank)?.let { params += "${name}[max]=${encode(it)}" }
-        }
+        addList("clanTags", filters.clanTags)
+        addList("leagueIds", filters.leagueIds)
+        addList("townhallLevels", filters.townhallLevels)
+        return "/v2/player/search?${params.joinToString("&")}"
+    }
 
-        if (isClan) {
-            addList("locationIds", filters.locationIds)
-            addList("warLeagueIds", filters.warLeagueIds)
-            addRange("clanLevel", filters.clanMinLevel, filters.clanMaxLevel)
-            addRange("members", filters.minMembers, filters.maxMembers)
-        } else {
-            addList("clanTags", filters.clanTags)
-            addList("leagueIds", filters.leagueIds)
-            addList("townhallLevels", filters.townhallLevels)
+    fun clanCachedPath(rawTag: String): String {
+        val input = rawTag.trim().uppercase()
+        val normalized = if (input.startsWith("#")) input else "#$input"
+        require(Regex("^#[PYLQGRJCUV0289]{3,15}$").matches(normalized)) {
+            "Bang hội hiện cần tra cứu bằng Clan TAG hợp lệ, ví dụ #2PR8V8."
         }
-        val route = if (isClan) "/v2/clan/search" else "/v2/player/search"
-        return "$route?${params.joinToString("&")}"
+        return "/v2/clan/${encode(normalized)}/cached"
     }
 
     private fun tag(entry: ClashLookupEntry): String = encode(entry.tag.trim().uppercase())
@@ -432,6 +416,12 @@ private fun humanizeLookupKey(key: String): String {
     val known = mapOf(
         "tag" to "TAG / ID",
         "name" to "Tên",
+        "clanTag" to "TAG bang hội",
+        "playerTag" to "TAG người chơi",
+        "leagueGroupId" to "Mã nhóm giải",
+        "seasonId" to "Mã mùa giải",
+        "leagueTierId" to "Mã bậc giải",
+        "cwlLeagueId" to "Mã giải CWL",
         "townHallLevel" to "Nhà chính",
         "townhallLevel" to "Nhà chính",
         "builderHallLevel" to "Nhà thợ xây",
@@ -533,12 +523,6 @@ fun ClashLookupScreen() {
     var clanTags by rememberSaveable { mutableStateOf("") }
     var leagueIds by rememberSaveable { mutableStateOf("") }
     var townhallLevels by rememberSaveable { mutableStateOf("") }
-    var locationIds by rememberSaveable { mutableStateOf("") }
-    var warLeagueIds by rememberSaveable { mutableStateOf("") }
-    var clanMinLevel by rememberSaveable { mutableStateOf("") }
-    var clanMaxLevel by rememberSaveable { mutableStateOf("") }
-    var minMembers by rememberSaveable { mutableStateOf("") }
-    var maxMembers by rememberSaveable { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
     var results by remember { mutableStateOf(emptyList<ClashLookupEntry>()) }
@@ -552,14 +536,7 @@ fun ClashLookupScreen() {
     val filters = LookupFilters(
         clanTags = clanTags,
         leagueIds = leagueIds,
-        townhallLevels = townhallLevels,
-        locationIds = locationIds,
-        warLeagueIds = warLeagueIds,
-        clanMinLevel = clanMinLevel,
-        clanMaxLevel = clanMaxLevel,
-        minMembers = minMembers,
-        maxMembers = maxMembers
-    )
+        townhallLevels = townhallLevels    )
 
     fun runSearch(loadMore: Boolean = false) {
         val term = query.trim()
@@ -576,7 +553,7 @@ fun ClashLookupScreen() {
         if (isSearching) return
         val oldCursor = if (loadMore) nextCursor else null
         val selectedFilters = filters
-        val isClan = searchMode == "clan" || (isLeaderboard && rankingCategory.startsWith("clan_"))
+        val isClanLeaderboard = isLeaderboard && rankingCategory.startsWith("clan_")
         scope.launch {
             isSearching = true
             searchError = null
@@ -604,14 +581,20 @@ fun ClashLookupScreen() {
                     results = emptyList()
                     nextCursor = null
                 } else {
-                    val response = if (isLeaderboard) {
-                        ClashKingLookupApi.get(ClashKingLookupApi.leaderboardPath(rankingCategory, rankingValue, rankingSeason, rankingTeamSize))
+                    if (isLeaderboard) {
+                        val response = ClashKingLookupApi.get(ClashKingLookupApi.leaderboardPath(rankingCategory, rankingValue, rankingSeason, rankingTeamSize))
+                        results = lookupItems(response, isClanLeaderboard)
+                        nextCursor = null
+                    } else if (searchMode == "clan") {
+                        val clan = ClashKingLookupApi.get(ClashKingLookupApi.clanCachedPath(term))
+                        if (clan.lookupText("tag").isBlank()) throw IOException("Không tìm thấy bang hội theo TAG này hoặc ClashKing chưa lưu hồ sơ.")
+                        results = listOf(lookupEntry(clan, true))
+                        nextCursor = null
                     } else {
-                        ClashKingLookupApi.get(ClashKingLookupApi.searchPath(isClan, term, oldCursor, selectedFilters))
+                        val response = ClashKingLookupApi.get(ClashKingLookupApi.playerSearchPath(term, oldCursor, selectedFilters))
+                        results = lookupItems(response, false)
+                        nextCursor = response.optJSONObject("pagination")?.lookupText("nextCursor")?.takeIf { it.isNotBlank() }
                     }
-                    val found = lookupItems(response, isClan)
-                    results = if (loadMore) results + found else found
-                    nextCursor = if (isLeaderboard) null else response.optJSONObject("pagination")?.lookupText("nextCursor")?.takeIf { it.isNotBlank() }
                     if (results.isEmpty()) searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên, TAG/ID hoặc bộ lọc."
                 }
             } catch (error: Exception) {
