@@ -1352,6 +1352,7 @@ fun ClashLookupScreen() {
                             rankingCategory == "townhall" || rankingCategory == "war_triples" -> "Cấp Nhà chính"
                             rankingCategory == "league" -> "Mã giải đấu"
                             rankingCategory == "clan_cwl" -> "Mã bậc giải CWL"
+                            rankingCategory == "clan_donations" || rankingCategory == "clan_war_wins" -> "Mã khu vực hoặc global"
                             else -> "Mã quốc gia / khu vực"
                         }
                         LookupFilterField(
