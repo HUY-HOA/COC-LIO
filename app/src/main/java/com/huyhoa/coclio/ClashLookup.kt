@@ -783,7 +783,6 @@ private fun humanizeLookupKey(key: String): String {
         "until" to "Đến thời điểm",
         "asOf" to "Dữ liệu tính đến",
         "observations" to "Số lần ghi nhận",
-        "capitalGoldTotal" to "Tổng Vàng Thủ phủ",
         "leagueId" to "Mã giải đấu",
         "totalStars" to "Tổng số sao",
         "totalDestruction" to "Tổng tỷ lệ phá hủy",
