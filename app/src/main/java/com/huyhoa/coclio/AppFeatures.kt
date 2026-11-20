@@ -401,64 +401,9 @@ private suspend fun <T> Task<T>.awaitFirebaseResult(): T =
         }
     }
 
-@Suppress("DEPRECATION")
-private fun collectAccountTechnicalInfo(context: Context): Map<String, Any> {
-    val appContext = context.applicationContext
-    val metrics = appContext.resources.displayMetrics
-    val locale = java.util.Locale.getDefault()
-    val packageInfo = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
-    val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        packageInfo.longVersionCode
-    } else {
-        packageInfo.versionCode.toLong()
-    }
-
-    val connectivity = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-    val activeNetwork = connectivity?.activeNetwork
-    val capabilities = if (connectivity != null && activeNetwork != null) {
-            connectivity.getNetworkCapabilities(activeNetwork)
-        } else {
-            null
-        }
-    val networkType = when {
-        capabilities == null -> "NONE"
-        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "VPN"
-        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WIFI"
-        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
-        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
-        else -> "OTHER"
-    }
-    val networkConnected = activeNetwork != null
-    val internetValidated = capabilities?.hasCapability(
-        NetworkCapabilities.NET_CAPABILITY_VALIDATED
-    ) == true
-
-    return mapOf(
-        "deviceManufacturer" to Build.MANUFACTURER.orEmpty().take(80),
-        "deviceModel" to Build.MODEL.orEmpty().take(100),
-        "deviceBrand" to Build.BRAND.orEmpty().take(80),
-        "deviceProduct" to Build.PRODUCT.orEmpty().take(100),
-        "deviceCodeName" to Build.DEVICE.orEmpty().take(100),
-        "supportedAbis" to Build.SUPPORTED_ABIS.joinToString(",").take(300),
-        "localeTag" to locale.toLanguageTag().take(40),
-        "timeZoneId" to java.util.TimeZone.getDefault().id.take(80),
-        "screenWidthPx" to metrics.widthPixels.toLong(),
-        "screenHeightPx" to metrics.heightPixels.toLong(),
-        "densityDpi" to metrics.densityDpi.toLong(),
-        "networkType" to networkType,
-        "networkStatus" to if (networkConnected) "CONNECTED" else "OFFLINE",
-        "networkValidated" to internetValidated,
-        "androidVersion" to Build.VERSION.RELEASE.orEmpty().take(40),
-        "sdkInt" to Build.VERSION.SDK_INT.toLong(),
-        "appVersionName" to (packageInfo.versionName ?: "").take(40),
-        "appVersionCode" to versionCode
-    )
-}
-
 private suspend fun syncFirebaseUserProfile(
     user: FirebaseUser,
     google: GoogleAccountData,
-    context: Context,
     countAsSignIn: Boolean = true
 ) {
     val email = user.email?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
@@ -475,14 +420,30 @@ private suspend fun syncFirebaseUserProfile(
         "uid" to user.uid,
         "email" to email,
         "displayName" to (google.displayName ?: user.displayName.orEmpty()),
-        "givenName" to google.givenName.orEmpty(),
-        "familyName" to google.familyName.orEmpty(),
-        "photoUrl" to (google.profilePictureUri ?: user.photoUrl?.toString().orEmpty()),
         "emailVerified" to user.isEmailVerified,
         "providerId" to "google.com",
         "updatedAt" to FieldValue.serverTimestamp()
     )
-    profile.putAll(collectAccountTechnicalInfo(context))
+    // Remove technical/device, network, detailed activity and consent-receipt fields
+    // written by older releases. Only the account identity and minimal sign-in
+    // administration fields remain stored in Firestore.
+    listOf(
+        "givenName", "familyName", "photoUrl",
+        "deviceManufacturer", "deviceModel", "deviceBrand", "deviceProduct",
+        "deviceCodeName", "supportedAbis", "localeTag", "timeZoneId",
+        "screenWidthPx", "screenHeightPx", "densityDpi", "networkType",
+        "networkStatus", "networkValidated", "androidVersion", "sdkInt",
+        "appVersionName", "appVersionCode", "lastIp", "lastIpCapturedAt",
+        "firstOpenedAt", "lastOpenedAt", "appOpenCount", "lastActiveAt",
+        "lastBackgroundAt", "sessionStartedAt", "activityUpdatedAt",
+        "lastActivityEvent", "lastSessionDurationSeconds", "totalForegroundSeconds",
+        "requiredAccountDataConsentVersion", "requiredAccountDataConsentAt",
+        "activityDataConsentVersion", "dataSharingConsent", "analyticsConsent",
+        "diagnosticsConsent", "villageDataConsent", "activityConsentAt",
+        "lastVillageTag", "lastVillageName", "lastVillageTimestamp",
+        "lastVillageTownHallLevel", "lastVillageBuilderHallLevel",
+        "villageImportCount", "lastVillageSyncedAt", "lastVillageRawJsonBytes"
+    ).forEach { field -> profile[field] = FieldValue.delete() }
     if (!existing.exists()) {
         profile["createdAt"] = FieldValue.serverTimestamp()
         profile["signInCount"] = 1L
@@ -490,14 +451,6 @@ private suspend fun syncFirebaseUserProfile(
     } else if (countAsSignIn) {
         profile["signInCount"] = signInCount
         profile["lastSignInAt"] = FieldValue.serverTimestamp()
-    }
-    if (!existing.exists()) {
-        profile["firstOpenedAt"] = FieldValue.serverTimestamp()
-        profile["appOpenCount"] = 1L
-        profile["lastOpenedAt"] = FieldValue.serverTimestamp()
-    } else if (countAsSignIn) {
-        profile["appOpenCount"] = (existing.getLong("appOpenCount") ?: 0L) + 1L
-        profile["lastOpenedAt"] = FieldValue.serverTimestamp()
     }
     reference.set(profile, SetOptions.merge()).awaitFirebaseResult()
 }
@@ -637,18 +590,39 @@ object FirebaseAccountAdministration {
         val owner = FirebaseAuth.getInstance().currentUser
             ?.takeIf { isOwner(it.uid) }
         if (owner != null) {
-            val legacyIpDocuments = result.documents.filter { document ->
-                document.contains("lastIp") || document.contains("lastIpCapturedAt")
+            val obsoleteFields = listOf(
+                "givenName", "familyName", "photoUrl",
+                "deviceManufacturer", "deviceModel", "deviceBrand", "deviceProduct",
+                "deviceCodeName", "supportedAbis", "localeTag", "timeZoneId",
+                "screenWidthPx", "screenHeightPx", "densityDpi", "networkType",
+                "networkStatus", "networkValidated", "androidVersion", "sdkInt",
+                "appVersionName", "appVersionCode", "lastIp", "lastIpCapturedAt",
+                "firstOpenedAt", "lastOpenedAt", "appOpenCount", "lastActiveAt",
+                "lastBackgroundAt", "sessionStartedAt", "activityUpdatedAt",
+                "lastActivityEvent", "lastSessionDurationSeconds", "totalForegroundSeconds",
+                "requiredAccountDataConsentVersion", "requiredAccountDataConsentAt",
+                "activityDataConsentVersion", "dataSharingConsent", "analyticsConsent",
+                "diagnosticsConsent", "villageDataConsent", "activityConsentAt",
+                "lastVillageTag", "lastVillageName", "lastVillageTimestamp",
+                "lastVillageTownHallLevel", "lastVillageBuilderHallLevel",
+                "villageImportCount", "lastVillageSyncedAt", "lastVillageRawJsonBytes"
+            )
+            val legacyDocuments = result.documents.filter { document ->
+                obsoleteFields.any(document::contains)
             }
-            for (chunk in legacyIpDocuments.chunked(400)) {
+            for (chunk in legacyDocuments.chunked(400)) {
                 val batch = FirebaseFirestore.getInstance().batch()
+                var hasUpdates = false
                 for (document in chunk) {
-                    val legacyFields = mutableMapOf<String, Any>()
-                    if (document.contains("lastIp")) legacyFields["lastIp"] = FieldValue.delete()
-                    if (document.contains("lastIpCapturedAt")) legacyFields["lastIpCapturedAt"] = FieldValue.delete()
-                    if (legacyFields.isNotEmpty()) batch.update(document.reference, legacyFields)
+                    val legacyFields = obsoleteFields
+                        .filter(document::contains)
+                        .associateWith { FieldValue.delete() }
+                    if (legacyFields.isNotEmpty()) {
+                        batch.update(document.reference, legacyFields)
+                        hasUpdates = true
+                    }
                 }
-                if (chunk.isNotEmpty()) batch.commit().awaitFirebaseResult()
+                if (hasUpdates) batch.commit().awaitFirebaseResult()
             }
         }
         return accounts.sortedWith(
@@ -706,42 +680,6 @@ data class AccountPrivacyChoice(
 
 object AccountPrivacyConsent {
     const val CURRENT_VERSION = 8L
-    const val REQUIRED_ACCOUNT_DATA_VERSION = 2L
-
-    suspend fun hasRequiredAccountDataConsent(): Boolean {
-        val user = FirebaseAuth.getInstance().currentUser ?: return false
-        val profile = FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
-            .get()
-            .awaitFirebaseResult()
-        return profile.getLong("requiredAccountDataConsentVersion") == REQUIRED_ACCOUNT_DATA_VERSION
-    }
-
-    suspend fun hasAccountProfile(): Boolean {
-        val user = FirebaseAuth.getInstance().currentUser ?: return false
-        return FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
-            .get()
-            .awaitFirebaseResult()
-            .exists()
-    }
-
-    suspend fun saveRequiredAccountDataConsent() {
-        val user = FirebaseAuth.getInstance().currentUser
-            ?: throw IllegalStateException("Bạn cần đăng nhập Google để xác nhận dữ liệu tài khoản.")
-        FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(user.uid)
-            .update(
-                mapOf(
-                    "requiredAccountDataConsentVersion" to REQUIRED_ACCOUNT_DATA_VERSION,
-                    "requiredAccountDataConsentAt" to FieldValue.serverTimestamp()
-                )
-            )
-            .awaitFirebaseResult()
-    }
 
     @Suppress("UNUSED_PARAMETER")
     suspend fun save(choice: AccountPrivacyChoice) = Unit
@@ -907,7 +845,6 @@ object GoogleAccountAuth {
 
     suspend fun shareProfile(
         google: GoogleAccountData,
-        context: Context,
         countAsSignIn: Boolean = true
     ) {
         val user = FirebaseAuth.getInstance().currentUser
@@ -916,7 +853,7 @@ object GoogleAccountAuth {
             throw IllegalStateException("Tài khoản Google hiện tại không khớp với hồ sơ vừa chọn.")
         }
         try {
-            syncFirebaseUserProfile(user, google, context, countAsSignIn)
+            syncFirebaseUserProfile(user, google, countAsSignIn)
         } catch (error: Exception) {
             if (error.message?.contains("đã bị quản lý vô hiệu hóa", ignoreCase = true) == true) {
                 FirebaseAuth.getInstance().signOut()
