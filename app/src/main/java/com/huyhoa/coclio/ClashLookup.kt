@@ -860,6 +860,14 @@ fun ClashLookupScreen() {
         searchError = null
     }
 
+    fun currentSearchKey(): String = listOf(
+        searchMode, query.trim(), clanTags, leagueIds, townhallLevels,
+        rankingCategory, rankingValue, rankingSeason, rankingTeamSize,
+        analyticsCategory, analyticsPrimary, analyticsSecondary, analyticsDate, analyticsFrom, analyticsTo,
+        analyticsLeaderboardType, analyticsMode, analyticsCohort, analyticsInterval, analyticsSort,
+        analyticsLimit, analyticsRankLimit, analyticsEqualTownHalls, analyticsGroupKey, analyticsVariantKey
+    ).joinToString("\u0000")
+
     val filters = LookupFilters(
         clanTags = clanTags,
         leagueIds = leagueIds,
@@ -890,6 +898,8 @@ fun ClashLookupScreen() {
         val oldCursor = if (loadMore) nextCursor else null
         val selectedFilters = filters
         val isClanLeaderboard = isLeaderboard && rankingCategory.startsWith("clan_")
+        val requestKey = currentSearchKey()
+        val requestAnalyticsCategory = analyticsCategory
         scope.launch {
             isSearching = true
             searchError = null
@@ -905,8 +915,10 @@ fun ClashLookupScreen() {
                         analyticsLeaderboardType, analyticsMode, analyticsCohort, analyticsInterval, analyticsSort,
                         analyticsLimit, analyticsRankLimit, analyticsEqualTownHalls, analyticsGroupKey, analyticsVariantKey
                     )
-                    analyticsResult = ClashKingLookupApi.get(path)
-                    analyticsResultTitle = when (analyticsCategory) {
+                    val response = ClashKingLookupApi.get(path)
+                    if (currentSearchKey() == requestKey) {
+                        analyticsResult = response
+                        analyticsResultTitle = when (requestAnalyticsCategory) {
                         "global_counts" -> "THỐNG KÊ TỔNG QUAN CLASHKING"
                         "counts_townhalls" -> "PHÂN BỐ NHÀ CHÍNH"
                         "counts_league_tiers" -> "PHÂN BỐ GIẢI NGƯỜI CHƠI"
@@ -932,29 +944,36 @@ fun ClashLookupScreen() {
                         "league_hit_rates" -> "TỶ LỆ SAO RANKED / LEGEND"
                         "legend_days" -> "THỐNG KÊ CHI TIẾT LEGEND"
                         else -> "PHÂN TÍCH HIỆU SUẤT LEGEND"
+                        }
+                        results = emptyList()
+                        nextCursor = null
                     }
-                    results = emptyList()
-                    nextCursor = null
                 } else {
                     if (isLeaderboard) {
                         val response = ClashKingLookupApi.get(ClashKingLookupApi.leaderboardPath(rankingCategory, rankingValue, rankingSeason, rankingTeamSize))
-                        results = lookupItems(response, isClanLeaderboard)
-                        nextCursor = null
+                        if (currentSearchKey() == requestKey) {
+                            results = lookupItems(response, isClanLeaderboard)
+                            nextCursor = null
+                        }
                     } else if (searchMode == "clan") {
                         val clan = ClashKingLookupApi.get(ClashKingLookupApi.clanCachedPath(term))
                         if (clan.lookupText("tag").isBlank()) throw IOException("Không tìm thấy bang hội theo TAG này hoặc ClashKing chưa lưu hồ sơ.")
-                        results = listOf(lookupEntry(clan, true))
-                        nextCursor = null
+                        if (currentSearchKey() == requestKey) {
+                            results = listOf(lookupEntry(clan, true))
+                            nextCursor = null
+                        }
                     } else {
                         val response = ClashKingLookupApi.get(ClashKingLookupApi.playerSearchPath(term, oldCursor, selectedFilters))
                         val found = lookupItems(response, false)
-                        results = if (loadMore) results + found else found
-                        nextCursor = response.optJSONObject("pagination")?.lookupText("nextCursor")?.takeIf { it.isNotBlank() }
+                        if (currentSearchKey() == requestKey) {
+                            results = if (loadMore) results + found else found
+                            nextCursor = response.optJSONObject("pagination")?.lookupText("nextCursor")?.takeIf { it.isNotBlank() }
+                        }
                     }
-                    if (results.isEmpty()) searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên, TAG/ID hoặc bộ lọc."
+                    if (currentSearchKey() == requestKey && results.isEmpty()) searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên, TAG/ID hoặc bộ lọc."
                 }
             } catch (error: Exception) {
-                searchError = lookupErrorMessage(error)
+                if (currentSearchKey() == requestKey) searchError = lookupErrorMessage(error)
             } finally {
                 isSearching = false
             }
