@@ -89,7 +89,7 @@ private data class ClashLookupEntry(
     val raw: JSONObject
 )
 
-private data class LookupRequest(val title: String, val path: String)
+private data class LookupRequest(val title: String, val path: String, val staticPayload: JSONObject? = null)
 private data class LookupPanel(val title: String, val payload: JSONObject?, val error: String? = null)
 
 private data class LookupFilters(
@@ -177,6 +177,7 @@ private object ClashKingLookupApi {
     fun detailRequests(entry: ClashLookupEntry, section: String): List<LookupRequest> {
         val tag = tag(entry)
         fun req(title: String, route: String) = LookupRequest(title, route)
+        fun data(title: String, payload: JSONObject) = LookupRequest(title, "", payload)
         fun player(route: String, query: String = "") = "/v2/player/$tag/$route" + query
         fun clan(route: String, query: String = "") = "/v2/clan/$tag/$route" + query
         val limit = "?limit=50"
@@ -184,7 +185,7 @@ private object ClashKingLookupApi {
         return if (!entry.isClan) {
             when (section) {
                 "TỔNG QUAN" -> listOf(
-                    req("Hồ sơ người chơi và Nhà chính", entry.raw.toString()),
+                    data("Hồ sơ người chơi và Nhà chính", entry.raw),
                     req("Xếp hạng hiện tại", player("rankings"))
                 )
                 "QUÂN ĐỘI" -> listOf(
@@ -296,6 +297,7 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
     val league = json.optJSONObject("leagueTier") ?: json.optJSONObject("league")
     val badgeUrls = json.optJSONObject("badgeUrls") ?: clan?.optJSONObject("badgeUrls")
     val badge = json.lookupText("badge")
+        .ifBlank { clan?.lookupText("badge").orEmpty() }
         .ifBlank { badgeUrls?.lookupText("medium").orEmpty() }
         .ifBlank { badgeUrls?.lookupText("large").orEmpty() }
 
@@ -503,7 +505,9 @@ fun ClashLookupScreen() {
         detailPanels = emptyList()
         val loaded = requests.map { request ->
             async {
-                runCatching {
+                if (request.staticPayload != null) {
+                    LookupPanel(request.title, request.staticPayload)
+                } else runCatching {
                     LookupPanel(request.title, ClashKingLookupApi.get(request.path))
                 }.getOrElse { error ->
                     LookupPanel(request.title, null, error.message ?: "Không thể tải dữ liệu.")
