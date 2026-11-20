@@ -762,7 +762,6 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
-    var loginTermsAccepted by rememberSaveable { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
     var lastUsedAt by remember(activeProfile) {
         mutableLongStateOf(AccountProfileStore.lastUsedAt(context, activeProfile) ?: 0L)
@@ -893,16 +892,6 @@ private fun CocLioApp(
         }
     }
 
-    val firstLaunchNotificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        AppPreferences.setNotificationsEnabled(context, activeProfile, granted)
-        notificationsEnabled = granted
-        UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, granted)
-        if (!granted) {
-            scope.launch { snackbar.showAppSnackbar(context, "Bạn chưa cấp quyền thông báo cho COC-LIO.") }
-        }
-    }
 
     val testNotificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -1009,27 +998,9 @@ private fun CocLioApp(
         }
     }
 
-    LaunchedEffect(Unit) {
-        val permissionPrefs = context.getSharedPreferences("coc_lio_permission_state", android.content.Context.MODE_PRIVATE)
-        if (!permissionPrefs.getBoolean("notification_permission_requested_v1", false)) {
-            permissionPrefs.edit().putBoolean("notification_permission_requested_v1", true).apply()
-            if (Build.VERSION.SDK_INT >= 33 &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) {
-                delay(800)
-                firstLaunchNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                AppPreferences.setNotificationsEnabled(context, activeProfile, true)
-                notificationsEnabled = true
-                UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, true)
-            }
-        }
-    }
 
     LaunchedEffect(activeProfile) {
-        val notificationPermissionGranted = Build.VERSION.SDK_INT < 33 ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        AppPreferences.ensureNotificationPreferences(context, activeProfile, notificationPermissionGranted)
+        AppPreferences.ensureNotificationPreferences(context, activeProfile, false)
         notificationsEnabled = AppPreferences.notificationsEnabled(context, activeProfile)
         history = VillageStore.loadAll(context, activeProfile)
         current = history.firstOrNull()
@@ -1082,30 +1053,9 @@ private fun CocLioApp(
             return@LaunchedEffect
         }
         if (googleSignInSubmitting) return@LaunchedEffect
-        if (
-            accountProfileReady &&
-            accountProfileReadyForEmail?.equals(email, ignoreCase = true) == true
-        ) return@LaunchedEffect
-        accountProfileReady = false
-        accountProfileReadyForEmail = null
+        accountProfileReady = true
+        accountProfileReadyForEmail = email
         accountProfileError = null
-        runCatching {
-            AccountPrivacyConsent.hasRequiredAccountDataConsent()
-        }
-            .onSuccess { ready ->
-                accountProfileReady = ready
-                accountProfileReadyForEmail = email
-                if (!ready) {
-                    accountProfileError = "Bạn cần xác nhận điều khoản và chính sách trước khi đăng nhập Google."
-                }
-            }
-            .onFailure { error ->
-                accountProfileReady = false
-                accountProfileReadyForEmail = email
-                accountProfileError = error.message
-                    ?.takeIf { it.isNotBlank() }
-                    ?: "Không thể thiết lập hồ sơ tài khoản."
-            }
     }
 
     LaunchedEffect(isGoogleSignedIn, activeProfile) {
@@ -1200,7 +1150,6 @@ private fun CocLioApp(
     }
 
     suspend fun finishGoogleSignIn(googleAccount: GoogleAccountData) {
-        check(loginTermsAccepted) { "Bạn cần đồng ý với điều khoản và chính sách trước khi đăng nhập." }
         val savedName = AccountProfileStore.preferredName(context, googleAccount.email)
         val profileName = (
             savedName?.takeIf { it.isNotBlank() }
@@ -1211,14 +1160,7 @@ private fun CocLioApp(
             AccountProfileStore.setPreferredName(context, googleAccount.email, profileName)
         }
         AccountProfileStore.saveGoogleData(context, googleAccount)
-        val accountProfileExists = AccountPrivacyConsent.hasAccountProfile()
-        if (accountProfileExists) {
-            AccountPrivacyConsent.saveRequiredAccountDataConsent()
-        }
-        GoogleAccountAuth.shareProfile(googleAccount, context)
-        if (!accountProfileExists) {
-            AccountPrivacyConsent.saveRequiredAccountDataConsent()
-        }
+        GoogleAccountAuth.shareProfile(googleAccount)
         AccountPrivacyConsent.applyCollectionSettings(context, AccountPrivacyChoice())
         AccountActivityTracker.stopAndWait(context)
         FirebaseAccountAdministration.savePreferredName(profileName)
@@ -1253,12 +1195,6 @@ private fun CocLioApp(
 
     fun signInWithGoogle() {
         if (googleSignInSubmitting || interactiveGoogleSignIn) return
-        if (!loginTermsAccepted) {
-            scope.launch {
-                snackbar.showAppSnackbar(context, "Bạn cần xác nhận Điều khoản sử dụng và Chính sách quyền riêng tư trước khi đăng nhập.")
-            }
-            return
-        }
         scope.launch {
             interactiveGoogleSignIn = true
             googleSignInSubmitting = true
@@ -1404,8 +1340,6 @@ private fun CocLioApp(
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
                     isBusy = googleSignInSubmitting || interactiveGoogleSignIn,
                     readError = accountProfileError,
-                    termsAccepted = loginTermsAccepted,
-                    onTermsAcceptedChange = { loginTermsAccepted = it },
                     onGoogleSignIn = { signInWithGoogle() }
                 )
             }
@@ -1715,11 +1649,8 @@ private fun GoogleLoginStartScreen(
     modifier: Modifier = Modifier,
     isBusy: Boolean,
     readError: String?,
-    termsAccepted: Boolean,
-    onTermsAcceptedChange: (Boolean) -> Unit,
     onGoogleSignIn: () -> Unit
 ) {
-    var showDataDetails by rememberSaveable { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
     Box(
@@ -1752,101 +1683,39 @@ private fun GoogleLoginStartScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .ledRgbBorder(
-                                cornerRadiusDp = 8f,
-                                strokeWidthDp = if (termsAccepted) 0f else 2f
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Checkbox(
-                            checked = termsAccepted,
-                            onCheckedChange = onTermsAcceptedChange,
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                    Text(
-                        "Tôi đã đọc và đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư.",
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onTermsAcceptedChange(!termsAccepted) }
-                            .padding(start = 7.dp),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-                }
+                Text(
+                    "Đăng nhập Google để xác thực tài khoản và quản lý quyền truy cập COC-LIO.",
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = {
-                        runCatching {
-                            uriHandler.openUri("https://coc-lio-73de9.firebaseapp.com/terms")
-                        }
+                        runCatching { uriHandler.openUri("https://coc-lio-73de9.firebaseapp.com/terms") }
                     }) {
                         Text("ĐIỀU KHOẢN", fontSize = 9.sp)
                     }
                     TextButton(onClick = {
-                        runCatching {
-                            uriHandler.openUri("https://coc-lio-73de9.firebaseapp.com/privacy")
-                        }
+                        runCatching { uriHandler.openUri("https://coc-lio-73de9.firebaseapp.com/privacy") }
                     }) {
                         Text("CHÍNH SÁCH RIÊNG TƯ", fontSize = 9.sp)
                     }
-                }
-                TextButton(
-                    onClick = { showDataDetails = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("XEM CHI TIẾT DỮ LIỆU TÀI KHOẢN", fontSize = 10.sp)
                 }
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
                 NeonButton(
                     text = if (isBusy) "ĐANG MỞ GOOGLE..." else "ĐĂNG NHẬP GOOGLE",
                     onClick = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isBusy && termsAccepted,
-                    showLed = termsAccepted && !isBusy
+                    enabled = !isBusy,
+                    showLed = !isBusy
                 )
             }
-        }
-        if (showDataDetails) {
-            AlertDialog(
-                onDismissRequest = { showDataDetails = false },
-                title = {
-                    Text(
-                        "DỮ LIỆU COC-LIO XỬ LÝ",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                text = {
-                    Text(
-                        "Khi bạn đăng nhập Google, COC-LIO dùng dịch vụ xác thực của Google. Hồ sơ trực tuyến gồm UID, email, tên và ảnh hồ sơ Google, trạng thái xác minh, tên hiển thị, số lần đăng nhập và các mốc tạo/cập nhật/đăng nhập.\n\n" +
-                            "Để quản lý tài khoản, bảo mật phiên và hỗ trợ tương thích, ứng dụng cũng đồng bộ thông tin kỹ thuật cơ bản: hãng/model, thương hiệu, mã thiết bị do Android cung cấp, kiến trúc CPU, phiên bản Android và ứng dụng, ngôn ngữ, múi giờ, kích thước màn hình/mật độ điểm ảnh và loại/trạng thái kết nối mạng tại thời điểm đồng bộ. Các quyền INTERNET và ACCESS_NETWORK_STATE được Android tự cấp khi cài đặt, không hiện hộp thoại xin quyền.\n\n" +
-                            "JSON Clash of Clans, Player Tag, tên làng, công trình và tiến trình được xử lý và lưu trên điện thoại; ứng dụng không tải JSON lên máy chủ. Firebase Analytics, Crashlytics và Performance Monitoring không được bật. Ứng dụng không thu thập IMEI, số sê-ri, MAC, Android ID, vị trí GPS, danh bạ, SMS hoặc lịch sử cuộc gọi.\n\n" +
-                            "Thông tin kỹ thuật chỉ được dùng để duy trì tài khoản, bảo mật và hỗ trợ tương thích/kết nối; không theo dõi thao tác chi tiết trên từng màn hình. Những bản JSON từng được đồng bộ từ phiên bản cũ (nếu có) không tự động bị xóa khi cập nhật ứng dụng.",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 11.sp,
-                        lineHeight = 17.sp
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = { showDataDetails = false }) {
-                        Text("ĐÃ HIỂU")
-                    }
-                }
-            )
         }
     }
 }
