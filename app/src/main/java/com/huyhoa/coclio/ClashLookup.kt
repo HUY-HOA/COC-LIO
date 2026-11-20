@@ -660,17 +660,23 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
     )
 }
 
+private fun lookupEntryKey(entry: ClashLookupEntry): String =
+    "${if (entry.isClan) "clan" else "player"}:${entry.tag.trim().uppercase()}"
+
+private fun deduplicateLookupEntries(entries: List<ClashLookupEntry>): List<ClashLookupEntry> =
+    entries.filter { it.tag.isNotBlank() }.distinctBy(::lookupEntryKey)
+
 private fun lookupItems(response: JSONObject, isClan: Boolean): List<ClashLookupEntry> {
     val items = response.optJSONArray("items")
         ?: response.optJSONArray("results")
         ?: response.optJSONArray("data")
         ?: JSONArray()
-    return buildList {
+    return deduplicateLookupEntries(buildList {
         for (index in 0 until items.length()) {
             val item = items.optJSONObject(index) ?: continue
             add(lookupEntry(item, isClan))
         }
-    }
+    })
 }
 
 
@@ -687,6 +693,18 @@ private data class LookupHistoryItem(
     val searchedAt: Long
 )
 
+private fun lookupHistoryIdentity(mode: String, query: String): String {
+    val trimmed = query.trim()
+    val normalizedTag = lookupSearchCandidates(trimmed).firstOrNull()
+        ?.takeIf { it.startsWith("#") && runCatching { normalizeLookupTag(it, "TAG") }.isSuccess }
+    val normalizedName = Normalizer.normalize(trimmed, Normalizer.Form.NFKD)
+        .replace(Regex("[\\p{M}\\p{Cf}\\p{So}]"), " ")
+        .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+    return "$mode:${(normalizedTag ?: normalizedName).lowercase()}"
+}
+
 private fun lookupLocalPreferences(context: Context) =
     context.getSharedPreferences(LOOKUP_LOCAL_PREFS, Context.MODE_PRIVATE)
 
@@ -701,7 +719,7 @@ private fun loadLookupHistory(context: Context): List<LookupHistoryItem> = runCa
             if (mode !in setOf("player", "clan") || query.isBlank()) continue
             add(LookupHistoryItem(mode, query, item.optLong("searchedAt")))
         }
-    }.distinctBy { "${it.mode}: ${it.query.lowercase()}" }
+    }.distinctBy { lookupHistoryIdentity(it.mode, it.query) }
         .sortedByDescending { it.searchedAt }
         .take(LOOKUP_HISTORY_LIMIT)
 }.getOrElse { emptyList() }
@@ -712,7 +730,7 @@ private fun recordLookupHistory(context: Context, mode: String, query: String): 
     val updated = (
         listOf(LookupHistoryItem(mode, cleanQuery, System.currentTimeMillis())) +
             loadLookupHistory(context).filterNot {
-                it.mode == mode && it.query.equals(cleanQuery, ignoreCase = true)
+                lookupHistoryIdentity(it.mode, it.query) == lookupHistoryIdentity(mode, cleanQuery)
             }
         ).take(LOOKUP_HISTORY_LIMIT)
     val values = JSONArray()
@@ -1276,7 +1294,7 @@ fun ClashLookupScreen() {
     }
     var recentSearches by remember(context) { mutableStateOf(loadLookupHistory(context)) }
     var favoriteEntries by remember(context) { mutableStateOf(loadLookupFavorites(context)) }
-    var comparedTags by remember { mutableStateOf(emptyList<String>()) }
+    var comparedEntryKeys by remember { mutableStateOf(emptyList<String>()) }
     var searchMode by rememberSaveable { mutableStateOf("player") }
     var rankingCategory by rememberSaveable { mutableStateOf("townhall") }
     var rankingValue by rememberSaveable { mutableStateOf("19") }
@@ -1325,17 +1343,18 @@ fun ClashLookupScreen() {
     }
 
     fun toggleCompare(entry: ClashLookupEntry) {
-        comparedTags = if (entry.tag in comparedTags) {
-            comparedTags.filterNot { it == entry.tag }
-        } else if (comparedTags.size < 2) {
-            comparedTags + entry.tag
+        val key = lookupEntryKey(entry)
+        comparedEntryKeys = if (key in comparedEntryKeys) {
+            comparedEntryKeys.filterNot { it == key }
+        } else if (comparedEntryKeys.size < 2) {
+            comparedEntryKeys + key
         } else {
-            comparedTags.drop(1) + entry.tag
+            comparedEntryKeys.drop(1) + key
         }
     }
 
     fun resetSearchPage() {
-        comparedTags = emptyList()
+        comparedEntryKeys = emptyList()
         results = emptyList()
         nextCursor = null
         effectiveSearchQuery = ""
@@ -1345,6 +1364,29 @@ fun ClashLookupScreen() {
     fun clearAnalyticsResult() {
         analyticsResult = null
         searchError = null
+    }
+
+    fun selectRankingCategory(category: String) {
+        rankingCategory = category
+        rankingValue = when (category) {
+            "townhall", "war_triples" -> "19"
+            "league" -> "29000000"
+            "clan_cwl", "clan_win_streak" -> ""
+            else -> "32000006"
+        }
+        resetSearchPage()
+    }
+
+    fun selectAnalyticsCategory(category: String) {
+        analyticsCategory = category
+        analyticsPrimary = ""
+        analyticsSecondary = ""
+        analyticsDate = ""
+        analyticsFrom = ""
+        analyticsTo = ""
+        analyticsGroupKey = ""
+        analyticsVariantKey = ""
+        clearAnalyticsResult()
     }
 
     fun clearExtendedResults() {
@@ -1411,7 +1453,7 @@ fun ClashLookupScreen() {
             isSearching = true
             searchError = null
             if (!loadMore) {
-                comparedTags = emptyList()
+                comparedEntryKeys = emptyList()
                 results = emptyList()
                 nextCursor = null
                 analyticsResult = null
@@ -1495,7 +1537,7 @@ fun ClashLookupScreen() {
                             }
                         }
                         if (currentSearchKey() == requestKey) {
-                            results = if (loadMore) results + found else found
+                            results = if (loadMore) deduplicateLookupEntries(results + found) else deduplicateLookupEntries(found)
                             nextCursor = foundCursor
                             effectiveSearchQuery = usedQuery
                         }
@@ -1869,43 +1911,24 @@ fun ClashLookupScreen() {
 
                 if (searchMode == "leaderboard") {
                     Text("CHỌN BẢNG XẾP HẠNG", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        FilterChip(
-                            selected = rankingCategory == "townhall",
-                            onClick = { rankingCategory = "townhall"; rankingValue = "19"; resetSearchPage() },
-                            label = { Text("NHÀ CHÍNH", fontSize = 9.sp) }
-                        )
-                        FilterChip(
-                            selected = rankingCategory == "league",
-                            onClick = { rankingCategory = "league"; rankingValue = "29000000"; resetSearchPage() },
-                            label = { Text("GIẢI ĐẤU", fontSize = 9.sp) }
-                        )
-                        FilterChip(
-                            selected = rankingCategory == "clan_donations",
-                            onClick = { rankingCategory = "clan_donations"; rankingValue = "32000006"; resetSearchPage() },
-                            label = { Text("BANG HỘI QUYÊN GÓP", fontSize = 9.sp) }
-                        )
-                        FilterChip(
-                            selected = rankingCategory == "clan_war_wins",
-                            onClick = { rankingCategory = "clan_war_wins"; rankingValue = "32000006"; resetSearchPage() },
-                            label = { Text("BANG HỘI THẮNG HỘI CHIẾN", fontSize = 9.sp) }
-                        )
-                        FilterChip(
-                            selected = rankingCategory == "clan_capital_gold",
-                            onClick = { rankingCategory = "clan_capital_gold"; rankingValue = "32000006"; resetSearchPage() },
-                            label = { Text("VÀNG THỦ PHỦ", fontSize = 9.sp) }
-                        )
-                        FilterChip(
-                            selected = rankingCategory == "clan_win_streak",
-                            onClick = { rankingCategory = "clan_win_streak"; resetSearchPage() },
-                            label = { Text("BANG HỘI CHUỖI THẮNG", fontSize = 9.sp) }
-                        )
-                        FilterChip(selected = rankingCategory == "clan_cwl", onClick = { rankingCategory = "clan_cwl"; rankingValue = ""; resetSearchPage() }, label = { Text("BANG HỘI CWL", fontSize = 9.sp) })
-                        FilterChip(selected = rankingCategory == "war_triples", onClick = { rankingCategory = "war_triples"; rankingValue = "19"; resetSearchPage() }, label = { Text("CHUỖI 3 SAO", fontSize = 9.sp) })
-                    }
+                    LookupChoiceGroup(
+                        "NGƯỜI CHƠI",
+                        rankingCategory,
+                        listOf("townhall" to "NHÀ CHÍNH", "league" to "GIẢI ĐẤU", "war_triples" to "CHUỖI 3 SAO"),
+                        ::selectRankingCategory
+                    )
+                    LookupChoiceGroup(
+                        "BANG HỘI",
+                        rankingCategory,
+                        listOf(
+                            "clan_donations" to "QUYÊN GÓP",
+                            "clan_war_wins" to "THẮNG HỘI CHIẾN",
+                            "clan_capital_gold" to "VÀNG THỦ PHỦ",
+                            "clan_win_streak" to "CHUỖI THẮNG",
+                            "clan_cwl" to "CWL"
+                        ),
+                        ::selectRankingCategory
+                    )
                     if (rankingCategory != "clan_win_streak") {
                         val isClanLeaderboard = rankingCategory.startsWith("clan_")
                         val label = when {
@@ -1951,50 +1974,59 @@ fun ClashLookupScreen() {
 
                 if (searchMode == "analytics") {
                     Text("API THỐNG KÊ CÔNG KHAI", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    LookupChoiceGroup(
+                        "TỔNG QUAN & PHÂN BỐ",
+                        analyticsCategory,
                         listOf(
                             "global_counts" to "TỔNG QUAN",
                             "counts_townhalls" to "NHÀ CHÍNH",
                             "counts_league_tiers" to "GIẢI NGƯỜI CHƠI",
-                            "counts_clan_locations" to "KHU VỰC BANG HỘI",
+                            "counts_clan_locations" to "KHU VỰC BANG",
                             "counts_cwl_leagues" to "GIẢI CWL",
                             "counts_capital_leagues" to "GIẢI THỦ PHỦ",
-                            "counts_clan_members" to "SỐ THÀNH VIÊN",
+                            "counts_clan_members" to "QUY MÔ BANG"
+                        ),
+                        ::selectAnalyticsCategory
+                    )
+                    LookupChoiceGroup(
+                        "HỘI CHIẾN & XẾP HẠNG",
+                        analyticsCategory,
+                        listOf(
                             "stats_ranked" to "XẾP HẠNG",
                             "stats_war" to "HỘI CHIẾN",
                             "stats_cwl" to "CWL",
-                            "wars_hit_rates" to "TỶ LỆ SAO HỘI CHIẾN",
-                            "wars_summary" to "TỔNG KẾT HỘI CHIẾN",
-                            "army_setups" to "ĐỘI HÌNH HUYỀN THOẠI",
+                            "wars_hit_rates" to "TỶ LỆ SAO",
+                            "wars_summary" to "TỔNG KẾT"
+                        ),
+                        ::selectAnalyticsCategory
+                    )
+                    LookupChoiceGroup(
+                        "ĐỘI HÌNH",
+                        analyticsCategory,
+                        listOf(
+                            "army_setups" to "ĐỘI HÌNH PHỔ BIẾN",
                             "army_setup_timeline" to "LỊCH SỬ ĐỘI HÌNH",
-                            "army_setup_rank_history" to "HẠNG ĐỘI HÌNH",
-                            "legend_rank_curve" to "XẾP HẠNG HUYỀN THOẠI",
-                            "legend_trophy_buckets" to "PHÂN BỐ CÚP HUYỀN THOẠI",
+                            "army_setup_rank_history" to "HẠNG ĐỘI HÌNH"
+                        ),
+                        ::selectAnalyticsCategory
+                    )
+                    LookupChoiceGroup(
+                        "HUYỀN THOẠI & DỮ LIỆU LỊCH SỬ",
+                        analyticsCategory,
+                        listOf(
+                            "legend_rank_curve" to "XẾP HẠNG LEGEND",
+                            "legend_trophy_buckets" to "PHÂN BỐ CÚP LEGEND",
                             "historical_leaderboard" to "BXH LỊCH SỬ",
                             "trophy_buckets" to "PHÂN BỐ CÚP",
-                            "legend_season" to "MÙA HUYỀN THOẠI",
-                            "ranked_group" to "NHÓM XẾP HẠNG",
+                            "legend_season" to "MÙA LEGEND",
+                            "ranked_group" to "NHÓM RANKED",
                             "league_tier_statistics" to "THỐNG KÊ HẠNG",
                             "league_hit_rates" to "TỶ LỆ SAO",
-                            "legend_days" to "HUYỀN THOẠI THEO NGÀY",
-                            "legend_performance" to "HIỆU SUẤT HUYỀN THOẠI"
-                        ).forEach { (key, label) ->
-                            FilterChip(selected = analyticsCategory == key,
-                                onClick = {
-                                    analyticsCategory = key
-                                    analyticsPrimary = ""
-                                    analyticsSecondary = ""
-                                    analyticsDate = ""
-                                    analyticsFrom = ""
-                                    analyticsTo = ""
-                                    analyticsGroupKey = ""
-                                    analyticsVariantKey = ""
-                                    analyticsResult = null
-                                    searchError = null
-                                },
-                                label = { Text(label, fontSize = 8.sp) })
-                        }
-                    }
+                            "legend_days" to "LEGEND THEO NGÀY",
+                            "legend_performance" to "HIỆU SUẤT LEGEND"
+                        ),
+                        ::selectAnalyticsCategory
+                    )
                     when (analyticsCategory) {
                         "stats_ranked" -> {
                             LookupFilterField("Cấp Nhà chính", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "19")
@@ -2156,6 +2188,11 @@ fun ClashLookupScreen() {
             }
         }
 
+        val playerHistory = recentSearches.filter { it.mode == "player" }
+        val clanHistory = recentSearches.filter { it.mode == "clan" }
+        val playerFavorites = favoriteEntries.filterNot { it.isClan }
+        val clanFavorites = favoriteEntries.filter { it.isClan }
+
         if (recentSearches.isNotEmpty() || favoriteEntries.isNotEmpty()) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
@@ -2172,6 +2209,7 @@ fun ClashLookupScreen() {
                             Spacer(Modifier.width(6.dp))
                             Text("LỊCH SỬ TRA CỨU", color = LookupCyan, fontSize = 10.sp, fontWeight = FontWeight.Black)
                             Spacer(Modifier.weight(1f))
+                            Text("${recentSearches.size}/${LOOKUP_HISTORY_LIMIT}", color = LookupMuted, fontSize = 9.sp)
                             IconButton(
                                 onClick = {
                                     clearLookupHistory(context)
@@ -2182,28 +2220,46 @@ fun ClashLookupScreen() {
                                 Icon(Icons.Outlined.DeleteOutline, contentDescription = "Xóa lịch sử", tint = LookupMuted, modifier = Modifier.size(17.dp))
                             }
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            recentSearches.take(12).forEach { item ->
-                                FilterChip(
-                                    selected = false,
-                                    onClick = {
-                                        searchMode = item.mode
-                                        query = item.query
-                                        resetSearchPage()
-                                        analyticsResult = null
-                                        searchError = null
-                                    },
-                                    label = {
-                                        Text(
-                                            "${if (item.mode == "clan") "BANG" else "PLAYER"} · ${item.query}",
-                                            fontSize = 9.sp,
-                                            maxLines = 1
-                                        )
-                                    }
-                                )
+                        if (playerHistory.isNotEmpty()) {
+                            Text("NGƯỜI CHƠI · ${playerHistory.size}", color = LookupMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                playerHistory.forEach { item ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = {
+                                            searchMode = "player"
+                                            query = item.query
+                                            resetSearchPage()
+                                            analyticsResult = null
+                                            searchError = null
+                                        },
+                                        label = { Text(item.query, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                    )
+                                }
+                            }
+                        }
+                        if (clanHistory.isNotEmpty()) {
+                            Text("BANG HỘI · ${clanHistory.size}", color = LookupMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                clanHistory.forEach { item ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = {
+                                            searchMode = "clan"
+                                            query = item.query
+                                            resetSearchPage()
+                                            analyticsResult = null
+                                            searchError = null
+                                        },
+                                        label = { Text(item.query, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -2217,32 +2273,49 @@ fun ClashLookupScreen() {
                             Spacer(Modifier.weight(1f))
                             Text("${favoriteEntries.size}/${LOOKUP_FAVORITES_LIMIT}", color = LookupMuted, fontSize = 9.sp)
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            favoriteEntries.take(20).forEach { saved ->
-                                FilterChip(
-                                    selected = false,
-                                    onClick = {
-                                        clearExtendedResults()
-                                        selectedEntry = saved
-                                        selectedSection = "TỔNG QUAN"
-                                    },
-                                    label = {
-                                        Text(
-                                            "${if (saved.isClan) "BANG" else "PLAYER"} · ${saved.name}",
-                                            fontSize = 9.sp,
-                                            maxLines = 1
-                                        )
-                                    },
-                                    leadingIcon = { Icon(Icons.Outlined.Star, null, tint = LookupGold, modifier = Modifier.size(13.dp)) }
-                                )
+                        if (playerFavorites.isNotEmpty()) {
+                            Text("NGƯỜI CHƠI · ${playerFavorites.size}", color = LookupMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                playerFavorites.forEach { saved ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = {
+                                            clearExtendedResults()
+                                            selectedEntry = saved
+                                            selectedSection = "TỔNG QUAN"
+                                        },
+                                        label = { Text("${saved.name} · ${saved.tag}", fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                        leadingIcon = { Icon(Icons.Outlined.Star, null, tint = LookupGold, modifier = Modifier.size(13.dp)) }
+                                    )
+                                }
+                            }
+                        }
+                        if (clanFavorites.isNotEmpty()) {
+                            Text("BANG HỘI · ${clanFavorites.size}", color = LookupMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                clanFavorites.forEach { saved ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = {
+                                            clearExtendedResults()
+                                            selectedEntry = saved
+                                            selectedSection = "TỔNG QUAN"
+                                        },
+                                        label = { Text("${saved.name} · ${saved.tag}", fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                        leadingIcon = { Icon(Icons.Outlined.Star, null, tint = LookupGold, modifier = Modifier.size(13.dp)) }
+                                    )
+                                }
                             }
                         }
                     }
                     Text(
-                        "Lịch sử và hồ sơ đã ghim chỉ lưu cục bộ trên thiết bị này.",
+                        "Lịch sử và hồ sơ đã ghim được nhóm riêng theo người chơi/bang hội và chỉ lưu cục bộ trên thiết bị này.",
                         color = LookupMuted,
                         fontSize = 8.sp
                     )
@@ -2256,8 +2329,8 @@ fun ClashLookupScreen() {
             Text("Có thể tìm bang hội bằng tên, TAG hoặc tên có biểu tượng/ký tự trang trí. Ứng dụng tự thử dạng chữ chuẩn hóa khi cần.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
         }
 
-        val comparisonEntries = comparedTags.mapNotNull { tag -> results.firstOrNull { it.tag == tag } }
-        if (comparedTags.isNotEmpty()) {
+        val comparisonEntries = comparedEntryKeys.mapNotNull { key -> results.firstOrNull { lookupEntryKey(it) == key } }
+        if (comparedEntryKeys.isNotEmpty()) {
             if (comparisonEntries.size == 2) {
                 LookupComparisonCard(comparisonEntries)
             } else {
@@ -2282,7 +2355,7 @@ fun ClashLookupScreen() {
                     onCopy = { clipboard.setText(AnnotatedString(result.tag)) },
                     isFavorite = favoriteEntries.any { it.tag.equals(result.tag, true) && it.isClan == result.isClan },
                     onFavorite = { toggleFavorite(result) },
-                    isCompared = result.tag in comparedTags,
+                    isCompared = lookupEntryKey(result) in comparedEntryKeys,
                     onCompare = { toggleCompare(result) }
                 )
             }
@@ -2416,6 +2489,31 @@ private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
 }
 
 @Composable
+@Composable
+private fun LookupChoiceGroup(
+    title: String,
+    selected: String,
+    options: List<Pair<String, String>>,
+    onSelect: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(title, color = LookupMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            options.forEach { (value, label) ->
+                FilterChip(
+                    selected = selected == value,
+                    onClick = { onSelect(value) },
+                    label = { Text(label, fontSize = 8.sp) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun LookupFilterField(
     label: String,
     value: String,
@@ -2526,6 +2624,66 @@ private fun LookupResultCard(
 }
 
 @Composable
+private fun lookupOrderedJsonKeys(payload: JSONObject): List<String> {
+    val priority = listOf(
+        "name", "tag", "playerTag", "clanTag", "description",
+        "townHallLevel", "townhallLevel", "builderHallLevel", "expLevel", "experienceLevel", "playerLevel",
+        "trophies", "builderBaseTrophies", "leagueTrophies", "league", "leagueTier", "clan",
+        "clanLevel", "memberCount", "members", "rank", "globalRank", "localRank", "groupRank",
+        "warWins", "warLosses", "warTies", "warWinStreak", "donated", "received",
+        "capitalGoldTotal", "capitalLeague", "stars", "destructionPercentage",
+        "updatedAt", "lastActive", "lastObservedAt", "joinedAt", "battleTime", "eventTime",
+        "startTime", "endTime", "time", "type", "result"
+    ).mapIndexed { index, key -> key.lowercase() to index }.toMap()
+    return payload.keys().asSequence().toList().sortedWith(
+        compareBy<String> { priority[it.lowercase()] ?: Int.MAX_VALUE }
+            .thenBy { humanizeLookupKey(it).lowercase() }
+    )
+}
+
+private fun JSONObject.lookupExplicitRank(): Long? {
+    for (key in listOf("rank", "rankPosition", "position", "globalRank", "groupRank", "localRank")) {
+        val parsed = lookupText(key).trim().removePrefix("#").toLongOrNull()
+        if (parsed != null && parsed > 0L) return parsed
+    }
+    return null
+}
+
+private fun lookupJsonArrayDisplayOrder(values: JSONArray): List<Int> {
+    val indices = (0 until values.length()).toList()
+    if (indices.size < 2) return indices
+    val ranked = indices.mapNotNull { index ->
+        values.optJSONObject(index)?.lookupExplicitRank()?.let { index to it }
+    }
+    // Sort only when every row explicitly supplies a rank. Other lists keep the API order:
+    // history, activity timelines and seasonal series often have meaningful chronology.
+    return if (ranked.size == indices.size) {
+        ranked.sortedWith(compareBy<Pair<Int, Long>> { it.second }.thenBy { it.first }).map { it.first }
+    } else indices
+}
+
+private fun JSONObject.lookupListItemTitle(parentKey: String, index: Int): String {
+    val name = listOf(
+        "name", "playerName", "clanName", "unitName", "troopName", "heroName",
+        "spellName", "petName", "equipmentName", "buildingName", "defenseName",
+        "opponentName", "attackerName", "defenderName", "title"
+    ).firstNotNullOfOrNull { key -> lookupText(key).takeIf { it.isNotBlank() } }
+    if (!name.isNullOrBlank()) {
+        val rank = lookupText("rank").ifBlank { lookupText("globalRank") }.ifBlank { lookupText("groupRank") }
+        val level = lookupText("level").ifBlank { lookupText("townHallLevel") }.ifBlank { lookupText("builderHallLevel") }.ifBlank { lookupText("expLevel") }
+        return when {
+            rank.isNotBlank() -> "$name · Hạng #$rank"
+            level.isNotBlank() -> "$name · Cấp $level"
+            else -> name
+        }
+    }
+    val tag = lookupText("tag").ifBlank { lookupText("playerTag") }.ifBlank { lookupText("clanTag") }
+    if (tag.isNotBlank()) return "TAG $tag"
+    val id = lookupText("id")
+    if (id.isNotBlank()) return "ID $id"
+    return "${humanizeLookupKey(parentKey)} #${index + 1}"
+}
+
 private fun LookupDataPanel(
     title: String,
     payload: JSONObject,
@@ -2563,7 +2721,7 @@ private fun LookupJsonObject(
         Text("Dữ liệu lồng quá sâu, không thể mở rộng thêm.", fontSize = 9.sp, color = LookupMuted)
         return
     }
-    val keys = remember(payload) { payload.keys().asSequence().toList() }
+    val keys = remember(payload) { lookupOrderedJsonKeys(payload) }
     keys.forEach { key ->
         val normalizedKey = key.lowercase()
         if (normalizedKey in setOf("iconurls", "badgeurls", "icons", "images", "imageurl", "image_url", "badge_url", "iconurl", "icon_url", "avatarurl", "avatar_url")) {
@@ -2612,6 +2770,7 @@ private fun LookupJsonArray(
     catalog: Map<Int, SupplementalCatalogEntry>
 ) {
     var visibleCount by remember(values) { mutableIntStateOf(20) }
+    val displayIndices = remember(values, key) { lookupJsonArrayDisplayOrder(values) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             LookupGameFieldIcon(key, modifier = Modifier.size(18.dp))
@@ -2622,8 +2781,9 @@ private fun LookupJsonArray(
         if (values.length() == 0) {
             Text("Không có dữ liệu được ghi nhận.", color = LookupMuted, fontSize = 9.sp)
         } else {
-            val end = minOf(values.length(), visibleCount)
-            for (index in 0 until end) {
+            val end = minOf(displayIndices.size, visibleCount)
+            for (position in 0 until end) {
+                val index = displayIndices[position]
                 when (val value = values.opt(index)) {
                     is JSONObject -> {
                         Card(
@@ -2636,9 +2796,14 @@ private fun LookupJsonArray(
                                 verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
                                 val imageUrl = lookupImageUrl(value, catalog, key)
-                                val objectName = value.lookupText("name")
-                                    .ifBlank { value.lookupText("unitName") }
-                                    .ifBlank { value.lookupText("heroName") }
+                                val objectName = value.lookupListItemTitle(key, position)
+                                val tag = value.lookupText("tag").ifBlank { value.lookupText("playerTag") }.ifBlank { value.lookupText("clanTag") }
+                                val rank = value.lookupText("rank").ifBlank { value.lookupText("globalRank") }.ifBlank { value.lookupText("groupRank") }
+                                val secondary = when {
+                                    rank.isNotBlank() -> "Hạng #$rank"
+                                    tag.isNotBlank() && !objectName.equals("TAG $tag", ignoreCase = true) -> "TAG $tag"
+                                    else -> "Vị trí ${position + 1}"
+                                }
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                     if (imageUrl.isNotBlank()) {
                                         AsyncImage(model = imageUrl, contentDescription = objectName, modifier = Modifier.size(36.dp))
@@ -2646,8 +2811,8 @@ private fun LookupJsonArray(
                                         LookupGameFieldIcon(key, modifier = Modifier.size(22.dp))
                                     }
                                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                        Text(objectName.ifBlank { "MỤC ${index + 1}" }, fontSize = 10.sp, color = LookupGold, fontWeight = FontWeight.Bold, maxLines = 1)
-                                        Text("#${index + 1}", fontSize = 8.sp, color = LookupMuted)
+                                        Text(objectName, fontSize = 10.sp, color = LookupGold, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(secondary, fontSize = 8.sp, color = LookupMuted)
                                     }
                                 }
                                 LookupJsonObject(value, depth + 1, catalog)
@@ -2658,16 +2823,16 @@ private fun LookupJsonArray(
                     else -> LookupDetailRow("#${index + 1}", lookupValue(value), key)
                 }
             }
-            if (end < values.length()) {
+            if (end < displayIndices.size) {
                 Button(
-                    onClick = { visibleCount = (visibleCount + 20).coerceAtMost(values.length()) },
+                    onClick = { visibleCount = (visibleCount + 20).coerceAtMost(displayIndices.size) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = LookupCyan
                     )
                 ) {
-                    Text("HIỂN THỊ TIẾP ${minOf(20, values.length() - end)} / ${values.length() - end}", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text("HIỂN THỊ TIẾP ${minOf(20, displayIndices.size - end)} / ${displayIndices.size - end}", fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
