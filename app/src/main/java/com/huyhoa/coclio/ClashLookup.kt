@@ -887,8 +887,10 @@ fun ClashLookupScreen() {
             return
         }
         if (isLeaderboard && rankingCategory != "clan_win_streak") {
+            val supportsGlobal = rankingCategory == "clan_donations" || rankingCategory == "clan_war_wins"
+            val isValidGlobal = supportsGlobal && rankingValue.trim().equals("global", ignoreCase = true)
             val rankingId = rankingValue.toIntOrNull()
-            if (rankingId == null || rankingId <= 0) {
+            if (!isValidGlobal && (rankingId == null || rankingId <= 0)) {
                 searchError = if (rankingCategory == "clan_cwl") "Nhập mã bậc giải CWL hợp lệ."
                     else "Nhập cấp Nhà chính, mã khu vực hoặc mã giải đấu hợp lệ."
                 return
@@ -1360,6 +1362,7 @@ fun ClashLookupScreen() {
                                 rankingCategory == "townhall" || rankingCategory == "war_triples" -> "19"
                                 rankingCategory == "league" -> "29000000"
                                 rankingCategory == "clan_cwl" -> "Nhập mã bậc giải CWL"
+                                rankingCategory == "clan_donations" || rankingCategory == "clan_war_wins" -> "32000006 hoặc global"
                                 else -> "32000006"
                             }
                         )
@@ -1371,7 +1374,9 @@ fun ClashLookupScreen() {
                             when {
                                 rankingCategory == "clan_cwl" -> "Bảng xếp hạng CWL cần mã bậc giải, mùa giải và quy mô đội."
                                 rankingCategory == "war_triples" -> "Bảng chuỗi 3 sao theo cấp Nhà chính."
-                                isClanLeaderboard -> "Các bảng xếp hạng bang hội dùng mã khu vực; 32000006 là khu vực Quốc tế."
+                                rankingCategory == "clan_donations" || rankingCategory == "clan_war_wins" ->
+                                    "32000006 là khu vực Quốc tế; nhập global để xem bảng xếp hạng toàn cầu."
+                                isClanLeaderboard -> "Bảng Vàng Thủ phủ cần mã khu vực; 32000006 là khu vực Quốc tế."
                                 else -> "Nhập đúng cấp Nhà chính hoặc mã giải đấu theo dữ liệu ClashKing."
                             },
                             color = LookupMuted,
