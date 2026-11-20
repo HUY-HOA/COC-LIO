@@ -93,7 +93,12 @@ private data class ClashLookupEntry(
     val raw: JSONObject
 )
 
-private data class LookupRequest(val title: String, val path: String, val staticPayload: JSONObject? = null)
+private data class LookupRequest(
+    val title: String,
+    val path: String,
+    val staticPayload: JSONObject? = null,
+    val includeFields: Set<String>? = null
+)
 private data class LookupPanel(val title: String, val payload: JSONObject?, val error: String? = null)
 
 private data class LookupFilters(
@@ -224,7 +229,8 @@ private object ClashKingLookupApi {
 
     fun detailRequests(entry: ClashLookupEntry, section: String): List<LookupRequest> {
         val tag = tag(entry)
-        fun req(title: String, route: String) = LookupRequest(title, route)
+        fun req(title: String, route: String, includeFields: Set<String>? = null) =
+            LookupRequest(title, route, includeFields = includeFields)
         fun data(title: String, payload: JSONObject) = LookupRequest(title, "", payload)
         fun player(route: String, query: String = "") = "/v2/player/$tag/$route" + query
         fun clan(route: String, query: String = "") = "/v2/clan/$tag/$route" + query
@@ -233,8 +239,7 @@ private object ClashKingLookupApi {
         return if (!entry.isClan) {
             when (section) {
                 "TỔNG QUAN" -> listOf(
-                    data("Hồ sơ người chơi và Nhà chính", entry.raw),
-                    req("Xếp hạng hiện tại", player("rankings"))
+                    data("Hồ sơ người chơi và Nhà chính", entry.raw)
                 )
                 "QUÂN ĐỘI" -> listOf(
                     req("Lịch sử nâng cấp quân lính", player("history/changes", "?type=troop_level&limit=50")),
@@ -283,8 +288,7 @@ private object ClashKingLookupApi {
                     req("Xếp hạng toàn cầu và địa phương", player("rankings")),
                     req("Lịch sử xếp hạng Nhà chính", player("leaderboard-history/player_home_trophies")),
                     req("Lịch sử xếp hạng Nhà thợ xây", player("leaderboard-history/player_builder_base_trophies")),
-                    req("Lịch sử Ranked", player("ranked/history")),
-                    req("Lịch sử kết quả Ranked và Legend", player("league/history"))
+                    req("Lịch sử Ranked", player("ranked/history"))
                 )
                 "BANG HỘI" -> listOf(
                     req("Lịch sử tham gia bang hội", player("join-leave", limit)),
@@ -298,8 +302,7 @@ private object ClashKingLookupApi {
         } else {
             when (section) {
                 "TỔNG QUAN" -> listOf(
-                    req("Hồ sơ bang hội và danh sách thành viên", clan("cached")),
-                    req("Xếp hạng và điểm bang hội", clan("rankings"))
+                    req("Hồ sơ bang hội và danh sách thành viên", clan("cached"))
                 )
                 "THÀNH VIÊN" -> listOf(
                     req("Thành viên hiện tại và ngày tham gia được ghi nhận", "/v2/clan/$tag/member-joins"),
@@ -315,12 +318,11 @@ private object ClashKingLookupApi {
                     req("Nhóm CWL hiện tại", "/v2/cwl/$tag/group")
                 )
                 "QUYÊN GÓP" -> listOf(
-                    req("Tổng quyên góp trong tháng", clan("donations/summary")),
-                    req("Thứ hạng quyên góp và nhận quân", clan("rankings"))
+                    req("Tổng quyên góp trong tháng", clan("donations/summary"))
                 )
                 "THỦ PHỦ" -> listOf(
-                    req("Cấp Thủ phủ, giải đấu và tổng Vàng Thủ phủ", clan("cached")),
-                    req("Thứ hạng Thủ phủ và đóng góp", clan("rankings"))
+                    req("Xếp hạng điểm Thủ phủ", clan("rankings"), setOf("clanCapital", "capitalGold")),
+                    req("Cấp giải và tổng Vàng Thủ phủ", clan("cached"), setOf("capitalGoldTotal", "capitalLeague"))
                 )
                 "XẾP HẠNG" -> listOf(
                     req("Xếp hạng hiện tại", clan("rankings")),
@@ -337,8 +339,7 @@ private object ClashKingLookupApi {
                     req("Điểm clan và chuỗi thắng kỷ lục", clan("records"))
                 )
                 "LỊCH SỬ" -> listOf(
-                    req("Lịch sử thay đổi cấp và mô tả bang", clan("history/changes", limit)),
-                    req("Lịch sử thành viên", clan("join-leave", limit))
+                    req("Lịch sử thay đổi cấp và mô tả bang", clan("history/changes", limit))
                 )
                 else -> emptyList()
             }
@@ -629,7 +630,11 @@ fun ClashLookupScreen() {
                 if (request.staticPayload != null) {
                     LookupPanel(request.title, request.staticPayload)
                 } else runCatching {
-                    LookupPanel(request.title, ClashKingLookupApi.get(request.path))
+                    val payload = ClashKingLookupApi.get(request.path)
+                    val visiblePayload = request.includeFields?.let { fields ->
+                        JSONObject().apply { fields.forEach { key -> if (payload.has(key)) put(key, payload.opt(key)) } }
+                    } ?: payload
+                    LookupPanel(request.title, visiblePayload)
                 }.getOrElse { error ->
                     LookupPanel(request.title, null, error.message ?: "Không thể tải dữ liệu.")
                 }
