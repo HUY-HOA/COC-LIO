@@ -268,7 +268,7 @@ private object ClashKingLookupApi {
                     req("Tổng tài nguyên cướp được", player("farming")),
                     req("Lịch sử quyên góp", player("history/stats", "?type=donated&limit=50")),
                     req("Lịch sử nhận quân", player("history/stats", "?type=received&limit=50")),
-                    req("Điểm Clan Games", player("history/stats", "?type=clan_games&limit=50")),
+                    req("Điểm Trò chơi bang hội", player("history/stats", "?type=clan_games&limit=50")),
                     req("Vàng Thủ phủ đã đóng góp", player("history/stats", "?type=capital_gold_donated&limit=50"))
                 )
                 "TRẬN ĐẤU" -> listOf(
@@ -378,7 +378,10 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
 
     return ClashLookupEntry(
         name = json.lookupText("name").ifBlank {
-            if (isClan) json.lookupText("clanTag").ifBlank { "Bang hội chưa rõ tên" } else "Người chơi chưa rõ tên"
+            if (isClan) {
+                val clanTag = json.lookupText("clanTag").ifBlank { json.lookupText("tag") }
+                clanTag.takeIf { it.isNotBlank() }?.let { "Bang hội $it" } ?: "Bang hội chưa rõ tên"
+            } else "Người chơi chưa rõ tên"
         },
         tag = json.lookupText("tag").ifBlank { json.lookupText("playerTag").ifBlank { json.lookupText("clanTag") } },
         isClan = isClan,
@@ -482,7 +485,89 @@ private fun humanizeLookupKey(key: String): String {
         "clanPoints" to "Điểm bang hội",
         "builderBasePoints" to "Điểm Nhà thợ xây",
         "capitalGold" to "Vàng Thủ phủ",
-        "clanCapital" to "Thủ phủ bang hội"
+        "capitalGoldTotal" to "Tổng Vàng Thủ phủ",
+        "capitalLeague" to "Giải Thủ phủ",
+        "clanCapital" to "Thủ phủ bang hội",
+        "clanTag" to "TAG bang hội",
+        "playerTag" to "TAG người chơi",
+        "leagueGroupId" to "Mã nhóm giải",
+        "seasonId" to "Mã mùa giải",
+        "leagueTierId" to "Mã bậc giải",
+        "cwlLeagueId" to "Mã bậc CWL",
+        "homeVillage" to "Làng chính",
+        "builderBase" to "Nhà thợ xây",
+        "builderBaseTrophies" to "Cúp Nhà thợ xây",
+        "clanPoints" to "Điểm bang hội",
+        "warLeague" to "Giải hội chiến",
+        "warSize" to "Quy mô đội",
+        "warsFinished" to "Số hội chiến đã kết thúc",
+        "totalClansInGroup" to "Tổng số bang hội trong nhóm",
+        "groupRank" to "Hạng trong nhóm",
+        "globalRank" to "Hạng toàn cầu",
+        "updatedAt" to "Cập nhật lúc",
+        "destruction" to "Tỷ lệ phá hủy",
+        "wins" to "Thắng",
+        "losses" to "Thua",
+        "ties" to "Hòa",
+        "stars" to "Số sao",
+        "attacks" to "Số lượt tấn công",
+        "defenses" to "Số lượt phòng thủ",
+        "attackWins" to "Số trận thắng tấn công",
+        "defenseWins" to "Số trận thắng phòng thủ",
+        "attackTriples" to "Số trận tấn công 3 sao",
+        "defenseTriples" to "Số trận phòng thủ 3 sao",
+        "averageDuration" to "Thời lượng trung bình",
+        "averageDestruction" to "Phá hủy trung bình",
+        "currentDay" to "Ngày hiện tại",
+        "eligiblePlayerDays" to "Số ngày người chơi đủ điều kiện",
+        "observedPlayerDays" to "Số ngày đã ghi nhận",
+        "completePlayerDays" to "Số ngày đủ dữ liệu",
+        "partialPlayerDays" to "Số ngày thiếu một phần dữ liệu",
+        "missingPlayerDays" to "Số ngày chưa có dữ liệu",
+        "invalidPlayerDays" to "Số ngày dữ liệu không hợp lệ",
+        "observedBattles" to "Số trận đã ghi nhận",
+        "observedTriples" to "Số trận 3 sao đã ghi nhận",
+        "perfectPlayerDays" to "Số ngày đạt hoàn hảo",
+        "tripleRate" to "Tỷ lệ 3 sao",
+        "perfectDayRate" to "Tỷ lệ ngày hoàn hảo",
+        "meanTrophies" to "Cúp trung bình",
+        "cohort" to "Nhóm thống kê",
+        "mode" to "Chế độ",
+        "items" to "Danh sách dữ liệu",
+        "count" to "Số lượng",
+        "limit" to "Giới hạn",
+        "available" to "Số bản ghi hiện có",
+        "uniquePlayers" to "Số người chơi khác nhau",
+        "clan" to "Bang hội",
+        "opponent" to "Đối thủ",
+        "player" to "Người chơi",
+        "attackerTag" to "TAG người tấn công",
+        "attackerName" to "Tên người tấn công",
+        "defenderTag" to "TAG người phòng thủ",
+        "defenderName" to "Tên người phòng thủ",
+        "attackerTownhall" to "Nhà chính người tấn công",
+        "defenderTownhall" to "Nhà chính người phòng thủ",
+        "mapPosition" to "Vị trí bản đồ",
+        "attackOrder" to "Thứ tự tấn công",
+        "duration" to "Thời lượng",
+        "location" to "Khu vực",
+        "description" to "Mô tả",
+        "publicWarLog" to "Nhật ký hội chiến công khai",
+        "townhall_level" to "Nhà chính",
+        "builder_base_points" to "Điểm Nhà thợ xây",
+        "builder_base_trophies" to "Cúp Nhà thợ xây",
+        "clan_home_points" to "Điểm làng chính",
+        "clan_builder_base_points" to "Điểm Nhà thợ xây",
+        "clan_capital_points" to "Điểm Thủ phủ",
+        "league_id" to "Mã bậc giải",
+        "location_id" to "Mã khu vực",
+        "war_size" to "Quy mô đội",
+        "clan_tag" to "TAG bang hội",
+        "last_attack_time" to "Thời điểm tấn công gần nhất",
+        "streak" to "Chuỗi trận",
+        "end_time" to "Thời điểm kết thúc",
+        "team_size" to "Quy mô đội",
+        "attack_count" to "Số lượt tấn công"
     )
     return known[key] ?: key
         .replace(Regex("([a-z])([A-Z])"), "$1 $2")
@@ -551,7 +636,7 @@ fun ClashLookupScreen() {
             return
         }
         if (isLeaderboard && rankingCategory != "clan_win_streak" && rankingValue.toIntOrNull() == null) {
-            searchError = "Nhập cấp Nhà chính, ID khu vực hoặc ID giải đấu hợp lệ."
+            searchError = "Nhập cấp Nhà chính, mã khu vực hoặc mã giải đấu hợp lệ."
             return
         }
         if (isSearching) return
@@ -762,10 +847,10 @@ fun ClashLookupScreen() {
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                        Text("ENDPOINT CÔNG KHAI CẦN THAM SỐ", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                        Text("API CÔNG KHAI CẦN THAM SỐ", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
                         if (!entry.isClan) {
                             LookupFilterField("Mã mùa giải Ranked (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it }, "Mã mùa giải")
-                            LookupFilterField("Ngày Legend (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it }, "2026-11-20")
+                            LookupFilterField("Ngày Legend (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it }, "YYYY-MM-DD")
                             LookupFilterField("TAG người chơi khác (để so lịch sử bang)", extendedOtherPlayerTag, { extendedOtherPlayerTag = it }, "#ABC123")
                             Text("Nhập một hoặc nhiều trường. Season ID tải nhóm Ranked và battlelog; ngày tải battlelog Legend; TAG khác tải thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         } else {
@@ -917,7 +1002,7 @@ fun ClashLookupScreen() {
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (searchMode == "player") "Tên người chơi hoặc #TAG" else "Clan TAG (bắt buộc)") },
+                    label = { Text(if (searchMode == "player") "Tên người chơi hoặc #TAG" else "TAG bang hội (bắt buộc)") },
                     placeholder = { Text(if (searchMode == "player") "Nhập tên hoặc #ABC123" else "Nhập #2PR8V8") },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = LookupCyan) },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -946,12 +1031,12 @@ fun ClashLookupScreen() {
                         FilterChip(
                             selected = rankingCategory == "clan_donations",
                             onClick = { rankingCategory = "clan_donations"; rankingValue = "32000006" },
-                            label = { Text("CLAN QUYÊN GÓP", fontSize = 9.sp) }
+                            label = { Text("BANG HỘI QUYÊN GÓP", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_war_wins",
                             onClick = { rankingCategory = "clan_war_wins"; rankingValue = "32000006" },
-                            label = { Text("CLAN THẮNG HỘI CHIẾN", fontSize = 9.sp) }
+                            label = { Text("BANG HỘI THẮNG HỘI CHIẾN", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_capital_gold",
@@ -961,18 +1046,18 @@ fun ClashLookupScreen() {
                         FilterChip(
                             selected = rankingCategory == "clan_win_streak",
                             onClick = { rankingCategory = "clan_win_streak" },
-                            label = { Text("CLAN CHUỖI THẮNG", fontSize = 9.sp) }
+                            label = { Text("BANG HỘI CHUỖI THẮNG", fontSize = 9.sp) }
                         )
-                        FilterChip(selected = rankingCategory == "clan_cwl", onClick = { rankingCategory = "clan_cwl"; rankingValue = "48000000" }, label = { Text("CLAN CWL", fontSize = 9.sp) })
+                        FilterChip(selected = rankingCategory == "clan_cwl", onClick = { rankingCategory = "clan_cwl"; rankingValue = "" }, label = { Text("BANG HỘI CWL", fontSize = 9.sp) })
                         FilterChip(selected = rankingCategory == "war_triples", onClick = { rankingCategory = "war_triples"; rankingValue = "19" }, label = { Text("CHUỖI 3 SAO", fontSize = 9.sp) })
                     }
                     if (rankingCategory != "clan_win_streak") {
                         val isClanLeaderboard = rankingCategory.startsWith("clan_")
                         val label = when {
                             rankingCategory == "townhall" || rankingCategory == "war_triples" -> "Cấp Nhà chính"
-                            rankingCategory == "league" -> "ID giải đấu"
-                            rankingCategory == "clan_cwl" -> "ID giải CWL"
-                            else -> "ID quốc gia / khu vực"
+                            rankingCategory == "league" -> "Mã giải đấu"
+                            rankingCategory == "clan_cwl" -> "Mã bậc giải CWL"
+                            else -> "Mã quốc gia / khu vực"
                         }
                         LookupFilterField(
                             label,
@@ -981,7 +1066,7 @@ fun ClashLookupScreen() {
                             when {
                                 rankingCategory == "townhall" || rankingCategory == "war_triples" -> "19"
                                 rankingCategory == "league" -> "29000000"
-                                rankingCategory == "clan_cwl" -> "48000000"
+                                rankingCategory == "clan_cwl" -> "Nhập mã bậc giải CWL"
                                 else -> "32000006"
                             }
                         )
@@ -991,10 +1076,10 @@ fun ClashLookupScreen() {
                         }
                         Text(
                             when {
-                                rankingCategory == "clan_cwl" -> "Bảng xếp hạng CWL cần ID giải, mùa giải và quy mô đội."
+                                rankingCategory == "clan_cwl" -> "Bảng xếp hạng CWL cần mã bậc giải, mùa giải và quy mô đội."
                                 rankingCategory == "war_triples" -> "Bảng chuỗi 3 sao theo cấp Nhà chính."
                                 isClanLeaderboard -> "Các bảng xếp hạng clan dùng ID khu vực; 32000006 là khu vực International."
-                                else -> "Nhập đúng ID Nhà chính hoặc ID giải đấu theo dữ liệu ClashKing."
+                                else -> "Nhập đúng cấp Nhà chính hoặc mã giải đấu theo dữ liệu ClashKing."
                             },
                             color = LookupMuted,
                             fontSize = 9.sp,
@@ -1029,9 +1114,9 @@ fun ClashLookupScreen() {
                                 }
                             }
                             LookupFilterField("ID khu vực", analyticsPrimary, { analyticsPrimary = it }, "32000006")
-                            LookupFilterField("Ngày snapshot (YYYY-MM-DD)", analyticsDate, { analyticsDate = it }, "2026-11-20")
+                            LookupFilterField("Ngày snapshot (YYYY-MM-DD)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
                         }
-                        "trophy_buckets" -> LookupFilterField("ID giải đấu", analyticsPrimary, { analyticsPrimary = it }, "29000000")
+                        "trophy_buckets" -> LookupFilterField("Mã giải đấu", analyticsPrimary, { analyticsPrimary = it }, "29000000")
                         "legend_season" -> {
                             LookupFilterField("Mùa Legend (YYYY-MM)", analyticsPrimary, { analyticsPrimary = it }, "2026-10")
                             LookupFilterField("Số kết quả tối đa", analyticsSecondary, { analyticsSecondary = it }, "100")
@@ -1045,8 +1130,8 @@ fun ClashLookupScreen() {
                             LookupFilterField("Mã bậc giải", analyticsSecondary, { analyticsSecondary = it }, "29000000")
                         }
                         "league_hit_rates" -> {
-                            LookupFilterField("Từ ngày", analyticsFrom, { analyticsFrom = it }, "2026-11-01")
-                            LookupFilterField("Đến ngày", analyticsTo, { analyticsTo = it }, "2026-11-20")
+                            LookupFilterField("Từ ngày", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 FilterChip(selected = analyticsMode == "ranked", onClick = { analyticsMode = "ranked" }, label = { Text("RANKED", fontSize = 8.sp) })
                                 FilterChip(selected = analyticsMode == "legend", onClick = { analyticsMode = "legend" }, label = { Text("LEGEND", fontSize = 8.sp) })
@@ -1059,8 +1144,8 @@ fun ClashLookupScreen() {
                             }
                         }
                         "legend_days", "legend_performance" -> {
-                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "2026-11-01")
-                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "2026-11-20")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
                             Text("Nhóm dữ liệu", color = LookupMuted, fontSize = 9.sp)
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 val cohorts = if (analyticsCategory == "legend_days") listOf("legend_i", "top_1000", "top_200") else listOf("observed", "legend_i", "top_1000", "top_200")
@@ -1121,7 +1206,7 @@ fun ClashLookupScreen() {
         if (searchError != null) LookupMessageCard(searchError ?: "", isError = true)
         analyticsResult?.let { LookupDataPanel(title = analyticsResultTitle, payload = it) }
         if (searchMode == "clan" && searchError == null) {
-            Text("Tra cứu bang hội bằng Clan TAG. API công khai hiện chưa có chức năng tìm bang hội theo tên.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
+            Text("Tra cứu bang hội bằng TAG. API công khai hiện chưa có chức năng tìm bang hội theo tên.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
         }
 
         if (results.isNotEmpty()) {
