@@ -1,5 +1,7 @@
 package com.huyhoa.coclio
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,10 +24,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.CompareArrows
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,6 +42,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -51,8 +60,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -622,6 +633,138 @@ private fun lookupItems(response: JSONObject, isClan: Boolean): List<ClashLookup
     }
 }
 
+
+
+private const val LOOKUP_LOCAL_PREFS = "clash_lookup_local_v1"
+private const val LOOKUP_HISTORY_KEY = "search_history"
+private const val LOOKUP_FAVORITES_KEY = "saved_entries"
+private const val LOOKUP_HISTORY_LIMIT = 20
+private const val LOOKUP_FAVORITES_LIMIT = 40
+
+private data class LookupHistoryItem(
+    val mode: String,
+    val query: String,
+    val searchedAt: Long
+)
+
+private fun lookupLocalPreferences(context: Context) =
+    context.getSharedPreferences(LOOKUP_LOCAL_PREFS, Context.MODE_PRIVATE)
+
+private fun loadLookupHistory(context: Context): List<LookupHistoryItem> = runCatching {
+    val raw = lookupLocalPreferences(context).getString(LOOKUP_HISTORY_KEY, "[]").orEmpty()
+    val values = JSONArray(raw)
+    buildList {
+        for (index in 0 until values.length()) {
+            val item = values.optJSONObject(index) ?: continue
+            val mode = item.optString("mode")
+            val query = item.optString("query").trim()
+            if (mode !in setOf("player", "clan") || query.isBlank()) continue
+            add(LookupHistoryItem(mode, query, item.optLong("searchedAt")))
+        }
+    }.distinctBy { "${it.mode}: ${it.query.lowercase()}" }
+        .sortedByDescending { it.searchedAt }
+        .take(LOOKUP_HISTORY_LIMIT)
+}.getOrElse { emptyList() }
+
+private fun recordLookupHistory(context: Context, mode: String, query: String): List<LookupHistoryItem> {
+    val cleanQuery = query.trim()
+    if (mode !in setOf("player", "clan") || cleanQuery.isBlank()) return loadLookupHistory(context)
+    val updated = (
+        listOf(LookupHistoryItem(mode, cleanQuery, System.currentTimeMillis())) +
+            loadLookupHistory(context).filterNot {
+                it.mode == mode && it.query.equals(cleanQuery, ignoreCase = true)
+            }
+        ).take(LOOKUP_HISTORY_LIMIT)
+    val values = JSONArray()
+    updated.forEach { item ->
+        values.put(
+            JSONObject()
+                .put("mode", item.mode)
+                .put("query", item.query)
+                .put("searchedAt", item.searchedAt)
+        )
+    }
+    lookupLocalPreferences(context).edit().putString(LOOKUP_HISTORY_KEY, values.toString()).apply()
+    return updated
+}
+
+private fun clearLookupHistory(context: Context) {
+    lookupLocalPreferences(context).edit().remove(LOOKUP_HISTORY_KEY).apply()
+}
+
+private fun loadLookupFavorites(context: Context): List<ClashLookupEntry> = runCatching {
+    val raw = lookupLocalPreferences(context).getString(LOOKUP_FAVORITES_KEY, "[]").orEmpty()
+    val values = JSONArray(raw)
+    buildList {
+        for (index in 0 until values.length()) {
+            val item = values.optJSONObject(index) ?: continue
+            val savedRaw = item.optJSONObject("raw") ?: continue
+            val entry = lookupEntry(savedRaw, item.optBoolean("isClan"))
+            if (entry.tag.isNotBlank()) add(entry)
+        }
+    }.distinctBy { "${it.isClan}:${it.tag.trim().uppercase()}" }
+        .take(LOOKUP_FAVORITES_LIMIT)
+}.getOrElse { emptyList() }
+
+private fun toggleLookupFavorite(context: Context, entry: ClashLookupEntry): List<ClashLookupEntry> {
+    val key = "${entry.isClan}:${entry.tag.trim().uppercase()}"
+    val current = loadLookupFavorites(context)
+    val alreadySaved = current.any {
+        "${it.isClan}:${it.tag.trim().uppercase()}" == key
+    }
+    val updated = if (alreadySaved) {
+        current.filterNot { "${it.isClan}:${it.tag.trim().uppercase()}" == key }
+    } else {
+        (listOf(entry) + current).take(LOOKUP_FAVORITES_LIMIT)
+    }
+    val values = JSONArray()
+    updated.forEach { saved ->
+        values.put(
+            JSONObject()
+                .put("isClan", saved.isClan)
+                .put("raw", JSONObject(saved.raw.toString()))
+        )
+    }
+    lookupLocalPreferences(context).edit().putString(LOOKUP_FAVORITES_KEY, values.toString()).apply()
+    return updated
+}
+
+private fun shareLookupEntry(context: Context, entry: ClashLookupEntry) {
+    val details = if (entry.isClan) {
+        listOfNotNull(
+            entry.level.takeIf(String::isNotBlank)?.let { "Cấp bang hội: $it" },
+            entry.members.takeIf(String::isNotBlank)?.let { "Thành viên: $it" },
+            entry.rank.takeIf(String::isNotBlank)?.let { "Thứ hạng: $it" },
+            entry.streak.takeIf(String::isNotBlank)?.let { "Chuỗi thắng: $it" }
+        )
+    } else {
+        listOfNotNull(
+            entry.townHall.takeIf(String::isNotBlank)?.let { "Nhà chính: $it" },
+            entry.trophies.takeIf(String::isNotBlank)?.let { "Cúp: $it" },
+            entry.league.takeIf(String::isNotBlank)?.let { "Giải đấu: $it" },
+            entry.clanName.takeIf(String::isNotBlank)?.let { "Bang hội: $it" },
+            entry.rank.takeIf(String::isNotBlank)?.let { "Thứ hạng: $it" }
+        )
+    }
+    val message = buildString {
+        append(if (entry.isClan) "BANG HỘI: " else "NGƯỜI CHƠI: ")
+        append(entry.name)
+        append("\nTAG: ")
+        append(entry.tag)
+        if (details.isNotEmpty()) {
+            append("\n")
+            append(details.joinToString("\n"))
+        }
+        append("\n\nTra cứu qua COC-LIO • Nguồn dữ liệu: ClashKing API")
+    }
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, "Hồ sơ Clash of Clans - ${entry.name}")
+        putExtra(Intent.EXTRA_TEXT, message)
+    }
+    runCatching { context.startActivity(Intent.createChooser(intent, "Chia sẻ hồ sơ COC-LIO")) }
+}
+
 private fun humanizeLookupKey(key: String): String {
     val known = mapOf(
         "tag" to "TAG / ID",
@@ -868,7 +1011,11 @@ private fun lookupValue(value: Any?): String = when (value) {
 @Composable
 fun ClashLookupScreen() {
     val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var recentSearches by remember(context) { mutableStateOf(loadLookupHistory(context)) }
+    var favoriteEntries by remember(context) { mutableStateOf(loadLookupFavorites(context)) }
+    var comparedTags by remember { mutableStateOf(emptyList<String>()) }
     var searchMode by rememberSaveable { mutableStateOf("player") }
     var rankingCategory by rememberSaveable { mutableStateOf("townhall") }
     var rankingValue by rememberSaveable { mutableStateOf("19") }
@@ -912,7 +1059,22 @@ fun ClashLookupScreen() {
     var detailLoading by remember { mutableStateOf(false) }
     var detailError by remember { mutableStateOf<String?>(null) }
 
+    fun toggleFavorite(entry: ClashLookupEntry) {
+        favoriteEntries = toggleLookupFavorite(context, entry)
+    }
+
+    fun toggleCompare(entry: ClashLookupEntry) {
+        comparedTags = if (entry.tag in comparedTags) {
+            comparedTags.filterNot { it == entry.tag }
+        } else if (comparedTags.size < 2) {
+            comparedTags + entry.tag
+        } else {
+            comparedTags.drop(1) + entry.tag
+        }
+    }
+
     fun resetSearchPage() {
+        comparedTags = emptyList()
         results = emptyList()
         nextCursor = null
         effectiveSearchQuery = ""
@@ -972,6 +1134,7 @@ fun ClashLookupScreen() {
             }
         }
         if (isSearching) return
+        if (!loadMore) recentSearches = recordLookupHistory(context, searchMode, term)
         val oldCursor = if (loadMore) nextCursor else null
         val selectedFilters = filters
         val searchCandidates = if (loadMore) {
@@ -986,6 +1149,7 @@ fun ClashLookupScreen() {
             isSearching = true
             searchError = null
             if (!loadMore) {
+                comparedTags = emptyList()
                 results = emptyList()
                 nextCursor = null
                 analyticsResult = null
@@ -1149,6 +1313,17 @@ fun ClashLookupScreen() {
                     Text("KẾT QUẢ TÌM KIẾM", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.weight(1f))
+                IconButton(onClick = { toggleFavorite(entry) }) {
+                    Icon(
+                        if (favoriteEntries.any { it.tag.equals(entry.tag, true) && it.isClan == entry.isClan }) Icons.Outlined.Star
+                        else Icons.Outlined.StarBorder,
+                        contentDescription = if (favoriteEntries.any { it.tag.equals(entry.tag, true) && it.isClan == entry.isClan }) "Bỏ ghim hồ sơ" else "Ghim hồ sơ",
+                        tint = LookupGold
+                    )
+                }
+                IconButton(onClick = { shareLookupEntry(context, entry) }) {
+                    Icon(Icons.Outlined.Share, contentDescription = "Chia sẻ hồ sơ", tint = LookupCyan)
+                }
                 Button(
                     onClick = { clipboard.setText(AnnotatedString(entry.tag)) },
                     colors = ButtonDefaults.buttonColors(
@@ -1706,10 +1881,113 @@ fun ClashLookupScreen() {
             }
         }
 
+        if (recentSearches.isNotEmpty() || favoriteEntries.isNotEmpty()) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(11.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (recentSearches.isNotEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.History, null, tint = LookupCyan, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("LỊCH SỬ TRA CỨU", color = LookupCyan, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                            Spacer(Modifier.weight(1f))
+                            IconButton(
+                                onClick = {
+                                    clearLookupHistory(context)
+                                    recentSearches = emptyList()
+                                },
+                                modifier = Modifier.size(30.dp)
+                            ) {
+                                Icon(Icons.Outlined.DeleteOutline, contentDescription = "Xóa lịch sử", tint = LookupMuted, modifier = Modifier.size(17.dp))
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            recentSearches.take(12).forEach { item ->
+                                FilterChip(
+                                    selected = false,
+                                    onClick = {
+                                        searchMode = item.mode
+                                        query = item.query
+                                        resetSearchPage()
+                                        analyticsResult = null
+                                        searchError = null
+                                    },
+                                    label = {
+                                        Text(
+                                            "${if (item.mode == "clan") "BANG" else "PLAYER"} · ${item.query}",
+                                            fontSize = 9.sp,
+                                            maxLines = 1
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    if (favoriteEntries.isNotEmpty()) {
+                        if (recentSearches.isNotEmpty()) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Star, null, tint = LookupGold, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("HỒ SƠ ĐÃ GHIM", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                            Spacer(Modifier.weight(1f))
+                            Text("${favoriteEntries.size}/${LOOKUP_FAVORITES_LIMIT}", color = LookupMuted, fontSize = 9.sp)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            favoriteEntries.take(20).forEach { saved ->
+                                FilterChip(
+                                    selected = false,
+                                    onClick = {
+                                        clearExtendedResults()
+                                        selectedEntry = saved
+                                        selectedSection = "TỔNG QUAN"
+                                    },
+                                    label = {
+                                        Text(
+                                            "${if (saved.isClan) "BANG" else "PLAYER"} · ${saved.name}",
+                                            fontSize = 9.sp,
+                                            maxLines = 1
+                                        )
+                                    },
+                                    leadingIcon = { Icon(Icons.Outlined.Star, null, tint = LookupGold, modifier = Modifier.size(13.dp)) }
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        "Lịch sử và hồ sơ đã ghim chỉ lưu cục bộ trên thiết bị này.",
+                        color = LookupMuted,
+                        fontSize = 8.sp
+                    )
+                }
+            }
+        }
+
         if (searchError != null) LookupMessageCard(searchError ?: "", isError = true)
         analyticsResult?.let { LookupDataPanel(title = analyticsResultTitle, payload = it) }
         if (searchMode == "clan" && searchError == null) {
             Text("Có thể tìm bang hội bằng tên, TAG hoặc tên có biểu tượng/ký tự trang trí. Ứng dụng tự thử dạng chữ chuẩn hóa khi cần.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
+        }
+
+        val comparisonEntries = comparedTags.mapNotNull { tag -> results.firstOrNull { it.tag == tag } }
+        if (comparedTags.isNotEmpty()) {
+            if (comparisonEntries.size == 2) {
+                LookupComparisonCard(comparisonEntries)
+            } else {
+                LookupMessageCard("Đã chọn ${comparisonEntries.size}/2 hồ sơ để so sánh. Chọn thêm một kết quả.")
+            }
         }
 
         if (results.isNotEmpty()) {
@@ -1726,7 +2004,11 @@ fun ClashLookupScreen() {
                         selectedEntry = result
                         selectedSection = "TỔNG QUAN"
                     },
-                    onCopy = { clipboard.setText(AnnotatedString(result.tag)) }
+                    onCopy = { clipboard.setText(AnnotatedString(result.tag)) },
+                    isFavorite = favoriteEntries.any { it.tag.equals(result.tag, true) && it.isClan == result.isClan },
+                    onFavorite = { toggleFavorite(result) },
+                    isCompared = result.tag in comparedTags,
+                    onCompare = { toggleCompare(result) }
                 )
             }
             if (!nextCursor.isNullOrBlank()) {
@@ -1772,6 +2054,67 @@ fun ClashLookupScreen() {
 }
 
 @Composable
+private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
+    if (entries.size != 2) return
+    val first = entries[0]
+    val second = entries[1]
+    val rows = if (first.isClan) {
+        listOf(
+            Triple("Cấp bang", first.level, second.level),
+            Triple("Thành viên", first.members, second.members),
+            Triple("Thứ hạng", first.rank, second.rank),
+            Triple("Chuỗi thắng", first.streak, second.streak),
+            Triple(first.metricLabel.ifBlank { "Chỉ số" }, first.metric, second.metric)
+        )
+    } else {
+        listOf(
+            Triple("Nhà chính", first.townHall, second.townHall),
+            Triple("Cúp", first.trophies, second.trophies),
+            Triple("Giải đấu", first.league, second.league),
+            Triple("Bang hội", first.clanName, second.clanName),
+            Triple("Thứ hạng", first.rank, second.rank),
+            Triple("Chuỗi 3 sao", first.streak, second.streak)
+        )
+    }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)),
+        border = BorderStroke(1.dp, LookupCyan.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("SO SÁNH NHANH", color = LookupCyan, fontSize = 11.sp, fontWeight = FontWeight.Black)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(first.name, modifier = Modifier.weight(1f), color = LookupGold, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text("VS", color = LookupMuted, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                Text(second.name, modifier = Modifier.weight(1f), color = LookupGold, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Text("${first.tag}     •     ${second.tag}", color = LookupMuted, fontSize = 8.sp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+            rows.forEach { (label, leftValue, rightValue) ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(leftValue.ifBlank { "—" }, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    Text(label, modifier = Modifier.weight(1.1f), color = LookupMuted, fontSize = 9.sp, textAlign = TextAlign.Center)
+                    Text(rightValue.ifBlank { "—" }, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            }
+            Text(
+                "So sánh các trường dữ liệu có sẵn trong kết quả tìm kiếm. Dấu — nghĩa là API không trả về trường đó.",
+                color = LookupMuted,
+                fontSize = 8.sp,
+                lineHeight = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
 private fun LookupFilterField(
     label: String,
     value: String,
@@ -1797,7 +2140,11 @@ private fun LookupFilterField(
 private fun LookupResultCard(
     entry: ClashLookupEntry,
     onClick: () -> Unit,
-    onCopy: () -> Unit
+    onCopy: () -> Unit,
+    isFavorite: Boolean,
+    onFavorite: () -> Unit,
+    isCompared: Boolean,
+    onCompare: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -1847,6 +2194,20 @@ private fun LookupResultCard(
                     ).joinToString(" • ")
                 }
                 Text(subtitle.ifBlank { if (entry.isClan) "Bang hội" else "Người chơi" }, fontSize = 9.sp, color = LookupMuted, maxLines = 2)
+            }
+            IconButton(onClick = onFavorite) {
+                Icon(
+                    if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                    contentDescription = if (isFavorite) "Bỏ ghim hồ sơ" else "Ghim hồ sơ",
+                    tint = if (isFavorite) LookupGold else LookupMuted
+                )
+            }
+            IconButton(onClick = onCompare) {
+                Icon(
+                    Icons.Outlined.CompareArrows,
+                    contentDescription = if (isCompared) "Bỏ khỏi so sánh" else "Thêm vào so sánh",
+                    tint = if (isCompared) LookupCyan else LookupMuted
+                )
             }
             Button(
                 onClick = onCopy,
