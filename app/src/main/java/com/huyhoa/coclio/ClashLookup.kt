@@ -68,6 +68,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.huyhoa.coclio.data.CocAssets
+import com.huyhoa.coclio.data.VillageItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -848,6 +850,31 @@ private fun lookupImageUrl(
     return ""
 }
 
+private fun lookupBuildingImageUrl(key: String, level: String): String {
+    val normalized = key.lowercase().replace(Regex("[_\\s-]"), "")
+    val levelNumber = level.toIntOrNull()?.takeIf { it > 0 } ?: return ""
+    val (sectionKey, sectionLabel, base, dataId) = when (normalized) {
+        "townhalllevel", "townhall" -> listOf("buildings", "Nhà chính", "home", 1000001)
+        "builderhalllevel", "builderhall" -> listOf("buildings2", "Nhà thợ xây", "builder", 1000034)
+        else -> return ""
+    }
+    val item = VillageItem(
+        sectionKey = sectionKey,
+        sectionLabel = sectionLabel,
+        tab = "buildings",
+        base = base,
+        dataId = dataId,
+        level = levelNumber,
+        count = 1,
+        timerSeconds = null,
+        helperCooldownSeconds = null,
+        gearUp = false,
+        weaponLevel = null,
+        details = emptyList()
+    )
+    return CocAssets.imageUrl(item).orEmpty()
+}
+
 private fun lookupGameIconResource(key: String): Int? {
     val normalized = key.lowercase().replace(Regex("[_\\s-]"), "")
     return when (normalized) {
@@ -899,8 +926,8 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
     } else {
         listOfNotNull(
             stat("LV NGƯỜI CHƠI", entry.playerLevel, R.drawable.ic_coc_star),
-            stat("NHÀ CHÍNH", entry.townHall, R.drawable.ic_coc_buildings),
-            stat("NHÀ THỢ XÂY", entry.builderHall, R.drawable.ic_coc_home),
+            stat("NHÀ CHÍNH", entry.townHall, R.drawable.ic_coc_buildings, lookupBuildingImageUrl("townHallLevel", entry.townHall)),
+            stat("NHÀ THỢ XÂY", entry.builderHall, R.drawable.ic_coc_home, lookupBuildingImageUrl("builderHallLevel", entry.builderHall)),
             stat("CÚP", entry.trophies, R.drawable.ic_coc_star),
             stat("CÚP XÂY DỰNG", entry.builderTrophies, R.drawable.ic_coc_home),
             stat("GIẢI ĐẤU", entry.league, R.drawable.ic_coc_star, entry.badgeUrl)
@@ -912,10 +939,13 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
 private fun LookupGameFieldIcon(
     key: String,
     imageUrl: String = "",
+    value: String = "",
     modifier: Modifier = Modifier.size(18.dp)
 ) {
-    if (imageUrl.startsWith("https://", ignoreCase = true)) {
-        AsyncImage(model = imageUrl, contentDescription = null, modifier = modifier)
+    val gameImage = imageUrl.takeIf { it.startsWith("https://", ignoreCase = true) }
+        ?: lookupBuildingImageUrl(key, value).takeIf(String::isNotBlank)
+    if (gameImage != null) {
+        AsyncImage(model = gameImage, contentDescription = humanizeLookupKey(key), modifier = modifier)
     } else {
         lookupGameIconResource(key)?.let { icon ->
             CocGameIcon(icon, modifier, humanizeLookupKey(key))
@@ -2254,6 +2284,22 @@ fun ClashLookupScreen() {
     }
 }
 
+
+private fun lookupComparisonIconKey(label: String): String = when (label.lowercase()) {
+    "cấp người chơi" -> "expLevel"
+    "nhà chính" -> "townHallLevel"
+    "nhà thợ xây" -> "builderHallLevel"
+    "cúp", "cúp giải đấu" -> "trophies"
+    "cúp nhà thợ xây" -> "builderBaseTrophies"
+    "giải đấu" -> "league"
+    "bang hội" -> "clan"
+    "cấp bang" -> "clanLevel"
+    "thành viên" -> "members"
+    "thứ hạng" -> "rank"
+    "chuỗi thắng", "chuỗi 3 sao" -> "warWinStreak"
+    else -> ""
+}
+
 @Composable
 private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
     if (entries.size != 2) return
@@ -2303,7 +2349,14 @@ private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(leftValue.ifBlank { "—" }, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                    Text(label, modifier = Modifier.weight(1.1f), color = LookupMuted, fontSize = 9.sp, textAlign = TextAlign.Center)
+                    Row(
+                        modifier = Modifier.weight(1.1f),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        LookupGameFieldIcon(lookupComparisonIconKey(label), modifier = Modifier.size(15.dp))
+                        Text(label, color = LookupMuted, fontSize = 9.sp, textAlign = TextAlign.Center)
+                    }
                     Text(rightValue.ifBlank { "—" }, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
@@ -2478,7 +2531,7 @@ private fun LookupJsonObject(
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     val imageUrl = lookupImageUrl(value, catalog, key)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        LookupGameFieldIcon(key, imageUrl, Modifier.size(23.dp))
+                        LookupGameFieldIcon(key, imageUrl, modifier = Modifier.size(23.dp))
                         Text(
                             humanizeLookupKey(key),
                             color = if (depth == 0) LookupGold else LookupCyan,
@@ -2589,9 +2642,7 @@ private fun LookupDetailRow(label: String, value: String, key: String = "") {
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            lookupGameIconResource(key)?.let { icon ->
-                CocGameIcon(icon, Modifier.size(16.dp), label)
-            }
+            LookupGameFieldIcon(key, value = value, modifier = Modifier.size(16.dp))
             Text(label, color = LookupMuted, fontSize = 10.sp, lineHeight = 14.sp)
         }
         Text(
