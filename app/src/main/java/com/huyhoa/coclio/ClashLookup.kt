@@ -1644,7 +1644,7 @@ fun ClashLookupScreen() {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             Icon(Icons.Outlined.Security, contentDescription = null, tint = LookupMuted, modifier = Modifier.size(14.dp))
             Text(
-                "Tra cứu dữ liệu game công khai • Không yêu cầu mật khẩu tài khoản Clash of Clans",
+                "API công khai không cần API key hoặc mật khẩu Clash of Clans. Dữ liệu riêng tư cần xác thực ClashKing không được truy cập ở chế độ này.",
                 fontSize = 9.sp,
                 lineHeight = 13.sp,
                 color = LookupMuted
