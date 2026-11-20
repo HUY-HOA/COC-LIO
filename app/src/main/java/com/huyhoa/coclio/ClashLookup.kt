@@ -753,9 +753,21 @@ fun ClashLookupScreen() {
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        FilterChip(selected = rankingCategory == "townhall", onClick = { rankingCategory = "townhall" }, label = { Text("NHÀ CHÍNH", fontSize = 9.sp) })
-                        FilterChip(selected = rankingCategory == "league", onClick = { rankingCategory = "league" }, label = { Text("GIẢI ĐẤU", fontSize = 9.sp) })
-                        FilterChip(selected = rankingCategory == "clan_win_streak", onClick = { rankingCategory = "clan_win_streak" }, label = { Text("CLAN CHUỖI THẮNG", fontSize = 9.sp) })
+                        FilterChip(
+                            selected = rankingCategory == "townhall",
+                            onClick = { rankingCategory = "townhall"; rankingValue = "19" },
+                            label = { Text("NHÀ CHÍNH", fontSize = 9.sp) }
+                        )
+                        FilterChip(
+                            selected = rankingCategory == "league",
+                            onClick = { rankingCategory = "league"; rankingValue = "29000000" },
+                            label = { Text("GIẢI ĐẤU", fontSize = 9.sp) }
+                        )
+                        FilterChip(
+                            selected = rankingCategory == "clan_win_streak",
+                            onClick = { rankingCategory = "clan_win_streak" },
+                            label = { Text("CLAN CHUỖI THẮNG", fontSize = 9.sp) }
+                        )
                     }
                     if (rankingCategory != "clan_win_streak") {
                         LookupFilterField(
