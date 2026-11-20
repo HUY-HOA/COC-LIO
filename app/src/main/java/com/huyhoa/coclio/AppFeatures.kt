@@ -419,7 +419,7 @@ private suspend fun syncFirebaseUserProfile(
     val profile = hashMapOf<String, Any>(
         "uid" to user.uid,
         "email" to email,
-        "displayName" to (google.displayName ?: user.displayName.orEmpty()),
+        "displayName" to (google.displayName ?: user.displayName.orEmpty()).trim().take(120),
         "emailVerified" to user.isEmailVerified,
         "providerId" to "google.com",
         "updatedAt" to FieldValue.serverTimestamp()
