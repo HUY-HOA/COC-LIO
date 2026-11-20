@@ -85,6 +85,8 @@ private data class ClashLookupEntry(
     val trophies: String = "",
     val members: String = "",
     val level: String = "",
+    val rank: String = "",
+    val streak: String = "",
     val badgeUrl: String = "",
     val raw: JSONObject
 )
@@ -173,6 +175,12 @@ private object ClashKingLookupApi {
     }
 
     private fun tag(entry: ClashLookupEntry): String = encode(entry.tag.trim().uppercase())
+
+    fun leaderboardPath(category: String, value: String): String = when (category) {
+        "townhall" -> "/v2/leaderboard/townhalls/${encode(value)}?limit=100"
+        "league" -> "/v2/leaderboard/league/${encode(value)}?limit=100"
+        else -> "/v2/leaderboard/clan/win-streak?limit=100"
+    }
 
     fun detailRequests(entry: ClashLookupEntry, section: String): List<LookupRequest> {
         val tag = tag(entry)
@@ -315,12 +323,14 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
         },
         tag = json.lookupText("tag").ifBlank { json.lookupText("playerTag") },
         isClan = isClan,
-        townHall = number("townHallLevel", "townhallLevel"),
+        townHall = number("townHallLevel", "townhallLevel", "townhall_level"),
         clanName = clan?.lookupText("name").orEmpty(),
         league = league?.lookupText("name").orEmpty(),
         trophies = number("trophies", "leagueTrophies"),
         members = number("members", "memberCount"),
         level = number("clanLevel", "level"),
+        rank = number("rank"),
+        streak = number("war_win_streak", "warWinStreak"),
         badgeUrl = badge,
         raw = json
     )
@@ -420,6 +430,8 @@ fun ClashLookupScreen() {
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     var searchMode by rememberSaveable { mutableStateOf("player") }
+    var rankingCategory by rememberSaveable { mutableStateOf("townhall") }
+    var rankingValue by rememberSaveable { mutableStateOf("19") }
     var query by rememberSaveable { mutableStateOf("") }
     var showAdvancedFilters by rememberSaveable { mutableStateOf(false) }
     var clanTags by rememberSaveable { mutableStateOf("") }
@@ -455,14 +467,19 @@ fun ClashLookupScreen() {
 
     fun runSearch(loadMore: Boolean = false) {
         val term = query.trim()
-        if (term.length < 2) {
+        val isLeaderboard = searchMode == "leaderboard"
+        if (!isLeaderboard && term.length < 2) {
             searchError = "Nhập ít nhất 2 ký tự tên hoặc TAG/ID cần tìm."
+            return
+        }
+        if (isLeaderboard && rankingCategory != "clan_win_streak" && rankingValue.toIntOrNull() == null) {
+            searchError = "Nhập cấp Nhà chính hoặc ID giải đấu hợp lệ."
             return
         }
         if (isSearching) return
         val oldCursor = if (loadMore) nextCursor else null
         val selectedFilters = filters
-        val isClan = searchMode == "clan"
+        val isClan = searchMode == "clan" || (isLeaderboard && rankingCategory == "clan_win_streak")
         scope.launch {
             isSearching = true
             searchError = null
@@ -471,12 +488,16 @@ fun ClashLookupScreen() {
                 nextCursor = null
             }
             try {
-                val response = ClashKingLookupApi.get(
-                    ClashKingLookupApi.searchPath(isClan, term, oldCursor, selectedFilters)
-                )
+                val response = if (isLeaderboard) {
+                    ClashKingLookupApi.get(ClashKingLookupApi.leaderboardPath(rankingCategory, rankingValue))
+                } else {
+                    ClashKingLookupApi.get(
+                        ClashKingLookupApi.searchPath(isClan, term, oldCursor, selectedFilters)
+                    )
+                }
                 val found = lookupItems(response, isClan)
                 results = if (loadMore) results + found else found
-                nextCursor = response.optJSONObject("pagination")
+                nextCursor = if (isLeaderboard) null else response.optJSONObject("pagination")
                     ?.lookupText("nextCursor")
                     ?.takeIf { it.isNotBlank() }
                 if (results.isEmpty()) {
@@ -675,7 +696,10 @@ fun ClashLookupScreen() {
                 modifier = Modifier.fillMaxWidth().padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     FilterChip(
                         selected = searchMode == "player",
                         onClick = {
@@ -696,9 +720,19 @@ fun ClashLookupScreen() {
                         label = { Text("BANG HỘI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
                         leadingIcon = { Icon(Icons.Outlined.Groups, null, modifier = Modifier.size(16.dp)) }
                     )
+                    FilterChip(
+                        selected = searchMode == "leaderboard",
+                        onClick = {
+                            searchMode = "leaderboard"
+                            results = emptyList()
+                            nextCursor = null
+                            searchError = null
+                        },
+                        label = { Text("XẾP HẠNG", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                    )
                 }
 
-                OutlinedTextField(
+                if (searchMode != "leaderboard") OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -713,7 +747,29 @@ fun ClashLookupScreen() {
                     )
                 )
 
-                Button(
+                if (searchMode == "leaderboard") {
+                    Text("CHỌN BẢNG XẾP HẠNG", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        FilterChip(selected = rankingCategory == "townhall", onClick = { rankingCategory = "townhall" }, label = { Text("NHÀ CHÍNH", fontSize = 9.sp) })
+                        FilterChip(selected = rankingCategory == "league", onClick = { rankingCategory = "league" }, label = { Text("GIẢI ĐẤU", fontSize = 9.sp) })
+                        FilterChip(selected = rankingCategory == "clan_win_streak", onClick = { rankingCategory = "clan_win_streak" }, label = { Text("CLAN CHUỖI THẮNG", fontSize = 9.sp) })
+                    }
+                    if (rankingCategory != "clan_win_streak") {
+                        LookupFilterField(
+                            if (rankingCategory == "townhall") "Cấp Nhà chính" else "ID giải đấu",
+                            rankingValue,
+                            { rankingValue = it },
+                            if (rankingCategory == "townhall") "19" else "29000000"
+                        )
+                    } else {
+                        Text("Bảng xếp hạng clan theo chuỗi thắng hiện tại.", color = LookupMuted, fontSize = 9.sp)
+                    }
+                }
+
+                if (searchMode != "leaderboard") Button(
                     onClick = { showAdvancedFilters = !showAdvancedFilters },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
@@ -724,7 +780,7 @@ fun ClashLookupScreen() {
                     Text(if (showAdvancedFilters) "ẨN BỘ LỌC NÂNG CAO" else "BỘ LỌC NÂNG CAO", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
 
-                if (showAdvancedFilters) {
+                if (showAdvancedFilters && searchMode != "leaderboard") {
                     if (searchMode == "player") {
                         LookupFilterField("TAG bang hội (phân cách bằng dấu phẩy)", clanTags, { clanTags = it }, "#ABC123")
                         LookupFilterField("ID giải đấu (phân cách bằng dấu phẩy)", leagueIds, { leagueIds = it }, "29000000")
@@ -771,7 +827,7 @@ fun ClashLookupScreen() {
                     } else {
                         Icon(Icons.Outlined.Search, null, modifier = Modifier.size(17.dp))
                         Spacer(Modifier.width(7.dp))
-                        Text("TÌM KIẾM", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
+                        Text(if (searchMode == "leaderboard") "XEM XẾP HẠNG" else "TÌM KIẾM", fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
                     }
                 }
             }
@@ -814,8 +870,11 @@ fun ClashLookupScreen() {
             }
         } else if (searchError == null && !isSearching) {
             LookupMessageCard(
-                if (searchMode == "player") "Tìm người chơi bằng tên hoặc TAG. Chọn kết quả để mở hồ sơ, hoạt động, quân đội, hội chiến, CWL, Legend, xếp hạng và lịch sử."
-                else "Tìm bang hội bằng tên hoặc Clan TAG. Hồ sơ có thành viên, hội chiến, CWL, quyên góp, Thủ phủ, xếp hạng, kỷ lục và lịch sử."
+                when (searchMode) {
+                    "player" -> "Tìm người chơi bằng tên hoặc TAG. Chọn kết quả để mở hồ sơ, hoạt động, quân đội, hội chiến, CWL, Legend, xếp hạng và lịch sử."
+                    "clan" -> "Tìm bang hội bằng tên hoặc Clan TAG. Hồ sơ có thành viên, hội chiến, CWL, quyên góp, Thủ phủ, xếp hạng, kỷ lục và lịch sử."
+                    else -> "Tra cứu bảng xếp hạng theo Nhà chính, giải đấu hoặc chuỗi thắng của clan."
+                }
             )
         }
 
@@ -897,11 +956,14 @@ private fun LookupResultCard(
                 Text(entry.tag.ifBlank { "Chưa có TAG" }, fontSize = 10.sp, color = LookupCyan, fontWeight = FontWeight.Bold)
                 val subtitle = if (entry.isClan) {
                     listOfNotNull(
+                        entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #$it" },
                         entry.level.takeIf { it.isNotBlank() }?.let { "Cấp $it" },
-                        entry.members.takeIf { it.isNotBlank() }?.let { "$it thành viên" }
+                        entry.members.takeIf { it.isNotBlank() }?.let { "$it thành viên" },
+                        entry.streak.takeIf { it.isNotBlank() }?.let { "Chuỗi thắng $it" }
                     ).joinToString(" • ")
                 } else {
                     listOfNotNull(
+                        entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #$it" },
                         entry.townHall.takeIf { it.isNotBlank() }?.let { "Nhà chính $it" },
                         entry.league.takeIf { it.isNotBlank() },
                         entry.clanName.takeIf { it.isNotBlank() }
