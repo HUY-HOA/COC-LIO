@@ -415,7 +415,11 @@ private fun collectAccountTechnicalInfo(context: Context): Map<String, Any> {
 
     val connectivity = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
     val activeNetwork = connectivity?.activeNetwork
-    val capabilities = activeNetwork?.let { connectivity.getNetworkCapabilities(it) }
+    val capabilities = if (connectivity != null && activeNetwork != null) {
+            connectivity.getNetworkCapabilities(activeNetwork)
+        } else {
+            null
+        }
     val networkType = when {
         capabilities == null -> "NONE"
         capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "VPN"
