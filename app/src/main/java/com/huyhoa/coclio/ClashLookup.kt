@@ -914,8 +914,8 @@ fun ClashLookupScreen() {
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (searchMode == "player") "Tên người chơi hoặc #TAG" else "Tên bang hội hoặc #TAG") },
-                    placeholder = { Text(if (searchMode == "player") "Nhập tên hoặc #ABC123" else "Nhập tên clan hoặc #XYZ789") },
+                    label = { Text(if (searchMode == "player") "Tên người chơi hoặc #TAG" else "Clan TAG (bắt buộc)") },
+                    placeholder = { Text(if (searchMode == "player") "Nhập tên hoặc #ABC123" else "Nhập #2PR8V8") },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = LookupCyan) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = LookupCyan,
@@ -1067,7 +1067,7 @@ fun ClashLookupScreen() {
                     Text("Ngày có thể để trống nếu API hỗ trợ mặc định. ID và Season ID phải lấy từ dữ liệu ClashKing.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
                 }
 
-                if (searchMode != "leaderboard" && searchMode != "analytics") Button(
+                if (searchMode == "player") Button(
                     onClick = { showAdvancedFilters = !showAdvancedFilters },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
@@ -1078,33 +1078,12 @@ fun ClashLookupScreen() {
                     Text(if (showAdvancedFilters) "ẨN BỘ LỌC NÂNG CAO" else "BỘ LỌC NÂNG CAO", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
 
-                if (showAdvancedFilters && searchMode != "leaderboard") {
-                    if (searchMode == "player") {
-                        LookupFilterField("TAG bang hội (phân cách bằng dấu phẩy)", clanTags, { clanTags = it }, "#ABC123")
-                        LookupFilterField("ID giải đấu (phân cách bằng dấu phẩy)", leagueIds, { leagueIds = it }, "29000000")
-                        LookupFilterField("Cấp Nhà chính (phân cách bằng dấu phẩy)", townhallLevels, { townhallLevels = it }, "17,18,19")
-                    } else {
-                        LookupFilterField("ID quốc gia / khu vực", locationIds, { locationIds = it }, "32000006")
-                        LookupFilterField("ID giải hội chiến", warLeagueIds, { warLeagueIds = it }, "48000000")
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Column(Modifier.weight(1f)) {
-                                LookupFilterField("Cấp clan từ", clanMinLevel, { clanMinLevel = it }, "1")
-                            }
-                            Column(Modifier.weight(1f)) {
-                                LookupFilterField("Đến cấp", clanMaxLevel, { clanMaxLevel = it }, "30")
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Column(Modifier.weight(1f)) {
-                                LookupFilterField("Ít nhất thành viên", minMembers, { minMembers = it }, "1")
-                            }
-                            Column(Modifier.weight(1f)) {
-                                LookupFilterField("Nhiều nhất", maxMembers, { maxMembers = it }, "50")
-                            }
-                        }
-                    }
+                if (showAdvancedFilters && searchMode == "player") {
+                    LookupFilterField("TAG bang hội (phân cách bằng dấu phẩy)", clanTags, { clanTags = it }, "#ABC123")
+                    LookupFilterField("ID giải đấu (phân cách bằng dấu phẩy)", leagueIds, { leagueIds = it }, "29000000")
+                    LookupFilterField("Cấp Nhà chính (phân cách bằng dấu phẩy)", townhallLevels, { townhallLevels = it }, "17,18,19")
                     Text(
-                        "ID bộ lọc phải là ID dữ liệu game do ClashKing API sử dụng. Để trống bộ lọc không cần dùng.",
+                        "Bộ lọc phải dùng TAG và ID đúng theo dữ liệu ClashKing. Để trống mục nào thì không áp dụng mục đó.",
                         fontSize = 9.sp,
                         color = LookupMuted,
                         lineHeight = 13.sp
@@ -1134,6 +1113,9 @@ fun ClashLookupScreen() {
 
         if (searchError != null) LookupMessageCard(searchError ?: "", isError = true)
         analyticsResult?.let { LookupDataPanel(title = analyticsResultTitle, payload = it) }
+        if (searchMode == "clan" && searchError == null) {
+            Text("Tra cứu bang hội bằng Clan TAG. API công khai hiện chưa có chức năng tìm bang hội theo tên.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
+        }
 
         if (results.isNotEmpty()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
