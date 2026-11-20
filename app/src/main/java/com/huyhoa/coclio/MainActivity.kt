@@ -1213,7 +1213,7 @@ private fun CocLioApp(
         if (accountProfileExists) {
             AccountPrivacyConsent.saveRequiredAccountDataConsent()
         }
-        GoogleAccountAuth.shareProfile(googleAccount)
+        GoogleAccountAuth.shareProfile(googleAccount, context)
         if (!accountProfileExists) {
             AccountPrivacyConsent.saveRequiredAccountDataConsent()
         }
