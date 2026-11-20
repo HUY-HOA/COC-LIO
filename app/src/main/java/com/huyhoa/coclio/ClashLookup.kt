@@ -184,12 +184,73 @@ private object ClashKingLookupApi {
     }
 
     fun analyticsPath(category: String, primary: String, secondary: String, date: String, from: String, to: String,
-        leaderboardType: String, mode: String, cohort: String): String {
+        leaderboardType: String, mode: String, cohort: String, interval: String, sort: String, limit: String,
+        rankLimit: String, equalTownHalls: String): String {
         val params = mutableListOf<String>()
         fun add(key: String, value: String) { value.trim().takeIf(String::isNotBlank)?.let { params += "$key=${encode(it)}" } }
         fun withQuery(path: String): String = if (params.isEmpty()) path else "$path?${params.joinToString("&")}"
         return when (category) {
             "global_counts" -> "/v2/counts"
+            "counts_townhalls" -> "/v2/counts/players/town-halls"
+            "counts_league_tiers" -> "/v2/counts/players/league-tiers"
+            "counts_clan_locations" -> "/v2/counts/clans/locations"
+            "counts_cwl_leagues" -> "/v2/counts/clans/cwl-leagues"
+            "counts_capital_leagues" -> "/v2/counts/clans/capital-leagues"
+            "counts_clan_members" -> "/v2/counts/clans/member-bins"
+            "stats_ranked" -> {
+                require(primary.toIntOrNull()?.let { it > 0 } == true && secondary.toIntOrNull()?.let { it > 0 } == true) {
+                    "Thống kê Ranked cần cấp Nhà chính và mã bậc giải hợp lệ."
+                }
+                add("townHallLevel", primary)
+                add("leagueTierId", secondary)
+                add("startDate", from)
+                add("endDate", to)
+                withQuery("/v2/stats/ranked")
+            }
+            "stats_war" -> {
+                add("startDate", from)
+                add("endDate", to)
+                add("townHallLevel", primary)
+                add("opponentTownHallLevel", secondary)
+                if (equalTownHalls == "true" || equalTownHalls == "false") add("equalTownHalls", equalTownHalls)
+                withQuery("/v2/stats/war")
+            }
+            "stats_cwl" -> {
+                add("season", primary)
+                withQuery("/v2/stats/cwl")
+            }
+            "wars_hit_rates" -> {
+                add("time[after]", from)
+                add("time[before]", to)
+                add("interval", interval)
+                add("townHall", primary)
+                withQuery("/v2/stats/wars/hitrates")
+            }
+            "wars_summary" -> {
+                add("time[after]", from)
+                add("time[before]", to)
+                add("interval", interval)
+                add("warSize", primary)
+                withQuery("/v2/stats/wars/summary")
+            }
+            "army_setups" -> {
+                add("time[after]", from)
+                add("time[before]", to)
+                add("sort", sort)
+                add("limit", limit.ifBlank { "100" })
+                add("rankLimit", rankLimit)
+                add("leagueTierId", "105000036")
+                withQuery("/v2/stats/army-setups")
+            }
+            "legend_rank_curve" -> {
+                require(date.isNotBlank()) { "Nhập ngày cần xem đường cong xếp hạng Legend." }
+                add("day", date)
+                withQuery("/v2/legends/rank-curve")
+            }
+            "legend_trophy_buckets" -> {
+                if (date.isBlank()) "/v2/legends/trophy-buckets"
+                else "/v2/legends/trophy-buckets/${encode(date)}"
+            }
             "historical_leaderboard" -> {
                 require(primary.isNotBlank() && date.isNotBlank()) { "Cần nhập mã khu vực và ngày (YYYY-MM-DD)." }
                 "/v2/leaderboard/history/${encode(leaderboardType)}/${encode(primary)}/${encode(date)}"
@@ -633,6 +694,11 @@ fun ClashLookupScreen() {
     var analyticsLeaderboardType by rememberSaveable { mutableStateOf("player_home_trophies") }
     var analyticsMode by rememberSaveable { mutableStateOf("ranked") }
     var analyticsCohort by rememberSaveable { mutableStateOf("legend_i") }
+    var analyticsInterval by rememberSaveable { mutableStateOf("week") }
+    var analyticsSort by rememberSaveable { mutableStateOf("usage") }
+    var analyticsLimit by rememberSaveable { mutableStateOf("100") }
+    var analyticsRankLimit by rememberSaveable { mutableStateOf("") }
+    var analyticsEqualTownHalls by rememberSaveable { mutableStateOf("all") }
     var analyticsResult by remember { mutableStateOf<JSONObject?>(null) }
     var analyticsResultTitle by remember { mutableStateOf("DỮ LIỆU THỐNG KÊ") }
     var extendedSeasonId by rememberSaveable { mutableStateOf("") }
@@ -689,11 +755,28 @@ fun ClashLookupScreen() {
             }
             try {
                 if (isAnalytics) {
-                    val path = ClashKingLookupApi.analyticsPath(analyticsCategory, analyticsPrimary, analyticsSecondary, analyticsDate,
-                        analyticsFrom, analyticsTo, analyticsLeaderboardType, analyticsMode, analyticsCohort)
+                    val path = ClashKingLookupApi.analyticsPath(
+                        analyticsCategory, analyticsPrimary, analyticsSecondary, analyticsDate, analyticsFrom, analyticsTo,
+                        analyticsLeaderboardType, analyticsMode, analyticsCohort, analyticsInterval, analyticsSort,
+                        analyticsLimit, analyticsRankLimit, analyticsEqualTownHalls
+                    )
                     analyticsResult = ClashKingLookupApi.get(path)
                     analyticsResultTitle = when (analyticsCategory) {
                         "global_counts" -> "THỐNG KÊ TỔNG QUAN CLASHKING"
+                        "counts_townhalls" -> "PHÂN BỐ NHÀ CHÍNH"
+                        "counts_league_tiers" -> "PHÂN BỐ GIẢI NGƯỜI CHƠI"
+                        "counts_clan_locations" -> "PHÂN BỐ KHU VỰC BANG HỘI"
+                        "counts_cwl_leagues" -> "PHÂN BỐ GIẢI CWL"
+                        "counts_capital_leagues" -> "PHÂN BỐ GIẢI THỦ PHỦ"
+                        "counts_clan_members" -> "PHÂN BỐ QUY MÔ BANG HỘI"
+                        "stats_ranked" -> "THỐNG KÊ TẤN CÔNG RANKED"
+                        "stats_war" -> "THỐNG KÊ HỘI CHIẾN THƯỜNG"
+                        "stats_cwl" -> "THỐNG KÊ THAM GIA CWL"
+                        "wars_hit_rates" -> "TỶ LỆ SAO HỘI CHIẾN"
+                        "wars_summary" -> "TỔNG KẾT HỘI CHIẾN"
+                        "army_setups" -> "ĐỘI HÌNH LEGEND PHỔ BIẾN"
+                        "legend_rank_curve" -> "ĐƯỜNG CONG XẾP HẠNG LEGEND"
+                        "legend_trophy_buckets" -> "PHÂN BỐ CÚP LEGEND"
                         "historical_leaderboard" -> "BẢNG XẾP HẠNG LỊCH SỬ"
                         "trophy_buckets" -> "PHÂN BỐ CÚP THEO GIẢI ĐẤU"
                         "legend_season" -> "DỮ LIỆU HUYỀN THOẠI THEO MÙA"
@@ -1129,16 +1212,89 @@ fun ClashLookupScreen() {
                 if (searchMode == "analytics") {
                     Text("API THỐNG KÊ CÔNG KHAI", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf("global_counts" to "TỔNG QUAN", "historical_leaderboard" to "BXH LỊCH SỬ",
-                            "trophy_buckets" to "PHÂN BỐ CÚP", "legend_season" to "MÙA LEGEND", "ranked_group" to "NHÓM RANKED",
-                            "league_tier_statistics" to "THỐNG KÊ HẠNG", "league_hit_rates" to "TỶ LỆ SAO",
-                            "legend_days" to "LEGEND THEO NGÀY", "legend_performance" to "HIỆU SUẤT LEGEND").forEach { (key, label) ->
+                        listOf(
+                            "global_counts" to "TỔNG QUAN",
+                            "counts_townhalls" to "NHÀ CHÍNH",
+                            "counts_league_tiers" to "GIẢI NGƯỜI CHƠI",
+                            "counts_clan_locations" to "KHU VỰC BANG HỘI",
+                            "counts_cwl_leagues" to "GIẢI CWL",
+                            "counts_capital_leagues" to "GIẢI THỦ PHỦ",
+                            "counts_clan_members" to "SỐ THÀNH VIÊN",
+                            "stats_ranked" to "RANKED",
+                            "stats_war" to "HỘI CHIẾN",
+                            "stats_cwl" to "CWL",
+                            "wars_hit_rates" to "TỶ LỆ SAO HỘI CHIẾN",
+                            "wars_summary" to "TỔNG KẾT HỘI CHIẾN",
+                            "army_setups" to "ĐỘI HÌNH LEGEND",
+                            "legend_rank_curve" to "XẾP HẠNG LEGEND",
+                            "legend_trophy_buckets" to "PHÂN BỐ CÚP LEGEND",
+                            "historical_leaderboard" to "BXH LỊCH SỬ",
+                            "trophy_buckets" to "PHÂN BỐ CÚP",
+                            "legend_season" to "MÙA LEGEND",
+                            "ranked_group" to "NHÓM RANKED",
+                            "league_tier_statistics" to "THỐNG KÊ HẠNG",
+                            "league_hit_rates" to "TỶ LỆ SAO",
+                            "legend_days" to "LEGEND THEO NGÀY",
+                            "legend_performance" to "HIỆU SUẤT LEGEND"
+                        ).forEach { (key, label) ->
                             FilterChip(selected = analyticsCategory == key,
                                 onClick = { analyticsCategory = key; analyticsResult = null; searchError = null },
                                 label = { Text(label, fontSize = 8.sp) })
                         }
                     }
                     when (analyticsCategory) {
+                        "stats_ranked" -> {
+                            LookupFilterField("Cấp Nhà chính", analyticsPrimary, { analyticsPrimary = it }, "19")
+                            LookupFilterField("Mã bậc giải Ranked", analyticsSecondary, { analyticsSecondary = it }, "29000000")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                        }
+                        "stats_war" -> {
+                            LookupFilterField("Nhà chính người tấn công (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "19")
+                            LookupFilterField("Nhà chính đối thủ (tùy chọn)", analyticsSecondary, { analyticsSecondary = it }, "19")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            Text("Lọc Nhà chính bằng cách nhập cấp; có thể bỏ trống để xem tổng hợp.", fontSize = 9.sp, color = LookupMuted)
+                            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                FilterChip(selected = analyticsEqualTownHalls == "all", onClick = { analyticsEqualTownHalls = "all" }, label = { Text("MỌI CẶP", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsEqualTownHalls == "true", onClick = { analyticsEqualTownHalls = "true" }, label = { Text("CÙNG NHÀ CHÍNH", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsEqualTownHalls == "false", onClick = { analyticsEqualTownHalls = "false" }, label = { Text("KHÁC NHÀ CHÍNH", fontSize = 8.sp) })
+                            }
+                        }
+                        "stats_cwl" -> LookupFilterField("Mùa CWL (tùy chọn, YYYY-MM)", analyticsPrimary, { analyticsPrimary = it }, "YYYY-MM")
+                        "wars_hit_rates" -> {
+                            LookupFilterField("Nhà chính (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "19")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("day" to "NGÀY", "week" to "TUẦN", "month" to "THÁNG").forEach { (value, label) ->
+                                    FilterChip(selected = analyticsInterval == value, onClick = { analyticsInterval = value }, label = { Text(label, fontSize = 8.sp) })
+                                }
+                            }
+                        }
+                        "wars_summary" -> {
+                            LookupFilterField("Quy mô hội chiến (tùy chọn)", analyticsPrimary, { analyticsPrimary = it }, "15")
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("day" to "NGÀY", "week" to "TUẦN", "month" to "THÁNG").forEach { (value, label) ->
+                                    FilterChip(selected = analyticsInterval == value, onClick = { analyticsInterval = value }, label = { Text(label, fontSize = 8.sp) })
+                                }
+                            }
+                        }
+                        "army_setups" -> {
+                            LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
+                            LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
+                            LookupFilterField("Giới hạn số đội hình (tối đa 200)", analyticsLimit, { analyticsLimit = it }, "100")
+                            LookupFilterField("Giới hạn thứ hạng (tùy chọn)", analyticsRankLimit, { analyticsRankLimit = it }, "100")
+                            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                FilterChip(selected = analyticsSort == "usage", onClick = { analyticsSort = "usage" }, label = { Text("PHỔ BIẾN", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsSort == "tripleRate", onClick = { analyticsSort = "tripleRate" }, label = { Text("TỶ LỆ 3 SAO", fontSize = 8.sp) })
+                            }
+                            Text("Dữ liệu đội hình hiện chỉ có cho giải Legend I.", color = LookupMuted, fontSize = 9.sp)
+                        }
+                        "legend_rank_curve" -> LookupFilterField("Ngày (YYYY-MM-DD)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
+                        "legend_trophy_buckets" -> LookupFilterField("Ngày lịch sử (để trống xem hiện tại)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
                         "historical_leaderboard" -> {
                             Text("Loại bảng xếp hạng", color = LookupMuted, fontSize = 9.sp)
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
