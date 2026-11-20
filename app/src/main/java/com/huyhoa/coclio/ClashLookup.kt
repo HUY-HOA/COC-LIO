@@ -332,7 +332,7 @@ private object ClashKingLookupApi {
                 )
                 "QUÂN ĐỘI" -> listOf(
                     req("Lịch sử nâng cấp quân lính", player("history/changes", "?type=troop_level&limit=50")),
-                    req("Lịch sử kích hoạt Super Troop", player("history/changes", "?type=super_troop_boost&limit=50")),
+                    req("Lịch sử kích hoạt Quân siêu cấp", player("history/changes", "?type=super_troop_boost&limit=50")),
                     req("Lịch sử anh hùng", player("history/changes", "?type=hero_level&limit=50")),
                     req("Lịch sử phép", player("history/changes", "?type=spell_level&limit=50")),
                     req("Lịch sử thú cưng", player("history/changes", "?type=pet_level&limit=50")),
@@ -1264,7 +1264,7 @@ fun ClashLookupScreen() {
                             when {
                                 rankingCategory == "clan_cwl" -> "Bảng xếp hạng CWL cần mã bậc giải, mùa giải và quy mô đội."
                                 rankingCategory == "war_triples" -> "Bảng chuỗi 3 sao theo cấp Nhà chính."
-                                isClanLeaderboard -> "Các bảng xếp hạng clan dùng ID khu vực; 32000006 là khu vực International."
+                                isClanLeaderboard -> "Các bảng xếp hạng bang hội dùng mã khu vực; 32000006 là khu vực Quốc tế."
                                 else -> "Nhập đúng cấp Nhà chính hoặc mã giải đấu theo dữ liệu ClashKing."
                             },
                             color = LookupMuted,
@@ -1374,13 +1374,13 @@ fun ClashLookupScreen() {
                             Text("Loại bảng xếp hạng", color = LookupMuted, fontSize = 9.sp)
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                 listOf("player_home_trophies" to "NHÀ CHÍNH", "player_builder_base_trophies" to "NHÀ THỢ XÂY",
-                                    "clan_home_points" to "ĐIỂM CLAN", "clan_builder_base_points" to "ĐIỂM XÂY",
+                                    "clan_home_points" to "ĐIỂM BANG HỘI", "clan_builder_base_points" to "ĐIỂM XÂY",
                                     "clan_capital_points" to "ĐIỂM THỦ PHỦ").forEach { (key, label) ->
                                     FilterChip(selected = analyticsLeaderboardType == key, onClick = { analyticsLeaderboardType = key },
                                         label = { Text(label, fontSize = 8.sp) })
                                 }
                             }
-                            LookupFilterField("ID khu vực", analyticsPrimary, { analyticsPrimary = it }, "32000006")
+                            LookupFilterField("Mã khu vực", analyticsPrimary, { analyticsPrimary = it }, "32000006")
                             LookupFilterField("Ngày snapshot (YYYY-MM-DD)", analyticsDate, { analyticsDate = it }, "YYYY-MM-DD")
                         }
                         "trophy_buckets" -> LookupFilterField("Mã giải đấu", analyticsPrimary, { analyticsPrimary = it }, "29000000")
