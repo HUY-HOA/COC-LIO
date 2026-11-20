@@ -826,7 +826,8 @@ fun ClashLookupScreen() {
                         nextCursor = null
                     } else {
                         val response = ClashKingLookupApi.get(ClashKingLookupApi.playerSearchPath(term, oldCursor, selectedFilters))
-                        results = lookupItems(response, false)
+                        val found = lookupItems(response, false)
+                        results = if (loadMore) results + found else found
                         nextCursor = response.optJSONObject("pagination")?.lookupText("nextCursor")?.takeIf { it.isNotBlank() }
                     }
                     if (results.isEmpty()) searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên, TAG/ID hoặc bộ lọc."
