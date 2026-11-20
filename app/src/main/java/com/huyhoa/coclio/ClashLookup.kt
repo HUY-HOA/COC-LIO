@@ -853,26 +853,30 @@ private fun lookupImageUrl(
 private fun lookupBuildingImageUrl(key: String, level: String): String {
     val normalized = key.lowercase().replace(Regex("[_\\s-]"), "")
     val levelNumber = level.toIntOrNull()?.takeIf { it > 0 } ?: return ""
-    val (sectionKey, sectionLabel, base, dataId) = when (normalized) {
-        "townhalllevel", "townhall" -> listOf("buildings", "Nhà chính", "home", 1000001)
-        "builderhalllevel", "builderhall" -> listOf("buildings2", "Nhà thợ xây", "builder", 1000034)
-        else -> return ""
+
+    fun image(sectionKey: String, sectionLabel: String, base: String, dataId: Int): String {
+        val item = VillageItem(
+            sectionKey = sectionKey,
+            sectionLabel = sectionLabel,
+            tab = "buildings",
+            base = base,
+            dataId = dataId,
+            level = levelNumber,
+            count = 1,
+            timerSeconds = null,
+            helperCooldownSeconds = null,
+            gearUp = false,
+            weaponLevel = null,
+            details = emptyList()
+        )
+        return CocAssets.imageUrl(item).orEmpty()
     }
-    val item = VillageItem(
-        sectionKey = sectionKey,
-        sectionLabel = sectionLabel,
-        tab = "buildings",
-        base = base,
-        dataId = dataId,
-        level = levelNumber,
-        count = 1,
-        timerSeconds = null,
-        helperCooldownSeconds = null,
-        gearUp = false,
-        weaponLevel = null,
-        details = emptyList()
-    )
-    return CocAssets.imageUrl(item).orEmpty()
+
+    return when (normalized) {
+        "townhalllevel", "townhall" -> image("buildings", "Nhà chính", "home", 1000001)
+        "builderhalllevel", "builderhall" -> image("buildings2", "Nhà thợ xây", "builder", 1000034)
+        else -> ""
+    }
 }
 
 private fun lookupGameIconResource(key: String): Int? {
