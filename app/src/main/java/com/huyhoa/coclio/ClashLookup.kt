@@ -2489,7 +2489,6 @@ private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
 }
 
 @Composable
-@Composable
 private fun LookupChoiceGroup(
     title: String,
     selected: String,
@@ -2623,7 +2622,6 @@ private fun LookupResultCard(
     }
 }
 
-@Composable
 private fun lookupOrderedJsonKeys(payload: JSONObject): List<String> {
     val priority = listOf(
         "name", "tag", "playerTag", "clanTag", "description",
@@ -2684,6 +2682,7 @@ private fun JSONObject.lookupListItemTitle(parentKey: String, index: Int): Strin
     return "${humanizeLookupKey(parentKey)} #${index + 1}"
 }
 
+@Composable
 private fun LookupDataPanel(
     title: String,
     payload: JSONObject,
