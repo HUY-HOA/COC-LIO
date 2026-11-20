@@ -867,6 +867,16 @@ fun ClashLookupScreen() {
         searchError = null
     }
 
+    fun clearExtendedResults() {
+        detailPanels = emptyList()
+        detailError = null
+    }
+
+    fun currentExtendedKey(entry: ClashLookupEntry): String = listOf(
+        entry.tag, entry.isClan.toString(), extendedSeasonId, extendedLegendDay,
+        extendedOtherPlayerTag, extendedWarEndTime
+    ).joinToString("\u0000")
+
     fun currentSearchKey(): String = listOf(
         searchMode, query.trim(), clanTags, leagueIds, townhallLevels,
         rankingCategory, rankingValue, rankingSeason, rankingTeamSize,
@@ -1144,60 +1154,72 @@ fun ClashLookupScreen() {
                     Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                         Text("API CÔNG KHAI CẦN THAM SỐ", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
                         if (!entry.isClan) {
-                            LookupFilterField("Mã mùa giải Ranked (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it }, "Mã mùa giải")
-                            LookupFilterField("Ngày Legend (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it }, "YYYY-MM-DD")
-                            LookupFilterField("TAG người chơi khác (để so lịch sử bang)", extendedOtherPlayerTag, { extendedOtherPlayerTag = it }, "#ABC123")
+                            LookupFilterField("Mã mùa giải Ranked (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it; clearExtendedResults() }, "Mã mùa giải")
+                            LookupFilterField("Ngày Legend (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it; clearExtendedResults() }, "YYYY-MM-DD")
+                            LookupFilterField("TAG người chơi khác (để so lịch sử bang)", extendedOtherPlayerTag, { extendedOtherPlayerTag = it; clearExtendedResults() }, "#ABC123")
                             Text("Có thể nhập một hoặc nhiều mục: mã mùa giải tải nhóm và nhật ký Ranked; ngày tải nhật ký Legend; TAG khác dùng để so sánh thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         } else {
-                            LookupFilterField("Thời điểm kết thúc hội chiến (YYYYMMDDTHHmmss.SSSZ)", extendedWarEndTime, { extendedWarEndTime = it }, "YYYYMMDDTHHmmss.SSSZ")
+                            LookupFilterField("Thời điểm kết thúc hội chiến (YYYYMMDDTHHmmss.SSSZ)", extendedWarEndTime, { extendedWarEndTime = it; clearExtendedResults() }, "YYYYMMDDTHHmmss.SSSZ")
                             Text("Sao chép nguyên endTime từ dữ liệu API của cuộc hội chiến đã lưu; không tự đổi sang định dạng ISO thông thường.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         }
                         Button(
                             onClick = {
-                                val playerTag = URLEncoder.encode(entry.tag.trim().uppercase(), "UTF-8")
-                                val clanTag = URLEncoder.encode(entry.tag.trim().uppercase(), "UTF-8")
-                                val requests = mutableListOf<LookupRequest>()
-                                if (!entry.isClan) {
-                                    val season = extendedSeasonId.trim()
-                                    val day = extendedLegendDay.trim()
-                                    val otherRawTag = extendedOtherPlayerTag.trim()
-                                    val otherTag = if (otherRawTag.isBlank()) "" else normalizeLookupTag(otherRawTag, "TAG người chơi khác")
-                                    if (season.isNotBlank()) {
-                                        require(season.toLongOrNull()?.let { it > 0L } == true) { "Mã mùa giải Ranked phải là số dương." }
-                                        val encodedSeason = URLEncoder.encode(season, "UTF-8")
-                                        requests += LookupRequest("Nhóm Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/group")
-                                        requests += LookupRequest("Nhật ký trận Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/battlelog")
+                                try {
+                                    val playerTag = URLEncoder.encode(entry.tag.trim().uppercase(), "UTF-8")
+                                    val clanTag = URLEncoder.encode(entry.tag.trim().uppercase(), "UTF-8")
+                                    val requests = mutableListOf<LookupRequest>()
+                                    if (!entry.isClan) {
+                                        val season = extendedSeasonId.trim()
+                                        val day = extendedLegendDay.trim()
+                                        val otherRawTag = extendedOtherPlayerTag.trim()
+                                        val otherTag = if (otherRawTag.isBlank()) "" else normalizeLookupTag(otherRawTag, "TAG người chơi khác")
+                                        if (season.isNotBlank()) {
+                                            require(season.toLongOrNull()?.let { it > 0L } == true) { "Mã mùa giải Ranked phải là số dương." }
+                                            val encodedSeason = URLEncoder.encode(season, "UTF-8")
+                                            requests += LookupRequest("Nhóm Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/group")
+                                            requests += LookupRequest("Nhật ký trận Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/battlelog")
+                                        }
+                                        if (day.isNotBlank()) {
+                                            require(runCatching { LocalDate.parse(day) }.isSuccess) { "Ngày Legend không hợp lệ. Hãy dùng dạng YYYY-MM-DD." }
+                                            val encodedDay = URLEncoder.encode(day, "UTF-8")
+                                            requests += LookupRequest("Nhật ký trận Legend ngày $day", "/v2/player/$playerTag/legend/$encodedDay/battlelog")
+                                        }
+                                        if (otherTag.isNotBlank()) {
+                                            val encodedOtherTag = URLEncoder.encode(otherTag, "UTF-8")
+                                            requests += LookupRequest("Lịch sử cùng bang với $otherTag", "/v2/player/$playerTag/join-leave/shared?tag=$encodedOtherTag")
+                                        }
+                                    } else if (extendedWarEndTime.isNotBlank()) {
+                                        val validEndTime = validateLookupWarEndTime(extendedWarEndTime)
+                                        val encodedEndTime = URLEncoder.encode(validEndTime, "UTF-8")
+                                        requests += LookupRequest("Chi tiết hội chiến kết thúc $validEndTime", "/v2/war/$clanTag/previous/$encodedEndTime")
                                     }
-                                    if (day.isNotBlank()) {
-                                        require(runCatching { LocalDate.parse(day) }.isSuccess) { "Ngày Legend không hợp lệ. Hãy dùng dạng YYYY-MM-DD." }
-                                        val encodedDay = URLEncoder.encode(day, "UTF-8")
-                                        requests += LookupRequest("Nhật ký trận Legend ngày $day", "/v2/player/$playerTag/legend/$encodedDay/battlelog")
-                                    }
-                                    if (otherTag.isNotBlank()) {
-                                        val encodedOtherTag = URLEncoder.encode(otherTag, "UTF-8")
-                                        requests += LookupRequest("Lịch sử cùng bang với $otherTag", "/v2/player/$playerTag/join-leave/shared?tag=$encodedOtherTag")
-                                    }
-                                } else if (extendedWarEndTime.isNotBlank()) {
-                                    val validEndTime = validateLookupWarEndTime(extendedWarEndTime)
-                                    val encodedEndTime = URLEncoder.encode(validEndTime, "UTF-8")
-                                    requests += LookupRequest("Chi tiết hội chiến kết thúc $extendedWarEndTime", "/v2/war/$clanTag/previous/$encodedEndTime")
-                                }
-                                if (requests.isEmpty()) {
-                                    detailError = if (entry.isClan) "Nhập endTime của hội chiến trước khi tải." else "Nhập ít nhất một tham số để tải dữ liệu."
-                                } else {
-                                    scope.launch {
-                                        detailLoading = true
-                                        detailError = null
-                                        detailPanels = requests.map { request ->
-                                            async {
-                                                runCatching { LookupPanel(request.title, ClashKingLookupApi.get(request.path)) }
-                                                    .getOrElse { error -> LookupPanel(request.title, null, lookupErrorMessage(error)) }
+                                    if (requests.isEmpty()) {
+                                        detailPanels = emptyList()
+                                        detailError = if (entry.isClan) "Nhập thời điểm kết thúc hội chiến trước khi tải." else "Nhập ít nhất một tham số để tải dữ liệu."
+                                    } else {
+                                        val requestKey = currentExtendedKey(entry)
+                                        detailPanels = emptyList()
+                                        scope.launch {
+                                            detailLoading = true
+                                            detailError = null
+                                            val loaded = requests.map { request ->
+                                                async {
+                                                    runCatching { LookupPanel(request.title, ClashKingLookupApi.get(request.path)) }
+                                                        .getOrElse { error -> LookupPanel(request.title, null, lookupErrorMessage(error)) }
+                                                }
+                                            }.awaitAll()
+                                            if (selectedEntry?.tag == entry.tag && selectedEntry?.isClan == entry.isClan &&
+                                                selectedSection == "DỮ LIỆU MỞ RỘNG" && currentExtendedKey(entry) == requestKey) {
+                                                detailPanels = loaded
+                                                val failures = loaded.filter { it.payload == null }
+                                                detailError = failures.takeIf { it.isNotEmpty() }?.joinToString("\n") { "• ${it.title}: ${it.error}" }
                                             }
-                                        }.awaitAll()
-                                        val failures = detailPanels.filter { it.payload == null }
-                                        detailError = failures.takeIf { it.isNotEmpty() }?.joinToString("\n") { "• ${it.title}: ${it.error}" }
-                                        detailLoading = false
+                                            detailLoading = false
+                                        }
                                     }
+                                } catch (error: Exception) {
+                                    detailPanels = emptyList()
+                                    detailError = lookupErrorMessage(error)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
