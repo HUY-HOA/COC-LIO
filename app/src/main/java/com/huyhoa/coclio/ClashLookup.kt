@@ -777,17 +777,17 @@ fun ClashLookupScreen() {
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_donations",
-                            onClick = { rankingCategory = "clan_donations"; rankingValue = "32000000" },
+                            onClick = { rankingCategory = "clan_donations"; rankingValue = "32000006" },
                             label = { Text("CLAN QUYÊN GÓP", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_war_wins",
-                            onClick = { rankingCategory = "clan_war_wins"; rankingValue = "32000000" },
+                            onClick = { rankingCategory = "clan_war_wins"; rankingValue = "32000006" },
                             label = { Text("CLAN THẮNG HỘI CHIẾN", fontSize = 9.sp) }
                         )
                         FilterChip(
                             selected = rankingCategory == "clan_capital_gold",
-                            onClick = { rankingCategory = "clan_capital_gold"; rankingValue = "32000000" },
+                            onClick = { rankingCategory = "clan_capital_gold"; rankingValue = "32000006" },
                             label = { Text("VÀNG THỦ PHỦ", fontSize = 9.sp) }
                         )
                         FilterChip(
@@ -810,11 +810,11 @@ fun ClashLookupScreen() {
                             when {
                                 rankingCategory == "townhall" -> "19"
                                 rankingCategory == "league" -> "29000000"
-                                else -> "32000000"
+                                else -> "32000006"
                             }
                         )
                         Text(
-                            if (isClanLeaderboard) "Các bảng xếp hạng clan dùng ID khu vực; 32000000 là ID toàn cầu."
+                            if (isClanLeaderboard) "Các bảng xếp hạng clan dùng ID khu vực; 32000006 là khu vực International."
                             else "Nhập đúng ID Nhà chính hoặc ID giải đấu theo dữ liệu ClashKing.",
                             color = LookupMuted,
                             fontSize = 9.sp,
@@ -842,7 +842,7 @@ fun ClashLookupScreen() {
                         LookupFilterField("ID giải đấu (phân cách bằng dấu phẩy)", leagueIds, { leagueIds = it }, "29000000")
                         LookupFilterField("Cấp Nhà chính (phân cách bằng dấu phẩy)", townhallLevels, { townhallLevels = it }, "17,18,19")
                     } else {
-                        LookupFilterField("ID quốc gia / khu vực", locationIds, { locationIds = it }, "32000000")
+                        LookupFilterField("ID quốc gia / khu vực", locationIds, { locationIds = it }, "32000006")
                         LookupFilterField("ID giải hội chiến", warLeagueIds, { warLeagueIds = it }, "48000000")
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Column(Modifier.weight(1f)) {
