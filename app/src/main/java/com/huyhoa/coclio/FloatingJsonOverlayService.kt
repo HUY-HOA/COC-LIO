@@ -377,7 +377,7 @@ class FloatingJsonOverlayService : Service() {
             windowManager.addView(view, windowParams)
         } catch (error: Exception) {
             activeView = null
-            Toast.makeText(this, "Không thể mở cửa sổ nổi: ${error.message.orEmpty()}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Không thể mở cửa sổ nổi. Hãy kiểm tra quyền hiển thị trên ứng dụng khác.", Toast.LENGTH_LONG).show()
             stopSelf()
         }
     }
