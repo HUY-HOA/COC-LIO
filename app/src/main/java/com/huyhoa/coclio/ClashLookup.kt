@@ -476,7 +476,7 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
         clanName = clan?.lookupText("name").orEmpty(),
         league = league?.lookupText("name").orEmpty(),
         trophies = number("trophies", "leagueTrophies"),
-        members = number("members", "memberCount"),
+        members = number("memberCount", "members"),
         level = number("clanLevel", "level"),
         rank = number("rank", "globalRank", "groupRank"),
         streak = number("war_win_streak", "warWinStreak", "streak"),
