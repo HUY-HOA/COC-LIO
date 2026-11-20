@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -120,7 +121,10 @@ private object ClashKingLookupApi {
             when (section) {
                 "TỔNG QUAN" -> "/v2/clan/$tag/cached"
                 "HỘI CHIẾN" -> "/v2/clan/$tag/warlog"
+                "CWL" -> "/v2/cwl/$tag/seasons"
+                "THÀNH VIÊN" -> "/v2/clan/$tag/join-leave"
                 "QUYÊN GÓP" -> "/v2/clan/$tag/donations/summary"
+                "XẾP HẠNG" -> "/v2/clan/$tag/rankings"
                 "KỶ LỤC" -> "/v2/clan/$tag/records"
                 "LỊCH SỬ" -> "/v2/clan/$tag/history/changes"
                 else -> null
@@ -129,9 +133,11 @@ private object ClashKingLookupApi {
             when (section) {
                 "TỔNG QUAN" -> null
                 "HOẠT ĐỘNG" -> "/v2/player/$tag/activity-summary"
+                "TRẬN ĐẤU" -> "/v2/player/$tag/battlelog/history"
                 "HỘI CHIẾN" -> "/v2/player/$tag/war/stats"
+                "CWL" -> "/v2/player/$tag/cwl/history"
                 "XẾP HẠNG" -> "/v2/player/$tag/rankings"
-                "LỊCH SỬ" -> "/v2/player/$tag/history/changes?limit=20"
+                "NÂNG CẤP" -> "/v2/player/$tag/history/changes"
                 else -> null
             }
         }
@@ -304,7 +310,9 @@ fun ClashLookupScreen() {
                 )
                 val found = lookupItems(response, searchMode == "clan")
                 results = if (loadMore) results + found else found
-                nextCursor = response.lookupText("cursor").takeIf { it.isNotBlank() }
+                nextCursor = response.optJSONObject("pagination")
+                    ?.lookupText("nextCursor")
+                    ?.takeIf { it.isNotBlank() }
                 if (results.isEmpty()) {
                     searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên hoặc TAG/ID."
                 }
@@ -341,9 +349,9 @@ fun ClashLookupScreen() {
     val entry = selectedEntry
     if (entry != null) {
         val sections = if (entry.isClan) {
-            listOf("TỔNG QUAN", "HỘI CHIẾN", "QUYÊN GÓP", "KỶ LỤC", "LỊCH SỬ")
+            listOf("TỔNG QUAN", "HỘI CHIẾN", "CWL", "THÀNH VIÊN", "QUYÊN GÓP", "XẾP HẠNG", "KỶ LỤC", "LỊCH SỬ")
         } else {
-            listOf("TỔNG QUAN", "HOẠT ĐỘNG", "HỘI CHIẾN", "XẾP HẠNG", "LỊCH SỬ")
+            listOf("TỔNG QUAN", "HOẠT ĐỘNG", "TRẬN ĐẤU", "HỘI CHIẾN", "CWL", "XẾP HẠNG", "NÂNG CẤP")
         }
         Column(
             modifier = Modifier
@@ -427,7 +435,10 @@ fun ClashLookupScreen() {
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 sections.forEach { section ->
                     FilterChip(
                         selected = selectedSection == section,
@@ -460,8 +471,12 @@ fun ClashLookupScreen() {
                                     when (selectedSection) {
                                         "TỔNG QUAN" -> "THÔNG TIN CHÍNH"
                                         "HOẠT ĐỘNG" -> "THỐNG KÊ HOẠT ĐỘNG"
+                                        "TRẬN ĐẤU" -> "LỊCH SỬ TRẬN ĐẤU"
                                         "HỘI CHIẾN" -> "DỮ LIỆU HỘI CHIẾN"
+                                        "CWL" -> "LỊCH SỬ CWL"
+                                        "THÀNH VIÊN" -> "LỊCH SỬ THÀNH VIÊN"
                                         "XẾP HẠNG" -> "THỨ HẠNG"
+                                        "NÂNG CẤP" -> "LỊCH SỬ NÂNG CẤP"
                                         "QUYÊN GÓP" -> "THỐNG KÊ QUYÊN GÓP"
                                         "KỶ LỤC" -> "KỶ LỤC BANG HỘI"
                                         else -> "LỊCH SỬ GHI NHẬN"
