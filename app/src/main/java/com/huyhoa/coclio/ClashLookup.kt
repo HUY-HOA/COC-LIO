@@ -163,18 +163,20 @@ private object ClashKingLookupApi {
         cursor?.takeIf { it.isNotBlank() }?.let { params += "cursor=${encode(it)}" }
         fun values(raw: String) = raw.split(",", ";", " ").map(String::trim).filter(String::isNotBlank)
         fun addList(name: String, raw: String, maximumCount: Int, validate: (String) -> String) {
-            val entries = values(raw)
+            val entries = values(raw).map(validate).distinct()
             require(entries.size <= maximumCount) { "$name chỉ nhận tối đa $maximumCount giá trị." }
-            entries.forEach { params += "${name}=${encode(validate(it))}" }
+            entries.forEach { params += "${name}=${encode(it)}" }
         }
         addList("clanTags", filters.clanTags, 100) { normalizeLookupTag(it, "TAG bang hội") }
         addList("leagueIds", filters.leagueIds, 5) {
-            require(it.toLongOrNull()?.let { value -> value > 0L } == true) { "Mã giải đấu phải là số nguyên dương." }
-            it
+            val value = it.toLongOrNull()
+            require(value != null && value in 1L..9_007_199_254_740_991L) { "Mã giải đấu phải là số nguyên dương hợp lệ." }
+            value.toString()
         }
         addList("townhallLevels", filters.townhallLevels, 100) {
-            require(it.toIntOrNull()?.let { value -> value in 1..100 } == true) { "Cấp Nhà chính phải là số nguyên từ 1 đến 100." }
-            it
+            val value = it.toIntOrNull()
+            require(value != null && value in 1..100) { "Cấp Nhà chính phải là số nguyên từ 1 đến 100." }
+            value.toString()
         }
         return "/v2/player/search?${params.joinToString("&")}"
     }
@@ -305,13 +307,11 @@ private object ClashKingLookupApi {
             "army_setup_timeline" -> {
                 require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
                 validateRange(from, to)
-                validatePositive(limit.ifBlank { "100" }, "Giới hạn đội hình", 200)
                 validateRankLimit(rankLimit)
                 add("time[after]", from)
                 add("time[before]", to)
                 add("groupKey", groupKey)
                 add("sort", sort)
-                add("limit", limit.ifBlank { "100" })
                 add("rankLimit", rankLimit)
                 add("leagueTierId", "105000036")
                 withQuery("/v2/stats/army-setups/timeline")
@@ -415,7 +415,7 @@ private object ClashKingLookupApi {
                     req("Lịch sử nâng cấp quân lính", player("history/changes", "?type=troop_level&limit=50")),
                     req("Lịch sử kích hoạt Quân siêu cấp", player("history/changes", "?type=super_troop_boost&limit=50")),
                     req("Lịch sử anh hùng", player("history/changes", "?type=hero_level&limit=50")),
-                    req("Lịch sử phép", player("history/changes", "?type=spell_level&limit=50")),
+                    req("Lịch sử nâng cấp thần chú", player("history/changes", "?type=spell_level&limit=50")),
                     req("Lịch sử thú cưng", player("history/changes", "?type=pet_level&limit=50")),
                     req("Lịch sử trang bị anh hùng", player("history/changes", "?type=equipment_level&limit=50")),
                     req("Lịch sử nâng Nhà chính", player("history/changes", "?type=townhall_level&limit=50"))
@@ -426,9 +426,6 @@ private object ClashKingLookupApi {
                     req("Lịch sử cấp kinh nghiệm", player("history/changes", "?type=exp_level&limit=50")),
                     req("Lịch sử ưu tiên hội chiến", player("history/changes", "?type=war_preference&limit=50")),
                     req("Lịch sử đổi tên", player("history/changes", "?type=name&limit=50")),
-                    req("Lịch sử giải đấu", player("history/changes", "?type=league_tier&limit=50")),
-                    req("Lịch sử sao hội chiến", player("history/changes", "?type=war_stars&limit=50")),
-                    req("Lịch sử đóng góp Thủ phủ", player("history/changes", "?type=clan_capital_contributions&limit=50"))
                 )
                 "HOẠT ĐỘNG" -> listOf(
                     req("Hoạt động 30 ngày", player("activity-summary")),
@@ -446,7 +443,7 @@ private object ClashKingLookupApi {
                     req("Chi tiết đòn đánh và phòng thủ", player("war/attacks", limit))
                 )
                 "CWL" -> listOf(
-                    req("Lịch sử Clan War League", player("cwl/history", "?limit=30"))
+                    req("Lịch sử giải đấu bang hội (CWL)", player("cwl/history", "?limit=30"))
                 )
                 "HUYỀN THOẠI" -> listOf(
                     req("Các mùa Legend đã ghi nhận", player("legend-history")),
@@ -595,7 +592,7 @@ private fun humanizeLookupKey(key: String): String {
         "name" to "Tên",
         "clanTag" to "TAG bang hội",
         "playerTag" to "TAG người chơi",
-        "leagueGroupId" to "Mã nhóm giải",
+        "leagueGroupId" to "TAG nhóm Ranked",
         "seasonId" to "Mã mùa giải",
         "leagueTierId" to "Mã bậc giải",
         "cwlLeagueId" to "Mã giải CWL",
@@ -744,7 +741,7 @@ private fun humanizeLookupKey(key: String): String {
         "equipment" to "Trang bị",
         "petAssignments" to "Ghép thú cưng với anh hùng",
         "troops" to "Quân lính",
-        "spells" to "Phép",
+        "spells" to "Thần chú",
         "sieges" to "Máy công thành",
         "equipmentPairs" to "Cặp trang bị",
         "petCombos" to "Tổ hợp thú cưng",
@@ -1068,7 +1065,7 @@ fun ClashLookupScreen() {
                 ) {
                     Icon(Icons.Outlined.ContentCopy, contentDescription = "Sao chép TAG", modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(5.dp))
-                    Text("SAO CHÉP ID", fontSize = 9.sp)
+                    Text("SAO CHÉP TAG", fontSize = 9.sp)
                 }
             }
 
@@ -1479,12 +1476,14 @@ fun ClashLookupScreen() {
                             if (analyticsCategory != "army_setups") {
                                 LookupFilterField("Mã nhóm đội hình", analyticsGroupKey, { analyticsGroupKey = it }, "Lấy từ kết quả Đội hình Legend")
                                 if (analyticsCategory == "army_setup_rank_history") {
-                                    LookupFilterField("Mã biến thể (để trống xem cả nhóm)", analyticsVariantKey, { analyticsVariantKey = it }, "Có thể để trống")
+                                    LookupFilterField("Mã biến thể (bỏ trống để xem đội hình chính)", analyticsVariantKey, { analyticsVariantKey = it }, "Có thể để trống")
                                 }
                             }
                             LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it }, "YYYY-MM-DD")
                             LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it }, "YYYY-MM-DD")
-                            LookupFilterField("Giới hạn số đội hình (tối đa 200)", analyticsLimit, { analyticsLimit = it }, "100")
+                            if (analyticsCategory == "army_setups") {
+                                LookupFilterField("Giới hạn số đội hình (tối đa 200)", analyticsLimit, { analyticsLimit = it }, "100")
+                            }
                             LookupFilterField("Giới hạn thứ hạng (200 hoặc 1000; để trống xem toàn bộ)", analyticsRankLimit, { analyticsRankLimit = it }, "200 hoặc 1000")
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 FilterChip(selected = analyticsSort == "usage", onClick = { analyticsSort = "usage" }, label = { Text("PHỔ BIẾN", fontSize = 8.sp) })
@@ -1699,7 +1698,7 @@ private fun LookupResultCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (entry.badgeUrl.isNotBlank()) {
-                AsyncImage(model = entry.badgeUrl, contentDescription = "Huy hiệu clan", modifier = Modifier.size(48.dp))
+                AsyncImage(model = entry.badgeUrl, contentDescription = "Huy hiệu bang hội", modifier = Modifier.size(48.dp))
             } else {
                 Box(
                     modifier = Modifier.size(48.dp).clip(RoundedCornerShape(13.dp))
