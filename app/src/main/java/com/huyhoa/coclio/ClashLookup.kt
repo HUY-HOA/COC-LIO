@@ -3,6 +3,7 @@ package com.huyhoa.coclio
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,10 +11,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -30,6 +32,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -37,6 +40,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,10 +58,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import org.json.JSONTokener
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -82,6 +89,21 @@ private data class ClashLookupEntry(
     val raw: JSONObject
 )
 
+private data class LookupRequest(val title: String, val path: String)
+private data class LookupPanel(val title: String, val payload: JSONObject?, val error: String? = null)
+
+private data class LookupFilters(
+    val clanTags: String = "",
+    val leagueIds: String = "",
+    val townhallLevels: String = "",
+    val locationIds: String = "",
+    val warLeagueIds: String = "",
+    val clanMinLevel: String = "",
+    val clanMaxLevel: String = "",
+    val minMembers: String = "",
+    val maxMembers: String = ""
+)
+
 private object ClashKingLookupApi {
     suspend fun get(path: String): JSONObject = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null
@@ -89,7 +111,7 @@ private object ClashKingLookupApi {
             connection = (URL(CLASHKING_API + path).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 10_000
-                readTimeout = 15_000
+                readTimeout = 20_000
                 instanceFollowRedirects = true
                 setRequestProperty("Accept", "application/json")
                 setRequestProperty("User-Agent", "COC-LIO-Android")
@@ -98,47 +120,163 @@ private object ClashKingLookupApi {
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
             if (status !in 200..299) {
-                throw IOException("Dịch vụ tra cứu trả về mã HTTP $status.")
+                val detail = runCatching { JSONObject(body).optString("message") }.getOrNull().orEmpty()
+                throw IOException(
+                    if (detail.isNotBlank()) "HTTP $status • $detail"
+                    else "Dịch vụ tra cứu trả về mã HTTP $status."
+                )
             }
             if (body.isBlank()) throw IOException("Dịch vụ không trả về dữ liệu.")
-            JSONObject(body)
+            when (val value = JSONTokener(body).nextValue()) {
+                is JSONObject -> value
+                is JSONArray -> JSONObject().put("items", value)
+                JSONObject.NULL, null -> JSONObject().put("message", "Không có dữ liệu được ghi nhận.")
+                else -> JSONObject().put("value", value)
+            }
         } finally {
             connection?.disconnect()
         }
     }
 
-    fun searchPath(isClan: Boolean, query: String, cursor: String?): String {
-        val encodedQuery = URLEncoder.encode(query.trim(), "UTF-8")
+    private fun encode(value: String): String = URLEncoder.encode(value.trim(), "UTF-8")
+
+    fun searchPath(
+        isClan: Boolean,
+        query: String,
+        cursor: String?,
+        filters: LookupFilters
+    ): String {
+        val params = mutableListOf("query=${encode(query)}", "limit=20")
+        cursor?.takeIf { it.isNotBlank() }?.let { params += "cursor=${encode(it)}" }
+
+        fun addList(name: String, raw: String) {
+            raw.split(",", ";", " ").map(String::trim).filter(String::isNotBlank)
+                .forEach { params += "${name}=${encode(it)}" }
+        }
+        fun addRange(name: String, min: String, max: String) {
+            min.trim().takeIf(String::isNotBlank)?.let { params += "${name}[min]=${encode(it)}" }
+            max.trim().takeIf(String::isNotBlank)?.let { params += "${name}[max]=${encode(it)}" }
+        }
+
+        if (isClan) {
+            addList("locationIds", filters.locationIds)
+            addList("warLeagueIds", filters.warLeagueIds)
+            addRange("clanLevel", filters.clanMinLevel, filters.clanMaxLevel)
+            addRange("members", filters.minMembers, filters.maxMembers)
+        } else {
+            addList("clanTags", filters.clanTags)
+            addList("leagueIds", filters.leagueIds)
+            addList("townhallLevels", filters.townhallLevels)
+        }
         val route = if (isClan) "/v2/clan/search" else "/v2/player/search"
-        val cursorPart = cursor?.takeIf { it.isNotBlank() }
-            ?.let { "&cursor=${URLEncoder.encode(it, "UTF-8")}" }.orEmpty()
-        return "$route?query=$encodedQuery&limit=20$cursorPart"
+        return "$route?${params.joinToString("&")}"
     }
 
-    fun detailPath(entry: ClashLookupEntry, section: String): String? {
-        val tag = URLEncoder.encode(entry.tag.trim().uppercase(), "UTF-8")
-        return if (entry.isClan) {
+    private fun tag(entry: ClashLookupEntry): String = encode(entry.tag.trim().uppercase())
+
+    fun detailRequests(entry: ClashLookupEntry, section: String): List<LookupRequest> {
+        val tag = tag(entry)
+        fun req(title: String, route: String) = LookupRequest(title, route)
+        fun player(route: String, query: String = "") = "/v2/player/$tag/$route" + query
+        fun clan(route: String, query: String = "") = "/v2/clan/$tag/$route" + query
+        val limit = "?limit=50"
+
+        return if (!entry.isClan) {
             when (section) {
-                "TỔNG QUAN" -> "/v2/clan/$tag/cached"
-                "HỘI CHIẾN" -> "/v2/clan/$tag/warlog"
-                "CWL" -> "/v2/cwl/$tag/seasons"
-                "THÀNH VIÊN" -> "/v2/clan/$tag/join-leave"
-                "QUYÊN GÓP" -> "/v2/clan/$tag/donations/summary"
-                "XẾP HẠNG" -> "/v2/clan/$tag/rankings"
-                "KỶ LỤC" -> "/v2/clan/$tag/records"
-                "LỊCH SỬ" -> "/v2/clan/$tag/history/changes"
-                else -> null
+                "TỔNG QUAN" -> listOf(
+                    req("Hồ sơ người chơi và Nhà chính", entry.raw.toString()),
+                    req("Xếp hạng hiện tại", player("rankings"))
+                )
+                "QUÂN ĐỘI" -> listOf(
+                    req("Lịch sử nâng cấp quân lính", player("history/changes", "?type=troop_level&limit=50")),
+                    req("Lịch sử anh hùng", player("history/changes", "?type=hero_level&limit=50")),
+                    req("Lịch sử phép", player("history/changes", "?type=spell_level&limit=50")),
+                    req("Lịch sử thú cưng", player("history/changes", "?type=pet_level&limit=50")),
+                    req("Lịch sử trang bị anh hùng", player("history/changes", "?type=equipment_level&limit=50"))
+                )
+                "HOẠT ĐỘNG" -> listOf(
+                    req("Hoạt động 30 ngày", player("activity-summary")),
+                    req("Tổng tài nguyên cướp được", player("farming")),
+                    req("Lịch sử quyên góp", player("history/stats", "?type=donated&limit=50")),
+                    req("Lịch sử nhận quân", player("history/stats", "?type=received&limit=50")),
+                    req("Điểm Clan Games", player("history/stats", "?type=clan_games&limit=50")),
+                    req("Vàng Thủ phủ đã đóng góp", player("history/stats", "?type=capital_gold_donated&limit=50"))
+                )
+                "TRẬN ĐẤU" -> listOf(
+                    req("Lịch sử tấn công và phòng thủ", player("battlelog/history"))
+                )
+                "HỘI CHIẾN" -> listOf(
+                    req("Thống kê hội chiến", player("war/stats", limit)),
+                    req("Chi tiết đòn đánh và phòng thủ", player("war/attacks", limit))
+                )
+                "CWL" -> listOf(
+                    req("Lịch sử Clan War League", player("cwl/history", "?limit=30"))
+                )
+                "HUYỀN THOẠI" -> listOf(
+                    req("Các mùa Legend đã ghi nhận", player("legend-history")),
+                    req("Biểu đồ cúp theo ngày", player("legend/series")),
+                    req("Thống kê mùa Legend hiện tại", player("legend/season")),
+                    req("So sánh hiệu suất Legend", player("legend/comparisons"))
+                )
+                "XẾP HẠNG" -> listOf(
+                    req("Xếp hạng toàn cầu và địa phương", player("rankings")),
+                    req("Lịch sử xếp hạng Nhà chính", player("leaderboard-history/player_home_trophies")),
+                    req("Lịch sử xếp hạng Nhà thợ xây", player("leaderboard-history/player_builder_base_trophies")),
+                    req("Lịch sử Ranked", player("ranked/history"))
+                )
+                "BANG HỘI" -> listOf(
+                    req("Lịch sử tham gia bang hội", player("join-leave", limit)),
+                    req("Tổng thời gian ở từng bang hội", player("join-leave/totals"))
+                )
+                "THỜI GIAN" -> listOf(
+                    req("Các mốc hội chiến, CWL và Thủ phủ", player("timers"))
+                )
+                else -> emptyList()
             }
         } else {
             when (section) {
-                "TỔNG QUAN" -> null
-                "HOẠT ĐỘNG" -> "/v2/player/$tag/activity-summary"
-                "TRẬN ĐẤU" -> "/v2/player/$tag/battlelog/history"
-                "HỘI CHIẾN" -> "/v2/player/$tag/war/stats"
-                "CWL" -> "/v2/player/$tag/cwl/history"
-                "XẾP HẠNG" -> "/v2/player/$tag/rankings"
-                "NÂNG CẤP" -> "/v2/player/$tag/history/changes"
-                else -> null
+                "TỔNG QUAN" -> listOf(
+                    req("Hồ sơ bang hội và danh sách thành viên", clan("cached")),
+                    req("Xếp hạng và điểm bang hội", clan("rankings"))
+                )
+                "THÀNH VIÊN" -> listOf(
+                    req("Thành viên hiện tại và ngày tham gia được ghi nhận", "/v2/clan/$tag/member-joins"),
+                    req("Lịch sử thành viên vào và rời bang", clan("join-leave", limit))
+                )
+                "HỘI CHIẾN" -> listOf(
+                    req("Các cuộc hội chiến đã lưu", clan("wars", limit)),
+                    req("Trạng thái cuộc hội chiến hiện tại", "/v2/war/$tag/basic")
+                )
+                "CWL" -> listOf(
+                    req("Các mùa CWL", "/v2/cwl/$tag/seasons?limit=30"),
+                    req("Lịch sử thứ hạng CWL", "/v2/cwl/$tag/ranking-history"),
+                    req("Nhóm CWL hiện tại", "/v2/cwl/$tag/group")
+                )
+                "QUYÊN GÓP" -> listOf(
+                    req("Tổng quyên góp trong tháng", clan("donations/summary")),
+                    req("Thứ hạng quyên góp và nhận quân", clan("rankings"))
+                )
+                "THỦ PHỦ" -> listOf(
+                    req("Cấp Thủ phủ, giải đấu và tổng Vàng Thủ phủ", clan("cached")),
+                    req("Thứ hạng Thủ phủ và đóng góp", clan("rankings"))
+                )
+                "XẾP HẠNG" -> listOf(
+                    req("Xếp hạng hiện tại", clan("rankings")),
+                    req("Lịch sử xếp hạng theo ngày", clan("history/leaderboards")),
+                    req("Tổng kết các mùa trong bảng xếp hạng", clan("history/leaderboards/summary", "?type=clan_home_points"))
+                )
+                "HUYỀN THOẠI" -> listOf(
+                    req("Lịch sử người chơi Legend trong bang", clan("history/legends", limit)),
+                    req("Tổng kết Legend và thành tích nổi bật", clan("history/legends/summary", "?top=20"))
+                )
+                "KỶ LỤC" -> listOf(
+                    req("Điểm clan và chuỗi thắng kỷ lục", clan("records"))
+                )
+                "LỊCH SỬ" -> listOf(
+                    req("Lịch sử thay đổi cấp và mô tả bang", clan("history/changes", limit)),
+                    req("Lịch sử thành viên", clan("join-leave", limit))
+                )
+                else -> emptyList()
             }
         }
     }
@@ -170,13 +308,15 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
     }
 
     return ClashLookupEntry(
-        name = json.lookupText("name").ifBlank { if (isClan) "Bang hội chưa rõ tên" else "Người chơi chưa rõ tên" },
+        name = json.lookupText("name").ifBlank {
+            if (isClan) "Bang hội chưa rõ tên" else "Người chơi chưa rõ tên"
+        },
         tag = json.lookupText("tag").ifBlank { json.lookupText("playerTag") },
         isClan = isClan,
         townHall = number("townHallLevel", "townhallLevel"),
         clanName = clan?.lookupText("name").orEmpty(),
         league = league?.lookupText("name").orEmpty(),
-        trophies = number("trophies", "leagueTrophies", "versusTrophies"),
+        trophies = number("trophies", "leagueTrophies"),
         members = number("members", "memberCount"),
         level = number("clanLevel", "level"),
         badgeUrl = badge,
@@ -205,17 +345,21 @@ private fun humanizeLookupKey(key: String): String {
         "townhallLevel" to "Nhà chính",
         "builderHallLevel" to "Nhà thợ xây",
         "leagueTier" to "Giải đấu",
+        "league" to "Giải đấu",
         "trophies" to "Cúp",
         "leagueTrophies" to "Cúp giải đấu",
         "clanLevel" to "Cấp bang hội",
-        "members" to "Thành viên",
         "memberCount" to "Thành viên",
+        "members" to "Thành viên",
         "warWins" to "Thắng hội chiến",
         "warLosses" to "Thua hội chiến",
         "warTies" to "Hòa hội chiến",
         "warWinStreak" to "Chuỗi thắng",
-        "donations" to "Đã quyên góp",
-        "donationsReceived" to "Đã nhận",
+        "donated" to "Đã quyên góp",
+        "received" to "Đã nhận",
+        "troopsDonated" to "Quân đã quyên góp",
+        "troopsReceived" to "Quân đã nhận",
+        "capitalGoldTotal" to "Tổng Vàng Thủ phủ",
         "capitalPoints" to "Điểm Thủ phủ",
         "capitalLeague" to "Giải Thủ phủ",
         "warLeague" to "Giải hội chiến",
@@ -227,7 +371,33 @@ private fun humanizeLookupKey(key: String): String {
         "localRank" to "Xếp hạng địa phương",
         "time" to "Thời gian",
         "type" to "Loại sự kiện",
-        "delta" to "Thay đổi"
+        "delta" to "Thay đổi",
+        "lastActive" to "Hoạt động được ghi nhận gần nhất",
+        "lastObservedAt" to "Lần cuối được ghi nhận",
+        "joinedAt" to "Ngày tham gia được ghi nhận",
+        "battleTime" to "Thời gian trận đấu",
+        "attackTrophies" to "Cúp tấn công",
+        "defenseTrophies" to "Cúp phòng thủ",
+        "totalLoot" to "Tổng tài nguyên",
+        "townhall_level" to "Nhà chính",
+        "previous_value" to "Cấp trước",
+        "current_value" to "Cấp hiện tại",
+        "eventTime" to "Thời gian sự kiện",
+        "statType" to "Loại thống kê",
+        "preparationStartTime" to "Bắt đầu chuẩn bị",
+        "startTime" to "Bắt đầu hội chiến",
+        "endTime" to "Kết thúc",
+        "teamSize" to "Quy mô đội",
+        "rank" to "Thứ hạng",
+        "season" to "Mùa giải",
+        "attackTriples" to "Số trận 3 sao",
+        "defenseTriples" to "Phòng thủ 3 sao",
+        "averageOffense" to "Phá hủy tấn công trung bình",
+        "averageDefense" to "Phá hủy phòng thủ trung bình",
+        "clanPoints" to "Điểm bang hội",
+        "builderBasePoints" to "Điểm Nhà thợ xây",
+        "capitalGold" to "Vàng Thủ phủ",
+        "clanCapital" to "Thủ phủ bang hội"
     )
     return known[key] ?: key
         .replace(Regex("([a-z])([A-Z])"), "$1 $2")
@@ -236,42 +406,11 @@ private fun humanizeLookupKey(key: String): String {
 }
 
 private fun lookupValue(value: Any?): String = when (value) {
-    null, JSONObject.NULL -> ""
+    null, JSONObject.NULL -> "—"
     is JSONObject -> ""
     is JSONArray -> "${value.length()} mục"
     is Boolean -> if (value) "Có" else "Không"
-    else -> value.toString().take(110)
-}
-
-private fun flattenLookupJson(json: JSONObject): List<Pair<String, String>> {
-    val output = mutableListOf<Pair<String, String>>()
-
-    fun visit(value: JSONObject, prefix: String, depth: Int) {
-        if (depth > 3 || output.size >= 24) return
-        val keys = value.keys()
-        while (keys.hasNext() && output.size < 24) {
-            val key = keys.next()
-            val child = value.opt(key)
-            val label = if (prefix.isBlank()) humanizeLookupKey(key) else "$prefix • ${humanizeLookupKey(key)}"
-            when (child) {
-                is JSONObject -> visit(child, label, depth + 1)
-                is JSONArray -> {
-                    output += label to "${child.length()} bản ghi"
-                    for (index in 0 until minOf(child.length(), 3)) {
-                        val item = child.opt(index)
-                        if (item is JSONObject) visit(item, "$label #${index + 1}", depth + 1)
-                    }
-                }
-                else -> {
-                    val text = lookupValue(child)
-                    if (text.isNotBlank()) output += label to text
-                }
-            }
-        }
-    }
-
-    visit(json, "", 0)
-    return output
+    else -> value.toString().take(500)
 }
 
 @Composable
@@ -280,23 +419,48 @@ fun ClashLookupScreen() {
     val scope = rememberCoroutineScope()
     var searchMode by rememberSaveable { mutableStateOf("player") }
     var query by rememberSaveable { mutableStateOf("") }
+    var showAdvancedFilters by rememberSaveable { mutableStateOf(false) }
+    var clanTags by rememberSaveable { mutableStateOf("") }
+    var leagueIds by rememberSaveable { mutableStateOf("") }
+    var townhallLevels by rememberSaveable { mutableStateOf("") }
+    var locationIds by rememberSaveable { mutableStateOf("") }
+    var warLeagueIds by rememberSaveable { mutableStateOf("") }
+    var clanMinLevel by rememberSaveable { mutableStateOf("") }
+    var clanMaxLevel by rememberSaveable { mutableStateOf("") }
+    var minMembers by rememberSaveable { mutableStateOf("") }
+    var maxMembers by rememberSaveable { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
     var results by remember { mutableStateOf(emptyList<ClashLookupEntry>()) }
     var nextCursor by remember { mutableStateOf<String?>(null) }
     var selectedEntry by remember { mutableStateOf<ClashLookupEntry?>(null) }
     var selectedSection by rememberSaveable { mutableStateOf("TỔNG QUAN") }
-    var detailPayload by remember { mutableStateOf<JSONObject?>(null) }
+    var detailPanels by remember { mutableStateOf(emptyList<LookupPanel>()) }
     var detailLoading by remember { mutableStateOf(false) }
     var detailError by remember { mutableStateOf<String?>(null) }
 
+    val filters = LookupFilters(
+        clanTags = clanTags,
+        leagueIds = leagueIds,
+        townhallLevels = townhallLevels,
+        locationIds = locationIds,
+        warLeagueIds = warLeagueIds,
+        clanMinLevel = clanMinLevel,
+        clanMaxLevel = clanMaxLevel,
+        minMembers = minMembers,
+        maxMembers = maxMembers
+    )
+
     fun runSearch(loadMore: Boolean = false) {
         val term = query.trim()
-        if (term.isBlank()) {
-            searchError = "Nhập tên người chơi, tên bang hội hoặc TAG/ID cần tìm."
+        if (term.length < 2) {
+            searchError = "Nhập ít nhất 2 ký tự tên hoặc TAG/ID cần tìm."
             return
         }
+        if (isSearching) return
         val oldCursor = if (loadMore) nextCursor else null
+        val selectedFilters = filters
+        val isClan = searchMode == "clan"
         scope.launch {
             isSearching = true
             searchError = null
@@ -306,15 +470,15 @@ fun ClashLookupScreen() {
             }
             try {
                 val response = ClashKingLookupApi.get(
-                    ClashKingLookupApi.searchPath(searchMode == "clan", term, oldCursor)
+                    ClashKingLookupApi.searchPath(isClan, term, oldCursor, selectedFilters)
                 )
-                val found = lookupItems(response, searchMode == "clan")
+                val found = lookupItems(response, isClan)
                 results = if (loadMore) results + found else found
                 nextCursor = response.optJSONObject("pagination")
                     ?.lookupText("nextCursor")
                     ?.takeIf { it.isNotBlank() }
                 if (results.isEmpty()) {
-                    searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên hoặc TAG/ID."
+                    searchError = "Không tìm thấy kết quả. Hãy kiểm tra tên, TAG/ID hoặc bộ lọc."
                 }
             } catch (error: Exception) {
                 searchError = error.message ?: "Không thể kết nối dịch vụ tra cứu."
@@ -327,31 +491,41 @@ fun ClashLookupScreen() {
     val activeEntry = selectedEntry
     LaunchedEffect(activeEntry?.tag, activeEntry?.isClan, selectedSection) {
         val entry = activeEntry ?: return@LaunchedEffect
-        val path = ClashKingLookupApi.detailPath(entry, selectedSection)
-        if (path == null) {
-            detailPayload = entry.raw
-            detailError = null
+        val requests = ClashKingLookupApi.detailRequests(entry, selectedSection)
+        if (requests.isEmpty()) {
+            detailPanels = emptyList()
+            detailError = "Mục dữ liệu này chưa được API công khai hỗ trợ."
             detailLoading = false
             return@LaunchedEffect
         }
         detailLoading = true
         detailError = null
-        try {
-            detailPayload = ClashKingLookupApi.get(path)
-        } catch (error: Exception) {
-            detailPayload = null
-            detailError = error.message ?: "Chưa có dữ liệu cho mục này."
-        } finally {
-            detailLoading = false
+        detailPanels = emptyList()
+        val loaded = requests.map { request ->
+            async {
+                runCatching {
+                    LookupPanel(request.title, ClashKingLookupApi.get(request.path))
+                }.getOrElse { error ->
+                    LookupPanel(request.title, null, error.message ?: "Không thể tải dữ liệu.")
+                }
+            }
+        }.awaitAll()
+        detailPanels = loaded
+        val failures = loaded.filter { it.payload == null }
+        detailError = when {
+            failures.size == loaded.size -> failures.joinToString("\n") { "• ${it.title}: ${it.error}" }
+            failures.isNotEmpty() -> failures.joinToString("\n") { "• ${it.title}: ${it.error}" }
+            else -> null
         }
+        detailLoading = false
     }
 
     val entry = selectedEntry
     if (entry != null) {
         val sections = if (entry.isClan) {
-            listOf("TỔNG QUAN", "HỘI CHIẾN", "CWL", "THÀNH VIÊN", "QUYÊN GÓP", "XẾP HẠNG", "KỶ LỤC", "LỊCH SỬ")
+            listOf("TỔNG QUAN", "THÀNH VIÊN", "HỘI CHIẾN", "CWL", "QUYÊN GÓP", "THỦ PHỦ", "XẾP HẠNG", "HUYỀN THOẠI", "KỶ LỤC", "LỊCH SỬ")
         } else {
-            listOf("TỔNG QUAN", "HOẠT ĐỘNG", "TRẬN ĐẤU", "HỘI CHIẾN", "CWL", "XẾP HẠNG", "NÂNG CẤP")
+            listOf("TỔNG QUAN", "QUÂN ĐỘI", "HOẠT ĐỘNG", "TRẬN ĐẤU", "HỘI CHIẾN", "CWL", "HUYỀN THOẠI", "XẾP HẠNG", "BANG HỘI", "THỜI GIAN")
         }
         Column(
             modifier = Modifier
@@ -364,7 +538,7 @@ fun ClashLookupScreen() {
                 Button(
                     onClick = {
                         selectedEntry = null
-                        detailPayload = null
+                        detailPanels = emptyList()
                         detailError = null
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -401,7 +575,7 @@ fun ClashLookupScreen() {
                     modifier = Modifier.fillMaxWidth().padding(15.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (entry.isClan && entry.badgeUrl.isNotBlank()) {
+                    if (entry.badgeUrl.isNotBlank()) {
                         AsyncImage(
                             model = entry.badgeUrl,
                             contentDescription = "Huy hiệu bang hội",
@@ -448,57 +622,26 @@ fun ClashLookupScreen() {
                 }
             }
 
-            when {
-                detailLoading -> Box(Modifier.fillMaxWidth().padding(28.dp), contentAlignment = Alignment.Center) {
+            if (detailLoading) {
+                Box(Modifier.fillMaxWidth().padding(28.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = LookupCyan)
                 }
-                detailError != null -> LookupMessageCard(detailError ?: "Không tải được dữ liệu", isError = true)
-                detailPayload != null -> {
-                    val fields = flattenLookupJson(detailPayload ?: JSONObject())
-                    if (fields.isEmpty()) {
-                        LookupMessageCard("API chưa có dữ liệu cho mục này.")
-                    } else {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(9.dp)
-                            ) {
-                                Text(
-                                    when (selectedSection) {
-                                        "TỔNG QUAN" -> "THÔNG TIN CHÍNH"
-                                        "HOẠT ĐỘNG" -> "THỐNG KÊ HOẠT ĐỘNG"
-                                        "TRẬN ĐẤU" -> "LỊCH SỬ TRẬN ĐẤU"
-                                        "HỘI CHIẾN" -> "DỮ LIỆU HỘI CHIẾN"
-                                        "CWL" -> "LỊCH SỬ CWL"
-                                        "THÀNH VIÊN" -> "LỊCH SỬ THÀNH VIÊN"
-                                        "XẾP HẠNG" -> "THỨ HẠNG"
-                                        "NÂNG CẤP" -> "LỊCH SỬ NÂNG CẤP"
-                                        "QUYÊN GÓP" -> "THỐNG KÊ QUYÊN GÓP"
-                                        "KỶ LỤC" -> "KỶ LỤC BANG HỘI"
-                                        else -> "LỊCH SỬ GHI NHẬN"
-                                    },
-                                    fontSize = 11.sp,
-                                    color = LookupCyan,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 0.7.sp
-                                )
-                                fields.forEachIndexed { index, field ->
-                                    LookupDetailRow(field.first, field.second)
-                                    if (index < fields.lastIndex) {
-                                        androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                                    }
-                                }
-                            }
-                        }
-                    }
+            }
+            if (!detailError.isNullOrBlank() && detailPanels.any { it.payload != null }) {
+                LookupMessageCard("Một số nguồn dữ liệu chưa trả về kết quả:\n${detailError}", isError = false)
+            }
+            if (detailError != null && detailPanels.none { it.payload != null } && !detailLoading) {
+                LookupMessageCard(detailError ?: "Không tải được dữ liệu", isError = true)
+            }
+            detailPanels.forEach { panel ->
+                if (panel.payload != null) {
+                    LookupDataPanel(title = panel.title, payload = panel.payload)
+                } else if (!detailLoading) {
+                    LookupMessageCard("${panel.title}: ${panel.error ?: "Chưa có dữ liệu"}")
                 }
             }
             Text(
-                "Dữ liệu công khai từ ClashKing API. Lịch sử và thống kê phụ thuộc dữ liệu được ghi nhận, có thể không đầy đủ.",
+                "Dữ liệu công khai từ ClashKing API. Hoạt động, lịch sử và thống kê chỉ phản ánh những dữ liệu API đã ghi nhận; không phải lúc nào cũng có đủ.",
                 color = LookupMuted,
                 fontSize = 9.sp,
                 lineHeight = 13.sp
@@ -516,7 +659,7 @@ fun ClashLookupScreen() {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("TRA CỨU CLASH", fontSize = 19.sp, fontWeight = FontWeight.Black, color = LookupCyan, letterSpacing = 1.sp)
-            Text("Tìm người chơi và bang hội bằng tên hoặc TAG/ID", fontSize = 10.sp, color = LookupMuted)
+            Text("Tra cứu người chơi, bang hội và hồ sơ thống kê Clash of Clans", fontSize = 10.sp, color = LookupMuted)
         }
 
         Card(
@@ -557,7 +700,7 @@ fun ClashLookupScreen() {
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (searchMode == "player") "Tên người chơi hoặc #TAG" else "Tên bang hội hoặc #TAG") },
-                    placeholder = { Text(if (searchMode == "player") "Ví dụ: tên hoặc #ABC123" else "Ví dụ: tên clan hoặc #XYZ789") },
+                    placeholder = { Text(if (searchMode == "player") "Nhập tên hoặc #ABC123" else "Nhập tên clan hoặc #XYZ789") },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = LookupCyan) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = LookupCyan,
@@ -565,6 +708,50 @@ fun ClashLookupScreen() {
                         cursorColor = LookupCyan
                     )
                 )
+
+                Button(
+                    onClick = { showAdvancedFilters = !showAdvancedFilters },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = LookupCyan
+                    )
+                ) {
+                    Text(if (showAdvancedFilters) "ẨN BỘ LỌC NÂNG CAO" else "BỘ LỌC NÂNG CAO", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+
+                if (showAdvancedFilters) {
+                    if (searchMode == "player") {
+                        LookupFilterField("TAG bang hội (phân cách bằng dấu phẩy)", clanTags, { clanTags = it }, "#ABC123")
+                        LookupFilterField("ID giải đấu (phân cách bằng dấu phẩy)", leagueIds, { leagueIds = it }, "29000000")
+                        LookupFilterField("Cấp Nhà chính (phân cách bằng dấu phẩy)", townhallLevels, { townhallLevels = it }, "17,18,19")
+                    } else {
+                        LookupFilterField("ID quốc gia / khu vực", locationIds, { locationIds = it }, "32000000")
+                        LookupFilterField("ID giải hội chiến", warLeagueIds, { warLeagueIds = it }, "48000000")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.weight(1f)) {
+                                LookupFilterField("Cấp clan từ", clanMinLevel, { clanMinLevel = it }, "1")
+                            }
+                            Column(Modifier.weight(1f)) {
+                                LookupFilterField("Đến cấp", clanMaxLevel, { clanMaxLevel = it }, "30")
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.weight(1f)) {
+                                LookupFilterField("Ít nhất thành viên", minMembers, { minMembers = it }, "1")
+                            }
+                            Column(Modifier.weight(1f)) {
+                                LookupFilterField("Nhiều nhất", maxMembers, { maxMembers = it }, "50")
+                            }
+                        }
+                    }
+                    Text(
+                        "ID bộ lọc phải là ID dữ liệu game do ClashKing API sử dụng. Để trống bộ lọc không cần dùng.",
+                        fontSize = 9.sp,
+                        color = LookupMuted,
+                        lineHeight = 13.sp
+                    )
+                }
 
                 Button(
                     onClick = { runSearch(false) },
@@ -602,7 +789,7 @@ fun ClashLookupScreen() {
                     onClick = {
                         selectedEntry = result
                         selectedSection = "TỔNG QUAN"
-                        detailPayload = null
+                        detailPanels = emptyList()
                         detailError = null
                     },
                     onCopy = { clipboard.setText(AnnotatedString(result.tag)) }
@@ -623,27 +810,49 @@ fun ClashLookupScreen() {
             }
         } else if (searchError == null && !isSearching) {
             LookupMessageCard(
-                if (searchMode == "player") "Có thể tìm bằng tên người chơi hoặc TAG/ID bắt đầu bằng #."
-                else "Có thể tìm bằng tên bang hội hoặc TAG/ID bắt đầu bằng #."
+                if (searchMode == "player") "Tìm người chơi bằng tên hoặc TAG. Chọn kết quả để mở hồ sơ, hoạt động, quân đội, hội chiến, CWL, Legend, xếp hạng và lịch sử."
+                else "Tìm bang hội bằng tên hoặc Clan TAG. Hồ sơ có thành viên, hội chiến, CWL, quyên góp, Thủ phủ, xếp hạng, kỷ lục và lịch sử."
             )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             Icon(Icons.Outlined.Security, contentDescription = null, tint = LookupMuted, modifier = Modifier.size(14.dp))
             Text(
-                "Tra cứu dữ liệu game công khai • COC-LIO không yêu cầu mật khẩu tài khoản Clash of Clans",
+                "Tra cứu dữ liệu game công khai • Không yêu cầu mật khẩu tài khoản Clash of Clans",
                 fontSize = 9.sp,
                 lineHeight = 13.sp,
                 color = LookupMuted
             )
         }
         Text(
-            "Nguồn dữ liệu: ClashKing API • Creator Code: ClashKing. Đây là công cụ cộng đồng độc lập, không phải ứng dụng chính thức của Supercell.",
+            "Nguồn dữ liệu: ClashKing API • Creator Code: ClashKing. COC-LIO là công cụ cộng đồng độc lập, không phải ứng dụng chính thức của Supercell.",
             fontSize = 9.sp,
             color = LookupMuted,
             lineHeight = 13.sp
         )
     }
+}
+
+@Composable
+private fun LookupFilterField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text(label, fontSize = 9.sp) },
+        placeholder = { Text(placeholder, fontSize = 10.sp) },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = LookupCyan,
+            focusedLabelColor = LookupCyan,
+            cursorColor = LookupCyan
+        )
+    )
 }
 
 @Composable
@@ -662,7 +871,7 @@ private fun LookupResultCard(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (entry.isClan && entry.badgeUrl.isNotBlank()) {
+            if (entry.badgeUrl.isNotBlank()) {
                 AsyncImage(model = entry.badgeUrl, contentDescription = "Huy hiệu clan", modifier = Modifier.size(48.dp))
             } else {
                 Box(
@@ -705,6 +914,118 @@ private fun LookupResultCard(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 7.dp)
             ) {
                 Icon(Icons.Outlined.ContentCopy, contentDescription = "Sao chép TAG", modifier = Modifier.size(15.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LookupDataPanel(title: String, payload: JSONObject) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(13.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Text(
+                title.uppercase(),
+                fontSize = 10.sp,
+                color = LookupCyan,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.7.sp
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            LookupJsonObject(payload, depth = 0)
+        }
+    }
+}
+
+@Composable
+private fun LookupJsonObject(payload: JSONObject, depth: Int) {
+    if (depth > 5) {
+        Text("Dữ liệu lồng sâu hơn không được mở rộng ở cấp này.", fontSize = 9.sp, color = LookupMuted)
+        return
+    }
+    val keys = remember(payload) { payload.keys().asSequence().toList() }
+    keys.forEach { key ->
+        val value = payload.opt(key)
+        when (value) {
+            is JSONObject -> {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(
+                        humanizeLookupKey(key),
+                        color = if (depth == 0) LookupGold else LookupCyan,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.36f)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(9.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            LookupJsonObject(value, depth + 1)
+                        }
+                    }
+                }
+            }
+            is JSONArray -> LookupJsonArray(humanizeLookupKey(key), value, depth + 1)
+            else -> {
+                val display = lookupValue(value)
+                if (display.isNotBlank()) LookupDetailRow(humanizeLookupKey(key), display)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LookupJsonArray(label: String, values: JSONArray, depth: Int) {
+    var visibleCount by remember(values) { mutableIntStateOf(20) }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = if (depth <= 1) LookupGold else LookupCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Text("${values.length()} mục", color = LookupMuted, fontSize = 9.sp)
+        }
+        if (values.length() == 0) {
+            Text("Không có dữ liệu được ghi nhận.", color = LookupMuted, fontSize = 9.sp)
+        } else {
+            val end = minOf(values.length(), visibleCount)
+            for (index in 0 until end) {
+                when (val value = values.opt(index)) {
+                    is JSONObject -> {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Column(
+                                Modifier.fillMaxWidth().padding(9.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                Text("#${index + 1}", fontSize = 9.sp, color = LookupGold, fontWeight = FontWeight.Bold)
+                                LookupJsonObject(value, depth + 1)
+                            }
+                        }
+                    }
+                    is JSONArray -> LookupJsonArray("#${index + 1}", value, depth + 1)
+                    else -> LookupDetailRow("#${index + 1}", lookupValue(value))
+                }
+            }
+            if (end < values.length()) {
+                Button(
+                    onClick = { visibleCount = (visibleCount + 20).coerceAtMost(values.length()) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = LookupCyan
+                    )
+                ) {
+                    Text("HIỂN THỊ TIẾP ${minOf(20, values.length() - end)} / ${values.length() - end}", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
