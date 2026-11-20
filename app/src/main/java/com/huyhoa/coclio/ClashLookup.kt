@@ -250,7 +250,7 @@ private object ClashKingLookupApi {
             "counts_clan_members" -> "/v2/counts/clans/member-bins"
             "stats_ranked" -> {
                 validatePositive(primary, "Cấp Nhà chính", 20)
-                validatePositive(secondary, "Mã bậc giải Ranked")
+                validatePositive(secondary, "Mã bậc giải xếp hạng")
                 validateRange(from, to)
                 add("townHallLevel", primary)
                 add("leagueTierId", secondary)
@@ -305,7 +305,7 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/army-setups")
             }
             "army_setup_timeline" -> {
-                require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
+                require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Huyền thoại." }
                 validateRange(from, to)
                 validateRankLimit(rankLimit)
                 add("time[after]", from)
@@ -317,7 +317,7 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/army-setups/timeline")
             }
             "army_setup_rank_history" -> {
-                require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Legend." }
+                require(groupKey.isNotBlank()) { "Nhập mã nhóm đội hình lấy từ kết quả đội hình Huyền thoại." }
                 validateRange(from, to)
                 validateRankLimit(rankLimit)
                 add("time[after]", from)
@@ -330,14 +330,14 @@ private object ClashKingLookupApi {
                 withQuery("/v2/stats/army-setups/rank-history")
             }
             "legend_rank_curve" -> {
-                validateDay(date, "ngày xem xếp hạng Legend", required = true)
+                validateDay(date, "ngày xem xếp hạng Huyền thoại", required = true)
                 add("day", date)
                 withQuery("/v2/legends/rank-curve")
             }
             "legend_trophy_buckets" -> {
                 if (date.isBlank()) "/v2/legends/trophy-buckets"
                 else {
-                    validateDay(date, "ngày thống kê Legend")
+                    validateDay(date, "ngày thống kê Huyền thoại")
                     "/v2/legends/trophy-buckets/${encode(date)}"
                 }
             }
@@ -353,27 +353,27 @@ private object ClashKingLookupApi {
                 "/v2/leaderboard/${encode(primary)}/trophy-buckets"
             }
             "legend_season" -> {
-                validateSeason(primary, "Mùa Legend")
+                validateSeason(primary, "Mùa Huyền thoại")
                 validatePositive(secondary.ifBlank { "100" }, "Số kết quả tối đa", 200)
                 add("limit", secondary.ifBlank { "100" })
                 withQuery("/v2/legends/history/${encode(primary)}")
             }
             "ranked_group" -> {
-                validatePositive(primary, "Mã mùa giải Ranked")
-                val groupTag = normalizeLookupTag(secondary, "TAG nhóm Ranked")
+                validatePositive(primary, "Mã mùa giải xếp hạng (Ranked)")
+                val groupTag = normalizeLookupTag(secondary, "TAG nhóm xếp hạng")
                 "/v2/ranked/${encode(primary)}/groups/${encode(groupTag)}"
             }
             "league_tier_statistics" -> {
-                validatePositive(primary, "Mã mùa giải Ranked")
+                validatePositive(primary, "Mã mùa giải xếp hạng (Ranked)")
                 validatePositive(secondary, "Mã bậc giải")
                 "/v2/stats/league/tournaments/${encode(primary)}/tiers/${encode(secondary)}"
             }
             "league_hit_rates" -> {
                 validateRange(from, to)
-                require(mode == "ranked" || mode == "legend") { "Chế độ phải là Ranked hoặc Legend." }
+                require(mode == "ranked" || mode == "legend") { "Chế độ phải là Xếp hạng (Ranked) hoặc Huyền thoại (Legend)." }
                 add("time[after]", from); add("time[before]", to); add("mode", mode)
                 if (mode == "ranked") {
-                    if (primary.isNotBlank()) validatePositive(primary, "Mã bậc giải Ranked")
+                    if (primary.isNotBlank()) validatePositive(primary, "Mã bậc giải xếp hạng")
                     if (secondary.isNotBlank()) validatePositive(secondary, "Cấp Nhà chính", 20)
                     add("leagueTierId", primary)
                     add("townHallLevel", secondary)
@@ -451,16 +451,16 @@ private object ClashKingLookupApi {
                     req("Lịch sử giải đấu bang hội (CWL)", player("cwl/history", "?limit=30"))
                 )
                 "HUYỀN THOẠI" -> listOf(
-                    req("Các mùa Legend đã ghi nhận", player("legend-history")),
+                    req("Các mùa Huyền thoại đã ghi nhận", player("legend-history")),
                     req("Biểu đồ cúp theo ngày", player("legend/series")),
-                    req("Thống kê mùa Legend hiện tại", player("legend/season")),
-                    req("So sánh hiệu suất Legend", player("legend/comparisons"))
+                    req("Thống kê mùa Huyền thoại hiện tại", player("legend/season")),
+                    req("So sánh hiệu suất Huyền thoại", player("legend/comparisons"))
                 )
                 "XẾP HẠNG" -> listOf(
                     req("Xếp hạng toàn cầu và địa phương", player("rankings")),
                     req("Lịch sử xếp hạng Nhà chính", player("leaderboard-history/player_home_trophies")),
                     req("Lịch sử xếp hạng Nhà thợ xây", player("leaderboard-history/player_builder_base_trophies")),
-                    req("Lịch sử Ranked", player("ranked/history"))
+                    req("Lịch sử xếp hạng (Ranked)", player("ranked/history"))
                 )
                 "BANG HỘI" -> listOf(
                     req("Lịch sử tham gia bang hội", player("join-leave", limit)),
@@ -507,8 +507,8 @@ private object ClashKingLookupApi {
                     req("Tổng kết theo mùa Điểm Thủ phủ", clan("history/leaderboards/summary", "?type=clan_capital_points"))
                 )
                 "HUYỀN THOẠI" -> listOf(
-                    req("Lịch sử người chơi Legend trong bang", clan("history/legends", limit)),
-                    req("Tổng kết Legend và thành tích nổi bật", clan("history/legends/summary", "?top=20"))
+                    req("Lịch sử người chơi Huyền thoại trong bang", clan("history/legends", limit)),
+                    req("Tổng kết Huyền thoại và thành tích nổi bật", clan("history/legends/summary", "?top=20"))
                 )
                 "KỶ LỤC" -> listOf(
                     req("Điểm bang hội và chuỗi thắng kỷ lục", clan("records"))
@@ -597,7 +597,7 @@ private fun humanizeLookupKey(key: String): String {
         "name" to "Tên",
         "clanTag" to "TAG bang hội",
         "playerTag" to "TAG người chơi",
-        "leagueGroupId" to "TAG nhóm Ranked",
+        "leagueGroupId" to "TAG nhóm xếp hạng",
         "seasonId" to "Mã mùa giải",
         "leagueTierId" to "Mã bậc giải",
         "cwlLeagueId" to "Mã giải CWL",
@@ -725,7 +725,7 @@ private fun humanizeLookupKey(key: String): String {
         "players_in_war" to "Người chơi đang hội chiến",
         "clans_in_war" to "Bang hội đang hội chiến",
         "total_join_leaves" to "Tổng lượt vào và rời bang",
-        "players_in_legends" to "Người chơi ở giải Legend",
+        "players_in_legends" to "Người chơi ở giải Huyền thoại",
         "player_count" to "Tổng người chơi đã ghi nhận",
         "clan_count" to "Tổng bang hội đã ghi nhận",
         "wars_stored" to "Số hội chiến đã lưu",
@@ -969,24 +969,24 @@ fun ClashLookupScreen() {
                         "counts_cwl_leagues" -> "PHÂN BỐ GIẢI CWL"
                         "counts_capital_leagues" -> "PHÂN BỐ GIẢI THỦ PHỦ"
                         "counts_clan_members" -> "PHÂN BỐ QUY MÔ BANG HỘI"
-                        "stats_ranked" -> "THỐNG KÊ TẤN CÔNG RANKED"
+                        "stats_ranked" -> "THỐNG KÊ TẤN CÔNG XẾP HẠNG"
                         "stats_war" -> "THỐNG KÊ HỘI CHIẾN THƯỜNG"
                         "stats_cwl" -> "THỐNG KÊ THAM GIA CWL"
                         "wars_hit_rates" -> "TỶ LỆ SAO HỘI CHIẾN"
                         "wars_summary" -> "TỔNG KẾT HỘI CHIẾN"
-                        "army_setups" -> "ĐỘI HÌNH LEGEND PHỔ BIẾN"
-                        "army_setup_timeline" -> "LỊCH SỬ ĐỘI HÌNH LEGEND"
+                        "army_setups" -> "ĐỘI HÌNH HUYỀN THOẠI PHỔ BIẾN"
+                        "army_setup_timeline" -> "LỊCH SỬ ĐỘI HÌNH HUYỀN THOẠI"
                         "army_setup_rank_history" -> "LỊCH SỬ XẾP HẠNG ĐỘI HÌNH"
-                        "legend_rank_curve" -> "ĐƯỜNG CONG XẾP HẠNG LEGEND"
-                        "legend_trophy_buckets" -> "PHÂN BỐ CÚP LEGEND"
+                        "legend_rank_curve" -> "ĐƯỜNG CONG XẾP HẠNG HUYỀN THOẠI"
+                        "legend_trophy_buckets" -> "PHÂN BỐ CÚP HUYỀN THOẠI"
                         "historical_leaderboard" -> "BẢNG XẾP HẠNG LỊCH SỬ"
                         "trophy_buckets" -> "PHÂN BỐ CÚP THEO GIẢI ĐẤU"
                         "legend_season" -> "DỮ LIỆU HUYỀN THOẠI THEO MÙA"
-                        "ranked_group" -> "NHÓM XẾP HẠNG RANKED"
-                        "league_tier_statistics" -> "THỐNG KÊ HẠNG GIẢI RANKED"
-                        "league_hit_rates" -> "TỶ LỆ SAO RANKED / LEGEND"
-                        "legend_days" -> "THỐNG KÊ CHI TIẾT LEGEND"
-                        else -> "PHÂN TÍCH HIỆU SUẤT LEGEND"
+                        "ranked_group" -> "NHÓM XẾP HẠNG"
+                        "league_tier_statistics" -> "THỐNG KÊ HẠNG GIẢI XẾP HẠNG"
+                        "league_hit_rates" -> "TỶ LỆ SAO XẾP HẠNG / HUYỀN THOẠI"
+                        "legend_days" -> "THỐNG KÊ CHI TIẾT HUYỀN THOẠI"
+                        else -> "PHÂN TÍCH HIỆU SUẤT HUYỀN THOẠI"
                         }
                         results = emptyList()
                         nextCursor = null
@@ -1178,10 +1178,10 @@ fun ClashLookupScreen() {
                     Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                         Text("API CÔNG KHAI CẦN THAM SỐ", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
                         if (!entry.isClan) {
-                            LookupFilterField("Mã mùa giải Ranked (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it; clearExtendedResults() }, "Mã mùa giải")
-                            LookupFilterField("Ngày Legend (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it; clearExtendedResults() }, "YYYY-MM-DD")
+                            LookupFilterField("Mã mùa giải xếp hạng (Ranked) (để tải nhóm và nhật ký trận)", extendedSeasonId, { extendedSeasonId = it; clearExtendedResults() }, "Mã mùa giải")
+                            LookupFilterField("Ngày Huyền thoại (YYYY-MM-DD)", extendedLegendDay, { extendedLegendDay = it; clearExtendedResults() }, "YYYY-MM-DD")
                             LookupFilterField("TAG người chơi khác (để so lịch sử bang)", extendedOtherPlayerTag, { extendedOtherPlayerTag = it; clearExtendedResults() }, "#ABC123")
-                            Text("Có thể nhập một hoặc nhiều mục: mã mùa giải tải nhóm và nhật ký Ranked; ngày tải nhật ký Legend; TAG khác dùng để so sánh thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
+                            Text("Có thể nhập một hoặc nhiều mục: mã mùa xếp hạng tải nhóm và nhật ký trận; ngày tải nhật ký Huyền thoại; TAG khác dùng để so sánh thời gian hai người cùng ở bang.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
                         } else {
                             LookupFilterField("Thời điểm kết thúc hội chiến (YYYYMMDDTHHmmss.SSSZ)", extendedWarEndTime, { extendedWarEndTime = it; clearExtendedResults() }, "YYYYMMDDTHHmmss.SSSZ")
                             Text("Sao chép nguyên endTime từ dữ liệu API của cuộc hội chiến đã lưu; không tự đổi sang định dạng ISO thông thường.", fontSize = 9.sp, color = LookupMuted, lineHeight = 13.sp)
@@ -1198,15 +1198,15 @@ fun ClashLookupScreen() {
                                         val otherRawTag = extendedOtherPlayerTag.trim()
                                         val otherTag = if (otherRawTag.isBlank()) "" else normalizeLookupTag(otherRawTag, "TAG người chơi khác")
                                         if (season.isNotBlank()) {
-                                            require(season.toLongOrNull()?.let { it > 0L } == true) { "Mã mùa giải Ranked phải là số dương." }
+                                            require(season.toLongOrNull()?.let { it > 0L } == true) { "Mã mùa giải xếp hạng (Ranked) phải là số dương." }
                                             val encodedSeason = URLEncoder.encode(season, "UTF-8")
-                                            requests += LookupRequest("Nhóm Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/group")
-                                            requests += LookupRequest("Nhật ký trận Ranked của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/battlelog")
+                                            requests += LookupRequest("Nhóm xếp hạng của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/group")
+                                            requests += LookupRequest("Nhật ký trận xếp hạng của mùa $season", "/v2/player/$playerTag/ranked/$encodedSeason/battlelog")
                                         }
                                         if (day.isNotBlank()) {
                                             require(runCatching { LocalDate.parse(day) }.isSuccess) { "Ngày Legend không hợp lệ. Hãy dùng dạng YYYY-MM-DD." }
                                             val encodedDay = URLEncoder.encode(day, "UTF-8")
-                                            requests += LookupRequest("Nhật ký trận Legend ngày $day", "/v2/player/$playerTag/legend/$encodedDay/battlelog")
+                                            requests += LookupRequest("Nhật ký trận Huyền thoại ngày $day", "/v2/player/$playerTag/legend/$encodedDay/battlelog")
                                         }
                                         if (otherTag.isNotBlank()) {
                                             val encodedOtherTag = URLEncoder.encode(otherTag, "UTF-8")
@@ -1274,7 +1274,7 @@ fun ClashLookupScreen() {
                 }
             }
             Text(
-                "Dữ liệu công khai từ ClashKing API. Các API riêng tư yêu cầu tài khoản đã xác minh hoặc quyền bot (last-activity, member-activity, clan warlog) không được gọi ở chế độ công khai. Hoạt động và lịch sử chỉ phản ánh những gì API đã ghi nhận.",
+                "Dữ liệu công khai từ ClashKing API. Một số dữ liệu riêng tư cần tài khoản ClashKing đã xác minh hoặc quyền bot phù hợp nên không được gọi ở chế độ tra cứu công khai. Hoạt động và lịch sử chỉ phản ánh những gì API đã ghi nhận.",
                 color = LookupMuted,
                 fontSize = 9.sp,
                 lineHeight = 13.sp
@@ -1438,7 +1438,7 @@ fun ClashLookupScreen() {
                             lineHeight = 13.sp
                         )
                     } else {
-                        Text("Bảng xếp hạng clan theo chuỗi thắng hiện tại.", color = LookupMuted, fontSize = 9.sp)
+                        Text("Bảng xếp hạng bang hội theo chuỗi thắng hiện tại.", color = LookupMuted, fontSize = 9.sp)
                     }
                 }
 
@@ -1453,24 +1453,24 @@ fun ClashLookupScreen() {
                             "counts_cwl_leagues" to "GIẢI CWL",
                             "counts_capital_leagues" to "GIẢI THỦ PHỦ",
                             "counts_clan_members" to "SỐ THÀNH VIÊN",
-                            "stats_ranked" to "RANKED",
+                            "stats_ranked" to "XẾP HẠNG",
                             "stats_war" to "HỘI CHIẾN",
                             "stats_cwl" to "CWL",
                             "wars_hit_rates" to "TỶ LỆ SAO HỘI CHIẾN",
                             "wars_summary" to "TỔNG KẾT HỘI CHIẾN",
-                            "army_setups" to "ĐỘI HÌNH LEGEND",
+                            "army_setups" to "ĐỘI HÌNH HUYỀN THOẠI",
                             "army_setup_timeline" to "LỊCH SỬ ĐỘI HÌNH",
                             "army_setup_rank_history" to "HẠNG ĐỘI HÌNH",
-                            "legend_rank_curve" to "XẾP HẠNG LEGEND",
-                            "legend_trophy_buckets" to "PHÂN BỐ CÚP LEGEND",
+                            "legend_rank_curve" to "XẾP HẠNG HUYỀN THOẠI",
+                            "legend_trophy_buckets" to "PHÂN BỐ CÚP HUYỀN THOẠI",
                             "historical_leaderboard" to "BXH LỊCH SỬ",
                             "trophy_buckets" to "PHÂN BỐ CÚP",
-                            "legend_season" to "MÙA LEGEND",
-                            "ranked_group" to "NHÓM RANKED",
+                            "legend_season" to "MÙA HUYỀN THOẠI",
+                            "ranked_group" to "NHÓM XẾP HẠNG",
                             "league_tier_statistics" to "THỐNG KÊ HẠNG",
                             "league_hit_rates" to "TỶ LỆ SAO",
-                            "legend_days" to "LEGEND THEO NGÀY",
-                            "legend_performance" to "HIỆU SUẤT LEGEND"
+                            "legend_days" to "HUYỀN THOẠI THEO NGÀY",
+                            "legend_performance" to "HIỆU SUẤT HUYỀN THOẠI"
                         ).forEach { (key, label) ->
                             FilterChip(selected = analyticsCategory == key,
                                 onClick = {
@@ -1491,7 +1491,7 @@ fun ClashLookupScreen() {
                     when (analyticsCategory) {
                         "stats_ranked" -> {
                             LookupFilterField("Cấp Nhà chính", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "19")
-                            LookupFilterField("Mã bậc giải Ranked", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "105000036")
+                            LookupFilterField("Mã bậc giải xếp hạng", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "105000036")
                             LookupFilterField("Từ ngày (YYYY-MM-DD)", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             LookupFilterField("Đến ngày (YYYY-MM-DD)", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                         }
@@ -1545,7 +1545,7 @@ fun ClashLookupScreen() {
                                 FilterChip(selected = analyticsSort == "usage", onClick = { analyticsSort = "usage"; clearAnalyticsResult() }, label = { Text("PHỔ BIẾN", fontSize = 8.sp) })
                                 FilterChip(selected = analyticsSort == "tripleRate", onClick = { analyticsSort = "tripleRate"; clearAnalyticsResult() }, label = { Text("TỶ LỆ 3 SAO", fontSize = 8.sp) })
                             }
-                            Text("Dữ liệu đội hình hiện chỉ có cho Legend I. Giới hạn thứ hạng chỉ nhận 200 hoặc 1000; bỏ trống để xem toàn bộ.", color = LookupMuted, fontSize = 9.sp)
+                            Text("Dữ liệu đội hình hiện chỉ có cho Huyền thoại I. Giới hạn thứ hạng chỉ nhận 200 hoặc 1000; bỏ trống để xem toàn bộ.", color = LookupMuted, fontSize = 9.sp)
                         }
                         "legend_rank_curve" -> LookupFilterField("Ngày (YYYY-MM-DD)", analyticsDate, { analyticsDate = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                         "legend_trophy_buckets" -> LookupFilterField("Ngày lịch sử (để trống xem hiện tại)", analyticsDate, { analyticsDate = it; clearAnalyticsResult() }, "YYYY-MM-DD")
@@ -1564,12 +1564,12 @@ fun ClashLookupScreen() {
                         }
                         "trophy_buckets" -> LookupFilterField("Mã giải đấu", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "29000000")
                         "legend_season" -> {
-                            LookupFilterField("Mùa Legend (YYYY-MM)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "YYYY-MM")
+                            LookupFilterField("Mùa Huyền thoại (YYYY-MM)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "YYYY-MM")
                             LookupFilterField("Số kết quả tối đa", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "100")
                         }
                         "ranked_group" -> {
                             LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "Mã mùa giải")
-                            LookupFilterField("TAG nhóm Ranked", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "#ABC123")
+                            LookupFilterField("TAG nhóm xếp hạng", analyticsSecondary, { analyticsSecondary = it; clearAnalyticsResult() }, "#ABC123")
                         }
                         "league_tier_statistics" -> {
                             LookupFilterField("Mã mùa giải", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "Mã mùa giải")
@@ -1579,8 +1579,8 @@ fun ClashLookupScreen() {
                             LookupFilterField("Từ ngày", analyticsFrom, { analyticsFrom = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             LookupFilterField("Đến ngày", analyticsTo, { analyticsTo = it; clearAnalyticsResult() }, "YYYY-MM-DD")
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                FilterChip(selected = analyticsMode == "ranked", onClick = { analyticsMode = "ranked"; clearAnalyticsResult() }, label = { Text("RANKED", fontSize = 8.sp) })
-                                FilterChip(selected = analyticsMode == "legend", onClick = { analyticsMode = "legend"; clearAnalyticsResult() }, label = { Text("LEGEND", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsMode == "ranked", onClick = { analyticsMode = "ranked"; clearAnalyticsResult() }, label = { Text("XẾP HẠNG", fontSize = 8.sp) })
+                                FilterChip(selected = analyticsMode == "legend", onClick = { analyticsMode = "legend"; clearAnalyticsResult() }, label = { Text("HUYỀN THOẠI", fontSize = 8.sp) })
                             }
                             if (analyticsMode == "ranked") {
                                 LookupFilterField("Mã bậc giải (tùy chọn)", analyticsPrimary, { analyticsPrimary = it; clearAnalyticsResult() }, "105000036")
@@ -1700,7 +1700,7 @@ fun ClashLookupScreen() {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             Icon(Icons.Outlined.Security, contentDescription = null, tint = LookupMuted, modifier = Modifier.size(14.dp))
             Text(
-                "API công khai không cần API key hoặc mật khẩu Clash of Clans. Dữ liệu riêng tư cần xác thực ClashKing không được truy cập ở chế độ này.",
+                "API công khai không cần khóa API hoặc mật khẩu Clash of Clans. Dữ liệu riêng tư cần xác thực ClashKing không được truy cập ở chế độ này.",
                 fontSize = 9.sp,
                 lineHeight = 13.sp,
                 color = LookupMuted
