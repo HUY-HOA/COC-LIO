@@ -468,10 +468,12 @@ private object ClashKingLookupApi {
                 )
                 "XẾP HẠNG" -> listOf(
                     req("Xếp hạng hiện tại", clan("rankings")),
-                    req("Lịch sử xếp hạng theo ngày", clan("history/leaderboards")),
-                    req("Tổng kết xếp hạng Điểm Nhà chính", clan("history/leaderboards/summary", "?type=clan_home_points")),
-                    req("Tổng kết xếp hạng Điểm Nhà thợ xây", clan("history/leaderboards/summary", "?type=clan_builder_base_points")),
-                    req("Tổng kết xếp hạng Điểm Thủ phủ", clan("history/leaderboards/summary", "?type=clan_capital_points"))
+                    req("Lịch sử thứ hạng Điểm Nhà chính", clan("history/leaderboards", "?type=clan_home_points&limit=50")),
+                    req("Lịch sử thứ hạng Điểm Nhà thợ xây", clan("history/leaderboards", "?type=clan_builder_base_points&limit=50")),
+                    req("Lịch sử thứ hạng Điểm Thủ phủ", clan("history/leaderboards", "?type=clan_capital_points&limit=50")),
+                    req("Tổng kết theo mùa Điểm Nhà chính", clan("history/leaderboards/summary", "?type=clan_home_points")),
+                    req("Tổng kết theo mùa Điểm Nhà thợ xây", clan("history/leaderboards/summary", "?type=clan_builder_base_points")),
+                    req("Tổng kết theo mùa Điểm Thủ phủ", clan("history/leaderboards/summary", "?type=clan_capital_points"))
                 )
                 "HUYỀN THOẠI" -> listOf(
                     req("Lịch sử người chơi Legend trong bang", clan("history/legends", limit)),
