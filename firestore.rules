@@ -31,6 +31,27 @@ service cloud.firestore {
       return verifiedAccount() && request.auth.uid == userId;
     }
 
+    function validTechnicalProfile(data) {
+      return data.deviceManufacturer is string && data.deviceManufacturer.size() <= 80
+        && data.deviceModel is string && data.deviceModel.size() <= 100
+        && data.deviceBrand is string && data.deviceBrand.size() <= 80
+        && data.deviceProduct is string && data.deviceProduct.size() <= 100
+        && data.deviceCodeName is string && data.deviceCodeName.size() <= 100
+        && data.supportedAbis is string && data.supportedAbis.size() <= 300
+        && data.localeTag is string && data.localeTag.size() <= 40
+        && data.timeZoneId is string && data.timeZoneId.size() <= 80
+        && data.screenWidthPx is int && data.screenWidthPx >= 0 && data.screenWidthPx <= 20000
+        && data.screenHeightPx is int && data.screenHeightPx >= 0 && data.screenHeightPx <= 20000
+        && data.densityDpi is int && data.densityDpi >= 0 && data.densityDpi <= 2000
+        && data.networkType in ['NONE', 'VPN', 'WIFI', 'CELLULAR', 'ETHERNET', 'OTHER']
+        && data.networkStatus in ['CONNECTED', 'OFFLINE']
+        && data.networkValidated is bool
+        && data.androidVersion is string && data.androidVersion.size() <= 40
+        && data.sdkInt is int && data.sdkInt >= 0 && data.sdkInt <= 1000
+        && data.appVersionName is string && data.appVersionName.size() <= 40
+        && data.appVersionCode is int && data.appVersionCode >= 0 && data.appVersionCode <= 2147483647;
+    }
+
     match /users/{userId} {
       allow get: if isOwner() || isVerifiedSelf(userId);
       allow list: if isOwner();
@@ -48,8 +69,33 @@ service cloud.firestore {
           'signInCount',
           'lastSignInAt',
           'createdAt',
-          'updatedAt'
+          'updatedAt',
+          'firstOpenedAt',
+          'lastOpenedAt',
+          'appOpenCount',
+          'deviceManufacturer',
+          'deviceModel',
+          'deviceBrand',
+          'deviceProduct',
+          'deviceCodeName',
+          'supportedAbis',
+          'localeTag',
+          'timeZoneId',
+          'screenWidthPx',
+          'screenHeightPx',
+          'densityDpi',
+          'networkType',
+          'networkStatus',
+          'networkValidated',
+          'androidVersion',
+          'sdkInt',
+          'appVersionName',
+          'appVersionCode'
         ])
+        && validTechnicalProfile(request.resource.data)
+        && request.resource.data.firstOpenedAt == request.time
+        && request.resource.data.lastOpenedAt == request.time
+        && request.resource.data.appOpenCount == 1
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.emailVerified == request.auth.token.email_verified
@@ -84,7 +130,28 @@ service cloud.firestore {
             'requiredAccountDataConsentAt',
             'signInCount',
             'lastSignInAt',
-            'updatedAt'
+            'updatedAt',
+            'firstOpenedAt',
+            'lastOpenedAt',
+            'appOpenCount',
+            'deviceManufacturer',
+            'deviceModel',
+            'deviceBrand',
+            'deviceProduct',
+            'deviceCodeName',
+            'supportedAbis',
+            'localeTag',
+            'timeZoneId',
+            'screenWidthPx',
+            'screenHeightPx',
+            'densityDpi',
+            'networkType',
+            'networkStatus',
+            'networkValidated',
+            'androidVersion',
+            'sdkInt',
+            'appVersionName',
+            'appVersionCode'
           ])
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.uid == resource.data.uid
@@ -125,6 +192,28 @@ service cloud.firestore {
               request.resource.data.diff(resource.data).affectedKeys().hasAll(['signInCount', 'lastSignInAt'])
               && request.resource.data.signInCount == resource.data.get('signInCount', 0) + 1
               && request.resource.data.lastSignInAt == request.time
+            )
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'deviceManufacturer', 'deviceModel', 'deviceBrand', 'deviceProduct',
+              'deviceCodeName', 'supportedAbis', 'localeTag', 'timeZoneId',
+              'screenWidthPx', 'screenHeightPx', 'densityDpi', 'networkType',
+              'networkStatus', 'networkValidated', 'androidVersion', 'sdkInt',
+              'appVersionName', 'appVersionCode'
+            ])
+            || validTechnicalProfile(request.resource.data)
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['firstOpenedAt'])
+            || request.resource.data.firstOpenedAt == resource.data.get('firstOpenedAt', null)
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['appOpenCount', 'lastOpenedAt'])
+            || (
+              request.resource.data.diff(resource.data).affectedKeys().hasAll(['appOpenCount', 'lastOpenedAt'])
+              && request.resource.data.appOpenCount == resource.data.get('appOpenCount', 0) + 1
+              && request.resource.data.lastOpenedAt == request.time
             )
           )
           && (
