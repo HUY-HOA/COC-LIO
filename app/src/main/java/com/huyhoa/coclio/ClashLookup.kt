@@ -2647,14 +2647,18 @@ private fun JSONObject.lookupExplicitRank(): Long? {
     return null
 }
 
-private fun lookupJsonArrayDisplayOrder(values: JSONArray): List<Int> {
+private fun lookupJsonArrayDisplayOrder(key: String, values: JSONArray): List<Int> {
     val indices = (0 until values.length()).toList()
     if (indices.size < 2) return indices
+    val normalizedKey = key.lowercase().replace("_", "").replace("-", "")
+    val chronologicalKeys = listOf("history", "timeline", "series", "battle", "activity", "event", "change", "joinleave", "season", "daily", "day", "war")
+    if (chronologicalKeys.any(normalizedKey::contains)) return indices
+
     val ranked = indices.mapNotNull { index ->
         values.optJSONObject(index)?.lookupExplicitRank()?.let { index to it }
     }
-    // Sort only when every row explicitly supplies a rank. Other lists keep the API order:
-    // history, activity timelines and seasonal series often have meaningful chronology.
+    // Only rank-oriented lists with explicit rank fields are sorted. History, activity,
+    // battle logs and time series retain the API's chronological order.
     return if (ranked.size == indices.size) {
         ranked.sortedWith(compareBy<Pair<Int, Long>> { it.second }.thenBy { it.first }).map { it.first }
     } else indices
@@ -2769,7 +2773,7 @@ private fun LookupJsonArray(
     catalog: Map<Int, SupplementalCatalogEntry>
 ) {
     var visibleCount by remember(values) { mutableIntStateOf(20) }
-    val displayIndices = remember(values, key) { lookupJsonArrayDisplayOrder(values) }
+    val displayIndices = remember(values, key) { lookupJsonArrayDisplayOrder(key, values) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             LookupGameFieldIcon(key, modifier = Modifier.size(18.dp))
@@ -2799,8 +2803,8 @@ private fun LookupJsonArray(
                                 val tag = value.lookupText("tag").ifBlank { value.lookupText("playerTag") }.ifBlank { value.lookupText("clanTag") }
                                 val rank = value.lookupText("rank").ifBlank { value.lookupText("globalRank") }.ifBlank { value.lookupText("groupRank") }
                                 val secondary = when {
-                                    rank.isNotBlank() -> "Hạng #$rank"
-                                    tag.isNotBlank() && !objectName.equals("TAG $tag", ignoreCase = true) -> "TAG $tag"
+                                    rank.isNotBlank() && !objectName.contains("Hạng #$rank", ignoreCase = true) -> "Hạng #$rank"
+                                    tag.isNotBlank() && !objectName.contains(tag, ignoreCase = true) -> "TAG $tag"
                                     else -> "Vị trí ${position + 1}"
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
