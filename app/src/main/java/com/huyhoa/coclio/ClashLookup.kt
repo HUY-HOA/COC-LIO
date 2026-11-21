@@ -641,7 +641,13 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
         clanName = clan?.lookupText("name").orEmpty(),
         league = league?.lookupText("name").orEmpty(),
         trophies = number("trophies", "leagueTrophies"),
-        members = number("memberCount", "members"),
+        members = number("memberCount").ifBlank {
+            when (val memberValue = json.opt("members")) {
+                is JSONArray -> memberValue.length().takeIf { it > 0 }?.toString().orEmpty()
+                is JSONObject -> memberValue.length().takeIf { it > 0 }?.toString().orEmpty()
+                else -> number("members")
+            }
+        },
         level = number("clanLevel", "level"),
         rank = number("rank", "globalRank", "groupRank"),
         streak = number("war_win_streak", "warWinStreak", "streak"),
@@ -1904,8 +1910,10 @@ fun ClashLookupScreen() {
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (searchMode == "player") "ID hoặc tên người chơi" else "ID hoặc tên bang hội") },
-                    placeholder = { Text("Nhập ID hoặc tên") },
+                    label = { Text(if (searchMode == "player") "TAG/ID hoặc tên người chơi" else "TAG/ID hoặc tên bang hội") },
+                    placeholder = {
+                        Text(if (searchMode == "player") "Ví dụ: #ABC123 hoặc tên người chơi" else "Ví dụ: #ABC123 hoặc tên bang hội")
+                    },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = LookupCyan) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = LookupCyan,
@@ -2589,6 +2597,12 @@ private fun LookupResultCard(
             }
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    if (entry.isClan) "BANG HỘI" else "NGƯỜI CHƠI",
+                    fontSize = 8.sp,
+                    color = if (entry.isClan) LookupGold else LookupCyan,
+                    fontWeight = FontWeight.Black
+                )
                 Text(entry.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(entry.tag.ifBlank { "Chưa có TAG" }, fontSize = 10.sp, color = LookupCyan, fontWeight = FontWeight.Bold)
                 val subtitle = if (entry.isClan) {
