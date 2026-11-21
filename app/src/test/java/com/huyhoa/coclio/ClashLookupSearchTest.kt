@@ -1,5 +1,6 @@
 package com.huyhoa.coclio
 
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -34,4 +35,42 @@ class ClashLookupSearchTest {
         assertTrue(candidates.contains("Royal"))
         assertTrue(candidates.contains("Clan"))
     }
+    @Test
+    fun playerUsesLeagueBadgeButNeverClanCrest() {
+        val player = JSONObject(
+            """{
+                "name":"Player",
+                "tag":"#P2Q8Y",
+                "badge_url":"https://example.com/clan-crest.png",
+                "leagueTier":{"name":"Champion","iconUrls":{"medium":"https://example.com/league.png"}}
+            }"""
+        )
+
+        val entry = lookupEntry(player, isClan = false)
+
+        assertEquals("", entry.badgeUrl)
+        assertEquals("https://example.com/league.png", entry.leagueIconUrl)
+    }
+
+    @Test
+    fun clanUsesClanCrestAndNeverLeagueBadge() {
+        val clan = JSONObject(
+            """{
+                "name":"Clan",
+                "tag":"#P2Q8Y",
+                "badge_url":"https://example.com/clan-crest.png",
+                "leagueTier":{"name":"Champion","iconUrls":{"medium":"https://example.com/league.png"}},
+                "memberCount":25,
+                "clanLevel":18
+            }"""
+        )
+
+        val entry = lookupEntry(clan, isClan = true)
+
+        assertEquals("https://example.com/clan-crest.png", entry.badgeUrl)
+        assertEquals("", entry.leagueIconUrl)
+        assertEquals("25", entry.members)
+        assertEquals("18", entry.level)
+    }
+
 }
