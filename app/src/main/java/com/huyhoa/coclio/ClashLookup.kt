@@ -1017,7 +1017,8 @@ internal fun lookupGameIconResource(key: String): Int? {
         "walllevel" -> R.drawable.ic_coc_wall
         "rank", "globalrank", "localrank", "grouprank", "trophies", "leaguetrophies",
         "builderbasetrophies", "buildertrophies", "stars", "attacktrophies", "defensetrophies" -> R.drawable.ic_coc_star
-        "clanlevel", "clan", "clancapital" -> R.drawable.ic_coc_clan
+        "clanlevel" -> R.drawable.ic_coc_level
+        "clan", "clancapital" -> R.drawable.ic_coc_clan
         "membercount", "members" -> R.drawable.ic_coc_members
         "leaguetier", "league", "warleague", "capitalleague", "cwlleagueid", "leaguetierid", "leaguegroupid" -> R.drawable.ic_coc_star
         "warwins", "warlosses", "warties", "warwinstreak", "attackwins", "defensewins",
@@ -1131,7 +1132,7 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
         value.takeIf(String::isNotBlank)?.let { LookupMiniStat(label, formatLookupCount(it), icon, image) }
     return if (entry.isClan) {
         listOfNotNull(
-            stat("CẤP BANG", entry.level, R.drawable.ic_coc_clan),
+            stat("CẤP BANG", entry.level, R.drawable.ic_coc_level),
             stat("THÀNH VIÊN", entry.members, R.drawable.ic_coc_members),
             stat("XẾP HẠNG", entry.rank, R.drawable.ic_coc_star),
             stat("CHUỖI THẮNG", entry.streak, R.drawable.ic_coc_swords)
