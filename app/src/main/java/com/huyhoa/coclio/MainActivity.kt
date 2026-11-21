@@ -4083,7 +4083,7 @@ private fun ItemRarityBadge(rarity: String) {
         "rare" -> "HIẾM"
         "epic" -> "SỬ THI"
         "legendary" -> "HUYỀN THOẠI"
-        else -> rarity.uppercase()
+        else -> "KHÁC"
     }
     Text(
         label,
@@ -4653,7 +4653,7 @@ private fun VillageItemDetailDialog(
                     }
                 }
                 supplemental?.upgradeCost?.takeIf { it.isNotBlank() }?.let {
-                    VillageItemDetailField("Chi phí nâng cấp", it)
+                    VillageItemDetailField("Chi phí nâng cấp", localizedCatalogText(it))
                 }
                 supplemental?.upgradeDurationSeconds?.let {
                     VillageItemDetailField("Thời gian nâng cấp", formatDuration(it))
@@ -4667,10 +4667,8 @@ private fun VillageItemDetailDialog(
                 if (item.properties.isNotEmpty()) {
                     Text("CHỈ SỐ VÀ THUỘC TÍNH", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Black)
                     item.properties.forEach { (key, value) ->
-                        VillageItemDetailField(
-                            key.replace('_', ' ').replaceFirstChar { it.uppercase() },
-                            value
-                        )
+                        val (label, translatedValue) = localizedCatalogField(key, value)
+                        VillageItemDetailField(label, translatedValue)
                     }
                 }
                 if (supplemental == null && description == null && item.details.isEmpty() && item.properties.isEmpty() &&
