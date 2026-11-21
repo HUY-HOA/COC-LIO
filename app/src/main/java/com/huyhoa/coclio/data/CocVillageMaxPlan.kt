@@ -34,8 +34,8 @@ data class CocVillageMaxPlanSummary(
 )
 
 /**
- * Calculates a village-wide "current level -> game MAX" plan from a ClashKing
- * village export and the bundled game catalog.
+ * Calculates a village-wide "current level -> game MAX" plan from a
+ * Clash of Clans village export and the bundled game catalog.
  *
  * Building/trap/wall counts represent multiple identical structures and are
  * multiplied. Troop counts represent troop quantity, not separate research
