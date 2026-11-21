@@ -1084,7 +1084,7 @@ class UpgradeReminderWorker(
             "${AppText.translate(applicationContext, "Dự kiến")}: $levelText",
             AppText.translate(
                 applicationContext,
-                "Bộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong game."
+                "Bộ đếm JSON đã hết giờ; hãy nhập JSON mới để xác nhận cấp độ trong trò chơi."
             )
         ).joinToString("\n")
 
