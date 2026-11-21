@@ -36,6 +36,29 @@ class ClashLookupSearchTest {
         assertTrue(candidates.contains("Clan"))
     }
     @Test
+    fun decoratedVietnamesePlayerNameMatchesEveryMeaningfulWord() {
+        val query = "HUY⭐⭐⭐HÒA"
+        val candidates = lookupSearchCandidates(query)
+
+        assertTrue(candidates.contains("HUY HOA"))
+        assertTrue(candidates.contains("HUYHOA"))
+        assertEquals("huy hoa", lookupSearchNameKey(query))
+        assertEquals(1000, lookupSearchMatchScore("HUY⭐⭐⭐HÒA", query))
+        assertTrue(lookupSearchMatchScore("HUY HÒA COC", query) > 0)
+        assertEquals(0, lookupSearchMatchScore("HUY GAMER", query))
+        assertEquals(0, lookupSearchMatchScore("HÒA GAMER", query))
+    }
+
+    @Test
+    fun exactNameSearchResultsAreRankedAheadOfPartialMatches() {
+        val exact = lookupEntry(JSONObject("""{"name":"HUY⭐⭐⭐HÒA","tag":"#P2Q8Y"}"""), false)
+        val unrelated = lookupEntry(JSONObject("""{"name":"HUY GAMER","tag":"#P2Q8Y"}"""), false)
+        val matching = rankLookupSearchEntries(listOf(unrelated, exact), "HUY⭐⭐⭐HÒA")
+
+        assertEquals(listOf(exact), matching)
+    }
+
+    @Test
     fun playerUsesLeagueBadgeButNeverClanCrest() {
         val player = JSONObject(
             """{
@@ -114,6 +137,9 @@ class ClashLookupSearchTest {
     fun statIconsUseTheCorrectSemanticAsset() {
         assertEquals(R.drawable.ic_coc_members, lookupGameIconResource("memberCount"))
         assertEquals(R.drawable.ic_coc_player, lookupGameIconResource("expLevel"))
+        assertEquals(R.drawable.ic_coc_level, lookupGameIconResource("level"))
+        assertEquals(R.drawable.ic_coc_hero, lookupGameIconResource("heroLevel"))
+        assertEquals(R.drawable.ic_coc_spell, lookupGameIconResource("spellLevel"))
         assertEquals(R.drawable.ic_coc_swords, lookupGameIconResource("troops"))
         assertEquals(R.drawable.ic_coc_defense, lookupGameIconResource("defenses"))
         assertEquals(R.drawable.ic_coc_ore_glowy, lookupGameIconResource("glowyOre"))
@@ -135,6 +161,7 @@ class ClashLookupSearchTest {
         assertEquals("245", entry.playerLevel)
         assertEquals("Clan", entry.clanName)
         assertEquals("", entry.badgeUrl)
+        assertEquals("https://example.com/crest.png", entry.clanBadgeUrl)
     }
 
     @Test
