@@ -201,6 +201,13 @@ private data class AppNavigationItem(
     val page: Int
 )
 
+internal fun previousCocLioNavigationState(selectedTab: Int, jsonSection: Int): Pair<Int, Int>? =
+    when {
+        selectedTab != 2 -> 2 to jsonSection
+        jsonSection != 0 -> 2 to 0
+        else -> null
+    }
+
 val LocalLedTheme = staticCompositionLocalOf {
     LedThemeState(DefaultLedPalette, true, 3000, 1f, false, mutableStateOf(0f))
 }
@@ -759,11 +766,11 @@ private fun CocLioApp(
         }
     }
     var showImportDialog by remember { mutableStateOf(false) }
-    BackHandler(enabled = isGoogleSignedIn && !showImportDialog && (selectedTab != 2 || jsonSection != 0)) {
-        if (selectedTab != 2) {
-            selectedTab = 2
-        } else {
-            jsonSection = 0
+    val backDestination = previousCocLioNavigationState(selectedTab, jsonSection)
+    BackHandler(enabled = isGoogleSignedIn && !showImportDialog && backDestination != null) {
+        backDestination?.let { (tab, section) ->
+            selectedTab = tab
+            jsonSection = section
         }
     }
     var importError by remember { mutableStateOf<String?>(null) }
