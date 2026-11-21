@@ -948,7 +948,7 @@ private fun lookupBuildingImageUrl(key: String, level: String): String {
     }
 }
 
-private fun lookupGameIconResource(key: String): Int? {
+internal fun lookupGameIconResource(key: String): Int? {
     val normalized = key.lowercase().replace(Regex("[_\\s-]"), "")
     return when (normalized) {
         "townhalllevel", "townhall" -> R.drawable.ic_coc_buildings
@@ -959,7 +959,8 @@ private fun lookupGameIconResource(key: String): Int? {
         "membercount", "members" -> R.drawable.ic_coc_members
         "leaguetier", "league", "warleague", "capitalleague", "cwlleagueid", "leaguetierid", "leaguegroupid" -> R.drawable.ic_coc_star
         "warwins", "warlosses", "warties", "warwinstreak", "attackwins", "defensewins",
-        "attacktriples", "defensetriples", "attacks", "wins", "losses", "ties", "destructionpercentage" -> R.drawable.ic_coc_swords
+        "attacktriples", "defensetriples", "attacks", "wins", "losses", "ties" -> R.drawable.ic_coc_swords
+        "destructionpercentage", "triplerate", "perfectdayrate", "share" -> R.drawable.ic_coc_percent
         "donated", "received", "troopsdonated", "troopsreceived", "troops", "supertroops", "siege", "siegemachines" -> R.drawable.ic_coc_guardian
         "capitalgoldtotal", "capitalgold", "capitalpoints" -> R.drawable.ic_coc_capital_gold
         "gold", "goldloot", "goldstorage", "goldmine" -> R.drawable.ic_coc_gold
@@ -1035,7 +1036,7 @@ internal fun lookupDisplayValue(key: String, value: Any?): String {
         "id", "dataid", "unitid", "troopid", "heroid", "spellid", "petid",
         "equipmentid", "buildingid", "itemid", "seasonid", "leaguetierid",
         "leaguegroupid", "cwlleagueid", "leagueid", "locationid", "warid",
-        "timestamp", "battletime", "tag", "playertag", "clantag", "warTag".lowercase()
+        "timestamp", "battletime", "tag", "playertag", "clantag", "wartag"
     )
     if (normalized !in identifierKeys) raw.toLongOrNull()?.let { return formatLookupCount(raw) }
     return raw
@@ -1834,7 +1835,14 @@ fun ClashLookupScreen() {
                     Spacer(Modifier.width(13.dp))
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(entry.name, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text(entry.tag.ifBlank { "Chưa có TAG" }, fontSize = 12.sp, color = LookupCyan, fontWeight = FontWeight.Bold)
+                        Text(
+                            "${if (entry.isClan) "TAG BANG HỘI" else "TAG NGƯỜI CHƠI"} · ${entry.tag.ifBlank { "Chưa có TAG" }}",
+                            fontSize = 10.sp,
+                            color = LookupCyan,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text(
                             if (entry.isClan) "HỒ SƠ BANG HỘI" else "HỒ SƠ NGƯỜI CHƠI",
                             fontSize = 9.sp,
@@ -2740,34 +2748,7 @@ private fun LookupResultCard(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier.size(44.dp).clip(RoundedCornerShape(11.dp))
-                    .background(LookupCyan.copy(alpha = 0.10f)),
-                contentAlignment = Alignment.Center
-            ) {
-                when {
-                    entry.isClan && entry.badgeUrl.isNotBlank() -> {
-                        AsyncImage(
-                            model = entry.badgeUrl,
-                            contentDescription = "Huy hiệu bang hội",
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                    !entry.isClan -> {
-                        val townHallArt = lookupBuildingImageUrl("townHallLevel", entry.townHall)
-                        if (townHallArt.isNotBlank()) {
-                            AsyncImage(
-                                model = townHallArt,
-                                contentDescription = "Nhà chính cấp ${entry.townHall}",
-                                modifier = Modifier.size(40.dp)
-                            )
-                        } else {
-                            Icon(Icons.Outlined.Person, contentDescription = "Người chơi", tint = LookupCyan, modifier = Modifier.size(27.dp))
-                        }
-                    }
-                    else -> CocGameIcon(R.drawable.ic_coc_clan, Modifier.size(32.dp), "Bang hội")
-                }
-            }
+            LookupEntityAvatar(entry, 44.dp)
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
@@ -2777,7 +2758,14 @@ private fun LookupResultCard(
                     fontWeight = FontWeight.Black
                 )
                 Text(entry.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(entry.tag.ifBlank { "Chưa có TAG" }, fontSize = 10.sp, color = LookupCyan, fontWeight = FontWeight.Bold)
+                Text(
+                    "${if (entry.isClan) "TAG BANG HỘI" else "TAG NGƯỜI CHƠI"} · ${entry.tag.ifBlank { "Chưa có TAG" }}",
+                    fontSize = 9.sp,
+                    color = LookupCyan,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 val subtitle = if (entry.isClan) {
                     listOfNotNull(
                         entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #${formatLookupCount(it)}" },
