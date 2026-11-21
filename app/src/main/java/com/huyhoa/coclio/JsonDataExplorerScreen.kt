@@ -389,7 +389,7 @@ private fun JsonExplorerItemCard(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 JsonExplorerTag("cnt: ${item.countLabel()}")
-                if (item.isUpgradeRunning) JsonExplorerTag(if (item.gearUp) "ĐANG GEAR UP" else "ĐANG NÂNG")
+                if (item.isRunning) JsonExplorerTag(if (item.gearUp) "ĐANG GEAR UP" else "ĐANG NÂNG")
                 if (item.properties.isNotEmpty()) JsonExplorerTag("${item.properties.size} trường thêm")
             }
             if (expanded) {
