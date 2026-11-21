@@ -615,71 +615,65 @@ private fun JSONObject.lookupText(key: String): String {
 }
 
 internal fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
-    val clan = json.optJSONObject("clan")
-    val league = json.optJSONObject("leagueTier") ?: json.optJSONObject("league")
-    val badgeUrls = json.optJSONObject("badgeUrls") ?: clan?.optJSONObject("badgeUrls")
-    val badge = json.lookupText("badge")
+    // ClashKing may wrap a result in { player: {...} } or { clan: {...} }.
+    // Always unwrap the entity selected by the search mode.
+    val entity = json.optJSONObject(if (isClan) "clan" else "player") ?: json
+    val clan = entity.optJSONObject("clan")
+    val league = entity.optJSONObject("leagueTier") ?: entity.optJSONObject("league")
+    val badgeUrls = entity.optJSONObject("badgeUrls") ?: clan?.optJSONObject("badgeUrls")
+    val badge = entity.lookupText("badge")
         .ifBlank { clan?.lookupText("badge").orEmpty() }
         .ifBlank { badgeUrls?.lookupText("medium").orEmpty() }
         .ifBlank { badgeUrls?.lookupText("large").orEmpty() }
 
     fun number(vararg keys: String): String {
         for (key in keys) {
-            val value = json.lookupText(key)
+            val value = entity.lookupText(key)
             if (value.isNotBlank() && value != "-1") return value
         }
         return ""
     }
 
+    val tag = entity.lookupText("tag").ifBlank { entity.lookupText(if (isClan) "clanTag" else "playerTag") }
     return ClashLookupEntry(
-        name = json.lookupText("name").ifBlank {
-            if (isClan) {
-                val clanTag = json.lookupText("clanTag").ifBlank { json.lookupText("tag") }
-                clanTag.takeIf { it.isNotBlank() }?.let { "Bang hội $it" } ?: "Bang hội chưa rõ tên"
-            } else "Người chơi chưa rõ tên"
+        name = entity.lookupText("name").ifBlank {
+            if (isClan) tag.takeIf { it.isNotBlank() }?.let { "Bang hội $it" } ?: "Bang hội chưa rõ tên"
+            else "Người chơi chưa rõ tên"
         },
-        tag = json.lookupText("tag").ifBlank { json.lookupText("playerTag").ifBlank { json.lookupText("clanTag") } },
+        tag = tag,
         isClan = isClan,
-        townHall = number("townHallLevel", "townhallLevel", "townhall_level"),
-        builderHall = number("builderHallLevel", "builderHall"),
+        townHall = if (isClan) "" else number("townHallLevel", "townhallLevel", "townhall_level"),
+        builderHall = if (isClan) "" else number("builderHallLevel", "builderHall"),
         playerLevel = if (isClan) "" else number("expLevel", "experienceLevel", "playerLevel"),
-        builderTrophies = number("builderBaseTrophies", "builderTrophies"),
-        clanName = clan?.lookupText("name").orEmpty(),
-        league = league?.lookupText("name").orEmpty(),
-        trophies = number("trophies", "leagueTrophies"),
-        members = number("memberCount").ifBlank {
-            when (val memberValue = json.opt("members")) {
+        builderTrophies = if (isClan) "" else number("builderBaseTrophies", "builderTrophies"),
+        clanName = if (isClan) "" else clan?.lookupText("name").orEmpty(),
+        league = if (isClan) "" else league?.lookupText("name").orEmpty(),
+        trophies = if (isClan) "" else number("trophies", "leagueTrophies"),
+        members = if (isClan) number("memberCount").ifBlank {
+            when (val memberValue = entity.opt("members")) {
                 is JSONArray -> memberValue.length().takeIf { it > 0 }?.toString().orEmpty()
-                is JSONObject -> memberValue.lookupText("count")
-                    .ifBlank { memberValue.lookupText("total") }
+                is JSONObject -> memberValue.lookupText("count").ifBlank { memberValue.lookupText("total") }
                     .ifBlank { memberValue.lookupText("memberCount") }
-                    .ifBlank {
-                        memberValue.optJSONArray("items")?.length()?.takeIf { it > 0 }?.toString().orEmpty()
-                    }
+                    .ifBlank { memberValue.optJSONArray("items")?.length()?.takeIf { it > 0 }?.toString().orEmpty() }
                 else -> number("members")
             }
-        },
-        level = number("clanLevel", "level"),
+        } else "",
+        level = if (isClan) number("clanLevel", "level") else "",
         rank = number("rank", "globalRank", "groupRank"),
-        // ClashKing war-win streak is a clan statistic, not a player's three-star streak.
         streak = if (isClan) number("war_win_streak", "warWinStreak", "streak") else "",
         metric = number("donations", "war_wins", "capital_gold_total", "stars"),
         metricLabel = when {
-            json.has("donations") -> "Quyên góp"
-            json.has("war_wins") -> "Thắng hội chiến"
-            json.has("capital_gold_total") -> "Vàng Thủ phủ"
-            json.has("stars") -> "Sao CWL"
+            entity.has("donations") -> "Quyên góp"
+            entity.has("war_wins") -> "Thắng hội chiến"
+            entity.has("capital_gold_total") -> "Vàng Thủ phủ"
+            entity.has("stars") -> "Sao CWL"
             else -> ""
         },
-        badgeUrl = if (isClan) {
-            json.lookupText("badge_url").ifBlank { badge }
-        } else "",
-        leagueIconUrl = if (!isClan) {
-            league?.optJSONObject("iconUrls")?.let { icons ->
-                icons.lookupText("medium").ifBlank { icons.lookupText("large") }.ifBlank { icons.lookupText("small") }
-            }.orEmpty()
-        } else "",
-        raw = json
+        badgeUrl = if (isClan) entity.lookupText("badge_url").ifBlank { badge } else "",
+        leagueIconUrl = if (!isClan) league?.optJSONObject("iconUrls")?.let { icons ->
+            icons.lookupText("medium").ifBlank { icons.lookupText("large") }.ifBlank { icons.lookupText("small") }
+        }.orEmpty() else "",
+        raw = entity
     )
 }
 
@@ -1081,8 +1075,8 @@ private fun LookupEntityAvatar(entry: ClashLookupEntry, size: Dp) {
     Box(
         modifier = Modifier
             .size(size)
-            .clip(RoundedCornerShape(14.dp))
-            .background(LookupCyan.copy(alpha = 0.12f)),
+            .clip(if (entry.isClan) RoundedCornerShape(14.dp) else androidx.compose.foundation.shape.CircleShape)
+            .background((if (entry.isClan) LookupGold else LookupCyan).copy(alpha = 0.12f)),
         contentAlignment = Alignment.Center
     ) {
         when {
@@ -1092,13 +1086,8 @@ private fun LookupEntityAvatar(entry: ClashLookupEntry, size: Dp) {
                 modifier = Modifier.fillMaxSize().padding(4.dp),
                 contentScale = ContentScale.Fit
             )
-            entry.isClan -> CocGameIcon(R.drawable.ic_coc_clan, Modifier.size(size * 0.6f), "Bang hội")
-            else -> Icon(
-                Icons.Outlined.Person,
-                contentDescription = "Người chơi",
-                tint = LookupCyan,
-                modifier = Modifier.size(size * 0.52f)
-            )
+            entry.isClan -> CocGameIcon(R.drawable.ic_coc_clan, Modifier.size(size * 0.58f), "Bang hội")
+            else -> CocGameIcon(R.drawable.ic_coc_player, Modifier.size(size * 0.62f), "Người chơi")
         }
     }
 }
@@ -2010,7 +1999,8 @@ fun ClashLookupScreen() {
                 modifier = Modifier.fillMaxWidth().padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
-                Text("CHỌN ĐỐI TƯỢNG TRA CỨU", color = LookupGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                Text("CHỌN ĐỐI TƯỢNG TRA CỨU", color = LookupGold, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                Text("Chọn đúng loại trước khi tìm. Kết quả Người chơi chỉ hiển thị hồ sơ game thủ; kết quả Bang hội chỉ hiển thị huy hiệu clan.", color = LookupMuted, fontSize = 9.sp, lineHeight = 13.sp)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
