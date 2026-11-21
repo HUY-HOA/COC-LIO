@@ -38,5 +38,23 @@ internal fun CocResourceIcon(
         "gold or elixir", "builder gold or builder elixir" -> R.drawable.ic_coc_resource
         else -> R.drawable.ic_coc_resource
     }
-    CocGameIcon(iconRes, modifier, resource)
+    val localizedDescription = when (resource.trim().lowercase(Locale.ROOT)) {
+        "gold" -> "Vàng"
+        "builder gold" -> "Vàng thợ xây"
+        "elixir" -> "Tinh chất"
+        "builder elixir" -> "Tinh chất thợ xây"
+        "dark elixir" -> "Dầu đen"
+        "capital gold" -> "Vàng thủ đô"
+        "shiny ore", "quặng sáng" -> "Quặng sáng"
+        "glowy ore", "quặng phát sáng" -> "Quặng phát sáng"
+        "starry ore", "quặng sao" -> "Quặng sao"
+        "gold or elixir" -> "Vàng hoặc Tinh chất"
+        "builder gold or builder elixir" -> "Vàng thợ xây hoặc Tinh chất thợ xây"
+        else -> if (resource.any { it in "ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ" }) {
+            resource
+        } else {
+            "Tài nguyên"
+        }
+    }
+    CocGameIcon(iconRes, modifier, localizedDescription)
 }
