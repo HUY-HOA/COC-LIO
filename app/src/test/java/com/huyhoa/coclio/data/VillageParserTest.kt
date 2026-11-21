@@ -330,4 +330,56 @@ class VillageParserTest {
         assertEquals("Phong cảnh #99999998", CocNames.name(99999998, "sceneries"))
     }
 
+    @Test
+    fun retainsAllSupportedJsonGroupsAndUnknownFieldsForFullExplorer() {
+        val snapshot = VillageParser.parse(
+            """{
+                "tag":"#ALL_GROUPS",
+                "timestamp":1794320000,
+                "buildings":[{"data":1000001,"lvl":17}],
+                "traps":[{"data":12000000,"lvl":5}],
+                "units":[{"data":4000000,"lvl":10}],
+                "siege_machines":[{"data":4000075,"lvl":4}],
+                "heroes":[{"data":28000000,"lvl":90}],
+                "spells":[{"data":26000000,"lvl":9}],
+                "pets":[{"data":73000000,"lvl":10}],
+                "guardians":[{"data":107000000,"lvl":2}],
+                "equipment":[{"data":90000000,"lvl":18}],
+                "squads":[{"data":4000195,"lvl":2}],
+                "helpers":[{"data":93000000,"lvl":2}],
+                "buildings2":[{"data":1000034,"lvl":10}],
+                "traps2":[{"data":12000010,"lvl":5}],
+                "units2":[{"data":4000001,"lvl":18}],
+                "heroes2":[{"data":28000003,"lvl":35}],
+                "decos":[{"data":54000001}],
+                "obstacles":[{"data":50000001}],
+                "house_parts":[{"data":55000001}],
+                "skins":[{"data":52000001}],
+                "sceneries":[{"data":51000001}],
+                "decos2":[{"data":54000002}],
+                "obstacles2":[{"data":50000002}],
+                "skins2":[{"data":52000002}],
+                "sceneries2":[{"data":51000002}],
+                "boosts":{"lab_boost":1800},
+                "future_group":{"nested":[1,2,3]}
+            }""".trimIndent()
+        )
+
+        val expectedItemGroups = setOf(
+            "buildings", "traps", "units", "siege_machines", "heroes",
+            "spells", "pets", "guardians", "equipment", "squads", "helpers",
+            "buildings2", "traps2", "units2", "heroes2"
+        )
+        assertEquals(expectedItemGroups, snapshot.items.map { it.sectionKey }.toSet())
+        assertTrue(snapshot.extraItems.map { it.sectionKey }.containsAll(
+            setOf(
+                "decos", "obstacles", "house_parts", "skins", "sceneries",
+                "decos2", "obstacles2", "skins2", "sceneries2", "boosts"
+            )
+        ))
+        assertTrue(snapshot.extraFields["future_group"]?.contains("\"nested\"") == true)
+        assertEquals(17, snapshot.items.single { it.sectionKey == "buildings" }.level)
+    }
+
+
 }
