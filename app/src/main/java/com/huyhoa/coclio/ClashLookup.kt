@@ -1880,9 +1880,11 @@ fun ClashLookupScreen() {
                             } ?: 0
                             val cursorQuality = candidateScore * 100 + relevantEntries.size
                             val pagination = response.optJSONObject("pagination")
-                            val candidateCursor = pagination?.lookupText("nextCursor")
-                                ?.ifBlank { pagination.lookupText("next_cursor") }
-                                ?.takeIf { it.isNotBlank() }
+                            val candidateCursor = pagination?.let { page ->
+                                page.lookupText("nextCursor")
+                                    .ifBlank { page.lookupText("next_cursor") }
+                                    .takeIf { it.isNotBlank() }
+                            }
                             if (candidateCursor != null && cursorQuality > bestCursorQuality) {
                                 bestCursorQuality = cursorQuality
                                 foundCursor = candidateCursor
