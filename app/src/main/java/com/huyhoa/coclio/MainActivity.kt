@@ -751,7 +751,7 @@ private fun CocLioApp(
     var jsonSection by rememberSaveable { mutableStateOf(0) }
     val navigationItems = listOf(
         AppNavigationItem("history", "JSON", 2),
-        AppNavigationItem("lookup", "TRA CỨU", 3),
+        AppNavigationItem("lookup", "ID TÊN", 3),
         AppNavigationItem("settings", "Cài đặt", 4)
     )
     LaunchedEffect(navigationItems, selectedTab) {
