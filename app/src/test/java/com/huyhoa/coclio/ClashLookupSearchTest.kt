@@ -118,4 +118,37 @@ class ClashLookupSearchTest {
         assertEquals(R.drawable.ic_coc_percent, lookupGameIconResource("destructionPercentage"))
     }
 
+    @Test
+    fun wrappedPlayerResultStaysPlayerAndNeverUsesClanCrest() {
+        val wrapped = JSONObject(
+            """{"player":{"name":"Player","tag":"#P2Q8Y","townHallLevel":18,"expLevel":245,"badge_url":"https://example.com/clan.png","clan":{"name":"Clan","badge":"https://example.com/crest.png"}}}"""
+        )
+
+        val entry = lookupEntry(wrapped, isClan = false)
+
+        assertEquals("Player", entry.name)
+        assertEquals("#P2Q8Y", entry.tag)
+        assertEquals(false, entry.isClan)
+        assertEquals("18", entry.townHall)
+        assertEquals("245", entry.playerLevel)
+        assertEquals("Clan", entry.clanName)
+        assertEquals("", entry.badgeUrl)
+    }
+
+    @Test
+    fun wrappedClanResultStaysClanAndDoesNotShowPlayerStats() {
+        val wrapped = JSONObject(
+            """{"clan":{"name":"Clan","tag":"#P2Q8Y","clanLevel":20,"memberCount":48,"badge_url":"https://example.com/crest.png","townHallLevel":18}}"""
+        )
+
+        val entry = lookupEntry(wrapped, isClan = true)
+
+        assertEquals("Clan", entry.name)
+        assertEquals(true, entry.isClan)
+        assertEquals("20", entry.level)
+        assertEquals("48", entry.members)
+        assertEquals("", entry.townHall)
+        assertEquals("https://example.com/crest.png", entry.badgeUrl)
+    }
+
 }
