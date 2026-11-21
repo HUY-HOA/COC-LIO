@@ -42,6 +42,8 @@ class ClashLookupSearchTest {
 
         assertTrue(candidates.contains("HUY HOA"))
         assertTrue(candidates.contains("HUYHOA"))
+        assertTrue(candidates.contains("HOA"))
+        assertTrue(!candidates.contains("HUY HO A"))
         assertEquals("huy hoa", lookupSearchNameKey(query))
         assertEquals(1000, lookupSearchMatchScore("HUY⭐⭐⭐HÒA", query))
         assertTrue(lookupSearchMatchScore("HUY HÒA COC", query) > 0)
