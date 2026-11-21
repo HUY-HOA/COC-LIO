@@ -1,6 +1,9 @@
 name: Build COC-LIO APK
 
 on:
+  push:
+    branches:
+      - build-apk/once-20261121-2215-coc-json
   workflow_dispatch:
     inputs:
       confirmation:
@@ -17,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    if: inputs.confirmation == 'BUILD APK' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/clashking-lookup-page')
+    if: (inputs.confirmation == 'BUILD APK' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/clashking-lookup-page')) || (github.event_name == 'push' && github.ref == 'refs/heads/build-apk/once-20261121-2215-coc-json' && github.event.head_commit.message == 'BUILD APK')
     permissions:
       contents: read
     runs-on: ubuntu-22.04
