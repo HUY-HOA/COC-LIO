@@ -73,4 +73,41 @@ class ClashLookupSearchTest {
         assertEquals("18", entry.level)
     }
 
+    @Test
+    fun playerDoesNotReceiveClanWarWinStreak() {
+        val player = JSONObject(
+            """{"name":"Player","tag":"#P2Q8Y","war_win_streak":12}"""
+        )
+
+        val entry = lookupEntry(player, isClan = false)
+
+        assertEquals("", entry.streak)
+    }
+
+    @Test
+    fun clanMemberObjectUsesCountNotObjectPropertyCount() {
+        val clan = JSONObject(
+            """{"name":"Clan","tag":"#P2Q8Y","members":{"count":38,"items":[]}}"""
+        )
+
+        val entry = lookupEntry(clan, isClan = true)
+
+        assertEquals("38", entry.members)
+    }
+
+    @Test
+    fun displayFormattingUsesUnitsForPercentAndDuration() {
+        assertEquals("99%", lookupDisplayValue("destructionPercentage", 99))
+        assertEquals("75%", lookupDisplayValue("tripleRate", 0.75))
+        assertEquals("1 giờ", lookupDisplayValue("attackSeconds", 3600))
+    }
+
+    @Test
+    fun largeCountsAreGroupedForVietnameseDisplay() {
+        val formatted = formatLookupCount("1234567")
+
+        assertTrue(formatted != "1234567")
+        assertTrue(formatted.contains("1"))
+    }
+
 }
