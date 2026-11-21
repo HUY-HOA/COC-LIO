@@ -1437,6 +1437,12 @@ private fun CocLioApp(
                                     onImport = { requestImportJson() },
                                     onOpenGame = { openClashOfClans(context) }
                                 )
+                                2 -> current?.let {
+                                    JsonDataExplorerScreen(snapshot = it)
+                                } ?: EmptyWelcome(
+                                    onImport = { requestImportJson() },
+                                    onOpenGame = { openClashOfClans(context) }
+                                )
                                 else -> HistoryScreen(
                         history = history,
                         deletedVillages = deletedVillages,
@@ -1783,11 +1789,12 @@ private fun JsonSectionTabs(
     selected: Int,
     onSelected: (Int) -> Unit
 ) {
-    val labels = listOf("TỔNG QUAN", "THÔNG TIN", "DỮ LIỆU JSON")
+    val labels = listOf("TỔNG QUAN", "THÔNG TIN", "TOÀN BỘ JSON", "LỊCH SỬ")
     val icons = listOf(
         Icons.Outlined.Home,
         Icons.Outlined.AccountBalanceWallet,
-        Icons.Outlined.Code
+        Icons.Outlined.Code,
+        Icons.Outlined.AccessTime
     )
     Row(
         modifier = Modifier
