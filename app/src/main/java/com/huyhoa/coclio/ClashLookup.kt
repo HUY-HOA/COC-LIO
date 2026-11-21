@@ -1004,8 +1004,9 @@ internal fun lookupGameIconResource(key: String): Int? {
     return when (normalized) {
         "townhalllevel", "townhall" -> R.drawable.ic_coc_buildings
         "builderhalllevel", "builderhall", "builderbase", "builderbasevillage" -> R.drawable.ic_coc_home
-        "explevel", "experiencelevel", "playerlevel" -> R.drawable.ic_coc_player
-        "level", "currentlevel", "previouslevel", "upgradelevel" -> R.drawable.ic_coc_level
+        "explevel", "experiencelevel", "playerlevel" -> R.drawable.ic_coc_level
+        "level", "currentlevel", "previouslevel", "upgradelevel",
+        "currentvalue", "previousvalue", "newlevel", "oldlevel", "levelbefore", "levelafter" -> R.drawable.ic_coc_level
         "herolevel", "heroeslevel" -> R.drawable.ic_coc_hero
         "trooplevel", "supertrooplevel", "siegelevel" -> R.drawable.ic_coc_swords
         "spelllevel" -> R.drawable.ic_coc_spell
@@ -1139,7 +1140,7 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
         )
     } else {
         listOfNotNull(
-            stat("CẤP NGƯỜI CHƠI", entry.playerLevel, R.drawable.ic_coc_player),
+            stat("CẤP NGƯỜI CHƠI", entry.playerLevel, R.drawable.ic_coc_level),
             stat("NHÀ CHÍNH", entry.townHall, R.drawable.ic_coc_buildings, lookupBuildingImageUrl("townHallLevel", entry.townHall)),
             stat("NHÀ THỢ XÂY", entry.builderHall, R.drawable.ic_coc_home, lookupBuildingImageUrl("builderHallLevel", entry.builderHall)),
             stat("CÚP", entry.trophies, R.drawable.ic_coc_star),
