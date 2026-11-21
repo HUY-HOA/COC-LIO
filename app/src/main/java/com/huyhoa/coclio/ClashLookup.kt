@@ -115,6 +115,7 @@ internal data class ClashLookupEntry(
     val metricLabel: String = "",
     // Clan crest and player league badge are different assets and must never be interchanged.
     val badgeUrl: String = "",
+    val clanBadgeUrl: String = "",
     val leagueIconUrl: String = "",
     val raw: JSONObject
 )
@@ -141,6 +142,46 @@ private fun normalizeLookupTag(raw: String, label: String): String {
     }
     return normalized
 }
+
+internal fun lookupSearchNameKey(raw: String): String =
+    Normalizer.normalize(raw.trim(), Normalizer.Form.NFKD)
+        .replace(Regex("[\\p{M}\\p{Cf}]"), "")
+        .lowercase(Locale.ROOT)
+        .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
+internal fun lookupSearchMatchScore(name: String, query: String): Int {
+    val normalizedName = lookupSearchNameKey(name)
+    val normalizedQuery = lookupSearchNameKey(query)
+    if (normalizedName.isBlank() || normalizedQuery.isBlank()) return 0
+    if (normalizedName == normalizedQuery) return 1000
+    if (normalizedName.startsWith("$normalizedQuery ")) return 950
+    if (normalizedName.contains(" $normalizedQuery ")) return 900
+
+    val queryTokens = normalizedQuery.split(' ').filter(String::isNotBlank)
+    val nameTokens = normalizedName.split(' ').filter(String::isNotBlank)
+    if (queryTokens.size > 1) {
+        // For decorated multi-word names, require every meaningful word.
+        // A result matching only "HUY" or only "HOA" must never pass for "HUY HOA".
+        if (!queryTokens.all { token -> nameTokens.any { it == token } }) return 0
+        return 800 - (nameTokens.size - queryTokens.size).coerceAtLeast(0).coerceAtMost(50)
+    }
+    return if (normalizedName.contains(normalizedQuery)) 600 else 0
+}
+
+internal fun rankLookupSearchEntries(
+    entries: List<ClashLookupEntry>,
+    query: String
+): List<ClashLookupEntry> =
+    entries.mapNotNull { entry ->
+        lookupSearchMatchScore(entry.name, query)
+            .takeIf { it > 0 }
+            ?.let { score -> score to entry }
+    }
+        .sortedByDescending { it.first }
+        .map { it.second }
+        .distinctBy(::lookupEntryKey)
 
 internal fun lookupSearchCandidates(raw: String): List<String> {
     val input = raw.trim()
@@ -174,8 +215,12 @@ internal fun lookupSearchCandidates(raw: String): List<String> {
         .trim()
     if (compatible.length >= 2 && compatible != input) candidates += compatible
 
-    // ClashKing matches all words in one query. Retry meaningful name parts
-    // individually so a partial or decorated multi-word name can still match.
+    // Some stored game names omit separators between decorated name parts.
+    val compact = compatible.replace(" ", "")
+    if (compact.length >= 2 && compact != compatible) candidates += compact
+
+    // Search each meaningful part too, then validate that a multi-word query
+    // matches every word before any returned profile is displayed.
     compatible.split(' ')
         .asSequence()
         .filter { it.length >= 2 }
@@ -621,10 +666,18 @@ internal fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
     val clan = entity.optJSONObject("clan")
     val league = entity.optJSONObject("leagueTier") ?: entity.optJSONObject("league")
     val badgeUrls = entity.optJSONObject("badgeUrls") ?: clan?.optJSONObject("badgeUrls")
-    val badge = entity.lookupText("badge")
-        .ifBlank { clan?.lookupText("badge").orEmpty() }
+    val badge = entity.lookupText("badge_url")
+        .ifBlank { entity.lookupText("badgeUrl") }
+        .ifBlank { entity.lookupText("badge") }
         .ifBlank { badgeUrls?.lookupText("medium").orEmpty() }
         .ifBlank { badgeUrls?.lookupText("large").orEmpty() }
+    val clanBadgeUrls = clan?.optJSONObject("badgeUrls")
+    val nestedClanBadge = clan?.lookupText("badge_url")
+        ?.ifBlank { clan.lookupText("badgeUrl") }
+        ?.ifBlank { clan.lookupText("badge") }
+        ?.ifBlank { clanBadgeUrls?.lookupText("medium").orEmpty() }
+        ?.ifBlank { clanBadgeUrls?.lookupText("large").orEmpty() }
+        .orEmpty()
 
     fun number(vararg keys: String): String {
         for (key in keys) {
@@ -669,7 +722,10 @@ internal fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
             entity.has("stars") -> "Sao CWL"
             else -> ""
         },
-        badgeUrl = if (isClan) entity.lookupText("badge_url").ifBlank { badge } else "",
+        badgeUrl = if (isClan) entity.lookupText("badge_url")
+            .ifBlank { entity.lookupText("badgeUrl") }
+            .ifBlank { badge } else "",
+        clanBadgeUrl = if (!isClan) nestedClanBadge else "",
         leagueIconUrl = if (!isClan) league?.optJSONObject("iconUrls")?.let { icons ->
             icons.lookupText("medium").ifBlank { icons.lookupText("large") }.ifBlank { icons.lookupText("small") }
         }.orEmpty() else "",
@@ -948,6 +1004,16 @@ internal fun lookupGameIconResource(key: String): Int? {
         "townhalllevel", "townhall" -> R.drawable.ic_coc_buildings
         "builderhalllevel", "builderhall", "builderbase", "builderbasevillage" -> R.drawable.ic_coc_home
         "explevel", "experiencelevel", "playerlevel" -> R.drawable.ic_coc_player
+        "level", "currentlevel", "previouslevel", "upgradelevel" -> R.drawable.ic_coc_level
+        "herolevel", "heroeslevel" -> R.drawable.ic_coc_hero
+        "trooplevel", "supertrooplevel", "siegelevel" -> R.drawable.ic_coc_swords
+        "spelllevel" -> R.drawable.ic_coc_spell
+        "petlevel" -> R.drawable.ic_coc_pet
+        "equipmentlevel", "heroequipmentlevel" -> R.drawable.ic_coc_equipment
+        "buildinglevel" -> R.drawable.ic_coc_buildings
+        "defenselevel", "defencelevel" -> R.drawable.ic_coc_defense
+        "traplevel" -> R.drawable.ic_coc_trap
+        "walllevel" -> R.drawable.ic_coc_wall
         "rank", "globalrank", "localrank", "grouprank", "trophies", "leaguetrophies",
         "builderbasetrophies", "buildertrophies", "stars", "attacktrophies", "defensetrophies" -> R.drawable.ic_coc_star
         "clanlevel", "clan", "clancapital" -> R.drawable.ic_coc_clan
@@ -1076,7 +1142,8 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
             stat("NHÀ THỢ XÂY", entry.builderHall, R.drawable.ic_coc_home, lookupBuildingImageUrl("builderHallLevel", entry.builderHall)),
             stat("CÚP", entry.trophies, R.drawable.ic_coc_star),
             stat("CÚP NHÀ THỢ XÂY", entry.builderTrophies, R.drawable.ic_coc_home),
-            stat("GIẢI ĐẤU", entry.league, R.drawable.ic_coc_star, entry.leagueIconUrl)
+            stat("GIẢI ĐẤU", entry.league, R.drawable.ic_coc_star, entry.leagueIconUrl),
+            stat("BANG HỘI", entry.clanName, R.drawable.ic_coc_clan, entry.clanBadgeUrl)
         )
     }
 }
@@ -1111,29 +1178,48 @@ private fun LookupEntityAvatar(entry: ClashLookupEntry, size: Dp) {
                 )
             }
         } else {
-            // Player cards use a person icon; Town Hall artwork is only a small secondary marker.
-            Icon(
-                Icons.Outlined.Person,
-                contentDescription = "Người chơi",
-                tint = LookupCyan,
-                modifier = Modifier.size(size * 0.54f)
-            )
+            // Player identity is represented by the main-village Town Hall.
+            // The clan crest remains a small secondary marker only.
             if (townHallImageUrl != null) {
+                AsyncImage(
+                    model = townHallImageUrl,
+                    contentDescription = "Nhà chính cấp ${entry.townHall}",
+                    modifier = Modifier.fillMaxSize().padding(size * 0.06f),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                CocGameIcon(
+                    R.drawable.ic_coc_buildings,
+                    Modifier.size(size * 0.68f),
+                    "Nhà chính"
+                )
+            }
+            val clanBadgeUrl = entry.clanBadgeUrl.takeIf { it.startsWith("https://", ignoreCase = true) }
+            if (clanBadgeUrl != null || entry.clanName.isNotBlank()) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .size(size * 0.34f)
+                        .size(size * 0.30f)
                         .clip(androidx.compose.foundation.shape.CircleShape)
                         .background(MaterialTheme.colorScheme.surface)
-                        .border(1.dp, LookupCyan.copy(alpha = 0.65f), androidx.compose.foundation.shape.CircleShape),
+                        .border(1.dp, LookupGold.copy(alpha = 0.75f), androidx.compose.foundation.shape.CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = townHallImageUrl,
-                        contentDescription = "Nhà chính cấp ${entry.townHall}",
-                        modifier = Modifier.fillMaxSize().padding(1.dp),
-                        contentScale = ContentScale.Fit
-                    )
+                    if (clanBadgeUrl != null) {
+                        AsyncImage(
+                            model = clanBadgeUrl,
+                            contentDescription = "Huy hiệu bang hội phụ",
+                            modifier = Modifier.fillMaxSize().padding(1.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Icon(
+                            Icons.Outlined.Groups,
+                            contentDescription = "Bang hội phụ",
+                            tint = LookupGold,
+                            modifier = Modifier.size(size * 0.19f)
+                        )
+                    }
                 }
             }
         }
@@ -1207,6 +1293,19 @@ private fun humanizeLookupKey(key: String): String {
         "expLevel" to "Cấp người chơi",
         "experienceLevel" to "Cấp người chơi",
         "playerLevel" to "Cấp người chơi",
+        "level" to "Cấp độ",
+        "currentLevel" to "Cấp hiện tại",
+        "previousLevel" to "Cấp trước",
+        "upgradeLevel" to "Cấp nâng cấp",
+        "heroLevel" to "Cấp anh hùng",
+        "troopLevel" to "Cấp quân lính",
+        "spellLevel" to "Cấp thần chú",
+        "petLevel" to "Cấp thú cưng",
+        "equipmentLevel" to "Cấp trang bị",
+        "buildingLevel" to "Cấp công trình",
+        "defenseLevel" to "Cấp phòng thủ",
+        "trapLevel" to "Cấp bẫy",
+        "wallLevel" to "Cấp tường",
         "leagueTier" to "Giải đấu",
         "league" to "Giải đấu",
         "trophies" to "Cúp",
@@ -1745,24 +1844,53 @@ fun ClashLookupScreen() {
                         }
                     } else {
                         val isClanSearch = searchMode == "clan"
-                        var found = emptyList<ClashLookupEntry>()
+                        val isTagSearch = searchCandidates.firstOrNull()?.startsWith("#") == true
+                        val collectedEntries = mutableListOf<ClashLookupEntry>()
                         var foundCursor: String? = null
                         var usedQuery = searchCandidates.firstOrNull().orEmpty()
+                        var bestCursorQuality = Int.MIN_VALUE
+                        var successfulSearches = 0
+                        var lastSearchFailure: Throwable? = null
+
+                        // Do not stop at the first non-empty response. Search all normalized
+                        // variants so decorated names and clans sharing name fragments are not
+                        // silently omitted. Results are then checked against the complete name.
                         for (candidate in searchCandidates) {
-                            val response = if (isClanSearch) {
-                                ClashKingLookupApi.get(ClashKingLookupApi.clanSearchPath(candidate, oldCursor))
-                            } else {
-                                ClashKingLookupApi.get(ClashKingLookupApi.playerSearchPath(candidate, oldCursor, selectedFilters))
+                            val response = runCatching {
+                                if (isClanSearch) {
+                                    ClashKingLookupApi.get(ClashKingLookupApi.clanSearchPath(candidate, oldCursor))
+                                } else {
+                                    ClashKingLookupApi.get(ClashKingLookupApi.playerSearchPath(candidate, oldCursor, selectedFilters))
+                                }
+                            }.getOrElse { error ->
+                                lastSearchFailure = error
+                                continue
                             }
-                            found = lookupItems(response, isClanSearch)
-                            usedQuery = candidate
-                            if (found.isNotEmpty() || loadMore || candidate == searchCandidates.lastOrNull()) {
-                                foundCursor = response.optJSONObject("pagination")
-                                    ?.lookupText("nextCursor")
-                                    ?.takeIf { it.isNotBlank() }
-                                break
+                            successfulSearches++
+                            val candidateEntries = lookupItems(response, isClanSearch)
+                            val relevantEntries = if (isTagSearch) candidateEntries
+                                else rankLookupSearchEntries(candidateEntries, term)
+                            collectedEntries += relevantEntries
+
+                            val candidateScore = relevantEntries.maxOfOrNull {
+                                lookupSearchMatchScore(it.name, term)
+                            } ?: 0
+                            val cursorQuality = candidateScore * 100 + relevantEntries.size
+                            val pagination = response.optJSONObject("pagination")
+                            val candidateCursor = pagination?.lookupText("nextCursor")
+                                ?.ifBlank { pagination.lookupText("next_cursor") }
+                                ?.takeIf { it.isNotBlank() }
+                            if (candidateCursor != null && cursorQuality > bestCursorQuality) {
+                                bestCursorQuality = cursorQuality
+                                foundCursor = candidateCursor
+                                usedQuery = candidate
                             }
                         }
+                        if (successfulSearches == 0 && lastSearchFailure != null) {
+                            throw lastSearchFailure as Throwable
+                        }
+                        val found = if (isTagSearch) deduplicateLookupEntries(collectedEntries)
+                            else rankLookupSearchEntries(deduplicateLookupEntries(collectedEntries), term)
                         if (found.isEmpty() && isClanSearch && !loadMore) {
                             val directTag = runCatching { normalizeLookupTag(term, "TAG bang hội") }.getOrNull()
                             if (directTag != null) {
