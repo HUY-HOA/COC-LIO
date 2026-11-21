@@ -1,5 +1,6 @@
 package com.huyhoa.coclio
 
+import android.app.Activity
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Intent
@@ -766,12 +767,40 @@ private fun CocLioApp(
         }
     }
     var showImportDialog by remember { mutableStateOf(false) }
+    var showExitConfirmation by remember { mutableStateOf(false) }
     val backDestination = previousCocLioNavigationState(selectedTab, jsonSection)
-    BackHandler(enabled = isGoogleSignedIn && !showImportDialog && backDestination != null) {
-        backDestination?.let { (tab, section) ->
-            selectedTab = tab
-            jsonSection = section
+    BackHandler(enabled = isGoogleSignedIn && !showImportDialog && !showExitConfirmation) {
+        if (backDestination != null) {
+            selectedTab = backDestination.first
+            jsonSection = backDestination.second
+        } else {
+            showExitConfirmation = true
         }
+    }
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            title = { Text("Thoát ứng dụng?") },
+            text = { Text("Bạn có muốn thoát khỏi COC-LIO không?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExitConfirmation = false
+                        (context as? Activity)?.finish()
+                    }
+                ) {
+                    Text("THOÁT", color = CocRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitConfirmation = false }) {
+                    Text("Ở LẠI")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
