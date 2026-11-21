@@ -188,52 +188,56 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
             }
         }
 
-        item(key = "dashboard_upgrade_header") {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        "TIẾN TRÌNH NÂNG CẤP",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.35.sp
-                    )
-                    Text(
-                        if (activeCount == 0) "Không có mục nào đang chạy" else "$activeCount mục đang thực hiện",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 9.sp
-                    )
-                }
-                if (activeCount > 4) {
-                    TextButton(onClick = { selectedStatus = "upgrading" }) {
-                        Text("XEM TẤT CẢ", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        if (query.isBlank() && selectedStatus == "all") {
+            item(key = "dashboard_upgrade_header") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            "TIẾN TRÌNH NÂNG CẤP",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.35.sp
+                        )
+                        Text(
+                            if (activeCount == 0) "Không có mục nào đang chạy" else "$activeCount mục đang thực hiện",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 9.sp
+                        )
+                    }
+                    if (activeCount > 4) {
+                        TextButton(onClick = { selectedStatus = "running" }) {
+                            Text("XEM TẤT CẢ", fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
-        }
-
-        if (activeUpgrades.isEmpty()) {
-            item(key = "dashboard_no_upgrade") {
-                DashboardNotice(
-                    title = "Làng đang không có tiến trình nâng cấp",
-                    detail = "Khi JSON có timer đang chạy, tiến độ và thời gian còn lại sẽ hiển thị tại đây."
-                )
-            }
-        } else {
-            itemsIndexed(
-                items = activeUpgrades.take(4),
-                key = { index, item -> "focus_upgrade_${item.identity}_${item.base}_$index" }
-            ) { _, item ->
-                UpgradeFocusRow(item, snapshot.timestamp, nowSeconds)
-            }
-            if (expiredUpgrades.isNotEmpty()) {
-                item(key = "dashboard_expired_notice") {
+    
+            if (activeUpgrades.isEmpty()) {
+                item(key = "dashboard_no_upgrade") {
                     DashboardNotice(
-                        title = "${expiredUpgrades.size} mục đã hết thời gian theo JSON",
-                        detail = "Cần nhập JSON mới để xác nhận cấp độ hoàn thành trong game."
+                        title = "Làng đang không có tiến trình nâng cấp",
+                        detail = "Khi JSON có timer đang chạy, tiến độ và thời gian còn lại sẽ hiển thị tại đây."
                     )
                 }
+            } else {
+                itemsIndexed(
+                    items = activeUpgrades.take(4),
+                    key = { index, item -> "focus_upgrade_${item.identity}_${item.base}_$index" }
+                ) { _, item ->
+                    UpgradeFocusRow(item, snapshot.timestamp, nowSeconds)
+                }
+                if (expiredUpgrades.isNotEmpty()) {
+                    item(key = "dashboard_expired_notice") {
+                        DashboardNotice(
+                            title = "${expiredUpgrades.size} mục đã hết thời gian theo JSON",
+                            detail = "Cần nhập JSON mới để xác nhận cấp độ hoàn thành trong game."
+                        )
+                    }
+                }
             }
+    
+    
         }
 
         item(key = "dashboard_catalog_title") {
@@ -291,7 +295,7 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
             ) {
                 listOf(
                     "all" to "TẤT CẢ",
-                    "upgrading" to "ĐANG NÂNG",
+                    "running" to "ĐANG CHẠY",
                     "gear" to "GEAR UP",
                     "expired" to "HẾT GIỜ",
                     "idle" to "CHƯA NÂNG",
