@@ -17,7 +17,14 @@ class MainActivityNavigationTest {
     }
 
     @Test
-    fun backAtRootIsLeftToAndroidDefaultExitBehavior() {
+    fun backAtRootRequiresExplicitExitConfirmation() {
         assertNull(previousCocLioNavigationState(selectedTab = 2, jsonSection = 0))
+        assertEquals(true, shouldConfirmCocLioExit(selectedTab = 2, jsonSection = 0))
+    }
+
+    @Test
+    fun backFromNestedScreenNavigatesInsteadOfRequestingExitConfirmation() {
+        assertEquals(false, shouldConfirmCocLioExit(selectedTab = 4, jsonSection = 2))
+        assertEquals(false, shouldConfirmCocLioExit(selectedTab = 2, jsonSection = 1))
     }
 }
