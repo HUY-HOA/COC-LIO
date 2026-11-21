@@ -1899,7 +1899,7 @@ fun ClashLookupScreen() {
                         if (successfulSearches == 0 && lastSearchFailure != null) {
                             throw lastSearchFailure as Throwable
                         }
-                        val found = if (isTagSearch) deduplicateLookupEntries(collectedEntries)
+                        var found = if (isTagSearch) deduplicateLookupEntries(collectedEntries)
                             else rankLookupSearchEntries(deduplicateLookupEntries(collectedEntries), term)
                         if (found.isEmpty() && isClanSearch && !loadMore) {
                             val directTag = runCatching { normalizeLookupTag(term, "TAG bang hội") }.getOrNull()
