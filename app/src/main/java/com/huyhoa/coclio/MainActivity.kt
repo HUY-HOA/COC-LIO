@@ -209,6 +209,9 @@ internal fun previousCocLioNavigationState(selectedTab: Int, jsonSection: Int): 
         else -> null
     }
 
+internal fun shouldConfirmCocLioExit(selectedTab: Int, jsonSection: Int): Boolean =
+    previousCocLioNavigationState(selectedTab, jsonSection) == null
+
 val LocalLedTheme = staticCompositionLocalOf {
     LedThemeState(DefaultLedPalette, true, 3000, 1f, false, mutableStateOf(0f))
 }
@@ -769,8 +772,8 @@ private fun CocLioApp(
     var showImportDialog by remember { mutableStateOf(false) }
     var showExitConfirmation by remember { mutableStateOf(false) }
     val backDestination = previousCocLioNavigationState(selectedTab, jsonSection)
-    BackHandler(enabled = isGoogleSignedIn && !showImportDialog && !showExitConfirmation) {
-        if (backDestination != null) {
+    BackHandler(enabled = !showImportDialog && !showExitConfirmation) {
+        if (isGoogleSignedIn && backDestination != null) {
             selectedTab = backDestination.first
             jsonSection = backDestination.second
         } else {
@@ -780,8 +783,8 @@ private fun CocLioApp(
     if (showExitConfirmation) {
         AlertDialog(
             onDismissRequest = { showExitConfirmation = false },
-            title = { Text("Thoát ứng dụng?") },
-            text = { Text("Bạn có muốn thoát khỏi COC-LIO không?") },
+            title = { Text("Bạn muốn thoát ứng dụng?") },
+            text = { Text("Chọn CÓ để thoát ứng dụng hoặc KHÔNG để tiếp tục sử dụng.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -789,12 +792,12 @@ private fun CocLioApp(
                         (context as? Activity)?.finish()
                     }
                 ) {
-                    Text("THOÁT", color = CocRed)
+                    Text("CÓ", color = CocRed)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showExitConfirmation = false }) {
-                    Text("Ở LẠI")
+                    Text("KHÔNG")
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
