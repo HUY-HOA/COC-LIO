@@ -3805,8 +3805,8 @@ private fun catalogVillageItem(entry: CocUpgradeEntry): VillageItem {
         "pet" -> "Linh thú"
         "guardian" -> "Hộ vệ"
         "hero-equipment" -> "Trang bị anh hùng"
-        "squad" -> "Đội hình Squad"
-        else -> entry.category
+        "squad" -> "Đội hình tiểu đội"
+        else -> "Danh mục khác"
     }
     return VillageItem(
         sectionKey = entry.sectionKey,
