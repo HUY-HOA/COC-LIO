@@ -3493,6 +3493,8 @@ private val EquipmentStatLabelsVi = mapOf(
     "flame max dps" to "Sát thương lửa tối đa mỗi giây",
     "hero heal percent" to "Tỷ lệ hồi máu cho Anh hùng",
     "inferno initial dps" to "Sát thương ban đầu mỗi giây của Hỏa ngục",
+    "inferno dps after1 5s" to "Sát thương Hỏa ngục mỗi giây sau 1,5 giây",
+    "inferno dps after3 0s" to "Sát thương Hỏa ngục mỗi giây sau 3 giây",
     "inferno dps after1_5s" to "Sát thương Hỏa ngục mỗi giây sau 1,5 giây",
     "inferno dps after3_0s" to "Sát thương Hỏa ngục mỗi giây sau 3 giây",
     "electro dps" to "Sát thương điện mỗi giây",
@@ -3516,13 +3518,24 @@ private val EquipmentStatLabelsVi = mapOf(
     "targets" to "Mục tiêu"
 )
 
+private fun containsVietnameseDiacritics(value: String): Boolean =
+    value.any { character ->
+        "ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ".contains(
+            character.lowercaseChar()
+        )
+    }
+
 internal fun localizedCatalogField(label: String, value: String): Pair<String, String> {
     val normalizedLabel = label.trim()
         .replace(Regex("([a-z0-9])([A-Z])")) { "${it.groupValues[1]} ${it.groupValues[2]}" }
         .lowercase()
         .replace('_', ' ')
     val translatedLabel = EquipmentStatLabelsVi[normalizedLabel]
-        ?: normalizedLabel.replaceFirstChar { it.uppercase() }
+        ?: if (containsVietnameseDiacritics(normalizedLabel)) {
+            normalizedLabel.replaceFirstChar { it.uppercase() }
+        } else {
+            localizedCatalogText(normalizedLabel).takeIf { it != normalizedLabel } ?: "Thông tin bổ sung"
+        }
     val normalizedValue = value.trim().lowercase()
     val translatedValue = when (normalizedValue) {
         "ground" -> "Mặt đất"
@@ -3563,6 +3576,10 @@ internal fun localizedCatalogField(label: String, value: String): Pair<String, S
         "melee (with nearby air units)/ranged (otherwise); (ground & air)" -> "Cận chiến khi có đơn vị bay gần, nếu không thì tầm xa (mặt đất và trên không)"
         "dark" -> "Hắc ám"
         "regular" -> "Thông thường"
+        "bomb rush" -> "Cuồng nộ bom"
+        "electric hammer" -> "Búa điện"
+        "ranged" -> "Tầm xa"
+        "melee" -> "Cận chiến"
         else -> localizedCatalogText(value)
     }
     return translatedLabel to translatedValue
@@ -3585,13 +3602,20 @@ private fun localizedCatalogText(value: String): String {
         "Available in the Shop" -> "Có trong Cửa hàng"
         "Available from the Trader" -> "Có thể nhận từ Thương nhân"
         else -> value
+            .replace("Builder Elixir", "Tinh chất thợ xây", ignoreCase = true)
+            .replace("Builder Gold", "Vàng thợ xây", ignoreCase = true)
             .replace("Dark Elixir", "Dầu đen", ignoreCase = true)
-            .replace("Elixir", "Dầu tiên", ignoreCase = true)
+            .replace("Elixir", "Tinh chất", ignoreCase = true)
             .replace("Gold", "Vàng", ignoreCase = true)
             .replace("Gems", "Ngọc", ignoreCase = true)
             .replace("Shiny Ore", "Quặng sáng", ignoreCase = true)
             .replace("Glowy Ore", "Quặng phát sáng", ignoreCase = true)
             .replace("Starry Ore", "Quặng sao", ignoreCase = true)
+            .replace(Regex("(?i)\\btiles?\\b"), "ô")
+            .replace(Regex("(?i)\\bseconds?\\b"), "giây")
+            .replace(Regex("(?i)\\bminutes?\\b"), "phút")
+            .replace(Regex("(?i)\\bhours?\\b"), "giờ")
+            .replace(Regex("(?i)\\bdays?\\b"), "ngày")
     }
 }
 
@@ -4105,7 +4129,8 @@ private fun VillageItemDetailDialog(
     val itemName = item.name
     val description = EquipmentDescriptionsVi[item.dataId]
         ?: CatalogDescriptionsVi[item.dataId]
-        ?: supplemental?.description?.takeIf { it.isNotBlank() }
+        ?: supplemental?.description?.takeIf { it.isNotBlank() && containsVietnameseDiacritics(it) }
+        ?: "Mô tả tiếng Việt đang được cập nhật."
     val levelDetails = supplemental?.levelDetails.orEmpty()
     val availableStatsLevels = (levelDetails.keys + upgradeEntry?.levels.orEmpty().map { it.level })
         .distinct()
