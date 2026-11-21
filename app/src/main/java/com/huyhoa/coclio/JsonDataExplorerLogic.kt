@@ -24,6 +24,7 @@ internal fun filterJsonExplorerItems(
         .filter { item ->
             val active = item.isTimerActive(snapshotTimestamp, nowSeconds)
             when (selectedStatus) {
+                "running" -> active
                 "upgrading" -> active && !item.gearUp
                 "gear" -> active && item.gearUp
                 "expired" -> item.timerSeconds != null && !active
