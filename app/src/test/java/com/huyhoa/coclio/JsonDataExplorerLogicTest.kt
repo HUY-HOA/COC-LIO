@@ -62,6 +62,11 @@ class JsonDataExplorerLogicTest {
             filterJsonExplorerItems(items, "all", "upgrading", "", "name", 100L, 150L).map { it.dataId }
         )
         assertEquals(
+            listOf(1, 2),
+            filterJsonExplorerItems(items, "all", "running", "", "name", 100L, 150L)
+                .map { it.dataId }.sorted()
+        )
+        assertEquals(
             listOf(2),
             filterJsonExplorerItems(items, "all", "gear", "", "name", 100L, 150L).map { it.dataId }
         )
