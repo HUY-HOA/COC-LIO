@@ -265,7 +265,7 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
                 singleLine = true,
                 shape = RoundedCornerShape(13.dp),
                 label = { Text("Tìm trong toàn bộ dữ liệu") },
-                placeholder = { Text("Tên công trình, quân đội, ID, timer...") }
+                placeholder = { Text("Tên công trình, quân đội, mã dữ liệu, thời gian...") }
             )
         }
 
