@@ -1425,51 +1425,13 @@ private fun CocLioApp(
                         JsonSectionTabs(selected = jsonSection, onSelected = { jsonSection = it })
                         Box(Modifier.weight(1f).fillMaxWidth()) {
                             when (jsonSection) {
-                                0 -> current?.let { OverviewScreen(snapshot = it) } ?: EmptyWelcome(
-                                    onImport = { requestImportJson() },
-                                    onOpenGame = { openClashOfClans(context) }
-                                )
-                                1 -> current?.let {
-                                    BuildingsAndArmyScreen(
-                                        snapshot = it
-                                    )
-                                } ?: EmptyWelcome(
-                                    onImport = { requestImportJson() },
-                                    onOpenGame = { openClashOfClans(context) }
-                                )
-                                2 -> current?.let {
+                                0 -> current?.let {
                                     JsonDataExplorerScreen(snapshot = it)
                                 } ?: EmptyWelcome(
                                     onImport = { requestImportJson() },
                                     onOpenGame = { openClashOfClans(context) }
                                 )
                                 else -> HistoryScreen(
-                        history = history,
-                        deletedVillages = deletedVillages,
-                        pinnedTags = pinnedTags,
-                        activeTag = current?.tag.orEmpty(),
-                        activeTimestamp = current?.timestamp,
-                        onSelect = {
-                            current = it
-                            selectedTab = 2
-                            jsonSection = 0
-                        },
-                        onTogglePin = { tag ->
-                            VillageStore.setPinned(context, tag, tag !in pinnedTags, activeProfile)
-                            pinnedTags = VillageStore.pinnedTags(context, activeProfile)
-                            history = VillageStore.loadAll(context, activeProfile)
-                            AppWidgetUpdater.updateAll(context)
-                        },
-                        onDelete = { tag ->
-                            if (VillageStore.deleteVillage(context, tag, activeProfile)) {
-                                history = VillageStore.loadAll(context, activeProfile)
-                                deletedVillages = VillageStore.loadDeleted(context, activeProfile)
-                                pinnedTags = VillageStore.pinnedTags(context, activeProfile)
-                                if (current?.tag == tag) current = history.firstOrNull()
-                                UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
-                                AppWidgetUpdater.updateAll(context)
-                                scope.launch { snackbar.showAppSnackbar(context, "Đã chuyển $tag vào mục ĐÃ XÓA.") }
-                            }
                         },
                         onRestore = { recordId ->
                             val restoredTag = deletedVillages.firstOrNull { it.id == recordId }?.tag
@@ -1789,11 +1751,9 @@ private fun JsonSectionTabs(
     selected: Int,
     onSelected: (Int) -> Unit
 ) {
-    val labels = listOf("TỔNG QUAN", "THÔNG TIN", "TOÀN BỘ JSON", "LỊCH SỬ")
+    val labels = listOf("TỔNG HỢP", "LỊCH SỬ")
     val icons = listOf(
         Icons.Outlined.Home,
-        Icons.Outlined.AccountBalanceWallet,
-        Icons.Outlined.Code,
         Icons.Outlined.AccessTime
     )
     Row(
