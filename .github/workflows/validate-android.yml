@@ -13,6 +13,7 @@ on:
   push:
     branches:
       - main
+      - validate-only/lookup-ui-20261121
     paths:
       - "app/src/main/**/*.kt"
       - "app/src/main/assets/coc_upgrade/*.json"
