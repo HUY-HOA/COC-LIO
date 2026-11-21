@@ -2408,7 +2408,7 @@ private fun CategoryScreen(
             "spells" to "Thần chú",
             "pets" to "Linh thú",
             "equipment" to "Trang bị anh hùng",
-            "squads" to "Đội hình Squad",
+            "squads" to "Đội hình tiểu đội",
             "other" to "Khác"
         ).filter { (key, _) -> key == "all" || baseItems.any { armyCategory(it) == key } }
     }
@@ -2465,7 +2465,7 @@ private fun CategoryScreen(
         "spells" -> "THẦN CHÚ"
         "pets" -> "LINH THÚ"
         "equipment" -> "TRANG BỊ ANH HÙNG • TẤT CẢ TƯỚNG"
-        "squads" -> "ĐỘI HÌNH SQUAD • TỔ HỢP QUÂN"
+        "squads" -> "ĐỘI HÌNH TIỂU ĐỘI • TỔ HỢP QUÂN"
         else -> rows.firstOrNull()?.sectionLabel?.uppercase().orEmpty()
     }
 
@@ -2500,7 +2500,7 @@ private fun CategoryScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                "TÍNH TỔNG TÀI NGUYÊN ĐỂ MAX LÀNG",
+                                "TÍNH TỔNG TÀI NGUYÊN ĐỂ ĐẠT CẤP TỐI ĐA",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Black
                             )
@@ -2631,7 +2631,7 @@ private fun CategoryScreen(
                                     if (showAnnouncedBlizzardAxe) {
                                         AnnouncedBlizzardAxeCard()
                                     }
-                                    VillageItemDetailField("LƯU Ý VỀ CHI PHÍ EPIC", EQUIPMENT_COST_DATA_NOTICE)
+                                    VillageItemDetailField("LƯU Ý VỀ CHI PHÍ TRANG BỊ SỬ THI", EQUIPMENT_COST_DATA_NOTICE)
                                 }
                             }
                         }
@@ -2705,7 +2705,7 @@ private fun VillageMaxPlanDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    "KẾ HOẠCH TÀI NGUYÊN LÊN MAX",
+                    "KẾ HOẠCH TÀI NGUYÊN ĐỂ ĐẠT CẤP TỐI ĐA",
                     color = CocGold,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Black
@@ -2716,7 +2716,7 @@ private fun VillageMaxPlanDialog(
                 )
                 VillageItemDetailField(
                     "Tiến độ",
-                    "${plan.maxedCopies} đã MAX • ${remainingCopies} còn cần nâng • ${plan.ownedCopies} bản sao đã xác nhận"
+                    "${plan.maxedCopies} đã đạt cấp tối đa • ${remainingCopies} còn cần nâng • ${plan.ownedCopies} bản sao đã xác nhận"
                 )
                 Text(
                     "TỔNG TÀI NGUYÊN CÒN CẦN",
@@ -2777,7 +2777,7 @@ private fun VillageMaxPlanDialog(
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    "${line.name} • cấp ${line.currentLevel} → MAX ${line.targetLevel}" +
+                                    "${line.name} • cấp ${line.currentLevel} → cấp tối đa ${line.targetLevel}" +
                                         if (line.quantity > 1) " • x${line.quantity}" else "",
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 12.sp,
@@ -2811,7 +2811,7 @@ private fun VillageMaxPlanDialog(
                                     VillageItemDetailField(
                                         "Trạng thái",
                                         if (line.upgradeTimerExpired) {
-                                            "Timer trong JSON đã hết; chi phí đã được trừ. Hãy nhập JSON mới để xác nhận cấp hiện tại."
+                                            "Thời gian trong JSON đã hết; chi phí đã được trừ. Hãy nhập JSON mới để xác nhận cấp hiện tại."
                                         } else {
                                             "Đã trừ chi phí của một bản sao đang nâng; chỉ cộng thời gian còn lại của bản sao đó."
                                         }
@@ -2848,8 +2848,8 @@ private fun VillageMaxPlanDialog(
                 }
                 if (plan.gearUpItems > 0) {
                     VillageItemDetailField(
-                        "Gear-up ngoài MAX thường",
-                        "${plan.gearUpItems} công trình có timer gear-up; thời gian gear-up không được cộng vào kế hoạch nâng cấp cấp thường."
+                        "Cải tiến ngoài tiến trình nâng cấp thông thường",
+                        "${plan.gearUpItems} công trình đã cải tiến; thời gian cải tiến không được cộng vào kế hoạch nâng cấp cấp thông thường."
                     )
                 }
                 VillageItemDetailField(
@@ -2898,9 +2898,9 @@ private val superTroopVariants = listOf(
     SuperTroopVariant("Hỏa Ngục Long", 4000023),
     SuperTroopVariant("Siêu Thợ mỏ", 4000024),
     SuperTroopVariant("Người tuyết Yeti siêu cấp", 4000053),
-    SuperTroopVariant("Siêu Minion", 4000010),
+    SuperTroopVariant("Siêu Tay sai", 4000010),
     SuperTroopVariant("Siêu Trư Kỵ sĩ", 4000011),
-    SuperTroopVariant("Siêu Valkyrie", 4000012),
+    SuperTroopVariant("Siêu Nữ chiến binh", 4000012),
     SuperTroopVariant("Siêu Phù thủy", 4000015),
     SuperTroopVariant("Băng khuyển", 4000017),
     SuperTroopVariant("Siêu Thạch thủ", 4000022)
@@ -2942,7 +2942,7 @@ private fun SuperTroopsRoster(
                             val levelText = when {
                                 baseItem?.level != null && cap != null -> "Cấp quân gốc " + baseItem.level + " / " + cap
                                 baseItem?.level != null -> "Cấp quân gốc " + baseItem.level
-                                cap != null -> "Cấp quân gốc chưa nhập • MAX " + cap
+                                cap != null -> "Cấp quân gốc chưa nhập • TỐI ĐA " + cap
                                 else -> "Chưa có dữ liệu cấp quân gốc"
                             }
                             Text(levelText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 8.sp)
@@ -3048,9 +3048,9 @@ private fun VillageGridItemCard(
                         else -> "CHƯA CÓ"
                     }
                     val level = item.level?.let { "CẤP $it/${cardMaxLevel ?: "?"}" }
-                        ?: if (owned) "CẤP CHƯA RÕ • MAX ${cardMaxLevel ?: "?"}"
-                        else "MAX ${cardMaxLevel ?: "?"}"
-                    if (unlockTownHall != null) "$status • MỞ TỪ TH$unlockTownHall • $level"
+                        ?: if (owned) "CẤP CHƯA RÕ • TỐI ĐA ${cardMaxLevel ?: "?"}"
+                        else "TỐI ĐA ${cardMaxLevel ?: "?"}"
+                    if (unlockTownHall != null) "$status • MỞ TỪ NHÀ CHÍNH CẤP $unlockTownHall • $level"
                     else "$status • ĐỘI HÌNH • $level"
                 } else if (isEquipment && !item.hasConfirmedEquipmentOwnership) {
                     if (item.properties["catalogOnly"] == "true") {
@@ -3578,6 +3578,13 @@ internal fun localizedCatalogField(label: String, value: String): Pair<String, S
         "regular" -> "Thông thường"
         "bomb rush" -> "Cuồng nộ bom"
         "electric hammer" -> "Búa điện"
+        "royal cloak" -> "Áo choàng hoàng gia"
+        "iron fist" -> "Nắm đấm sắt"
+        "royal rampage" -> "Cuồng kích hoàng gia"
+        "eternal tome" -> "Sách bất tử"
+        "dark orb" -> "Quả cầu bóng tối"
+        "seeking shield" -> "Khiên truy đuổi"
+        "rubble" -> "Đống đổ nát"
         "ranged" -> "Tầm xa"
         "melee" -> "Cận chiến"
         else -> localizedCatalogText(value)
@@ -3640,7 +3647,7 @@ private fun equipmentRarity(dataId: Int): String? = when (dataId) {
 }
 
 private const val EQUIPMENT_COST_DATA_NOTICE =
-    "Chi phí Common/Epic hiện có dùng snapshot cộng đồng ngày 15/11/2026. Supercell ngày 17/11/2026 công bố cấu trúc chi phí mới cho Legendary và Epic phát hành trong tương lai; Epic cũ cũng sẽ được giảm chi phí dần theo thời gian nhưng chưa có lịch cụ thể. Vì vậy, số liệu trong ứng dụng là mốc tham khảo hiện tại, cần đối chiếu trong game trước khi lập kế hoạch quặng."
+    "Chi phí trang bị Thường và Sử thi hiện dùng dữ liệu cộng đồng chụp ngày 15/11/2026. Supercell công bố ngày 17/11/2026 về cấu trúc chi phí mới cho trang bị Huyền thoại và Sử thi phát hành trong tương lai; trang bị Sử thi cũ cũng sẽ được giảm chi phí dần nhưng chưa có lịch cụ thể. Vì vậy, số liệu trong ứng dụng chỉ mang tính tham khảo và cần đối chiếu trong trò chơi trước khi lập kế hoạch quặng."
 
 @Composable
 private fun AnnouncedBlizzardAxeCard() {
@@ -3661,7 +3668,7 @@ private fun AnnouncedBlizzardAxeCard() {
             Text("❄️", fontSize = 30.sp)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    "Rìu Bão Tuyết (Blizzard Axe)",
+                    "Rìu Bão Tuyết",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -3676,7 +3683,7 @@ private fun AnnouncedBlizzardAxeCard() {
                     )
                 }
                 Text(
-                    "Vua man di • MAX 33 • Mở khóa miễn phí từ Nhà chính cấp 8",
+                    "Vua man di • TỐI ĐA 33 • Mở khóa miễn phí từ Nhà chính cấp 8",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp
                 )
@@ -3691,7 +3698,7 @@ private fun AnnouncedBlizzardAxeCard() {
         if (expanded) {
             Divider(color = MaterialTheme.colorScheme.outlineVariant)
             Text(
-                "TỔNG CHI PHÍ CẤP 1 → MAX 33",
+                "TỔNG CHI PHÍ CẤP 1 → CẤP TỐI ĐA 33",
                 color = CocGold,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black
@@ -3904,7 +3911,7 @@ private fun HeroEquipmentRoster(
         if (heroId == "barbarian-king") {
             AnnouncedBlizzardAxeCard()
         }
-        VillageItemDetailField("LƯU Ý VỀ CHI PHÍ EPIC", EQUIPMENT_COST_DATA_NOTICE)
+        VillageItemDetailField("LƯU Ý VỀ CHI PHÍ TRANG BỊ SỬ THI", EQUIPMENT_COST_DATA_NOTICE)
         if (equipment.isEmpty()) {
             VillageItemDetailField("Trang bị", "Danh mục hiện chưa ghi nhận trang bị cho anh hùng này.")
         }
@@ -4224,7 +4231,7 @@ private fun VillageItemDetailDialog(
                     "Dữ liệu cấp nâng cấp là snapshot tĩnh cộng đồng ngày 17/11/2026; danh mục bổ sung được cập nhật ngày 18/11/2026. Đây không phải API chính thức của Supercell. Giá và thời gian có thể thay đổi theo bản cập nhật; các cấp thiếu dữ liệu được liệt kê riêng. Hãy đối chiếu trong game trước khi dùng làm kế hoạch chính xác."
                 )
                 if (isEquipment) {
-                    VillageItemDetailField("LƯU Ý VỀ CHI PHÍ EPIC", EQUIPMENT_COST_DATA_NOTICE)
+                    VillageItemDetailField("LƯU Ý VỀ CHI PHÍ TRANG BỊ SỬ THI", EQUIPMENT_COST_DATA_NOTICE)
                 }
                 VillageItemDetailField(
                     "Cách tính thời gian",
