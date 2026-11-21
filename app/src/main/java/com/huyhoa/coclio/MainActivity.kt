@@ -3051,7 +3051,7 @@ private fun VillageGridItemCard(
                         ?: if (owned) "CẤP CHƯA RÕ • MAX ${cardMaxLevel ?: "?"}"
                         else "MAX ${cardMaxLevel ?: "?"}"
                     if (unlockTownHall != null) "$status • MỞ TỪ TH$unlockTownHall • $level"
-                    else "$status • SQUAD • $level"
+                    else "$status • ĐỘI HÌNH • $level"
                 } else if (isEquipment && !item.hasConfirmedEquipmentOwnership) {
                     if (item.properties["catalogOnly"] == "true") {
                         "CHƯA XÁC NHẬN • MAX ${cardMaxLevel ?: "?"}"
