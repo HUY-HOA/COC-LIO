@@ -24,7 +24,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -39,12 +43,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.huyhoa.coclio.data.CocAssets
 import com.huyhoa.coclio.data.VillageExtraItem
 import com.huyhoa.coclio.data.VillageItem
 import com.huyhoa.coclio.data.VillageSnapshot
@@ -67,6 +75,15 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
     var showRawJson by rememberSaveable(snapshot.tag, snapshot.timestamp) {
         mutableStateOf(false)
     }
+    var selectedStatus by rememberSaveable(snapshot.tag, snapshot.timestamp) {
+        mutableStateOf("all")
+    }
+    var selectedSort by rememberSaveable(snapshot.tag, snapshot.timestamp) {
+        mutableStateOf("name")
+    }
+    var collapsedSections by remember(snapshot.tag, snapshot.timestamp) {
+        mutableStateOf(emptySet<String>())
+    }
     var nowSeconds by remember(snapshot.tag, snapshot.timestamp) {
         mutableLongStateOf(System.currentTimeMillis() / 1000L)
     }
@@ -79,21 +96,27 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
     }
 
     val normalizedQuery = query.trim()
-    val filteredItems = snapshot.items.filter { item ->
-        (selectedBase == "all" || item.base == selectedBase) &&
-            item.matchesExplorerQuery(normalizedQuery)
-    }
+    val filteredItems = filterJsonExplorerItems(
+        items = snapshot.items,
+        selectedBase = selectedBase,
+        selectedStatus = selectedStatus,
+        query = normalizedQuery,
+        sortOrder = selectedSort,
+        snapshotTimestamp = snapshot.timestamp,
+        nowSeconds = nowSeconds
+    )
     val groupedItems = filteredItems.groupBy { it.sectionKey }
-    val filteredExtras = snapshot.extraItems.filter { extra ->
+    val showExtraData = selectedStatus == "all" || selectedStatus == "extras"
+    val filteredExtras = if (showExtraData) snapshot.extraItems.filter { extra ->
         (selectedBase == "all" || extra.base == selectedBase) &&
             extra.matchesExplorerQuery(normalizedQuery)
-    }
+    } else emptyList()
     val groupedExtras = filteredExtras.groupBy { it.sectionKey }
-    val filteredUnknownFields = snapshot.extraFields.filter { (key, value) ->
+    val filteredUnknownFields = if (showExtraData) snapshot.extraFields.filter { (key, value) ->
         normalizedQuery.isBlank() ||
             key.contains(normalizedQuery, ignoreCase = true) ||
             value.contains(normalizedQuery, ignoreCase = true)
-    }
+    } else emptyMap()
     val unknownItemFieldCount = snapshot.items.sumOf { it.properties.size } + snapshot.extraFields.size
     val activeUpgradeCount = snapshot.activeUpgradesAt(nowSeconds).size
     val prettyJson = remember(snapshot.rawJson) {
@@ -139,6 +162,10 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 10.sp
                         )
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            JsonExplorerTag("NHÀ CHÍNH • TH ${snapshot.townHallLevel ?: "—"}")
+                            JsonExplorerTag("LÀNG ĐÊM • BH ${snapshot.builderHallLevel ?: "—"}")
+                        }
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             JsonExplorerMetric("MỤC", snapshot.items.size.toString(), Modifier.weight(1f))
                             JsonExplorerMetric("DỮ LIỆU PHỤ", snapshot.extraItems.size.toString(), Modifier.weight(1f))
@@ -160,6 +187,43 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
                         FilterChip(
                             selected = selectedBase == key,
                             onClick = { selectedBase = key },
+                            label = { Text(label, fontSize = 9.sp, maxLines = 1) }
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(
+                        "all" to "TẤT CẢ",
+                        "upgrading" to "ĐANG NÂNG",
+                        "gear" to "GEAR UP",
+                        "expired" to "HẾT GIỜ",
+                        "idle" to "CHƯA NÂNG",
+                        "extras" to "DỮ LIỆU PHỤ"
+                    ).forEach { (key, label) ->
+                        FilterChip(
+                            selected = selectedStatus == key,
+                            onClick = { selectedStatus = key },
+                            label = { Text(label, fontSize = 9.sp, maxLines = 1) }
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(
+                        "name" to "TÊN A–Z",
+                        "level" to "CẤP GIẢM",
+                        "timer" to "SẮP HOÀN THÀNH"
+                    ).forEach { (key, label) ->
+                        FilterChip(
+                            selected = selectedSort == key,
+                            onClick = { selectedSort = key },
                             label = { Text(label, fontSize = 9.sp, maxLines = 1) }
                         )
                     }
@@ -215,40 +279,80 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
         groupedItems.forEach { (sectionKey, rows) ->
             val sectionName = rows.firstOrNull()?.sectionLabel ?: sectionKey
             item(key = "json_explorer_section_$sectionKey") {
-                JsonExplorerSectionHeader(sectionName.uppercase(), rows.size)
-            }
-            itemsIndexed(
-                items = rows,
-                key = { index, item -> "json_item_${item.identity}_$index" }
-            ) { _, item ->
-                JsonExplorerItemCard(
-                    item = item,
-                    snapshot = snapshot,
-                    nowSeconds = nowSeconds
+                JsonExplorerSectionHeader(
+                    title = sectionName.uppercase(),
+                    count = rows.size,
+                    expanded = sectionKey !in collapsedSections,
+                    onClick = {
+                        collapsedSections = if (sectionKey in collapsedSections) {
+                            collapsedSections - sectionKey
+                        } else {
+                            collapsedSections + sectionKey
+                        }
+                    }
                 )
+            }
+            if (sectionKey !in collapsedSections) {
+                itemsIndexed(
+                    items = rows,
+                    key = { index, item -> "json_item_${item.identity}_$index" }
+                ) { _, item ->
+                    JsonExplorerItemCard(
+                        item = item,
+                        snapshot = snapshot,
+                        nowSeconds = nowSeconds
+                    )
+                }
             }
         }
 
         groupedExtras.forEach { (sectionKey, rows) ->
             val sectionName = rows.firstOrNull()?.sectionLabel ?: sectionKey
+            val collapseKey = "extra_$sectionKey"
             item(key = "json_explorer_extra_section_$sectionKey") {
-                JsonExplorerSectionHeader("${sectionName.uppercase()} • DỮ LIỆU PHỤ", rows.size)
+                JsonExplorerSectionHeader(
+                    title = "${sectionName.uppercase()} • DỮ LIỆU PHỤ",
+                    count = rows.size,
+                    expanded = collapseKey !in collapsedSections,
+                    onClick = {
+                        collapsedSections = if (collapseKey in collapsedSections) {
+                            collapsedSections - collapseKey
+                        } else {
+                            collapsedSections + collapseKey
+                        }
+                    }
+                )
             }
-            itemsIndexed(
-                items = rows,
-                key = { index, extra -> "json_extra_${extra.sectionKey}_${extra.dataId}_${extra.level}_$index" }
-            ) { _, extra ->
-                JsonExplorerExtraCard(extra)
+            if (collapseKey !in collapsedSections) {
+                itemsIndexed(
+                    items = rows,
+                    key = { index, extra -> "json_extra_${extra.sectionKey}_${extra.dataId}_${extra.level}_$index" }
+                ) { _, extra ->
+                    JsonExplorerExtraCard(extra)
+                }
             }
         }
 
         if (filteredUnknownFields.isNotEmpty()) {
             item(key = "json_explorer_unknown_header") {
-                JsonExplorerSectionHeader("TRƯỜNG JSON CHƯA PHÂN LOẠI", filteredUnknownFields.size)
+                JsonExplorerSectionHeader(
+                    title = "TRƯỜNG JSON CHƯA PHÂN LOẠI",
+                    count = filteredUnknownFields.size,
+                    expanded = "unknown_fields" !in collapsedSections,
+                    onClick = {
+                        collapsedSections = if ("unknown_fields" in collapsedSections) {
+                            collapsedSections - "unknown_fields"
+                        } else {
+                            collapsedSections + "unknown_fields"
+                        }
+                    }
+                )
             }
-            filteredUnknownFields.forEach { (key, value) ->
-                item(key = "json_unknown_$key") {
-                    JsonExplorerUnknownField(key, value)
+            if ("unknown_fields" !in collapsedSections) {
+                filteredUnknownFields.forEach { (key, value) ->
+                    item(key = "json_unknown_$key") {
+                        JsonExplorerUnknownField(key, value)
+                    }
                 }
             }
         }
@@ -323,9 +427,17 @@ private fun JsonExplorerMetric(label: String, value: String, modifier: Modifier 
 }
 
 @Composable
-private fun JsonExplorerSectionHeader(title: String, count: Int) {
+private fun JsonExplorerSectionHeader(
+    title: String,
+    count: Int,
+    expanded: Boolean = true,
+    onClick: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 7.dp, bottom = 1.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(top = 7.dp, bottom = 1.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -341,6 +453,13 @@ private fun JsonExplorerSectionHeader(title: String, count: Int) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.width(7.dp))
+        Text(
+            if (expanded) "⌄" else "›",
+            color = MaterialTheme.colorScheme.primary,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Black
         )
     }
 }
@@ -367,6 +486,23 @@ private fun JsonExplorerItemCard(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                val imageUrl = CocAssets.imageUrl(item)
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = item.name,
+                        modifier = Modifier.size(46.dp).clip(RoundedCornerShape(9.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.Category,
+                        contentDescription = item.sectionLabel,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(42.dp)
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         item.name,
@@ -389,8 +525,43 @@ private fun JsonExplorerItemCard(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 JsonExplorerTag("cnt: ${item.countLabel()}")
-                if (item.isRunning) JsonExplorerTag(if (item.gearUp) "ĐANG GEAR UP" else "ĐANG NÂNG")
+                val timerActive = item.isTimerActive(snapshot.timestamp, nowSeconds)
+                if (timerActive) {
+                    JsonExplorerTag(if (item.gearUp) "ĐANG GEAR UP" else "ĐANG NÂNG")
+                } else if (item.timerSeconds != null) {
+                    JsonExplorerTag("HẾT GIỜ • CHỜ JSON MỚI")
+                } else if (item.gearUp) {
+                    JsonExplorerTag("GEAR UP")
+                }
                 if (item.properties.isNotEmpty()) JsonExplorerTag("${item.properties.size} trường thêm")
+            }
+            if (item.isTimerActive(snapshot.timestamp, nowSeconds)) {
+                val progress = item.progressRatioAt(snapshot.timestamp, nowSeconds)
+                val percent = item.progressPercentAt(snapshot.timestamp, nowSeconds)
+                val remaining = item.remainingSecondsAt(snapshot.timestamp, nowSeconds)
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "TIẾN ĐỘ $percent%",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            "CÒN ${formatDuration(remaining)}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.fillMaxWidth().height(5.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
             }
             if (expanded) {
                 Spacer(Modifier.height(3.dp))
