@@ -5268,7 +5268,7 @@ private fun ImportDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(190.dp),
-                    placeholder = { Text("{ \"tag\": \"#...\", ... }", fontSize = 11.sp) },
+                    placeholder = { Text("Dán JSON làng đã xuất từ trò chơi vào đây...", fontSize = 11.sp) },
                     minLines = 6,
                     maxLines = 10,
                     colors = OutlinedTextFieldDefaults.colors(
