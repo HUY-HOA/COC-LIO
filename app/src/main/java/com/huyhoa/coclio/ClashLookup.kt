@@ -209,7 +209,10 @@ internal fun lookupSearchCandidates(raw: String): List<String> {
 
     candidates += input
     val compatible = Normalizer.normalize(input, Normalizer.Form.NFKD)
-        .replace(Regex("[\\p{M}\\p{Cf}\\p{So}]"), " ")
+        // Remove combining marks to preserve Vietnamese syllables (HÒA -> HOA).
+        .replace(Regex("[\\p{M}\\p{Cf}]"), "")
+        // Replace emoji and other symbols with spaces so decorated words stay separated.
+        .replace(Regex("\\p{So}+"), " ")
         .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
         .replace(Regex("\\s+"), " ")
         .trim()
