@@ -2066,8 +2066,8 @@ fun ClashLookupScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("TRA CỨU CLASH", fontSize = 19.sp, fontWeight = FontWeight.Black, color = LookupCyan, letterSpacing = 1.sp)
-            Text("Tra cứu người chơi, bang hội và hồ sơ thống kê Clash of Clans", fontSize = 10.sp, color = LookupMuted)
+            Text("ID TÊN", fontSize = 19.sp, fontWeight = FontWeight.Black, color = LookupCyan, letterSpacing = 1.sp)
+            Text("Tìm người chơi và bang hội bằng ID hoặc tên", fontSize = 10.sp, color = LookupMuted)
         }
 
         Card(
