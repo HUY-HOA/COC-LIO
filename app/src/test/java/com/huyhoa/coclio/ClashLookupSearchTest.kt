@@ -184,7 +184,8 @@ class ClashLookupSearchTest {
     @Test
     fun clanTagAndClanLevelUseDifferentSemanticIcons() {
         assertEquals(R.drawable.ic_coc_tag, lookupGameIconResource("clanTag"))
-        assertEquals(R.drawable.ic_coc_clan, lookupGameIconResource("clanLevel"))
+        assertEquals(R.drawable.ic_coc_level, lookupGameIconResource("clanLevel"))
+        assertEquals(R.drawable.ic_coc_clan, lookupGameIconResource("clan"))
     }
 
     @Test
