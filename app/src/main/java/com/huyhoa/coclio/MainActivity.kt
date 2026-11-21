@@ -2858,15 +2858,15 @@ private fun VillageMaxPlanDialog(
                 )
                 VillageItemDetailField(
                     "Cách tính",
-                    "Công trình, bẫy và Tường tính theo số bản sao rảnh (cnt) cộng thêm một bản sao nếu đang nâng cấp (timer). Gear-up không cộng vào thời gian MAX cấp thường. Lính, Thần chú, Anh hùng và nghiên cứu chỉ tính một lần, không nhân theo số quân trong kho."
+                    "Công trình, bẫy và Tường tính theo số bản sao rảnh (cnt) cộng thêm một bản sao nếu đang nâng cấp (timer). Cải tiến không được cộng vào thời gian nâng cấp cấp tối đa thông thường. Lính, Thần chú, Anh hùng và nghiên cứu chỉ tính một lần, không nhân theo số quân trong kho."
                 )
                 VillageItemDetailField(
                     "Số dư tài nguyên hiện tại",
-                    "JSON xuất từ game không cung cấp số dư Gold, Elixir, Dark Elixir hoặc Quặng. Các số phía trên là tổng chi phí nâng cấp còn phải trả, chưa trừ tài nguyên đang có trong kho."
+                    "JSON xuất từ trò chơi không cung cấp số dư Vàng, Tinh chất, Dầu đen hoặc Quặng. Các số phía trên là tổng chi phí nâng cấp còn phải trả, chưa trừ tài nguyên đang có trong kho."
                 )
                 VillageItemDetailField(
                     "Độ chính xác danh mục",
-                    "Dữ liệu nâng cấp dựa trên catalog cộng đồng và có thể chậm cập nhật một số chi phí cũ sau cân bằng game. Hãy đối chiếu trong game trước khi lập kế hoạch cuối cùng."
+                    "Dữ liệu nâng cấp dựa trên danh mục cộng đồng và có thể chậm cập nhật một số chi phí cũ sau cân bằng game. Hãy đối chiếu trong trò chơi trước khi lập kế hoạch cuối cùng."
                 )
                 VillageItemDetailField(
                     "Lưu ý thời gian",
@@ -2874,7 +2874,7 @@ private fun VillageMaxPlanDialog(
                 )
                 VillageItemDetailField(
                     "Siêu cường hóa",
-                    "Chi phí Siêu cường hóa được xem riêng trong chi tiết từng công trình và chưa cộng vào tổng MAX thường; JSON làng hiện không xác nhận bậc đã hoàn thành."
+                    "Chi phí Siêu cường hóa được xem riêng trong chi tiết từng công trình và chưa cộng vào tổng cấp tối đa thông thường; JSON làng hiện không xác nhận bậc đã hoàn thành."
                 )
                 TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
                     Text("ĐÓNG")
@@ -4050,7 +4050,7 @@ private fun HeroEquipmentCatalogRow(
             Divider(color = MaterialTheme.colorScheme.outlineVariant)
             val fullTotals = CocUpgradeCatalog.upgradeTotals(entry, 1, maxLevel)
             Text(
-                "CẤP 1 → MAX",
+                "CẤP 1 → CẤP TỐI ĐA",
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black
@@ -4082,8 +4082,8 @@ private fun HeroEquipmentCatalogRow(
                     skipFirstInProgress = villageItem?.timerSeconds != null && (villageItem.timerSeconds ?: 0L) > 0L
                 )
                 Text(
-                    if (villageItem?.level != null) "CẤP ${villageItem.level} → MAX"
-                    else "CẤP CHƯA RÕ → MAX • TẠM TÍNH TỪ CẤP 1",
+                    if (villageItem?.level != null) "CẤP ${villageItem.level} → CẤP TỐI ĐA"
+                    else "CẤP CHƯA RÕ → CẤP TỐI ĐA • TẠM TÍNH TỪ CẤP 1",
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Black
@@ -4109,13 +4109,13 @@ private fun HeroEquipmentCatalogRow(
                 if (missingCurrentLevels.isNotEmpty()) {
                     VillageItemDetailField(
                         "Thiếu dữ liệu chi phí còn lại",
-                        missingCurrentLevels.joinToString(", ") + ". Không thể tính đủ chi phí tới MAX nếu chưa có dữ liệu các cấp này."
+                        missingCurrentLevels.joinToString(", ") + ". Không thể tính đủ chi phí tới cấp tối đa nếu chưa có dữ liệu các cấp này."
                     )
                 }
             } else {
                 VillageItemDetailField(
                     "Trạng thái",
-                    "Export chưa xác nhận trang bị ở cấp 1 là đã sở hữu hay chưa mở khóa; chi phí còn lại đang tạm tính từ cấp 1."
+                    "Bản xuất JSON chưa xác nhận trang bị ở cấp 1 là đã sở hữu hay chưa mở khóa; chi phí còn lại đang tạm tính từ cấp 1."
                 )
             }
         }
@@ -4292,7 +4292,7 @@ private fun VillageItemDetailDialog(
                     val barracksLevel = squadInfo.optInt("squadBarracksLevelRequired", 0)
                     val composition = squadInfo.optString("composition")
                     val housing = squadInfo.optInt("housingSpace", 0)
-                    VillageItemDetailField("Mở khóa", "Nhà chính cấp $unlockHall • Squad Barracks cấp $barracksLevel")
+                    VillageItemDetailField("Mở khóa", "Nhà chính cấp $unlockHall • Doanh trại tiểu đội cấp $barracksLevel")
                     if (composition.isNotBlank()) VillageItemDetailField("Thành phần", composition)
                     if (housing > 0) VillageItemDetailField("Sức chứa", "$housing ô nhà")
                     val barracksCost = squadInfo.optLong("barracksUpgradeCost", 0L)
@@ -4304,7 +4304,7 @@ private fun VillageItemDetailDialog(
                             it.optLong("minutes") * 60L + it.optLong("seconds")
                     } ?: 0L
                     if (barracksSeconds > 0L) {
-                        VillageIconDetailField(R.drawable.ic_coc_time, "Thời gian nâng Squad Barracks", formatDuration(barracksSeconds))
+                        VillageIconDetailField(R.drawable.ic_coc_time, "Thời gian nâng Doanh trại tiểu đội", formatDuration(barracksSeconds))
                     }
                     val level2Ability = squadInfo.optString("abilityLevel2")
                     val level3Ability = squadInfo.optString("abilityLevel3")
@@ -4448,8 +4448,8 @@ private fun VillageItemDetailDialog(
                             targetAtMax
                         )
                         Text(
-                            if (targetAtHall == null) "TỔNG CÒN ĐẾN CẤP MAX TOÀN TRÒ CHƠI"
-                            else "TỪ GIỚI HẠN THEO NHÀ ĐẾN CẤP MAX TOÀN TRÒ CHƠI",
+                            if (targetAtHall == null) "TỔNG CÒN ĐẾN CẤP TỐI ĐA TOÀN TRÒ CHƠI"
+                            else "TỪ GIỚI HẠN THEO NHÀ ĐẾN CẤP TỐI ĐA TOÀN TRÒ CHƠI",
                             color = CocGold,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black
@@ -4517,7 +4517,7 @@ private fun VillageItemDetailDialog(
                             VillageItemDetailField("SỨC CHỨA", "$it ô nhà")
                         }
                         entry.properties.optInt("squadBarracksLevelRequired", 0).takeIf { it > 0 }?.let {
-                            VillageItemDetailField("DOANH TRẠI SQUAD", "Cần cấp $it")
+                            VillageItemDetailField("DOANH TRẠI TIỂU ĐỘI", "Cần cấp $it")
                         }
                         entry.properties.optString("abilityName").takeIf { it.isNotBlank() }?.let {
                             VillageItemDetailField("KỸ NĂNG ĐẶC BIỆT", it)
@@ -4551,7 +4551,7 @@ private fun VillageItemDetailDialog(
                             fontWeight = FontWeight.Black
                         )
                         Text(
-                            "TỪ CẤP $firstAvailableLevel ĐẾN MAX ($globalMax)",
+                            "TỪ CẤP $firstAvailableLevel ĐẾN CẤP TỐI ĐA ($globalMax)",
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black
@@ -4587,9 +4587,9 @@ private fun VillageItemDetailDialog(
                         )
                         Text(
                             if (hasConfirmedOwnership && item.level != null) {
-                                "TỪ CẤP $currentStart ĐẾN MAX ($globalMax)"
+                                "TỪ CẤP $currentStart ĐẾN CẤP TỐI ĐA ($globalMax)"
                             } else {
-                                "TẠM TÍNH TỪ CẤP $currentStart ĐẾN MAX ($globalMax)"
+                                "TẠM TÍNH TỪ CẤP $currentStart ĐẾN CẤP TỐI ĐA ($globalMax)"
                             },
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 10.sp,
