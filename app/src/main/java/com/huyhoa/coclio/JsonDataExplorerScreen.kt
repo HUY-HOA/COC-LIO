@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -143,7 +143,7 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
                             JsonExplorerMetric("MỤC", snapshot.items.size.toString(), Modifier.weight(1f))
                             JsonExplorerMetric("DỮ LIỆU PHỤ", snapshot.extraItems.size.toString(), Modifier.weight(1f))
                             JsonExplorerMetric("ĐANG NÂNG", activeUpgradeCount.toString(), Modifier.weight(1f))
-                            JsonExplorerMetric("TRƯỜNG THÊM", unknownItemFieldCount.toString(), Modifier.weight(1f))
+                            JsonExplorerMetric("TRƯỜNG PHỤ", unknownItemFieldCount.toString(), Modifier.weight(1f))
                         }
                     }
                 }
@@ -217,10 +217,10 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
             item(key = "json_explorer_section_$sectionKey") {
                 JsonExplorerSectionHeader(sectionName.uppercase(), rows.size)
             }
-            items(
+            itemsIndexed(
                 items = rows,
-                key = { item -> "json_item_${item.identity}" }
-            ) { item ->
+                key = { index, item -> "json_item_${item.identity}_$index" }
+            ) { _, item ->
                 JsonExplorerItemCard(
                     item = item,
                     snapshot = snapshot,
@@ -234,10 +234,10 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
             item(key = "json_explorer_extra_section_$sectionKey") {
                 JsonExplorerSectionHeader("${sectionName.uppercase()} • DỮ LIỆU PHỤ", rows.size)
             }
-            items(
+            itemsIndexed(
                 items = rows,
-                key = { extra -> "json_extra_${extra.sectionKey}_${extra.dataId}_${extra.level}_${extra.value}" }
-            ) { extra ->
+                key = { index, extra -> "json_extra_${extra.sectionKey}_${extra.dataId}_${extra.level}_$index" }
+            ) { _, extra ->
                 JsonExplorerExtraCard(extra)
             }
         }
