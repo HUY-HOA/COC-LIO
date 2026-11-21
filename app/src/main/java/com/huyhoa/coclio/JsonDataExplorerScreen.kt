@@ -90,7 +90,7 @@ internal fun JsonDataExplorerScreen(snapshot: VillageSnapshot) {
 
     LaunchedEffect(snapshot.tag, snapshot.timestamp) {
         while (true) {
-            delay(30_000L)
+            delay(5_000L)
             nowSeconds = System.currentTimeMillis() / 1000L
         }
     }
@@ -703,37 +703,6 @@ private fun JsonExplorerInfoCard(title: String, detail: String) {
             Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
         }
     }
-}
-
-private fun VillageItem.matchesExplorerQuery(query: String): Boolean {
-    if (query.isBlank()) return true
-    val searchable = buildString {
-        append(name).append(' ')
-        append(sectionLabel).append(' ')
-        append(sectionKey).append(' ')
-        append(dataId).append(' ')
-        append(level ?: "").append(' ')
-        append(count).append(' ')
-        append(timerSeconds ?: "").append(' ')
-        append(helperCooldownSeconds ?: "").append(' ')
-        append(properties.entries.joinToString(" ") { "${it.key} ${it.value}" }).append(' ')
-        append(details.joinToString(" "))
-    }
-    return searchable.contains(query, ignoreCase = true)
-}
-
-private fun VillageExtraItem.matchesExplorerQuery(query: String): Boolean {
-    if (query.isBlank()) return true
-    val searchable = listOf(
-        name,
-        sectionLabel,
-        sectionKey,
-        dataId?.toString().orEmpty(),
-        level?.toString().orEmpty(),
-        count.toString(),
-        value.orEmpty()
-    ).joinToString(" ")
-    return searchable.contains(query, ignoreCase = true)
 }
 
 private fun VillageItem.countLabel(): String =
