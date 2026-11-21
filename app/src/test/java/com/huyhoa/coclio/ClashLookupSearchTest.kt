@@ -113,6 +113,8 @@ class ClashLookupSearchTest {
     @Test
     fun statIconsUseTheCorrectSemanticAsset() {
         assertEquals(R.drawable.ic_coc_members, lookupGameIconResource("memberCount"))
+        assertEquals(R.drawable.ic_coc_player, lookupGameIconResource("expLevel"))
+        assertEquals(R.drawable.ic_coc_swords, lookupGameIconResource("troops"))
         assertEquals(R.drawable.ic_coc_defense, lookupGameIconResource("defenses"))
         assertEquals(R.drawable.ic_coc_ore_glowy, lookupGameIconResource("glowyOre"))
         assertEquals(R.drawable.ic_coc_percent, lookupGameIconResource("destructionPercentage"))
