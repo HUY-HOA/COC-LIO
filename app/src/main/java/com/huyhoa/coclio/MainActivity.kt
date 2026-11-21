@@ -5017,7 +5017,7 @@ private fun HistoryScreen(
 
         if (selectedSection == "villages") {
             if (villages.isEmpty()) {
-                item { InfoCard("Chưa có làng nào", "Nhấn MỞ CLASH OF CLANS để mở game cùng cửa sổ nhập JSON nổi. Sao chép JSON trong game rồi dán vào cửa sổ đó để lưu làng.") }
+                item { InfoCard("Chưa có làng nào", "Nhấn MỞ CLASH OF CLANS để mở trò chơi cùng cửa sổ nhập JSON nổi. Sao chép JSON trong trò chơi rồi dán vào cửa sổ đó để lưu làng.") }
             } else {
                 items(villages, key = { "village_" + it.tag }) { snapshot ->
                     val pinned = snapshot.tag in pinnedTags
