@@ -671,13 +671,14 @@ internal fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
         .ifBlank { entity.lookupText("badge") }
         .ifBlank { badgeUrls?.lookupText("medium").orEmpty() }
         .ifBlank { badgeUrls?.lookupText("large").orEmpty() }
-    val clanBadgeUrls = clan?.optJSONObject("badgeUrls")
-    val nestedClanBadge = clan?.lookupText("badge_url")
-        ?.ifBlank { clan.lookupText("badgeUrl") }
-        ?.ifBlank { clan.lookupText("badge") }
-        ?.ifBlank { clanBadgeUrls?.lookupText("medium").orEmpty() }
-        ?.ifBlank { clanBadgeUrls?.lookupText("large").orEmpty() }
-        .orEmpty()
+    val nestedClanBadge = clan?.let { clanEntity ->
+        val urls = clanEntity.optJSONObject("badgeUrls")
+        clanEntity.lookupText("badge_url")
+            .ifBlank { clanEntity.lookupText("badgeUrl") }
+            .ifBlank { clanEntity.lookupText("badge") }
+            .ifBlank { urls?.lookupText("medium").orEmpty() }
+            .ifBlank { urls?.lookupText("large").orEmpty() }
+    }.orEmpty()
 
     fun number(vararg keys: String): String {
         for (key in keys) {
@@ -1856,14 +1857,16 @@ fun ClashLookupScreen() {
                         // variants so decorated names and clans sharing name fragments are not
                         // silently omitted. Results are then checked against the complete name.
                         for (candidate in searchCandidates) {
-                            val response = runCatching {
+                            val responseResult = runCatching {
                                 if (isClanSearch) {
                                     ClashKingLookupApi.get(ClashKingLookupApi.clanSearchPath(candidate, oldCursor))
                                 } else {
                                     ClashKingLookupApi.get(ClashKingLookupApi.playerSearchPath(candidate, oldCursor, selectedFilters))
                                 }
-                            }.getOrElse { error ->
-                                lastSearchFailure = error
+                            }
+                            val response = responseResult.getOrNull()
+                            if (response == null) {
+                                lastSearchFailure = responseResult.exceptionOrNull()
                                 continue
                             }
                             successfulSearches++
