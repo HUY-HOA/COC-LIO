@@ -3593,39 +3593,87 @@ internal fun localizedCatalogField(label: String, value: String): Pair<String, S
 }
 
 private fun localizedCatalogText(value: String): String {
-    Regex("(?i)^Blacksmith level (\\d+)$").matchEntire(value.trim())?.let {
-        return "Lò rèn cấp ${it.groupValues[1]}"
+    val raw = value.trim()
+    Regex("(?i)^Blacksmith level (\\d+)$").matchEntire(raw)?.let {
+        return "Lò rèn cấp \${it.groupValues[1]}"
     }
-    Regex("(?i)^Buy in (.+?) event for ([\\d,]+) (.+)$").matchEntire(value.trim())?.let {
+    Regex("(?i)^Town Hall(?: Level)? Required:?\\s*(\\d+)$").matchEntire(raw)?.let {
+        return "Yêu cầu Nhà chính cấp \${it.groupValues[1]}"
+    }
+    Regex("(?i)^Builder Hall(?: Level)? Required:?\\s*(\\d+)$").matchEntire(raw)?.let {
+        return "Yêu cầu Nhà thợ xây cấp \${it.groupValues[1]}"
+    }
+    Regex("(?i)^Star Lab Required:?\\s*(\\d+)$").matchEntire(raw)?.let {
+        return "Yêu cầu Phòng thí nghiệm sao cấp \${it.groupValues[1]}"
+    }
+    Regex("(?i)^Buy in (.+?) event for ([\\d,]+) (.+)$").matchEntire(raw)?.let {
         val medals = it.groupValues[3].replace("Medals", "huy hiệu", ignoreCase = true)
-        return "Nhận trong sự kiện ${it.groupValues[1]} với ${it.groupValues[2]} $medals"
+        return "Nhận trong sự kiện \${it.groupValues[1]} với \${it.groupValues[2]} $medals"
     }
-    Regex("(?i)^Purchasable from the Trader for ([\\d,]+) Gems$").matchEntire(value.trim())?.let {
-        return "Có thể mua tại Thương nhân với ${it.groupValues[1]} Ngọc"
+    Regex("(?i)^Purchasable from the Trader for ([\\d,]+) Gems$").matchEntire(raw)?.let {
+        return "Có thể mua tại Thương nhân với \${it.groupValues[1]} Ngọc"
     }
-    return when (value.trim()) {
-        "Available by default" -> "Có sẵn mặc định"
-        "Unlocked by default" -> "Được mở khóa mặc định"
-        "Available in the Shop" -> "Có trong Cửa hàng"
-        "Available from the Trader" -> "Có thể nhận từ Thương nhân"
-        else -> value
-            .replace("Builder Elixir", "Tinh chất thợ xây", ignoreCase = true)
-            .replace("Builder Gold", "Vàng thợ xây", ignoreCase = true)
-            .replace("Dark Elixir", "Dầu đen", ignoreCase = true)
-            .replace("Elixir", "Tinh chất", ignoreCase = true)
-            .replace("Gold", "Vàng", ignoreCase = true)
-            .replace("Gems", "Ngọc", ignoreCase = true)
-            .replace("Shiny Ore", "Quặng sáng", ignoreCase = true)
-            .replace("Glowy Ore", "Quặng phát sáng", ignoreCase = true)
-            .replace("Starry Ore", "Quặng sao", ignoreCase = true)
-            .replace(Regex("(?i)\\btiles?\\b"), "ô")
-            .replace(Regex("(?i)\\bseconds?\\b"), "giây")
-            .replace(Regex("(?i)\\bminutes?\\b"), "phút")
-            .replace(Regex("(?i)\\bhours?\\b"), "giờ")
-            .replace(Regex("(?i)\\bdays?\\b"), "ngày")
+    val translated = when (raw.lowercase(Locale.ROOT)) {
+        "available by default" -> "Có sẵn mặc định"
+        "unlocked by default" -> "Được mở khóa mặc định"
+        "available in the shop" -> "Có trong cửa hàng"
+        "available from the trader" -> "Có thể nhận từ Thương nhân"
+        "none", "null" -> "Không có"
+        "ground" -> "Mặt đất"
+        "air" -> "Trên không"
+        "ground & air", "ground and air" -> "Mặt đất và trên không"
+        "ranged (ground & air)" -> "Tầm xa (mặt đất và trên không)"
+        "melee (ground only)" -> "Cận chiến (mặt đất)"
+        "melee (with nearby air units)/ranged (otherwise); (ground & air)" ->
+            "Cận chiến khi có đơn vị bay gần, nếu không thì tầm xa (mặt đất và trên không)"
+        "ranged single target (any target)" -> "Tầm xa, đơn mục tiêu (mọi mục tiêu)"
+        "single target" -> "Đơn mục tiêu"
+        "single target (ground only)" -> "Đơn mục tiêu (mặt đất)"
+        "splash", "area splash" -> "Sát thương diện rộng"
+        "area splash (ground only)" -> "Sát thương diện rộng (mặt đất)"
+        "chain", "chain lightning" -> "Sét dây chuyền"
+        "walls" -> "Tường"
+        "defenses" -> "Công trình phòng thủ"
+        "resources" -> "Tài nguyên"
+        "heroes and troops" -> "Anh hùng và quân lính"
+        "hero", "heroes" -> "Anh hùng"
+        "hero's target" -> "Mục tiêu của Anh hùng"
+        "any" -> "Bất kỳ mục tiêu nào"
+        "dark" -> "Hắc ám"
+        "regular" -> "Thông thường"
+        "bomb rush" -> "Cuồng nộ bom"
+        "electric hammer" -> "Búa điện"
+        "royal cloak" -> "Áo choàng hoàng gia"
+        "iron fist" -> "Nắm đấm sắt"
+        "royal rampage" -> "Cuồng kích hoàng gia"
+        "eternal tome" -> "Sách bất tử"
+        "dark orb" -> "Quả cầu bóng tối"
+        "seeking shield" -> "Khiên truy đuổi"
+        "rubble" -> "Đống đổ nát"
+        else -> raw
+    }
+    val resourcesAndUnits = translated
+        .replace("Builder Elixir", "Tinh chất thợ xây", ignoreCase = true)
+        .replace("Builder Gold", "Vàng thợ xây", ignoreCase = true)
+        .replace("Dark Elixir", "Dầu đen", ignoreCase = true)
+        .replace("Elixir", "Tinh chất", ignoreCase = true)
+        .replace("Gold", "Vàng", ignoreCase = true)
+        .replace("Gems", "Ngọc", ignoreCase = true)
+        .replace("Shiny Ore", "Quặng sáng", ignoreCase = true)
+        .replace("Glowy Ore", "Quặng phát sáng", ignoreCase = true)
+        .replace("Starry Ore", "Quặng sao", ignoreCase = true)
+        .replace("Medals", "huy hiệu", ignoreCase = true)
+        .replace(Regex("(?i)\\btiles?\\b"), "ô")
+        .replace(Regex("(?i)\\bseconds?\\b"), "giây")
+        .replace(Regex("(?i)\\bminutes?\\b"), "phút")
+        .replace(Regex("(?i)\\bhours?\\b"), "giờ")
+        .replace(Regex("(?i)\\bdays?\\b"), "ngày")
+    return if (Regex("[A-Za-z]{3,}").containsMatchIn(resourcesAndUnits)) {
+        "Thông tin tiếng Việt đang được cập nhật"
+    } else {
+        resourcesAndUnits
     }
 }
-
 private val EpicEquipmentIds = setOf(
     90000010, 90000013, 90000014, 90000015, 90000019, 90000022,
     90000032, 90000035, 90000039, 90000040, 90000041, 90000048,
