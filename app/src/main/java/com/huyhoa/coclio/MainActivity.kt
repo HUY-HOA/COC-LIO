@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
@@ -758,6 +759,13 @@ private fun CocLioApp(
         }
     }
     var showImportDialog by remember { mutableStateOf(false) }
+    BackHandler(enabled = isGoogleSignedIn && !showImportDialog && (selectedTab != 2 || jsonSection != 0)) {
+        if (selectedTab != 2) {
+            selectedTab = 2
+        } else {
+            jsonSection = 0
+        }
+    }
     var importError by remember { mutableStateOf<String?>(null) }
     var googleAuthError by remember { mutableStateOf<String?>(null) }
     var importSummary by remember { mutableStateOf<ImportSummary?>(null) }
