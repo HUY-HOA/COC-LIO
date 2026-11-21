@@ -90,7 +90,7 @@ private val LookupCyan = Color(0xFF36F4FF)
 private val LookupGold = Color(0xFFFFD166)
 private val LookupMuted = Color(0xFF9EAFCE)
 
-private data class ClashLookupEntry(
+internal data class ClashLookupEntry(
     val name: String,
     val tag: String,
     val isClan: Boolean,
@@ -608,7 +608,7 @@ private fun JSONObject.lookupText(key: String): String {
     }
 }
 
-private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
+internal fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
     val clan = json.optJSONObject("clan")
     val league = json.optJSONObject("leagueTier") ?: json.optJSONObject("league")
     val badgeUrls = json.optJSONObject("badgeUrls") ?: clan?.optJSONObject("badgeUrls")
