@@ -32,7 +32,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## ClashKingAssets supplemental game data and CDN references
+## Static supplemental game-data attribution
 
 The supplemental game-data snapshot in `app/src/main/assets/coc_upgrade/supplemental_catalog.json` is based in part on the static game data from:
 
@@ -41,7 +41,7 @@ The supplemental game-data snapshot in `app/src/main/assets/coc_upgrade/suppleme
 - Upstream license: GNU General Public License v3.0 (GPL-3.0)
 - License text: [licenses/GPL-3.0.txt](licenses/GPL-3.0.txt)
 
-The repository also references artwork hosted by the upstream project's CDN at `https://assets.clashk.ing/`; those image files are fetched remotely and are not bundled as binary image files in this repository. The relevant game-data provenance and snapshot dates are recorded in `app/src/main/assets/coc_upgrade/source.json`.
+The app no longer makes runtime requests to the upstream image CDN. The remaining local supplemental game-data snapshot is still derived in part from the repository above; its source, snapshot date and license are recorded in `app/src/main/assets/coc_upgrade/source.json`. This notice is retained for required third-party attribution, not as an active lookup/API integration.
 
 The GPL-3.0 terms apply to the relevant upstream-derived material. This notice does not relicense third-party material or grant rights to Supercell trademarks or game artwork. Review the upstream license and source notices before redistributing modified versions.
 
