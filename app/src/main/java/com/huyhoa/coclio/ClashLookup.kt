@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +68,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -83,7 +87,9 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.text.Normalizer
+import java.text.NumberFormat
 import java.time.LocalDate
+import java.util.Locale
 
 private const val CLASHKING_API = "https://api.clashk.ing"
 private val LookupCyan = Color(0xFF36F4FF)
@@ -644,13 +650,19 @@ internal fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
         members = number("memberCount").ifBlank {
             when (val memberValue = json.opt("members")) {
                 is JSONArray -> memberValue.length().takeIf { it > 0 }?.toString().orEmpty()
-                is JSONObject -> memberValue.length().takeIf { it > 0 }?.toString().orEmpty()
+                is JSONObject -> memberValue.lookupText("count")
+                    .ifBlank { memberValue.lookupText("total") }
+                    .ifBlank { memberValue.lookupText("memberCount") }
+                    .ifBlank {
+                        memberValue.optJSONArray("items")?.length()?.takeIf { it > 0 }?.toString().orEmpty()
+                    }
                 else -> number("members")
             }
         },
         level = number("clanLevel", "level"),
         rank = number("rank", "globalRank", "groupRank"),
-        streak = number("war_win_streak", "warWinStreak", "streak"),
+        // ClashKing war-win streak is a clan statistic, not a player's three-star streak.
+        streak = if (isClan) number("war_win_streak", "warWinStreak", "streak") else "",
         metric = number("donations", "war_wins", "capital_gold_total", "stars"),
         metricLabel = when {
             json.has("donations") -> "Quyên góp"
@@ -943,21 +955,24 @@ private fun lookupGameIconResource(key: String): Int? {
         "builderhalllevel", "builderhall", "builderbase", "builderbasevillage" -> R.drawable.ic_coc_home
         "explevel", "experiencelevel", "playerlevel", "rank", "globalrank", "localrank", "grouprank",
         "trophies", "leaguetrophies", "builderbasetrophies", "buildertrophies", "stars", "attacktrophies", "defensetrophies" -> R.drawable.ic_coc_star
-        "clanlevel", "membercount", "members", "clan", "clantag", "clancapital" -> R.drawable.ic_coc_clan
+        "clanlevel", "clan", "clantag", "clancapital" -> R.drawable.ic_coc_clan
+        "membercount", "members" -> R.drawable.ic_coc_members
         "leaguetier", "league", "warleague", "capitalleague", "cwlleagueid", "leaguetierid", "leaguegroupid" -> R.drawable.ic_coc_star
         "warwins", "warlosses", "warties", "warwinstreak", "attackwins", "defensewins",
-        "attacktriples", "defensetriples", "attacks", "defenses", "wins", "losses", "ties", "destructionpercentage" -> R.drawable.ic_coc_swords
+        "attacktriples", "defensetriples", "attacks", "wins", "losses", "ties", "destructionpercentage" -> R.drawable.ic_coc_swords
         "donated", "received", "troopsdonated", "troopsreceived", "troops", "supertroops", "siege", "siegemachines" -> R.drawable.ic_coc_guardian
         "capitalgoldtotal", "capitalgold", "capitalpoints" -> R.drawable.ic_coc_capital_gold
         "gold", "goldloot", "goldstorage", "goldmine" -> R.drawable.ic_coc_gold
         "elixir", "elixirloot", "elixirstorage" -> R.drawable.ic_coc_elixir
         "darkelixir", "darkelixirloot" -> R.drawable.ic_coc_dark_elixir
-        "shinyore", "glowyore", "starryore" -> R.drawable.ic_coc_ore_shiny
+        "shinyore" -> R.drawable.ic_coc_ore_shiny
+        "glowyore" -> R.drawable.ic_coc_ore_glowy
+        "starryore" -> R.drawable.ic_coc_ore_starry
         "hero", "heroes" -> R.drawable.ic_coc_hero
         "spell", "spells" -> R.drawable.ic_coc_spell
         "pet", "pets" -> R.drawable.ic_coc_pet
         "equipment", "heroequipment" -> R.drawable.ic_coc_equipment
-        "defense", "defenses" -> R.drawable.ic_coc_defense
+        "defense", "defenses", "defence" -> R.drawable.ic_coc_defense
         "trap", "traps" -> R.drawable.ic_coc_trap
         "wall", "walls" -> R.drawable.ic_coc_wall
         "tag", "playertag" -> R.drawable.ic_coc_tag
@@ -965,6 +980,65 @@ private fun lookupGameIconResource(key: String): Int? {
         "homevillage" -> R.drawable.ic_coc_buildings
         else -> null
     }
+}
+
+internal fun formatLookupCount(value: String): String {
+    val number = value.trim().toLongOrNull() ?: return value
+    return NumberFormat.getIntegerInstance(Locale("vi", "VN")).format(number)
+}
+
+internal fun lookupDisplayValue(key: String, value: Any?): String {
+    val raw = lookupValue(value)
+    if (raw.isBlank() || raw == "—") return raw
+    val normalized = key.lowercase().replace("_", "").replace("-", "")
+
+    val percentageKeys = setOf(
+        "destructionpercentage", "destruction", "averagedestruction",
+        "averageoffense", "averagedefense"
+    )
+    if (normalized in percentageKeys) {
+        val number = raw.toDoubleOrNull() ?: return raw
+        val formatted = NumberFormat.getNumberInstance(Locale("vi", "VN")).apply {
+            maximumFractionDigits = 2
+            minimumFractionDigits = 0
+        }.format(number)
+        return "$formatted%"
+    }
+
+    if (normalized in setOf("triplerate", "perfectdayrate", "share")) {
+        val number = raw.toDoubleOrNull() ?: return raw
+        val percent = if (number in 0.0..1.0) number * 100.0 else number
+        val formatted = NumberFormat.getNumberInstance(Locale("vi", "VN")).apply {
+            maximumFractionDigits = 2
+            minimumFractionDigits = 0
+        }.format(percent)
+        return "$formatted%"
+    }
+
+    if (normalized.endsWith("seconds") || normalized == "duration" || normalized == "averageduration") {
+        raw.toLongOrNull()?.let { seconds ->
+            val safeSeconds = seconds.coerceAtLeast(0L)
+            val days = safeSeconds / 86_400
+            val hours = (safeSeconds % 86_400) / 3_600
+            val minutes = (safeSeconds % 3_600) / 60
+            val remainder = safeSeconds % 60
+            return when {
+                days > 0 -> "$days ngày" + if (hours > 0) " $hours giờ" else ""
+                hours > 0 -> "$hours giờ" + if (minutes > 0) " $minutes phút" else ""
+                minutes > 0 -> "$minutes phút" + if (remainder > 0) " $remainder giây" else ""
+                else -> "$remainder giây"
+            }
+        }
+    }
+
+    val identifierKeys = setOf(
+        "id", "dataid", "unitid", "troopid", "heroid", "spellid", "petid",
+        "equipmentid", "buildingid", "itemid", "seasonid", "leaguetierid",
+        "leaguegroupid", "cwlleagueid", "leagueid", "locationid", "warid",
+        "timestamp", "battletime", "tag", "playertag", "clantag", "warTag".lowercase()
+    )
+    if (normalized !in identifierKeys) raw.toLongOrNull()?.let { return formatLookupCount(raw) }
+    return raw
 }
 
 private data class LookupMiniStat(
@@ -976,23 +1050,55 @@ private data class LookupMiniStat(
 
 private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
     fun stat(label: String, value: String, icon: Int, image: String = "") =
-        value.takeIf(String::isNotBlank)?.let { LookupMiniStat(label, it, icon, image) }
+        value.takeIf(String::isNotBlank)?.let { LookupMiniStat(label, formatLookupCount(it), icon, image) }
     return if (entry.isClan) {
         listOfNotNull(
             stat("CẤP BANG", entry.level, R.drawable.ic_coc_clan),
             stat("THÀNH VIÊN", entry.members, R.drawable.ic_coc_members),
-            stat("HẠNG", entry.rank, R.drawable.ic_coc_star),
+            stat("XẾP HẠNG", entry.rank, R.drawable.ic_coc_star),
             stat("CHUỖI THẮNG", entry.streak, R.drawable.ic_coc_swords)
         )
     } else {
         listOfNotNull(
-            stat("LV NGƯỜI CHƠI", entry.playerLevel, R.drawable.ic_coc_star),
+            stat("CẤP NGƯỜI CHƠI", entry.playerLevel, R.drawable.ic_coc_star),
             stat("NHÀ CHÍNH", entry.townHall, R.drawable.ic_coc_buildings, lookupBuildingImageUrl("townHallLevel", entry.townHall)),
             stat("NHÀ THỢ XÂY", entry.builderHall, R.drawable.ic_coc_home, lookupBuildingImageUrl("builderHallLevel", entry.builderHall)),
             stat("CÚP", entry.trophies, R.drawable.ic_coc_star),
-            stat("CÚP XÂY DỰNG", entry.builderTrophies, R.drawable.ic_coc_home),
+            stat("CÚP NHÀ THỢ XÂY", entry.builderTrophies, R.drawable.ic_coc_home),
             stat("GIẢI ĐẤU", entry.league, R.drawable.ic_coc_star, entry.leagueIconUrl)
         )
+    }
+}
+
+@Composable
+private fun LookupEntityAvatar(entry: ClashLookupEntry, size: Dp) {
+    val imageUrl = if (entry.isClan) {
+        entry.badgeUrl
+    } else {
+        lookupBuildingImageUrl("townHallLevel", entry.townHall)
+    }
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(14.dp))
+            .background(LookupCyan.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center
+    ) {
+        when {
+            imageUrl.startsWith("https://", ignoreCase = true) -> AsyncImage(
+                model = imageUrl,
+                contentDescription = if (entry.isClan) "Huy hiệu bang hội" else "Nhà chính cấp ${entry.townHall}",
+                modifier = Modifier.fillMaxSize().padding(4.dp),
+                contentScale = ContentScale.Fit
+            )
+            entry.isClan -> CocGameIcon(R.drawable.ic_coc_clan, Modifier.size(size * 0.6f), "Bang hội")
+            else -> Icon(
+                Icons.Outlined.Person,
+                contentDescription = "Người chơi",
+                tint = LookupCyan,
+                modifier = Modifier.size(size * 0.52f)
+            )
+        }
     }
 }
 
@@ -1006,7 +1112,7 @@ private fun LookupGameFieldIcon(
     val gameImage = imageUrl.takeIf { it.startsWith("https://", ignoreCase = true) }
         ?: lookupBuildingImageUrl(key, value).takeIf(String::isNotBlank)
     if (gameImage != null) {
-        AsyncImage(model = gameImage, contentDescription = humanizeLookupKey(key), modifier = modifier)
+        AsyncImage(model = gameImage, contentDescription = humanizeLookupKey(key), modifier = modifier, contentScale = ContentScale.Fit)
     } else {
         lookupGameIconResource(key)?.let { icon ->
             CocGameIcon(icon, modifier, humanizeLookupKey(key))
@@ -1025,11 +1131,11 @@ private fun LookupMiniStatChip(stat: LookupMiniStat) {
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         if (stat.imageUrl.startsWith("https://", ignoreCase = true)) {
-            AsyncImage(model = stat.imageUrl, contentDescription = null, modifier = Modifier.size(15.dp))
+            AsyncImage(model = stat.imageUrl, contentDescription = null, modifier = Modifier.size(15.dp), contentScale = ContentScale.Fit)
         } else {
             CocGameIcon(stat.iconRes, Modifier.size(15.dp), stat.label)
         }
-        Text("${stat.label}: ${stat.value}", fontSize = 8.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Text("${stat.label}: ${stat.value}", fontSize = 8.5.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -1085,7 +1191,7 @@ private fun humanizeLookupKey(key: String): String {
         "attackWins" to "Thắng tấn công",
         "defenseWins" to "Thắng phòng thủ",
         "stars" to "Sao",
-        "destructionPercentage" to "Phá hủy",
+        "destructionPercentage" to "Tỷ lệ phá hủy",
         "globalRank" to "Xếp hạng toàn cầu",
         "localRank" to "Xếp hạng địa phương",
         "time" to "Thời gian",
@@ -1111,8 +1217,8 @@ private fun humanizeLookupKey(key: String): String {
         "season" to "Mùa giải",
         "attackTriples" to "Số trận 3 sao",
         "defenseTriples" to "Phòng thủ 3 sao",
-        "averageOffense" to "Phá hủy tấn công trung bình",
-        "averageDefense" to "Phá hủy phòng thủ trung bình",
+        "averageOffense" to "Tỷ lệ phá hủy tấn công trung bình",
+        "averageDefense" to "Tỷ lệ phá hủy phòng thủ trung bình",
         "clanPoints" to "Điểm bang hội",
         "builderBasePoints" to "Điểm Nhà thợ xây",
         "capitalGold" to "Vàng Thủ phủ",
@@ -1292,6 +1398,57 @@ private fun lookupValue(value: Any?): String = when (value) {
     is JSONArray -> "${value.length()} mục"
     is Boolean -> if (value) "Có" else "Không"
     else -> value.toString().take(2000)
+}
+
+@Composable
+private fun LookupSearchTargetCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(13.dp)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                if (selected) LookupCyan.copy(alpha = 0.14f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f)
+            )
+            .border(
+                BorderStroke(
+                    if (selected) 1.5.dp else 1.dp,
+                    if (selected) LookupCyan else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
+                ),
+                shape
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) LookupCyan else LookupMuted,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(
+                    title,
+                    color = if (selected) LookupCyan else MaterialTheme.colorScheme.onSurface,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Text(description, color = LookupMuted, fontSize = 8.sp, lineHeight = 11.sp)
+            }
+        }
+    }
 }
 
 @Composable
@@ -1673,26 +1830,7 @@ fun ClashLookupScreen() {
                     modifier = Modifier.fillMaxWidth().padding(15.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (entry.badgeUrl.isNotBlank()) {
-                        AsyncImage(
-                            model = entry.badgeUrl,
-                            contentDescription = "Huy hiệu bang hội",
-                            modifier = Modifier.size(62.dp)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier.size(62.dp).clip(RoundedCornerShape(16.dp))
-                                .background(LookupCyan.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                if (entry.isClan) Icons.Outlined.Groups else Icons.Outlined.Person,
-                                contentDescription = null,
-                                tint = LookupCyan,
-                                modifier = Modifier.size(30.dp)
-                            )
-                        }
-                    }
+                    LookupEntityAvatar(entry, 62.dp)
                     Spacer(Modifier.width(13.dp))
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(entry.name, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -1864,39 +2002,49 @@ fun ClashLookupScreen() {
                 modifier = Modifier.fillMaxWidth().padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
+                Text("CHỌN ĐỐI TƯỢNG TRA CỨU", color = LookupGold, fontSize = 9.sp, fontWeight = FontWeight.Black)
                 Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FilterChip(
+                    LookupSearchTargetCard(
+                        title = "NGƯỜI CHƠI",
+                        description = "Tìm game thủ theo tên hoặc TAG",
+                        icon = Icons.Outlined.Person,
                         selected = searchMode == "player",
                         onClick = {
                             searchMode = "player"
                             resetSearchPage()
                             analyticsResult = null
                         },
-                        label = { Text("NGƯỜI CHƠI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                        leadingIcon = { Icon(Icons.Outlined.Person, null, modifier = Modifier.size(16.dp)) }
+                        modifier = Modifier.weight(1f)
                     )
-                    FilterChip(
+                    LookupSearchTargetCard(
+                        title = "BANG HỘI",
+                        description = "Tìm clan theo tên hoặc TAG",
+                        icon = Icons.Outlined.Groups,
                         selected = searchMode == "clan",
                         onClick = {
                             searchMode = "clan"
                             resetSearchPage()
                             analyticsResult = null
                         },
-                        label = { Text("BANG HỘI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-                        leadingIcon = { Icon(Icons.Outlined.Groups, null, modifier = Modifier.size(16.dp)) }
+                        modifier = Modifier.weight(1f)
                     )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
                     FilterChip(
                         selected = searchMode == "leaderboard",
                         onClick = { searchMode = "leaderboard"; resetSearchPage(); analyticsResult = null },
-                        label = { Text("XẾP HẠNG", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                        label = { Text("XẾP HẠNG", fontSize = 9.sp, fontWeight = FontWeight.Bold) }
                     )
                     FilterChip(
                         selected = searchMode == "analytics",
                         onClick = { searchMode = "analytics"; resetSearchPage(); analyticsResult = null },
-                        label = { Text("THỐNG KÊ MỞ RỘNG", fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                        label = { Text("THỐNG KÊ MỞ RỘNG", fontSize = 9.sp, fontWeight = FontWeight.Bold) }
                     )
                 }
 
@@ -1910,9 +2058,12 @@ fun ClashLookupScreen() {
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (searchMode == "player") "TAG/ID hoặc tên người chơi" else "TAG/ID hoặc tên bang hội") },
+                    label = { Text(if (searchMode == "player") "TÌM NGƯỜI CHƠI · tên hoặc TAG" else "TÌM BANG HỘI · tên hoặc TAG") },
                     placeholder = {
-                        Text(if (searchMode == "player") "Ví dụ: #ABC123 hoặc tên người chơi" else "Ví dụ: #ABC123 hoặc tên bang hội")
+                        Text(
+                            if (searchMode == "player") "Ví dụ: #ABC123 hoặc tên người chơi"
+                            else "Ví dụ: #ABC123 hoặc tên bang hội"
+                        )
                     },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = LookupCyan) },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -2194,8 +2345,16 @@ fun ClashLookupScreen() {
                     } else {
                         Icon(Icons.Outlined.Search, null, modifier = Modifier.size(17.dp))
                         Spacer(Modifier.width(7.dp))
-                        Text(when (searchMode) { "leaderboard" -> "XEM XẾP HẠNG"; "analytics" -> "TẢI THỐNG KÊ"; else -> "TÌM KIẾM" },
-                            fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
+                        Text(
+                            when (searchMode) {
+                                "leaderboard" -> "XEM XẾP HẠNG"
+                                "analytics" -> "TẢI THỐNG KÊ"
+                                "player" -> "TÌM NGƯỜI CHƠI"
+                                else -> "TÌM BANG HỘI"
+                            },
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.5.sp
+                        )
                     }
                 }
             }
@@ -2353,7 +2512,17 @@ fun ClashLookupScreen() {
 
         if (results.isNotEmpty()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("KẾT QUẢ", fontSize = 11.sp, color = LookupGold, fontWeight = FontWeight.Black)
+                Text(
+                    when (searchMode) {
+                        "player" -> "KẾT QUẢ NGƯỜI CHƠI"
+                        "clan" -> "KẾT QUẢ BANG HỘI"
+                        "leaderboard" -> "KẾT QUẢ XẾP HẠNG"
+                        else -> "KẾT QUẢ THỐNG KÊ"
+                    },
+                    fontSize = 11.sp,
+                    color = LookupGold,
+                    fontWeight = FontWeight.Black
+                )
                 Spacer(Modifier.weight(1f))
                 Text("${results.size} kết quả", fontSize = 9.sp, color = LookupMuted)
             }
@@ -2453,7 +2622,6 @@ private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
             Triple("Giải đấu", first.league, second.league),
             Triple("Bang hội", first.clanName, second.clanName),
             Triple("Thứ hạng", first.rank, second.rank),
-            Triple("Chuỗi 3 sao", first.streak, second.streak)
         )
     }
     Card(
@@ -2465,7 +2633,12 @@ private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("SO SÁNH NHANH", color = LookupCyan, fontSize = 11.sp, fontWeight = FontWeight.Black)
+            Text(
+                if (first.isClan) "SO SÁNH BANG HỘI" else "SO SÁNH NGƯỜI CHƠI",
+                color = LookupCyan,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(first.name, modifier = Modifier.weight(1f), color = LookupGold, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text("VS", color = LookupMuted, fontSize = 9.sp, fontWeight = FontWeight.Black)
@@ -2478,7 +2651,7 @@ private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(leftValue.ifBlank { "—" }, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    Text(formatLookupCount(leftValue).ifBlank { "—" }, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                     Row(
                         modifier = Modifier.weight(1.1f),
                         horizontalArrangement = Arrangement.Center,
@@ -2487,7 +2660,7 @@ private fun LookupComparisonCard(entries: List<ClashLookupEntry>) {
                         LookupGameFieldIcon(lookupComparisonIconKey(label), modifier = Modifier.size(15.dp))
                         Text(label, color = LookupMuted, fontSize = 9.sp, textAlign = TextAlign.Center)
                     }
-                    Text(rightValue.ifBlank { "—" }, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
+                    Text(formatLookupCount(rightValue).ifBlank { "—" }, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             }
@@ -2607,19 +2780,18 @@ private fun LookupResultCard(
                 Text(entry.tag.ifBlank { "Chưa có TAG" }, fontSize = 10.sp, color = LookupCyan, fontWeight = FontWeight.Bold)
                 val subtitle = if (entry.isClan) {
                     listOfNotNull(
-                        entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #$it" },
-                        entry.level.takeIf { it.isNotBlank() }?.let { "Cấp $it" },
-                        entry.members.takeIf { it.isNotBlank() }?.let { "$it thành viên" },
-                        entry.streak.takeIf { it.isNotBlank() }?.let { "Chuỗi thắng $it" },
-                        entry.metric.takeIf { it.isNotBlank() }?.let { "${entry.metricLabel}: $it" }
+                        entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #${formatLookupCount(it)}" },
+                        entry.level.takeIf { it.isNotBlank() }?.let { "Cấp ${formatLookupCount(it)}" },
+                        entry.members.takeIf { it.isNotBlank() }?.let { "${formatLookupCount(it)} thành viên" },
+                        entry.streak.takeIf { it.isNotBlank() }?.let { "Chuỗi thắng ${formatLookupCount(it)}" },
+                        entry.metric.takeIf { it.isNotBlank() }?.let { "${entry.metricLabel}: ${formatLookupCount(it)}" }
                     ).joinToString(" • ")
                 } else {
                     listOfNotNull(
-                        entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #$it" },
-                        entry.townHall.takeIf { it.isNotBlank() }?.let { "Nhà chính $it" },
+                        entry.rank.takeIf { it.isNotBlank() }?.let { "Hạng #${formatLookupCount(it)}" },
+                        entry.townHall.takeIf { it.isNotBlank() }?.let { "Nhà chính ${formatLookupCount(it)}" },
                         entry.league.takeIf { it.isNotBlank() },
-                        entry.clanName.takeIf { it.isNotBlank() },
-                        entry.streak.takeIf { it.isNotBlank() }?.let { "$it chuỗi 3 sao" }
+                        entry.clanName.takeIf { it.isNotBlank() }
                     ).joinToString(" • ")
                 }
                 Text(subtitle.ifBlank { if (entry.isClan) "Bang hội" else "Người chơi" }, fontSize = 9.sp, color = LookupMuted, maxLines = 2)
@@ -2798,7 +2970,7 @@ private fun LookupJsonObject(
             }
             is JSONArray -> LookupJsonArray(key, humanizeLookupKey(key), value, depth + 1, catalog)
             else -> {
-                val display = lookupValue(value)
+                val display = lookupDisplayValue(key, value)
                 if (display.isNotBlank()) LookupDetailRow(humanizeLookupKey(key), display, key)
             }
         }
@@ -2864,7 +3036,7 @@ private fun LookupJsonArray(
                         }
                     }
                     is JSONArray -> LookupJsonArray(key, "#${index + 1}", value, depth + 1, catalog)
-                    else -> LookupDetailRow("#${index + 1}", lookupValue(value), key)
+                    else -> LookupDetailRow("#${index + 1}", lookupDisplayValue(key, value), key)
                 }
             }
             if (end < displayIndices.size) {
