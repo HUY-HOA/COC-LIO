@@ -947,8 +947,9 @@ internal fun lookupGameIconResource(key: String): Int? {
     return when (normalized) {
         "townhalllevel", "townhall" -> R.drawable.ic_coc_buildings
         "builderhalllevel", "builderhall", "builderbase", "builderbasevillage" -> R.drawable.ic_coc_home
-        "explevel", "experiencelevel", "playerlevel", "rank", "globalrank", "localrank", "grouprank",
-        "trophies", "leaguetrophies", "builderbasetrophies", "buildertrophies", "stars", "attacktrophies", "defensetrophies" -> R.drawable.ic_coc_star
+        "explevel", "experiencelevel", "playerlevel" -> R.drawable.ic_coc_player
+        "rank", "globalrank", "localrank", "grouprank", "trophies", "leaguetrophies",
+        "builderbasetrophies", "buildertrophies", "stars", "attacktrophies", "defensetrophies" -> R.drawable.ic_coc_star
         "clanlevel", "clan", "clancapital" -> R.drawable.ic_coc_clan
         "membercount", "members" -> R.drawable.ic_coc_members
         "leaguetier", "league", "warleague", "capitalleague", "cwlleagueid", "leaguetierid", "leaguegroupid" -> R.drawable.ic_coc_star
@@ -956,7 +957,7 @@ internal fun lookupGameIconResource(key: String): Int? {
         "attacktriples", "defensetriples", "attacks", "wins", "losses", "ties" -> R.drawable.ic_coc_swords
         "destructionpercentage", "destruction", "averagedestruction", "averageoffense", "averagedefense",
         "triplerate", "perfectdayrate", "share" -> R.drawable.ic_coc_percent
-        "donated", "received", "troopsdonated", "troopsreceived", "troops", "supertroops", "siege", "siegemachines" -> R.drawable.ic_coc_guardian
+        "donated", "received", "troopsdonated", "troopsreceived", "troops", "supertroops", "siege", "siegemachines" -> R.drawable.ic_coc_swords
         "capitalgoldtotal", "capitalgold", "capitalpoints" -> R.drawable.ic_coc_capital_gold
         "gold", "goldloot", "goldstorage", "goldmine" -> R.drawable.ic_coc_gold
         "elixir", "elixirloot", "elixirstorage" -> R.drawable.ic_coc_elixir
@@ -1070,7 +1071,7 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
         )
     } else {
         listOfNotNull(
-            stat("CẤP NGƯỜI CHƠI", entry.playerLevel, R.drawable.ic_coc_star),
+            stat("CẤP NGƯỜI CHƠI", entry.playerLevel, R.drawable.ic_coc_player),
             stat("NHÀ CHÍNH", entry.townHall, R.drawable.ic_coc_buildings, lookupBuildingImageUrl("townHallLevel", entry.townHall)),
             stat("NHÀ THỢ XÂY", entry.builderHall, R.drawable.ic_coc_home, lookupBuildingImageUrl("builderHallLevel", entry.builderHall)),
             stat("CÚP", entry.trophies, R.drawable.ic_coc_star),
