@@ -784,7 +784,7 @@ private fun CocLioApp(
         AlertDialog(
             onDismissRequest = { showExitConfirmation = false },
             title = { Text("Bạn muốn thoát ứng dụng?") },
-            text = { Text("Chọn CÓ để thoát ứng dụng hoặc KHÔNG để tiếp tục sử dụng.") },
+            text = { Text("Chọn ĐÚNG để thoát ứng dụng hoặc KHÔNG để tiếp tục sử dụng.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -792,7 +792,7 @@ private fun CocLioApp(
                         (context as? Activity)?.finish()
                     }
                 ) {
-                    Text("CÓ", color = CocRed)
+                    Text("ĐÚNG", color = CocRed)
                 }
             },
             dismissButton = {
