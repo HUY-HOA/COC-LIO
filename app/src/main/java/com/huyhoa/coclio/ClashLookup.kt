@@ -107,7 +107,9 @@ private data class ClashLookupEntry(
     val streak: String = "",
     val metric: String = "",
     val metricLabel: String = "",
+    // Clan crest and player league badge are different assets and must never be interchanged.
     val badgeUrl: String = "",
+    val leagueIconUrl: String = "",
     val raw: JSONObject
 )
 
@@ -651,11 +653,14 @@ private fun lookupEntry(json: JSONObject, isClan: Boolean): ClashLookupEntry {
             json.has("stars") -> "Sao CWL"
             else -> ""
         },
-        badgeUrl = json.lookupText("badge_url").ifBlank { badge }.ifBlank {
+        badgeUrl = if (isClan) {
+            json.lookupText("badge_url").ifBlank { badge }
+        } else "",
+        leagueIconUrl = if (!isClan) {
             league?.optJSONObject("iconUrls")?.let { icons ->
                 icons.lookupText("medium").ifBlank { icons.lookupText("large") }.ifBlank { icons.lookupText("small") }
             }.orEmpty()
-        },
+        } else "",
         raw = json
     )
 }
@@ -968,8 +973,8 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
         value.takeIf(String::isNotBlank)?.let { LookupMiniStat(label, it, icon, image) }
     return if (entry.isClan) {
         listOfNotNull(
-            stat("LV BANG", entry.level, R.drawable.ic_coc_clan),
-            stat("THÀNH VIÊN", entry.members, R.drawable.ic_coc_clan),
+            stat("CẤP BANG", entry.level, R.drawable.ic_coc_clan),
+            stat("THÀNH VIÊN", entry.members, R.drawable.ic_coc_members),
             stat("HẠNG", entry.rank, R.drawable.ic_coc_star),
             stat("CHUỖI THẮNG", entry.streak, R.drawable.ic_coc_swords)
         )
@@ -980,7 +985,7 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
             stat("NHÀ THỢ XÂY", entry.builderHall, R.drawable.ic_coc_home, lookupBuildingImageUrl("builderHallLevel", entry.builderHall)),
             stat("CÚP", entry.trophies, R.drawable.ic_coc_star),
             stat("CÚP XÂY DỰNG", entry.builderTrophies, R.drawable.ic_coc_home),
-            stat("GIẢI ĐẤU", entry.league, R.drawable.ic_coc_star, entry.badgeUrl)
+            stat("GIẢI ĐẤU", entry.league, R.drawable.ic_coc_star, entry.leagueIconUrl)
         )
     }
 }
@@ -2554,20 +2559,32 @@ private fun LookupResultCard(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (entry.badgeUrl.isNotBlank()) {
-                AsyncImage(model = entry.badgeUrl, contentDescription = "Huy hiệu bang hội", modifier = Modifier.size(48.dp))
-            } else {
-                Box(
-                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(13.dp))
-                        .background(LookupCyan.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        if (entry.isClan) entry.level.ifBlank { "BANG HỘI" } else "TH ${entry.townHall.ifBlank { "?" }}",
-                        color = LookupCyan,
-                        fontSize = if (entry.isClan) 10.sp else 9.sp,
-                        fontWeight = FontWeight.Black
-                    )
+            Box(
+                modifier = Modifier.size(44.dp).clip(RoundedCornerShape(11.dp))
+                    .background(LookupCyan.copy(alpha = 0.10f)),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    entry.isClan && entry.badgeUrl.isNotBlank() -> {
+                        AsyncImage(
+                            model = entry.badgeUrl,
+                            contentDescription = "Huy hiệu bang hội",
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                    !entry.isClan -> {
+                        val townHallArt = lookupBuildingImageUrl("townHallLevel", entry.townHall)
+                        if (townHallArt.isNotBlank()) {
+                            AsyncImage(
+                                model = townHallArt,
+                                contentDescription = "Nhà chính cấp ${entry.townHall}",
+                                modifier = Modifier.size(40.dp)
+                            )
+                        } else {
+                            Icon(Icons.Outlined.Person, contentDescription = "Người chơi", tint = LookupCyan, modifier = Modifier.size(27.dp))
+                        }
+                    }
+                    else -> CocGameIcon(R.drawable.ic_coc_clan, Modifier.size(32.dp), "Bang hội")
                 }
             }
             Spacer(Modifier.width(10.dp))
