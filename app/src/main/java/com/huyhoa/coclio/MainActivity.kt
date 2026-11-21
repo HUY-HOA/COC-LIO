@@ -1432,26 +1432,52 @@ private fun CocLioApp(
                                     onOpenGame = { openClashOfClans(context) }
                                 )
                                 else -> HistoryScreen(
-                        },
-                        onRestore = { recordId ->
-                            val restoredTag = deletedVillages.firstOrNull { it.id == recordId }?.tag
-                            if (VillageStore.restoreDeleted(context, recordId, activeProfile)) {
-                                history = VillageStore.loadAll(context, activeProfile)
-                                deletedVillages = VillageStore.loadDeleted(context, activeProfile)
-                                pinnedTags = VillageStore.pinnedTags(context, activeProfile)
-                                current = history.firstOrNull { it.tag == restoredTag } ?: history.firstOrNull()
-                                UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
-                                AppWidgetUpdater.updateAll(context)
-                                scope.launch { snackbar.showAppSnackbar(context, "Đã khôi phục dữ liệu làng.") }
-                            }
-                        },
-                        onDeletePermanently = { recordId ->
-                            if (VillageStore.permanentlyDelete(context, recordId, activeProfile)) {
-                                deletedVillages = VillageStore.loadDeleted(context, activeProfile)
-                                scope.launch { snackbar.showAppSnackbar(context, "Đã xóa vĩnh viễn dữ liệu JSON.") }
-                            }
-                        },
-                    )
+                                    history = history,
+                                    deletedVillages = deletedVillages,
+                                    pinnedTags = pinnedTags,
+                                    activeTag = current?.tag.orEmpty(),
+                                    activeTimestamp = current?.timestamp,
+                                    onSelect = {
+                                        current = it
+                                        selectedTab = 2
+                                        jsonSection = 0
+                                    },
+                                    onTogglePin = { tag ->
+                                        VillageStore.setPinned(context, tag, tag !in pinnedTags, activeProfile)
+                                        pinnedTags = VillageStore.pinnedTags(context, activeProfile)
+                                        history = VillageStore.loadAll(context, activeProfile)
+                                        AppWidgetUpdater.updateAll(context)
+                                    },
+                                    onDelete = { tag ->
+                                        if (VillageStore.deleteVillage(context, tag, activeProfile)) {
+                                            history = VillageStore.loadAll(context, activeProfile)
+                                            deletedVillages = VillageStore.loadDeleted(context, activeProfile)
+                                            pinnedTags = VillageStore.pinnedTags(context, activeProfile)
+                                            if (current?.tag == tag) current = history.firstOrNull()
+                                            UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
+                                            AppWidgetUpdater.updateAll(context)
+                                            scope.launch { snackbar.showAppSnackbar(context, "Đã chuyển $tag vào mục ĐÃ XÓA.") }
+                                        }
+                                    },
+                                    onRestore = { recordId ->
+                                        val restoredTag = deletedVillages.firstOrNull { it.id == recordId }?.tag
+                                        if (VillageStore.restoreDeleted(context, recordId, activeProfile)) {
+                                            history = VillageStore.loadAll(context, activeProfile)
+                                            deletedVillages = VillageStore.loadDeleted(context, activeProfile)
+                                            pinnedTags = VillageStore.pinnedTags(context, activeProfile)
+                                            current = history.firstOrNull { it.tag == restoredTag } ?: history.firstOrNull()
+                                            UpgradeReminderScheduler.scheduleAll(context, history, activeProfile, notificationsEnabled)
+                                            AppWidgetUpdater.updateAll(context)
+                                            scope.launch { snackbar.showAppSnackbar(context, "Đã khôi phục dữ liệu làng.") }
+                                        }
+                                    },
+                                    onDeletePermanently = { recordId ->
+                                        if (VillageStore.permanentlyDelete(context, recordId, activeProfile)) {
+                                            deletedVillages = VillageStore.loadDeleted(context, activeProfile)
+                                            scope.launch { snackbar.showAppSnackbar(context, "Đã xóa vĩnh viễn dữ liệu JSON.") }
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
