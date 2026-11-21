@@ -151,4 +151,37 @@ class ClashLookupSearchTest {
         assertEquals("https://example.com/crest.png", entry.badgeUrl)
     }
 
+
+    @Test
+    fun clanTagAndClanLevelUseDifferentSemanticIcons() {
+        assertEquals(R.drawable.ic_coc_tag, lookupGameIconResource("clanTag"))
+        assertEquals(R.drawable.ic_coc_clan, lookupGameIconResource("clanLevel"))
+    }
+
+    @Test
+    fun timeAndRateFieldsUseTheirMatchingIcons() {
+        assertEquals(R.drawable.ic_coc_time, lookupGameIconResource("lastActive"))
+        assertEquals(R.drawable.ic_coc_time, lookupGameIconResource("joinedAt"))
+        assertEquals(R.drawable.ic_coc_percent, lookupGameIconResource("averageOffense"))
+        assertEquals(R.drawable.ic_coc_percent, lookupGameIconResource("tripleRate"))
+    }
+
+    @Test
+    fun fractionalPercentagesAreNormalizedToPercentUnits() {
+        assertEquals("98,5%", lookupDisplayValue("destructionPercentage", 0.985))
+        assertEquals("98,5%", lookupDisplayValue("tripleRate", 0.985))
+        assertEquals("99%", lookupDisplayValue("destructionPercentage", 99))
+    }
+
+    @Test
+    fun unavailableSentinelIsNotShownAsNegativeOne() {
+        assertEquals("Chưa có dữ liệu", lookupDisplayValue("trophies", -1))
+    }
+
+    @Test
+    fun decimalCountersAreLocalizedAndAverageDurationsHaveUnits() {
+        assertEquals("1.234,5", lookupDisplayValue("attackRate", 1234.5))
+        assertEquals("1 giờ", lookupDisplayValue("averageDuration", 3600.0))
+    }
+
 }
