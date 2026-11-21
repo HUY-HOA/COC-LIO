@@ -3595,23 +3595,23 @@ internal fun localizedCatalogField(label: String, value: String): Pair<String, S
 private fun localizedCatalogText(value: String): String {
     val raw = value.trim()
     Regex("(?i)^Blacksmith level (\\d+)$").matchEntire(raw)?.let {
-        return "Lò rèn cấp \${it.groupValues[1]}"
+        return "Lò rèn cấp ${it.groupValues[1]}"
     }
     Regex("(?i)^Town Hall(?: Level)? Required:?\\s*(\\d+)$").matchEntire(raw)?.let {
-        return "Yêu cầu Nhà chính cấp \${it.groupValues[1]}"
+        return "Yêu cầu Nhà chính cấp ${it.groupValues[1]}"
     }
     Regex("(?i)^Builder Hall(?: Level)? Required:?\\s*(\\d+)$").matchEntire(raw)?.let {
-        return "Yêu cầu Nhà thợ xây cấp \${it.groupValues[1]}"
+        return "Yêu cầu Nhà thợ xây cấp ${it.groupValues[1]}"
     }
     Regex("(?i)^Star Lab Required:?\\s*(\\d+)$").matchEntire(raw)?.let {
-        return "Yêu cầu Phòng thí nghiệm sao cấp \${it.groupValues[1]}"
+        return "Yêu cầu Phòng thí nghiệm sao cấp ${it.groupValues[1]}"
     }
     Regex("(?i)^Buy in (.+?) event for ([\\d,]+) (.+)$").matchEntire(raw)?.let {
         val medals = it.groupValues[3].replace("Medals", "huy hiệu", ignoreCase = true)
-        return "Nhận trong sự kiện \${it.groupValues[1]} với \${it.groupValues[2]} $medals"
+        return "Nhận trong sự kiện ${it.groupValues[1]} với ${it.groupValues[2]} $medals"
     }
     Regex("(?i)^Purchasable from the Trader for ([\\d,]+) Gems$").matchEntire(raw)?.let {
-        return "Có thể mua tại Thương nhân với \${it.groupValues[1]} Ngọc"
+        return "Có thể mua tại Thương nhân với ${it.groupValues[1]} Ngọc"
     }
     val translated = when (raw.lowercase(Locale.ROOT)) {
         "available by default" -> "Có sẵn mặc định"
