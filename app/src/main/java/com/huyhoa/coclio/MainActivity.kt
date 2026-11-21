@@ -162,6 +162,7 @@ import com.huyhoa.coclio.data.VillageStore
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.roundToInt
 
 private val CocBackground = Color(0xFF000000)
@@ -2866,7 +2867,7 @@ private fun VillageMaxPlanDialog(
                 )
                 VillageItemDetailField(
                     "Độ chính xác danh mục",
-                    "Dữ liệu nâng cấp dựa trên danh mục cộng đồng và có thể chậm cập nhật một số chi phí cũ sau cân bằng game. Hãy đối chiếu trong trò chơi trước khi lập kế hoạch cuối cùng."
+                    "Dữ liệu nâng cấp dựa trên danh mục cộng đồng và có thể chậm cập nhật một số chi phí cũ sau cân bằng trò chơi. Hãy đối chiếu trong trò chơi trước khi lập kế hoạch cuối cùng."
                 )
                 VillageItemDetailField(
                     "Lưu ý thời gian",
@@ -2954,7 +2955,7 @@ private fun SuperTroopsRoster(
         }
         VillageItemDetailField(
             "Cách tính cấp và sở hữu",
-            "Siêu quân dùng cấp nghiên cứu của quân gốc, không có cấp nâng riêng. JSON làng không xác nhận siêu quân nào đang được kích hoạt; trạng thái kích hoạt phải kiểm tra trong game."
+            "Siêu quân dùng cấp nghiên cứu của quân gốc, không có cấp nâng riêng. JSON làng không xác nhận siêu quân nào đang được kích hoạt; trạng thái kích hoạt phải kiểm tra trong trò chơi."
         )
     }
 }
@@ -3054,14 +3055,14 @@ private fun VillageGridItemCard(
                     else "$status • ĐỘI HÌNH • $level"
                 } else if (isEquipment && !item.hasConfirmedEquipmentOwnership) {
                     if (item.properties["catalogOnly"] == "true") {
-                        "CHƯA XÁC NHẬN • MAX ${cardMaxLevel ?: "?"}"
+                        "CHƯA XÁC NHẬN • CẤP TỐI ĐA ${cardMaxLevel ?: "?"}"
                     } else {
-                        "CHƯA XÁC NHẬN • CẤP ${item.level ?: "?"} • MAX ${cardMaxLevel ?: "?"}"
+                        "CHƯA XÁC NHẬN • CẤP ${item.level ?: "?"} • TỐI ĐA ${cardMaxLevel ?: "?"}"
                     }
                 } else if (item.properties["catalogOnly"] == "true") {
-                    "CHƯA XÁC NHẬN • MAX ${cardMaxLevel ?: "?"}"
+                    "CHƯA XÁC NHẬN • CẤP TỐI ĐA ${cardMaxLevel ?: "?"}"
                 } else if (item.count <= 0 && (item.timerSeconds ?: 0L) <= 0L) {
-                    "CHƯA SỞ HỮU • MAX ${cardMaxLevel ?: "?"}"
+                    "CHƯA SỞ HỮU • CẤP TỐI ĐA ${cardMaxLevel ?: "?"}"
                 } else {
                     item.level?.let { level ->
                         cardMaxLevel?.let { "Cấp $level / $it" } ?: "Cấp $level"
@@ -3306,7 +3307,7 @@ private val EquipmentStatLabelsVi = mapOf(
     "hero level caps royal champion" to "Giới hạn cấp Nhà vô địch Hoàng gia",
     "hero level caps dragon duke" to "Giới hạn cấp Công tước Rồng",
     "hitpoint increase" to "Tăng máu",
-    "hp recovery increase" to "Tăng hồi phục HP",
+    "hp recovery increase" to "Tăng hồi phục máu",
     "summoned barbarians" to "Số Man di được triệu hồi",
     "barbarian damage increase" to "Tăng sát thương Man di",
     "barbarian speed increase" to "Tăng tốc độ Man di",
@@ -3368,8 +3369,8 @@ private val EquipmentStatLabelsVi = mapOf(
     "snake level" to "Cấp rắn",
     "building damage percent" to "Tỷ lệ sát thương lên Công trình",
     "troop damage percent" to "Tỷ lệ sát thương lên quân",
-    "max hp increase" to "Tăng HP tối đa",
-    "hp increase percent" to "Tỷ lệ tăng HP",
+    "max hp increase" to "Tăng máu tối đa",
+    "hp increase percent" to "Tỷ lệ tăng máu",
     "stun duration" to "Thời gian choáng",
     "heal per hit" to "Lượng hồi máu mỗi đòn đánh",
     "invisibility" to "Thời gian tàng hình",
@@ -3954,7 +3955,7 @@ private fun HeroEquipmentRoster(
         }
         VillageItemDetailField(
             "CÁCH XÁC ĐỊNH SỞ HỮU",
-            "JSON Export của game có thể hiển thị cả trang bị chưa mở khóa ở cấp 1 giống trang bị đã sở hữu cấp 1. Ứng dụng chỉ xác nhận sở hữu khi cấp lớn hơn 1 hoặc có nâng cấp đang chạy; trường hợp còn lại được giữ là Chưa xác nhận."
+            "Bản xuất JSON của trò chơi có thể hiển thị cả trang bị chưa mở khóa ở cấp 1 giống trang bị đã sở hữu cấp 1. Ứng dụng chỉ xác nhận sở hữu khi cấp lớn hơn 1 hoặc có nâng cấp đang chạy; trường hợp còn lại được giữ là Chưa xác nhận."
         )
         if (heroId == "barbarian-king") {
             AnnouncedBlizzardAxeCard()
@@ -4276,7 +4277,7 @@ private fun VillageItemDetailDialog(
                 }
                 VillageItemDetailField(
                     "Nguồn dữ liệu",
-                    "Dữ liệu cấp nâng cấp là snapshot tĩnh cộng đồng ngày 17/11/2026; danh mục bổ sung được cập nhật ngày 18/11/2026. Đây không phải API chính thức của Supercell. Giá và thời gian có thể thay đổi theo bản cập nhật; các cấp thiếu dữ liệu được liệt kê riêng. Hãy đối chiếu trong game trước khi dùng làm kế hoạch chính xác."
+                    "Dữ liệu cấp nâng cấp là bản dữ liệu tĩnh do cộng đồng tổng hợp ngày 17/11/2026; danh mục bổ sung được cập nhật ngày 18/11/2026. Đây không phải giao diện lập trình chính thức của Supercell. Giá và thời gian có thể thay đổi theo bản cập nhật; các cấp thiếu dữ liệu được liệt kê riêng. Hãy đối chiếu trong trò chơi trước khi dùng làm kế hoạch chính xác."
                 )
                 if (isEquipment) {
                     VillageItemDetailField("LƯU Ý VỀ CHI PHÍ TRANG BỊ SỬ THI", EQUIPMENT_COST_DATA_NOTICE)
@@ -4293,7 +4294,7 @@ private fun VillageItemDetailDialog(
                     val composition = squadInfo.optString("composition")
                     val housing = squadInfo.optInt("housingSpace", 0)
                     VillageItemDetailField("Mở khóa", "Nhà chính cấp $unlockHall • Doanh trại tiểu đội cấp $barracksLevel")
-                    if (composition.isNotBlank()) VillageItemDetailField("Thành phần", composition)
+                    if (composition.isNotBlank()) VillageItemDetailField("Thành phần", localizedCatalogText(composition))
                     if (housing > 0) VillageItemDetailField("Sức chứa", "$housing ô nhà")
                     val barracksCost = squadInfo.optLong("barracksUpgradeCost", 0L)
                     val barracksResource = squadInfo.optString("barracksUpgradeCostResource", "Elixir")
@@ -4308,8 +4309,8 @@ private fun VillageItemDetailDialog(
                     }
                     val level2Ability = squadInfo.optString("abilityLevel2")
                     val level3Ability = squadInfo.optString("abilityLevel3")
-                    if (level2Ability.isNotBlank()) VillageItemDetailField("Kỹ năng cấp 2", level2Ability)
-                    if (level3Ability.isNotBlank()) VillageItemDetailField("Kỹ năng cấp 3", level3Ability)
+                    if (level2Ability.isNotBlank()) VillageItemDetailField("Kỹ năng cấp 2", localizedCatalogText(level2Ability))
+                    if (level3Ability.isNotBlank()) VillageItemDetailField("Kỹ năng cấp 3", localizedCatalogText(level3Ability))
                     val squadStatus = when {
                         item.properties["catalogOnly"] == "true" ->
                             "JSON làng không có bản ghi cho đội hình này; chưa xác nhận sở hữu hoặc cấp hiện tại."
@@ -4334,17 +4335,17 @@ private fun VillageItemDetailDialog(
                 }
                 val levelText = when {
                     upgradeEntry?.category == "squad" && item.properties["catalogOnly"] == "true" ->
-                        "JSON chưa có bản ghi • chưa xác nhận sở hữu/cấp • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                        "JSON chưa có bản ghi • chưa xác nhận sở hữu/cấp • CẤP TỐI ĐA ${maxLevel ?: upgradeEntry.maxLevel}"
                     upgradeEntry?.category == "squad" && item.count <= 0 && (item.timerSeconds ?: 0L) <= 0L ->
-                        "JSON ghi số lượng 0 • chưa sở hữu • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                        "JSON ghi số lượng 0 • chưa sở hữu • CẤP TỐI ĐA ${maxLevel ?: upgradeEntry.maxLevel}"
                     upgradeEntry?.category == "squad" && item.level != null ->
                         usableCap?.let { "${item.level} / $it" } ?: "${item.level} / ${maxLevel ?: upgradeEntry.maxLevel}"
                     upgradeEntry?.category == "squad" ->
-                        "Đã có trong JSON • cấp chưa rõ • MAX ${maxLevel ?: upgradeEntry.maxLevel}"
+                        "Đã có trong JSON • cấp chưa rõ • CẤP TỐI ĐA ${maxLevel ?: upgradeEntry.maxLevel}"
                     item.properties["catalogOnly"] == "true" ->
-                        "Không có bản ghi trong JSON • chưa xác nhận sở hữu/cấp • MAX ${maxLevel ?: upgradeEntry?.maxLevel ?: "?"}"
+                        "Không có bản ghi trong JSON • chưa xác nhận sở hữu/cấp • CẤP TỐI ĐA ${maxLevel ?: upgradeEntry?.maxLevel ?: "?"}"
                     !hasConfirmedOwnership && isEquipment ->
-                        "JSON ghi cấp ${item.level ?: "?"} • chưa xác nhận sở hữu • MAX ${maxLevel ?: upgradeEntry?.maxLevel ?: "?"}"
+                        "JSON ghi cấp ${item.level ?: "?"} • chưa xác nhận sở hữu • CẤP TỐI ĐA ${maxLevel ?: upgradeEntry?.maxLevel ?: "?"}"
                     !hasConfirmedOwnership -> "Chưa sở hữu • dữ liệu nâng cấp tính từ cấp đầu tiên"
                     else -> item.level?.let { level ->
                         usableCap?.let { "$level / $it" } ?: level.toString()
@@ -4369,7 +4370,7 @@ private fun VillageItemDetailDialog(
                     VillageItemDetailField(
                         "Trạng thái sở hữu",
                         if (isEquipment) {
-                            "Export không thể phân biệt trang bị đã sở hữu ở cấp 1 với trang bị chưa mở khóa. Cấp 1 chỉ là dữ liệu chưa xác nhận."
+                            "Bản xuất JSON không thể phân biệt trang bị đã sở hữu ở cấp 1 với trang bị chưa mở khóa. Cấp 1 chỉ là dữ liệu chưa xác nhận."
                         } else {
                             "JSON làng không ghi nhận số lượng sở hữu hoặc nâng cấp đang chạy cho mục này."
                         }
@@ -4511,7 +4512,7 @@ private fun VillageItemDetailDialog(
                     val globalMax = (maxLevel ?: entry.maxLevel).coerceAtLeast(1)
                     if (entry.category == "squad") {
                         entry.properties.optString("composition").takeIf { it.isNotBlank() }?.let {
-                            VillageItemDetailField("THÀNH PHẦN ĐỘI HÌNH", it)
+                            VillageItemDetailField("THÀNH PHẦN ĐỘI HÌNH", localizedCatalogText(it))
                         }
                         entry.properties.optInt("housingSpace", 0).takeIf { it > 0 }?.let {
                             VillageItemDetailField("SỨC CHỨA", "$it ô nhà")
@@ -4600,7 +4601,7 @@ private fun VillageItemDetailDialog(
                                 item.properties["catalogOnly"] == "true" ->
                                     "JSON làng không có bản ghi cho mục này; chi phí tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
                                 isEquipment && !hasConfirmedOwnership ->
-                                    "Export có thể ghi trang bị chưa mở khóa ở cấp 1 giống trang bị đã sở hữu cấp 1; chi phí còn lại tạm tính từ cấp 1."
+                                    "Bản xuất JSON có thể ghi trang bị chưa mở khóa ở cấp 1 giống trang bị đã sở hữu cấp 1; chi phí còn lại tạm tính từ cấp 1."
                                 !hasConfirmedOwnership ->
                                     "JSON làng không ghi nhận sở hữu; chi phí tạm tính từ cấp mở khóa đầu tiên ($firstAvailableLevel)."
                                 else ->
@@ -4777,12 +4778,12 @@ private fun UpgradeResourceChip(resource: String, amount: Long) {
     val normalized = resource.trim().lowercase()
     val (label, tint) = when (normalized) {
         "gold" -> "Vàng" to Color(0xFFFFD166)
-        "elixir" -> "Tiên dược" to Color(0xFFFF6EC7)
+        "elixir" -> "Tinh chất" to Color(0xFFFF6EC7)
         "dark elixir" -> "Dầu đen" to Color(0xFFB77AFF)
         "builder gold" -> "Vàng thợ xây" to Color(0xFFFFD166)
-        "builder elixir" -> "Tiên dược thợ xây" to Color(0xFFFF6EC7)
-        "gold or elixir" -> "Vàng hoặc Tiên dược" to Color(0xFFFFD166)
-        "builder gold or builder elixir" -> "Vàng thợ xây hoặc Tiên dược thợ xây" to Color(0xFFFFD166)
+        "builder elixir" -> "Tinh chất thợ xây" to Color(0xFFFF6EC7)
+        "gold or elixir" -> "Vàng hoặc Tinh chất" to Color(0xFFFFD166)
+        "builder gold or builder elixir" -> "Vàng thợ xây hoặc Tinh chất thợ xây" to Color(0xFFFFD166)
         "capital gold" -> "Vàng thủ đô" to Color(0xFFFFD166)
         "quặng sáng", "shiny ore" -> "Quặng sáng" to Color(0xFF55B9FF)
         "quặng phát sáng", "glowy ore" -> "Quặng phát sáng" to Color(0xFFB77AFF)
