@@ -949,12 +949,13 @@ internal fun lookupGameIconResource(key: String): Int? {
         "builderhalllevel", "builderhall", "builderbase", "builderbasevillage" -> R.drawable.ic_coc_home
         "explevel", "experiencelevel", "playerlevel", "rank", "globalrank", "localrank", "grouprank",
         "trophies", "leaguetrophies", "builderbasetrophies", "buildertrophies", "stars", "attacktrophies", "defensetrophies" -> R.drawable.ic_coc_star
-        "clanlevel", "clan", "clantag", "clancapital" -> R.drawable.ic_coc_clan
+        "clanlevel", "clan", "clancapital" -> R.drawable.ic_coc_clan
         "membercount", "members" -> R.drawable.ic_coc_members
         "leaguetier", "league", "warleague", "capitalleague", "cwlleagueid", "leaguetierid", "leaguegroupid" -> R.drawable.ic_coc_star
         "warwins", "warlosses", "warties", "warwinstreak", "attackwins", "defensewins",
         "attacktriples", "defensetriples", "attacks", "wins", "losses", "ties" -> R.drawable.ic_coc_swords
-        "destructionpercentage", "triplerate", "perfectdayrate", "share" -> R.drawable.ic_coc_percent
+        "destructionpercentage", "destruction", "averagedestruction", "averageoffense", "averagedefense",
+        "triplerate", "perfectdayrate", "share" -> R.drawable.ic_coc_percent
         "donated", "received", "troopsdonated", "troopsreceived", "troops", "supertroops", "siege", "siegemachines" -> R.drawable.ic_coc_guardian
         "capitalgoldtotal", "capitalgold", "capitalpoints" -> R.drawable.ic_coc_capital_gold
         "gold", "goldloot", "goldstorage", "goldmine" -> R.drawable.ic_coc_gold
@@ -970,8 +971,12 @@ internal fun lookupGameIconResource(key: String): Int? {
         "defense", "defenses", "defence" -> R.drawable.ic_coc_defense
         "trap", "traps" -> R.drawable.ic_coc_trap
         "wall", "walls" -> R.drawable.ic_coc_wall
-        "tag", "playertag" -> R.drawable.ic_coc_tag
-        "time", "duration", "battletime", "starttime", "endtime", "updatedat" -> R.drawable.ic_coc_time
+        "tag", "playertag", "clantag" -> R.drawable.ic_coc_tag
+        "time", "duration", "averageduration", "battletime", "attackseconds", "defenseseconds",
+        "durationseconds", "starttime", "endtime", "updatedat", "createdat", "joinedat",
+        "lastactive", "lastactivetime", "lastobservedat", "preparationstarttime", "lastattacktime" -> R.drawable.ic_coc_time
+        "history", "joinleaves", "clanmembershiphistory" -> R.drawable.ic_coc_history
+        "search" -> R.drawable.ic_coc_search
         "homevillage" -> R.drawable.ic_coc_buildings
         else -> null
     }
@@ -985,6 +990,7 @@ internal fun formatLookupCount(value: String): String {
 internal fun lookupDisplayValue(key: String, value: Any?): String {
     val raw = lookupValue(value)
     if (raw.isBlank() || raw == "—") return raw
+    if (raw == "-1") return "Chưa có dữ liệu"
     val normalized = key.lowercase().replace("_", "").replace("-", "")
 
     val percentageKeys = setOf(
@@ -993,10 +999,11 @@ internal fun lookupDisplayValue(key: String, value: Any?): String {
     )
     if (normalized in percentageKeys) {
         val number = raw.toDoubleOrNull() ?: return raw
+        val percent = if (number in 0.0..1.0) number * 100.0 else number
         val formatted = NumberFormat.getNumberInstance(Locale("vi", "VN")).apply {
             maximumFractionDigits = 2
             minimumFractionDigits = 0
-        }.format(number)
+        }.format(percent)
         return "$formatted%"
     }
 
@@ -1011,7 +1018,7 @@ internal fun lookupDisplayValue(key: String, value: Any?): String {
     }
 
     if (normalized.endsWith("seconds") || normalized == "duration" || normalized == "averageduration") {
-        raw.toLongOrNull()?.let { seconds ->
+        (raw.toLongOrNull() ?: raw.toDoubleOrNull()?.toLong())?.let { seconds ->
             val safeSeconds = seconds.coerceAtLeast(0L)
             val days = safeSeconds / 86_400
             val hours = (safeSeconds % 86_400) / 3_600
@@ -1032,7 +1039,15 @@ internal fun lookupDisplayValue(key: String, value: Any?): String {
         "leaguegroupid", "cwlleagueid", "leagueid", "locationid", "warid",
         "timestamp", "battletime", "tag", "playertag", "clantag", "wartag"
     )
-    if (normalized !in identifierKeys) raw.toLongOrNull()?.let { return formatLookupCount(raw) }
+    if (normalized !in identifierKeys) {
+        raw.toLongOrNull()?.let { return formatLookupCount(raw) }
+        raw.toDoubleOrNull()?.let { number ->
+            return NumberFormat.getNumberInstance(Locale("vi", "VN")).apply {
+                maximumFractionDigits = 2
+                minimumFractionDigits = 0
+            }.format(number)
+        }
+    }
     return raw
 }
 
@@ -1067,27 +1082,59 @@ private fun lookupMiniStats(entry: ClashLookupEntry): List<LookupMiniStat> {
 
 @Composable
 private fun LookupEntityAvatar(entry: ClashLookupEntry, size: Dp) {
-    val imageUrl = if (entry.isClan) {
-        entry.badgeUrl
-    } else {
-        lookupBuildingImageUrl("townHallLevel", entry.townHall)
-    }
+    val townHallImageUrl = lookupBuildingImageUrl("townHallLevel", entry.townHall)
+        .takeIf { it.startsWith("https://", ignoreCase = true) }
+    val clanBadgeUrl = entry.badgeUrl.takeIf { it.startsWith("https://", ignoreCase = true) }
+
     Box(
         modifier = Modifier
             .size(size)
             .clip(if (entry.isClan) RoundedCornerShape(14.dp) else androidx.compose.foundation.shape.CircleShape)
-            .background((if (entry.isClan) LookupGold else LookupCyan).copy(alpha = 0.12f)),
+            .background((if (entry.isClan) LookupGold else LookupCyan).copy(alpha = 0.10f)),
         contentAlignment = Alignment.Center
     ) {
-        when {
-            imageUrl.startsWith("https://", ignoreCase = true) -> AsyncImage(
-                model = imageUrl,
-                contentDescription = if (entry.isClan) "Huy hiệu bang hội" else "Nhà chính cấp ${entry.townHall}",
-                modifier = Modifier.fillMaxSize().padding(4.dp),
-                contentScale = ContentScale.Fit
+        if (entry.isClan) {
+            if (clanBadgeUrl != null) {
+                AsyncImage(
+                    model = clanBadgeUrl,
+                    contentDescription = "Huy hiệu bang hội",
+                    modifier = Modifier.fillMaxSize().padding(size * 0.16f),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                Icon(
+                    Icons.Outlined.Groups,
+                    contentDescription = "Bang hội",
+                    tint = LookupGold,
+                    modifier = Modifier.size(size * 0.56f)
+                )
+            }
+        } else {
+            // Player cards use a person icon; Town Hall artwork is only a small secondary marker.
+            Icon(
+                Icons.Outlined.Person,
+                contentDescription = "Người chơi",
+                tint = LookupCyan,
+                modifier = Modifier.size(size * 0.54f)
             )
-            entry.isClan -> CocGameIcon(R.drawable.ic_coc_clan, Modifier.size(size * 0.58f), "Bang hội")
-            else -> CocGameIcon(R.drawable.ic_coc_player, Modifier.size(size * 0.62f), "Người chơi")
+            if (townHallImageUrl != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(size * 0.34f)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, LookupCyan.copy(alpha = 0.65f), androidx.compose.foundation.shape.CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = townHallImageUrl,
+                        contentDescription = "Nhà chính cấp ${entry.townHall}",
+                        modifier = Modifier.fillMaxSize().padding(1.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
         }
     }
 }
@@ -1404,26 +1451,37 @@ private fun LookupSearchTargetCard(
         modifier = modifier
             .clip(shape)
             .background(
-                if (selected) LookupCyan.copy(alpha = 0.14f)
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f)
+                if (selected) LookupCyan.copy(alpha = 0.16f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f)
             )
             .border(
                 BorderStroke(
-                    if (selected) 1.5.dp else 1.dp,
+                    if (selected) 1.8.dp else 1.dp,
                     if (selected) LookupCyan else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
                 ),
                 shape
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 12.dp)
+            .padding(horizontal = 9.dp, vertical = 11.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (selected) LookupCyan else LookupMuted,
-                modifier = Modifier.size(24.dp)
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(if (selected) LookupCyan.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = if (title.contains("NGƯỜI")) "Tìm người chơi" else "Tìm bang hội",
+                    tint = if (selected) LookupCyan else LookupMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             Spacer(Modifier.width(8.dp))
             Column(
                 modifier = Modifier.weight(1f),
@@ -1432,10 +1490,31 @@ private fun LookupSearchTargetCard(
                 Text(
                     title,
                     color = if (selected) LookupCyan else MaterialTheme.colorScheme.onSurface,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Black
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text(description, color = LookupMuted, fontSize = 8.sp, lineHeight = 11.sp)
+                Text(
+                    description,
+                    color = LookupMuted,
+                    fontSize = 8.sp,
+                    lineHeight = 10.sp,
+                    maxLines = 2
+                )
+            }
+            if (selected) {
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    "✓",
+                    color = Color(0xFF06111B),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(LookupCyan)
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                )
             }
         }
     }
@@ -2046,6 +2125,38 @@ fun ClashLookupScreen() {
                     )
                 }
 
+                if (searchMode == "player" || searchMode == "clan") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(LookupCyan.copy(alpha = 0.08f))
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            if (searchMode == "player") Icons.Outlined.Person else Icons.Outlined.Groups,
+                            contentDescription = null,
+                            tint = LookupCyan,
+                            modifier = Modifier.size(17.dp)
+                        )
+                        Spacer(Modifier.width(7.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(
+                                if (searchMode == "player") "ĐANG TÌM NGƯỜI CHƠI" else "ĐANG TÌM BANG HỘI",
+                                color = LookupCyan,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                            Text(
+                                if (searchMode == "player") "Chỉ hiển thị hồ sơ người chơi" else "Chỉ hiển thị hồ sơ bang hội",
+                                color = LookupMuted,
+                                fontSize = 8.sp
+                            )
+                        }
+                    }
+                }
+
                 if (searchMode != "leaderboard" && searchMode != "analytics") OutlinedTextField(
                     value = query,
                     onValueChange = {
@@ -2056,11 +2167,11 @@ fun ClashLookupScreen() {
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (searchMode == "player") "TÌM NGƯỜI CHƠI · tên hoặc TAG" else "TÌM BANG HỘI · tên hoặc TAG") },
+                    label = { Text(if (searchMode == "player") "TÊN HOẶC TAG NGƯỜI CHƠI" else "TÊN HOẶC TAG BANG HỘI") },
                     placeholder = {
                         Text(
-                            if (searchMode == "player") "Ví dụ: #ABC123 hoặc tên người chơi"
-                            else "Ví dụ: #ABC123 hoặc tên bang hội"
+                            if (searchMode == "player") "Nhập tên người chơi hoặc #ABC123"
+                            else "Nhập tên bang hội hoặc #ABC123"
                         )
                     },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = LookupCyan) },
